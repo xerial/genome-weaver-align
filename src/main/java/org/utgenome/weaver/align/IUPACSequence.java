@@ -88,16 +88,27 @@ public class IUPACSequence implements BaseArray
 
     private Info   info;
     private byte[] seq;
+    private int    totalSize;
+
+    public IUPACSequence(File iupacFile, int size) throws UTGBException {
+        initSeq(size, iupacFile);
+    }
 
     public IUPACSequence(File iupacFile) throws UTGBException {
+
         String silkIndexFile = FileType.replaceFileExt(iupacFile.getPath(), "i.silk");
         info = Info.loadSilk(new File(silkIndexFile));
 
         if (info == null)
             throw new UTGBException(UTGBErrorCode.INVALID_INPUT, "failed to load index file");
 
-        int byteSize = info.totalSize >> 1 + (info.totalSize & 0x01);
-        this.seq = new byte[info.totalSize];
+        initSeq(info.totalSize, iupacFile);
+    }
+
+    private void initSeq(int totalSize, File iupacFile) throws UTGBException {
+        this.totalSize = totalSize;
+        int byteSize = totalSize >> 1 + (totalSize & 0x01);
+        this.seq = new byte[totalSize];
         try {
             FileInputStream seqIn = new FileInputStream(iupacFile);
             try {
@@ -114,7 +125,7 @@ public class IUPACSequence implements BaseArray
     }
 
     public int size() {
-        return info.totalSize;
+        return totalSize;
     }
 
     public IUPAC getIUPAC(int index) {

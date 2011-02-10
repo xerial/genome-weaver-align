@@ -29,6 +29,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Arrays;
 
 import org.utgenome.UTGBErrorCode;
@@ -89,6 +90,7 @@ public class BWT implements Command
         _logger.info("IUPAC file: " + iupacFileName);
         _logger.info("index file: " + indexFileName);
 
+        int totalSize = -1;
         {
             BufferedOutputStream iupacFile = new BufferedOutputStream(new FileOutputStream(iupacFileName));
             SilkWriter indexOut = new SilkWriter(new BufferedWriter(new FileWriter(indexFileName)));
@@ -126,29 +128,52 @@ public class BWT implements Command
                 offset = encoder.size();
             }
             encoder.close();
-            _logger.info("total size: " + encoder.size());
-            indexOut.leaf("total size", encoder.size());
+            totalSize = encoder.size();
+            _logger.info("total size: " + totalSize);
+            indexOut.leaf("total size", totalSize);
 
             indexOut.close();
         }
 
         // Reverse the IUPAC sequence
-        IUPACSequence forwardSeq = new IUPACSequence(new File(iupacFileName));
+        final String reverseIupacFileName = fastaPrefix + ".r.iupac";
         {
-            String reverseIupacFileName = fastaPrefix + ".r.iupac";
-            _logger.info("Reverse the sequence");
-            _logger.info("Reverse IUPAC file: " + reverseIupacFileName);
+            IUPACSequence forwardSeq = new IUPACSequence(new File(iupacFileName));
+            {
 
-            BufferedOutputStream revOut = new BufferedOutputStream(new FileOutputStream(reverseIupacFileName));
-            forwardSeq.reverse(revOut);
-            revOut.close();
+                _logger.info("Reverse the sequence");
+                _logger.info("Reverse IUPAC file: " + reverseIupacFileName);
+
+                BufferedOutputStream revOut = new BufferedOutputStream(new FileOutputStream(reverseIupacFileName));
+                forwardSeq.reverse(revOut);
+                revOut.close();
+            }
+
+            {
+                // Create a suffix array and BWT string of the forward IUPAC sequence
+                _logger.info("Creating a suffix array of the forward sequence");
+                File suffixArrayFile = new File(fastaPrefix + ".sa");
+                File bwtFile = new File(fastaPrefix + ".bwt");
+                buildSuffixArray(forwardSeq, suffixArrayFile, bwtFile);
+            }
         }
 
         {
-            // Create a suffix array of the forward IUPAC sequence
-            int[] SA = new int[forwardSeq.size()];
-            SAIS.suffixsort(forwardSeq, SA, 16);
-            File suffixArrayFile = new File(fastaPrefix + ".sa");
+            // Create a suffix array of the reverse IUPAC sequence
+            IUPACSequence reverseSeq = new IUPACSequence(new File(reverseIupacFileName), totalSize);
+            _logger.info("Creating a suffix array of the reverse sequence");
+            File suffixArrayFile = new File(fastaPrefix + ".r.sa");
+            File bwtFile = new File(fastaPrefix + ".r.bwt");
+            buildSuffixArray(reverseSeq, suffixArrayFile, bwtFile);
+        }
+
+    }
+
+    public static void buildSuffixArray(IUPACSequence seq, File suffixArrayFile, File bwtFile) throws IOException {
+
+        int[] SA = new int[seq.size()];
+        {
+            SAIS.suffixsort(seq, SA, 16);
             _logger.info("SA file: " + suffixArrayFile);
             BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(suffixArrayFile));
             final long byteSize = SA.length * 4;
@@ -159,12 +184,24 @@ public class BWT implements Command
                 out.write((SA[i]) & 0xFF);
             }
             out.close();
+        }
 
-            // Create a BWT string of the forward IUPAC sequence from the generated suffix array
-            IUPAC[] bwt = bwt(forwardSeq, SA);
-            _logger.info("SA : " + Arrays.toString(SA));
-            _logger.info("IN : " + Arrays.toString(forwardSeq.toArray()));
-            _logger.info("BWT: " + Arrays.toString(bwt));
+        // Create a BWT string of the forward IUPAC sequence from the generated suffix array
+        {
+            _logger.info("Creating a BWT string");
+            IUPAC[] bwt = bwt(seq, SA);
+            if (_logger.isTraceEnabled()) {
+                _logger.trace("SA : " + Arrays.toString(SA));
+                _logger.trace("IN : " + Arrays.toString(seq.toArray()));
+                _logger.trace("BWT: " + Arrays.toString(bwt));
+            }
+
+            _logger.info("BWT file: " + bwtFile);
+            IUPACSequenceWriter writer = new IUPACSequenceWriter(new FileOutputStream(bwtFile));
+            for (int i = 0; i < bwt.length; ++i) {
+                writer.append(bwt[i]);
+            }
+            writer.close();
         }
 
     }
