@@ -71,11 +71,13 @@ public class OccurrenceCountTable
             int codeIndex = code.bitFlag;
             final int blockIndex = i / W;
 
-            int[] occ = occTable.get(codeIndex);
             if (i % W == 0 && blockIndex > 0) {
-                occ[blockIndex] = occ[blockIndex - 1];
+                for (IUPAC eachCode : IUPAC.values()) {
+                    int[] occ = occTable.get(eachCode.bitFlag);
+                    occ[blockIndex] = occ[blockIndex - 1];
+                }
             }
-            occ[blockIndex]++;
+            occTable.get(codeIndex)[blockIndex]++;
         }
         _logger.info("done.");
     }

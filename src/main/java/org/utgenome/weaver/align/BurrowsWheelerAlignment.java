@@ -25,7 +25,6 @@
 package org.utgenome.weaver.align;
 
 import java.io.File;
-import java.util.Arrays;
 
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.utgenome.weaver.align.IUPACSequence.IUPACBinaryInfo;
@@ -82,8 +81,8 @@ public class BurrowsWheelerAlignment implements Command
         IUPACSequence bwtF = new IUPACSequence(bwtForwardFile, N);
         IUPACSequence bwtR = new IUPACSequence(bwtReverseFile, N);
 
-        _logger.info(Arrays.toString(bwtF.toArray()));
-        _logger.info(Arrays.toString(bwtR.toArray()));
+        //        _logger.info(Arrays.toString(bwtF.toArray()));
+        //        _logger.info(Arrays.toString(bwtR.toArray()));
 
         // Compute the occurrence tables
         OccurrenceCountTable occF = new OccurrenceCountTable(bwtF, L);
@@ -93,6 +92,7 @@ public class BurrowsWheelerAlignment implements Command
         CharacterCount C = new CharacterCount(bwtF);
 
         if (query != null) {
+            _logger.info("query sequence: " + query);
             FMIndexAlign aln = new FMIndexAlign(bwtF, occF, C, new Reporter<AlignmentResult>() {
                 @Override
                 public void emit(AlignmentResult result) {
