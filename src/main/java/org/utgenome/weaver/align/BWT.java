@@ -29,6 +29,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.util.Arrays;
 
 import org.utgenome.UTGBErrorCode;
 import org.utgenome.UTGBException;
@@ -90,7 +91,7 @@ public class BWT implements Command
 
         BufferedOutputStream iupacFile = new BufferedOutputStream(new FileOutputStream(iupacFileName));
         SilkWriter indexOut = new SilkWriter(new BufferedWriter(new FileWriter(indexFileName)));
-        // Read the input FASTA file         
+        // Read the input FASTA file, then encode the sequences using the IUPAC code         
         IUPACSequenceWriter encoder = new IUPACSequenceWriter(iupacFile);
         FASTAPullParser fasta = new FASTAPullParser(new File(fastaFile));
         int lineCount = 1;
@@ -137,6 +138,11 @@ public class BWT implements Command
         BufferedOutputStream revOut = new BufferedOutputStream(new FileOutputStream(reverseIupacFileName));
         forwardSeq.reverse(revOut);
         revOut.close();
+
+        // Create a suffix array of the forward IUPAC sequence
+        int[] SA = new int[forwardSeq.size()];
+        SAIS.suffixsort(forwardSeq, SA, 16);
+        _logger.debug(Arrays.toString(SA));
 
     }
 

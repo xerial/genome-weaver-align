@@ -26,15 +26,34 @@ package org.utgenome.weaver.align;
 
 import java.io.File;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.utgenome.util.TestHelper;
 import org.utgenome.weaver.GenomeWeaver;
 
 public class BWTTest
 {
+    File tmpDir;
+
+    @Before
+    public void setUp() throws Exception {
+        tmpDir = TestHelper.createTempDir();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        if (tmpDir != null && tmpDir.exists()) {
+            // FileUtil.rmdir(tmpDir);
+        }
+    }
+
     @Test
     public void bwt() throws Exception {
-        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "sample-archive.fa.tar.gz");
+
+        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "sample-archive.fa.tar.gz", new File(tmpDir,
+                "sample.fa.tar.gz"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+
     }
 }

@@ -35,13 +35,15 @@ package org.utgenome.weaver.align;
  */
 public class SAIS
 {
-    private static interface BaseArray
+    public static interface BaseArray
     {
         public int get(int i);
 
         public void set(int i, int val);
 
         public int update(int i, int val);
+
+        public int size();
     }
 
     private static class ByteArray implements BaseArray
@@ -64,6 +66,11 @@ public class SAIS
 
         public int update(int i, int val) {
             return m_A[m_pos + i] += val & 0xff;
+        }
+
+        @Override
+        public int size() {
+            return m_A.length - m_pos;
         }
     }
 
@@ -88,6 +95,12 @@ public class SAIS
         public int update(int i, int val) {
             return m_A[m_pos + i] += val & 0xffff;
         }
+
+        @Override
+        public int size() {
+            return m_A.length - m_pos;
+        }
+
     }
 
     private static class ShortArray implements BaseArray
@@ -110,6 +123,11 @@ public class SAIS
 
         public int update(int i, int val) {
             return m_A[m_pos + i] += val & 0xffff;
+        }
+
+        @Override
+        public int size() {
+            return m_A.length - m_pos;
         }
     }
 
@@ -134,6 +152,11 @@ public class SAIS
         public int update(int i, int val) {
             return m_A[m_pos + i] += val;
         }
+
+        @Override
+        public int size() {
+            return m_A.length - m_pos;
+        }
     }
 
     private static class StringArray implements BaseArray
@@ -154,6 +177,11 @@ public class SAIS
 
         public int update(int i, int val) {
             return 0;
+        }
+
+        @Override
+        public int size() {
+            return m_A.length() - m_pos;
         }
     }
 
@@ -596,6 +624,22 @@ public class SAIS
             return 0;
         }
         return SA_IS(new ByteArray(T, 0), SA, 0, n, 256, false);
+    }
+
+    public static int suffixsort(BaseArray T, int[] SA, int k) {
+        if (T == null || SA == null)
+            throw new NullPointerException();
+        final int n = T.size();
+        if (SA.length < n)
+            throw new IllegalArgumentException("The suffix array container (SA) size is smaller than the input");
+
+        if (n <= 1) {
+            if (n == 1) {
+                SA[0] = 0;
+            }
+            return 0;
+        }
+        return SA_IS(T, SA, 0, n, k, false);
     }
 
     /* char */
