@@ -79,8 +79,89 @@ public class BurrowsWheelerAlignment implements Command
         OccurrenceCountTable occF = new OccurrenceCountTable(bwtF, L);
         OccurrenceCountTable occR = new OccurrenceCountTable(bwtR, L);
 
-        // Compute the character start index
+        // Count the character frequencies 
         CharacterCount C = new CharacterCount(bwtF);
 
     }
+
+    public static class SuffixInterval
+    {
+        public final int lowerBound;
+        public final int upperBound;
+
+        public SuffixInterval(int lowerBound, int upperBound) {
+
+            this.lowerBound = lowerBound;
+            this.upperBound = upperBound;
+        }
+
+    }
+
+    public static class AlignmentResult
+    {
+        public SuffixInterval interval;
+    }
+
+    public static interface Reporter<T>
+    {
+        public void emit(T result);
+    }
+
+    public static class FMIndexAlign
+    {
+
+        private final IUPACSequence             bwt;
+        private final OccurrenceCountTable      occ;
+        private final CharacterCount            C;
+        private final Reporter<AlignmentResult> out;
+
+        public FMIndexAlign(IUPACSequence bwt, OccurrenceCountTable occ, CharacterCount C, Reporter<AlignmentResult> out) {
+            this.bwt = bwt;
+            this.occ = occ;
+            this.C = C;
+            this.out = out;
+        }
+
+        public void align(String seq) {
+            align(seq, seq.length() - 1, 3, new SuffixInterval(0, bwt.size() - 1));
+        }
+
+        public void align(String seq, int cursor, int numMismatchesAllowed, SuffixInterval si) {
+
+            if (numMismatchesAllowed < 0)
+                return;
+
+            if (cursor < 0) {
+                AlignmentResult result = new AlignmentResult();
+                result.interval = si;
+                out.emit(result);
+                return;
+            }
+
+            // Search for deletion
+            align(seq, cursor - 1, numMismatchesAllowed - 1, si);
+            for (IUPAC base : IUPAC.values()) {
+                int lowerBound = C.get(base) + occ.getOcc(base, si.lowerBound - 1);
+                int upperBound = C.get(base) + occ.getOcc(base, si.upperBound) - 1;
+                if (lowerBound < upperBound) {
+                    SuffixInterval next = new SuffixInterval(lowerBound, upperBound);
+                    // Search for insertion
+                    align(seq, cursor, numMismatchesAllowed - 1, next);
+                    IUPAC currentBase = IUPAC.encode(seq.charAt(cursor));
+
+                    if ((base.bitFlag & currentBase.bitFlag) != 0) {
+                        // match
+                        align(seq, cursor - 1, numMismatchesAllowed, next);
+                    }
+                    else {
+                        // mismatch
+                        align(seq, cursor - 1, numMismatchesAllowed - 1, next);
+                    }
+                }
+            }
+
+        }
+
+    }
+
 }

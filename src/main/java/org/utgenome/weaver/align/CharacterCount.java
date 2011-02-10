@@ -28,7 +28,8 @@ import org.utgenome.gwt.utgb.client.bio.IUPAC;
 
 /**
  * Character count <i>C[x]</i> is the number of symbols that are
- * lexicographically smaller than the symbol <i>x</i>.
+ * lexicographically smaller than the symbol <i>x</i>. This class is used for
+ * FM-index.
  * 
  * @author leo
  * 
