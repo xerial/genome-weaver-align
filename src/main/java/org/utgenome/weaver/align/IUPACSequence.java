@@ -24,6 +24,20 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.List;
+
+import org.utgenome.UTGBErrorCode;
+import org.utgenome.UTGBException;
+import org.utgenome.gwt.utgb.client.bio.IUPAC;
+import org.xerial.lens.SilkLens;
+import org.xerial.util.FileType;
+
 /**
  * Reader of the IUPACSequence
  * 
@@ -32,5 +46,87 @@ package org.utgenome.weaver.align;
  */
 public class IUPACSequence
 {
+    public static class SequenceIndex
+    {
+        public String name;
+        public String desc;
+        public long   length;
+        public long   offset;
+
+        public SequenceIndex(String name, String desc, long length, long offset) {
+            this.name = name;
+            this.desc = desc;
+            this.length = length;
+            this.offset = offset;
+        }
+    }
+
+    private static class Info
+    {
+        public List<SequenceIndex> index;
+        public int                 totalSize;
+
+        public static Info loadSilk(File silkFile) throws UTGBException {
+            BufferedReader input = null;
+            try {
+                try {
+                    input = new BufferedReader(new FileReader(silkFile));
+                    return SilkLens.loadSilk(Info.class, input);
+                }
+                finally {
+                    if (input != null)
+                        input.close();
+                }
+            }
+            catch (Exception e) {
+                throw UTGBException.convert(e);
+            }
+
+        }
+    }
+
+    private Info   info;
+    private byte[] seq;
+
+    public IUPACSequence(File iupacFile) throws UTGBException {
+        String silkIndexFile = FileType.replaceFileExt(iupacFile.getPath(), "i.silk");
+        info = Info.loadSilk(new File(silkIndexFile));
+
+        if (info == null)
+            throw new UTGBException(UTGBErrorCode.INVALID_INPUT, "failed to load index file");
+
+        int byteSize = info.totalSize >> 1 + (info.totalSize & 0x01);
+        this.seq = new byte[info.totalSize];
+        try {
+            FileInputStream seqIn = new FileInputStream(iupacFile);
+            try {
+                int read = seqIn.read(seq, 0, byteSize);
+            }
+            finally {
+                seqIn.close();
+            }
+        }
+        catch (IOException e) {
+            throw UTGBException.convert(e);
+        }
+
+    }
+
+    public long size() {
+        return info.totalSize;
+    }
+
+    public IUPAC get(int index) {
+        byte code = (byte) ((seq[index >> 1] >> (1 - (index & 1))) & 0x0F);
+        return IUPAC.decode(code);
+    }
+
+    public void reverse(OutputStream out) throws IOException {
+        IUPACSequenceWriter encoder = new IUPACSequenceWriter(out);
+        for (int i = info.totalSize - 1; i >= 0; --i) {
+            encoder.append(this.get(i));
+        }
+        encoder.close();
+    }
 
 }

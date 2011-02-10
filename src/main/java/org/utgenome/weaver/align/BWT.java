@@ -25,14 +25,19 @@
 package org.utgenome.weaver.align;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 
 import org.utgenome.UTGBErrorCode;
 import org.utgenome.UTGBException;
 import org.utgenome.format.fasta.CompactFASTA;
 import org.utgenome.format.fasta.FASTAPullParser;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
+import org.utgenome.weaver.align.IUPACSequence.SequenceIndex;
+import org.xerial.lens.SilkLens;
+import org.xerial.silk.SilkWriter;
 import org.xerial.util.FileType;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
@@ -76,11 +81,15 @@ public class BWT implements Command
             throw new UTGBException(UTGBErrorCode.MISSING_FILES, "no input FASTA file is given");
 
         // Output IUPAC sequence to a file
-        String outputFileName = FileType.removeFileExt(fastaFile) + ".iupac";
+        final String fastaPrefix = FileType.removeFileExt(fastaFile);
+        String iupacFileName = fastaPrefix + ".iupac";
+        String indexFileName = fastaPrefix + ".i.silk";
         _logger.info("input FASTA file: " + fastaFile);
-        _logger.info("IUPAC file: " + outputFileName);
+        _logger.info("IUPAC file: " + iupacFileName);
+        _logger.info("index file: " + indexFileName);
 
-        BufferedOutputStream iupacFile = new BufferedOutputStream(new FileOutputStream(outputFileName));
+        BufferedOutputStream iupacFile = new BufferedOutputStream(new FileOutputStream(iupacFileName));
+        SilkWriter indexOut = new SilkWriter(new BufferedWriter(new FileWriter(indexFileName)));
         // Read the input FASTA file         
         IUPACSequenceWriter encoder = new IUPACSequenceWriter(iupacFile);
         FASTAPullParser fasta = new FASTAPullParser(new File(fastaFile));
@@ -109,11 +118,25 @@ public class BWT implements Command
 
             int pos = encoder.size();
             int sequenceSize = pos - offset;
-            _logger.info("sequence size: " + sequenceSize);
+            SequenceIndex index = new SequenceIndex(seqName, desc, sequenceSize, offset);
+            indexOut.leafObject("index", index);
+            _logger.info("\n" + SilkLens.toSilk("index", index));
             offset = encoder.size();
         }
         encoder.close();
         _logger.info("total size: " + encoder.size());
+        indexOut.leaf("total size", encoder.size());
+
+        indexOut.close();
+
+        // Reverse the IUPAC sequence
+        String reverseIupacFileName = fastaPrefix + ".r.iupac";
+        _logger.info("Reverse the sequence");
+        _logger.info("Reverse IUPAC file: " + reverseIupacFileName);
+        IUPACSequence forwardSeq = new IUPACSequence(new File(iupacFileName));
+        BufferedOutputStream revOut = new BufferedOutputStream(new FileOutputStream(reverseIupacFileName));
+        forwardSeq.reverse(revOut);
+        revOut.close();
 
     }
 
