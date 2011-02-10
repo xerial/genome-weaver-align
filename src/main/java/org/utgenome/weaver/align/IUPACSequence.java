@@ -118,7 +118,7 @@ public class IUPACSequence implements BaseArray
     }
 
     public IUPAC getIUPAC(int index) {
-        byte code = (byte) ((seq[index >> 1] >> (1 - (index & 1))) & 0x0F);
+        byte code = (byte) ((seq[index >> 1] >>> (1 - (index & 1)) * 4) & 0x0F);
         return IUPAC.decode(code);
     }
 
