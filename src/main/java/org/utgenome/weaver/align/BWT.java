@@ -89,61 +89,99 @@ public class BWT implements Command
         _logger.info("IUPAC file: " + iupacFileName);
         _logger.info("index file: " + indexFileName);
 
-        BufferedOutputStream iupacFile = new BufferedOutputStream(new FileOutputStream(iupacFileName));
-        SilkWriter indexOut = new SilkWriter(new BufferedWriter(new FileWriter(indexFileName)));
-        // Read the input FASTA file, then encode the sequences using the IUPAC code         
-        IUPACSequenceWriter encoder = new IUPACSequenceWriter(iupacFile);
-        FASTAPullParser fasta = new FASTAPullParser(new File(fastaFile));
-        int lineCount = 1;
-        int offset = 0;
-        for (String desc; (desc = fasta.nextDescriptionLine()) != null; lineCount++) {
-            String seqName = CompactFASTA.pickSequenceName(desc);
-            _logger.info(String.format("reading %s", seqName));
-            for (String seq; (seq = fasta.nextSequenceLine()) != null; lineCount++) {
-                seq = seq.trim();
-                for (int i = 0; i < seq.length(); ++i) {
-                    // 'A' .. 'Z'
+        {
+            BufferedOutputStream iupacFile = new BufferedOutputStream(new FileOutputStream(iupacFileName));
+            SilkWriter indexOut = new SilkWriter(new BufferedWriter(new FileWriter(indexFileName)));
+            // Read the input FASTA file, then encode the sequences using the IUPAC code         
+            IUPACSequenceWriter encoder = new IUPACSequenceWriter(iupacFile);
+            FASTAPullParser fasta = new FASTAPullParser(new File(fastaFile));
+            int lineCount = 1;
+            int offset = 0;
+            for (String desc; (desc = fasta.nextDescriptionLine()) != null; lineCount++) {
+                String seqName = CompactFASTA.pickSequenceName(desc);
+                _logger.info(String.format("reading %s", seqName));
+                for (String seq; (seq = fasta.nextSequenceLine()) != null; lineCount++) {
+                    seq = seq.trim();
+                    for (int i = 0; i < seq.length(); ++i) {
+                        // 'A' .. 'Z'
 
-                    char base = Character.toUpperCase(seq.charAt(i));
-                    IUPAC iupac = IUPAC.encode(base);
-                    if (iupac == IUPAC.None) {
-                        // illegal character
-                        _logger.warn(String.format("illegal character '%s' at line:%,d, char:%d, char:%s", base,
-                                lineCount, i + 1));
-                        continue;
+                        char base = Character.toUpperCase(seq.charAt(i));
+                        IUPAC iupac = IUPAC.encode(base);
+                        if (iupac == IUPAC.None) {
+                            // illegal character
+                            _logger.warn(String.format("illegal character '%s' at line:%,d, char:%d, char:%s", base,
+                                    lineCount, i + 1));
+                            continue;
+                        }
+
+                        encoder.append(iupac);
                     }
-
-                    encoder.append(iupac);
                 }
+
+                int pos = encoder.size();
+                int sequenceSize = pos - offset;
+                SequenceIndex index = new SequenceIndex(seqName, desc, sequenceSize, offset);
+                indexOut.leafObject("index", index);
+                _logger.info("\n" + SilkLens.toSilk("index", index));
+                offset = encoder.size();
             }
+            encoder.close();
+            _logger.info("total size: " + encoder.size());
+            indexOut.leaf("total size", encoder.size());
 
-            int pos = encoder.size();
-            int sequenceSize = pos - offset;
-            SequenceIndex index = new SequenceIndex(seqName, desc, sequenceSize, offset);
-            indexOut.leafObject("index", index);
-            _logger.info("\n" + SilkLens.toSilk("index", index));
-            offset = encoder.size();
+            indexOut.close();
         }
-        encoder.close();
-        _logger.info("total size: " + encoder.size());
-        indexOut.leaf("total size", encoder.size());
-
-        indexOut.close();
 
         // Reverse the IUPAC sequence
-        String reverseIupacFileName = fastaPrefix + ".r.iupac";
-        _logger.info("Reverse the sequence");
-        _logger.info("Reverse IUPAC file: " + reverseIupacFileName);
         IUPACSequence forwardSeq = new IUPACSequence(new File(iupacFileName));
-        BufferedOutputStream revOut = new BufferedOutputStream(new FileOutputStream(reverseIupacFileName));
-        forwardSeq.reverse(revOut);
-        revOut.close();
+        {
+            String reverseIupacFileName = fastaPrefix + ".r.iupac";
+            _logger.info("Reverse the sequence");
+            _logger.info("Reverse IUPAC file: " + reverseIupacFileName);
 
-        // Create a suffix array of the forward IUPAC sequence
-        int[] SA = new int[forwardSeq.size()];
-        SAIS.suffixsort(forwardSeq, SA, 16);
-        _logger.debug(Arrays.toString(SA));
+            BufferedOutputStream revOut = new BufferedOutputStream(new FileOutputStream(reverseIupacFileName));
+            forwardSeq.reverse(revOut);
+            revOut.close();
+        }
 
+        {
+            // Create a suffix array of the forward IUPAC sequence
+            int[] SA = new int[forwardSeq.size()];
+            SAIS.suffixsort(forwardSeq, SA, 16);
+            File suffixArrayFile = new File(fastaPrefix + ".sa");
+            _logger.info("SA file: " + suffixArrayFile);
+            BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(suffixArrayFile));
+            final long byteSize = SA.length * 4;
+            for (int i = 0; i < SA.length; ++i) {
+                out.write((SA[i] >>> 24) & 0xFF);
+                out.write((SA[i] >>> 16) & 0xFF);
+                out.write((SA[i] >>> 8) & 0xFF);
+                out.write((SA[i]) & 0xFF);
+            }
+            out.close();
+
+            // Create a BWT string of the forward IUPAC sequence from the generated suffix array
+            IUPAC[] bwt = bwt(forwardSeq, SA);
+            _logger.info("SA : " + Arrays.toString(SA));
+            _logger.info("IN : " + Arrays.toString(forwardSeq.toArray()));
+            _logger.info("BWT: " + Arrays.toString(bwt));
+        }
+
+    }
+
+    public static IUPAC[] bwt(IUPACSequence seq, int[] SA) {
+        IUPAC[] bwt = new IUPAC[SA.length];
+
+        for (int i = 0; i < SA.length; ++i) {
+            if (SA[i] == 0) {
+                bwt[i] = IUPAC.None;
+            }
+            else {
+                bwt[i] = seq.getIUPAC(SA[i] - 1);
+            }
+        }
+
+        return bwt;
     }
 
 }

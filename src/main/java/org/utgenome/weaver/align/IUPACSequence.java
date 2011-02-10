@@ -122,6 +122,21 @@ public class IUPACSequence implements BaseArray
         return IUPAC.decode(code);
     }
 
+    public void setIUPAC(int index, IUPAC val) {
+        int pos = index / 2;
+        int offset = index % 2;
+        byte code = (byte) val.bitFlag;
+
+    }
+
+    public IUPAC[] toArray() {
+        IUPAC[] result = new IUPAC[size()];
+        for (int i = 0; i < result.length; ++i) {
+            result[i] = getIUPAC(i);
+        }
+        return result;
+    }
+
     public void reverse(OutputStream out) throws IOException {
         IUPACSequenceWriter encoder = new IUPACSequenceWriter(out);
         for (int i = info.totalSize - 1; i >= 0; --i) {
