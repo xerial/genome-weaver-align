@@ -89,9 +89,9 @@ public class OccurrenceCountTable
      */
     public int getOcc(IUPAC code, int index) {
         int blockPos = index / W;
-        int occ = occTable.get(code.bitFlag)[blockPos];
-        final int upperLimit = Math.min(index, seq.size());
-        for (int i = blockPos * W; i < upperLimit; i++) {
+        int occ = blockPos <= 0 ? 0 : occTable.get(code.bitFlag)[blockPos - 1];
+        final int upperLimit = Math.min(index, seq.size() - 1);
+        for (int i = blockPos * W; i <= upperLimit; i++) {
             if (seq.getIUPAC(i) == code) {
                 occ++;
             }

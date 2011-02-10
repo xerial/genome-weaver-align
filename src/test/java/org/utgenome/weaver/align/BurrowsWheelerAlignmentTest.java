@@ -32,7 +32,6 @@ import org.junit.Test;
 import org.utgenome.util.TestHelper;
 import org.utgenome.weaver.GenomeWeaver;
 import org.xerial.util.FileType;
-import org.xerial.util.FileUtil;
 
 public class BurrowsWheelerAlignmentTest
 {
@@ -40,23 +39,24 @@ public class BurrowsWheelerAlignmentTest
 
     @Before
     public void setUp() throws Exception {
-        tmpDir = TestHelper.createTempDir();
+        tmpDir = new File("target", "bwa");
+        if (!tmpDir.exists())
+            tmpDir.mkdirs();
     }
 
     @After
     public void tearDown() throws Exception {
         if (tmpDir != null && tmpDir.exists()) {
-            FileUtil.rmdir(tmpDir);
+            //FileUtil.rmdir(tmpDir);
         }
     }
 
     @Test
     public void align() throws Exception {
 
-        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "sample-archive.fa.tar.gz", new File(tmpDir,
-                "sample.fa.tar.gz"));
+        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "test.fa", new File(tmpDir, "test.fa"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
-        GenomeWeaver.execute(String.format("align %s", FileType.removeFileExt(fastaArchive.getPath())));
+        GenomeWeaver.execute(String.format("align %s -q TAA", FileType.removeFileExt(fastaArchive.getPath())));
 
     }
 }

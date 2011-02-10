@@ -107,12 +107,11 @@ public class BWT implements Command
                     seq = seq.trim();
                     for (int i = 0; i < seq.length(); ++i) {
                         // 'A' .. 'Z'
-
                         char base = Character.toUpperCase(seq.charAt(i));
                         IUPAC iupac = IUPAC.encode(base);
                         if (iupac == IUPAC.None) {
                             // illegal character
-                            _logger.warn(String.format("illegal character '%s' at line:%,d, char:%d, char:%s", base,
+                            _logger.warn(String.format("illegal character '%s' at line:%,d, pos:%d, char:%s", base,
                                     lineCount, i + 1));
                             continue;
                         }
@@ -193,10 +192,10 @@ public class BWT implements Command
         {
             _logger.info("Creating a BWT string");
             IUPAC[] bwt = bwt(seq, SA);
-            if (_logger.isTraceEnabled()) {
-                _logger.trace("SA : " + Arrays.toString(SA));
-                _logger.trace("IN : " + Arrays.toString(seq.toArray()));
-                _logger.trace("BWT: " + Arrays.toString(bwt));
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("SA : " + Arrays.toString(SA));
+                _logger.debug("IN : " + Arrays.toString(seq.toArray()));
+                _logger.debug("BWT: " + Arrays.toString(bwt));
             }
 
             _logger.info("BWT file: " + bwtFile);

@@ -70,6 +70,7 @@ public class IUPACSequenceWriter
             cache <<= 4;
             out.write(cache);
         }
+        out.flush();
         out.close();
     }
 

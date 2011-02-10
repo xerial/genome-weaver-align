@@ -48,10 +48,12 @@ public class CharacterCount
 
         for (int i = 0; i < seq.size(); ++i) {
             IUPAC code = seq.getIUPAC(i);
+            if (code == IUPAC.None)
+                continue;
             count[code.bitFlag]++;
         }
 
-        int sum = 0;
+        int sum = 1; // add 1 for $ (end of string)
         for (int i = 0; i < K; ++i) {
             C[i] = sum;
             sum += count[i];

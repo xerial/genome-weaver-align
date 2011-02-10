@@ -95,10 +95,10 @@ public class IUPACSequence implements BaseArray
 
     private IUPACBinaryInfo binaryInfo;
     private byte[]          seq;
-    private int             totalSize;
+    private int             numBases;
 
-    public IUPACSequence(File iupacFile, int size) throws UTGBException {
-        initSeq(size, iupacFile);
+    public IUPACSequence(File iupacFile, int numBases) throws UTGBException {
+        initSeq(numBases, iupacFile);
     }
 
     public IUPACSequence(File iupacFile) throws UTGBException {
@@ -112,10 +112,10 @@ public class IUPACSequence implements BaseArray
         initSeq(binaryInfo.totalSize, iupacFile);
     }
 
-    private void initSeq(int totalSize, File iupacFile) throws UTGBException {
-        this.totalSize = totalSize;
-        int byteSize = totalSize >> 1 + (totalSize & 0x01);
-        this.seq = new byte[totalSize];
+    private void initSeq(int numBases, File iupacFile) throws UTGBException {
+        this.numBases = numBases;
+        int byteSize = (numBases / 2) + (numBases & 0x01);
+        this.seq = new byte[byteSize];
         try {
 
             FileInputStream seqIn = new FileInputStream(iupacFile);
@@ -134,7 +134,7 @@ public class IUPACSequence implements BaseArray
     }
 
     public int size() {
-        return totalSize;
+        return numBases;
     }
 
     public IUPAC getIUPAC(int index) {
