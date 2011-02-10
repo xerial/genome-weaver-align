@@ -16,7 +16,7 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// BWTTest.java
+// BurrowsWheelerAlignmentTest.java
 // Since: 2011/02/10
 //
 // $URL$ 
@@ -31,9 +31,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.utgenome.util.TestHelper;
 import org.utgenome.weaver.GenomeWeaver;
+import org.xerial.util.FileType;
 import org.xerial.util.FileUtil;
 
-public class BWTTest
+public class BurrowsWheelerAlignmentTest
 {
     File tmpDir;
 
@@ -50,11 +51,12 @@ public class BWTTest
     }
 
     @Test
-    public void bwt() throws Exception {
+    public void align() throws Exception {
 
         File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "sample-archive.fa.tar.gz", new File(tmpDir,
                 "sample.fa.tar.gz"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+        GenomeWeaver.execute(String.format("align %s", FileType.removeFileExt(fastaArchive.getPath())));
 
     }
 }

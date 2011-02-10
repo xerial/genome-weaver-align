@@ -16,7 +16,7 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// BWTTest.java
+// CharacterCount.java
 // Since: 2011/02/10
 //
 // $URL$ 
@@ -24,37 +24,42 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import java.io.File;
+import org.utgenome.gwt.utgb.client.bio.IUPAC;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.utgenome.util.TestHelper;
-import org.utgenome.weaver.GenomeWeaver;
-import org.xerial.util.FileUtil;
-
-public class BWTTest
+/**
+ * Character count <i>C[x]</i> is the number of symbols that are
+ * lexicographically smaller than the symbol <i>x</i>.
+ * 
+ * @author leo
+ * 
+ */
+public class CharacterCount
 {
-    File tmpDir;
+    private static int K = IUPAC.values().length;
+    private int[]      C = new int[K];
 
-    @Before
-    public void setUp() throws Exception {
-        tmpDir = TestHelper.createTempDir();
-    }
+    public CharacterCount(IUPACSequence seq) {
 
-    @After
-    public void tearDown() throws Exception {
-        if (tmpDir != null && tmpDir.exists()) {
-            FileUtil.rmdir(tmpDir);
+        int[] count = new int[K];
+        for (int i = 0; i < K; ++i) {
+            count[i] = 0;
         }
+
+        for (int i = 0; i < seq.size(); ++i) {
+            IUPAC code = seq.getIUPAC(i);
+            count[code.bitFlag]++;
+        }
+
+        int sum = 0;
+        for (int i = 0; i < K; ++i) {
+            C[i] = sum;
+            sum += count[i];
+        }
+
     }
 
-    @Test
-    public void bwt() throws Exception {
-
-        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "sample-archive.fa.tar.gz", new File(tmpDir,
-                "sample.fa.tar.gz"));
-        GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
-
+    public int get(IUPAC code) {
+        return C[code.bitFlag];
     }
+
 }

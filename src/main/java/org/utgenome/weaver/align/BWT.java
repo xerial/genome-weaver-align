@@ -41,6 +41,7 @@ import org.utgenome.weaver.align.IUPACSequence.SequenceIndex;
 import org.xerial.lens.SilkLens;
 import org.xerial.silk.SilkWriter;
 import org.xerial.util.FileType;
+import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
 import org.xerial.util.opt.Command;
@@ -136,7 +137,7 @@ public class BWT implements Command
         }
 
         // Reverse the IUPAC sequence
-        final String reverseIupacFileName = fastaPrefix + ".r.iupac";
+        final String reverseIupacFileName = fastaPrefix + ".riupac";
         {
             IUPACSequence forwardSeq = new IUPACSequence(new File(iupacFileName));
             {
@@ -162,8 +163,8 @@ public class BWT implements Command
             // Create a suffix array of the reverse IUPAC sequence
             IUPACSequence reverseSeq = new IUPACSequence(new File(reverseIupacFileName), totalSize);
             _logger.info("Creating a suffix array of the reverse sequence");
-            File suffixArrayFile = new File(fastaPrefix + ".r.sa");
-            File bwtFile = new File(fastaPrefix + ".r.bwt");
+            File suffixArrayFile = new File(fastaPrefix + ".rsa");
+            File bwtFile = new File(fastaPrefix + ".rbwt");
             buildSuffixArray(reverseSeq, suffixArrayFile, bwtFile);
         }
 
@@ -171,6 +172,7 @@ public class BWT implements Command
 
     public static void buildSuffixArray(IUPACSequence seq, File suffixArrayFile, File bwtFile) throws IOException {
 
+        StopWatch timer = new StopWatch();
         int[] SA = new int[seq.size()];
         {
             SAIS.suffixsort(seq, SA, 16);
@@ -185,6 +187,7 @@ public class BWT implements Command
             }
             out.close();
         }
+        _logger.info(String.format("Suffix array construction finshed. %.2f sec.", timer.getElapsedTime()));
 
         // Create a BWT string of the forward IUPAC sequence from the generated suffix array
         {
@@ -197,7 +200,8 @@ public class BWT implements Command
             }
 
             _logger.info("BWT file: " + bwtFile);
-            IUPACSequenceWriter writer = new IUPACSequenceWriter(new FileOutputStream(bwtFile));
+            IUPACSequenceWriter writer = new IUPACSequenceWriter(
+                    new BufferedOutputStream(new FileOutputStream(bwtFile)));
             for (int i = 0; i < bwt.length; ++i) {
                 writer.append(bwt[i]);
             }
