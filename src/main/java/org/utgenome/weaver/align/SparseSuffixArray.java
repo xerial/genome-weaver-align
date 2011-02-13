@@ -24,6 +24,10 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 /**
  * 
  * 
@@ -42,6 +46,41 @@ public class SparseSuffixArray
     public SparseSuffixArray(int[] sparseSA, int L) {
         this.sparseSA = sparseSA;
         this.L = L;
+    }
+
+    private static void writeInt(int value, OutputStream out) throws IOException {
+        out.write((value >>> 24) & 0xFF);
+        out.write((value >>> 16) & 0xFF);
+        out.write((value >>> 8) & 0xFF);
+        out.write((value & 0xFF));
+    }
+
+    private static int readInt(InputStream in) throws IOException {
+        int value = in.read();
+        value <<= 8;
+        value |= in.read();
+        value <<= 8;
+        value |= in.read();
+        value <<= 8;
+        value |= in.read();
+        return value;
+    }
+
+    public void saveTo(OutputStream out) throws IOException {
+        writeInt(L, out);
+        for (int i = 0; i < sparseSA.length; ++i) {
+            writeInt(sparseSA[i], out);
+        }
+        out.flush();
+    }
+
+    public SparseSuffixArray loadFrom(InputStream in) throws IOException {
+        final int L = readInt(in);
+        int sparseSA[] = new int[L];
+        for (int i = 0; i < L; ++i) {
+            sparseSA[0] = readInt(in);
+        }
+        return new SparseSuffixArray(sparseSA, L);
     }
 
     public static SparseSuffixArray buildFromSuffixArray(int[] SA, int L) {

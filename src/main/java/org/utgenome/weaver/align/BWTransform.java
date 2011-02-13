@@ -52,9 +52,9 @@ import org.xerial.util.opt.Command;
  * @author leo
  * 
  */
-public class BWT implements Command
+public class BWTransform implements Command
 {
-    private static Logger _logger = Logger.getLogger(BWT.class);
+    private static Logger _logger = Logger.getLogger(BWTransform.class);
 
     @Override
     public String name() {
@@ -185,14 +185,9 @@ public class BWT implements Command
         {
             SAIS.suffixsort(seq, SA, 16);
             _logger.info("SA file: " + suffixArrayFile);
+            SparseSuffixArray sparseSA = SparseSuffixArray.buildFromSuffixArray(SA, 32);
             BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(suffixArrayFile));
-            final long byteSize = SA.length * 4;
-            for (int i = 0; i < SA.length; ++i) {
-                out.write((SA[i] >>> 24) & 0xFF);
-                out.write((SA[i] >>> 16) & 0xFF);
-                out.write((SA[i] >>> 8) & 0xFF);
-                out.write((SA[i]) & 0xFF);
-            }
+            sparseSA.saveTo(out);
             out.close();
         }
         _logger.info(String.format("Suffix array construction finshed. %.2f sec.", timer.getElapsedTime()));
