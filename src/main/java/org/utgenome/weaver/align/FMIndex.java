@@ -16,8 +16,8 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// CharacterCount.java
-// Since: 2011/02/10
+// FMIndex.java
+// Since: 2011/02/12
 //
 // $URL$ 
 // $Author$
@@ -27,42 +27,35 @@ package org.utgenome.weaver.align;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 
 /**
- * Character count <i>C[x]</i> is the number of symbols that are
- * lexicographically smaller than the symbol <i>x</i>. This class is used for
- * FM-index.
+ * 
  * 
  * @author leo
  * 
  */
-public class CharacterCount
+public class FMIndex
 {
-    private static int K = IUPAC.values().length;
-    private int[]      C = new int[K];
+    private final IUPACSequence        bwt;
+    private final OccurrenceCountTable O;
+    private final CharacterCount       C;
 
-    public CharacterCount(IUPACSequence seq) {
-
-        int[] count = new int[K];
-        for (int i = 0; i < K; ++i) {
-            count[i] = 0;
-        }
-
-        for (int i = 0; i < seq.size(); ++i) {
-            IUPAC code = seq.getIUPAC(i);
-            count[code.bitFlag]++;
-        }
-        // Decrement the character count for the sentinel since BWT based count contains one additional sentinel.   
-        count[IUPAC.None.bitFlag]--;
-
-        int sum = 1; // add 1 for $ (end of string)
-        for (int i = 0; i < K; ++i) {
-            C[i] = sum;
-            sum += count[i];
-        }
-
+    public FMIndex(IUPACSequence bwt, OccurrenceCountTable O, CharacterCount C) {
+        this.bwt = bwt;
+        this.O = O;
+        this.C = C;
     }
 
-    public int get(IUPAC code) {
-        return C[code.bitFlag];
+    public SuffixInterval backwardSearch(IUPAC ch, SuffixInterval current) {
+        int lowerBound = C.get(ch) + O.getOcc(ch, current.lowerBound - 1);
+        int upperBound = C.get(ch) + O.getOcc(ch, current.upperBound) - 1;
+        return new SuffixInterval(lowerBound, upperBound);
     }
 
+    public int inverseSA(int index) {
+        IUPAC c = bwt.getIUPAC(index);
+        return C.get(c) + O.getOcc(c, index);
+    }
+
+    public int size() {
+        return bwt.size();
+    }
 }

@@ -125,6 +125,10 @@ public class BWT implements Command
                 SequenceIndex index = new SequenceIndex(seqName, desc, sequenceSize, offset);
                 indexOut.leafObject("index", index);
                 _logger.info("\n" + SilkLens.toSilk("index", index));
+
+                // append a sentinel
+                encoder.append(IUPAC.None);
+
                 offset = encoder.size();
             }
             encoder.close();
@@ -140,13 +144,18 @@ public class BWT implements Command
         {
             IUPACSequence forwardSeq = new IUPACSequence(new File(iupacFileName));
             {
-
                 _logger.info("Reverse the sequence");
                 _logger.info("Reverse IUPAC file: " + reverseIupacFileName);
 
-                BufferedOutputStream revOut = new BufferedOutputStream(new FileOutputStream(reverseIupacFileName));
-                forwardSeq.reverse(revOut);
-                revOut.close();
+                IUPACSequenceWriter encoder = new IUPACSequenceWriter(new BufferedOutputStream(new FileOutputStream(
+                        reverseIupacFileName)));
+                // reverse IN[0..n-2] (excludes the sentinel)
+                for (int i = forwardSeq.size() - 2; i >= 0; --i) {
+                    encoder.append(forwardSeq.getIUPAC(i));
+                }
+                // append a sentinel.
+                encoder.append(IUPAC.None);
+                encoder.close();
             }
 
             {

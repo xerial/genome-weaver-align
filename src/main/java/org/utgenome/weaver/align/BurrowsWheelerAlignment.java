@@ -62,7 +62,7 @@ public class BurrowsWheelerAlignment implements Command
     @Argument(index = 0)
     private String fastaFilePrefix;
 
-    @Option(symbol = "L", description = "Save 1/L for occurrence count table (default = 256)")
+    @Option(symbol = "L", description = "Save occurrence count  (default = 256)")
     private int    L = 256;
 
     @Option(symbol = "q", description = "query sequence")
@@ -114,26 +114,9 @@ public class BurrowsWheelerAlignment implements Command
         return buf.toString();
     }
 
-    public static class SuffixInterval
-    {
-        public final int lowerBound;
-        public final int upperBound;
-
-        public SuffixInterval(int lowerBound, int upperBound) {
-
-            this.lowerBound = lowerBound;
-            this.upperBound = upperBound;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("[%,d, %,d]", lowerBound, upperBound);
-        }
-    }
-
     public static class AlignmentResult
     {
-        public SuffixInterval interval;
+        public SuffixInterval suffixInterval;
         public int            numMismatches = 0;
     }
 
@@ -170,7 +153,7 @@ public class BurrowsWheelerAlignment implements Command
 
             if (cursor < 0) {
                 AlignmentResult result = new AlignmentResult();
-                result.interval = si;
+                result.suffixInterval = si;
                 result.numMismatches = numMismatchesAllowed;
                 out.emit(result);
                 return;
