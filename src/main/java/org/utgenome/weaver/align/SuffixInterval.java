@@ -30,9 +30,12 @@ public class SuffixInterval
     public final int upperBound;
 
     public SuffixInterval(int lowerBound, int upperBound) {
-
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
+    }
+
+    public boolean isValidRange() {
+        return lowerBound < upperBound;
     }
 
     @Override
@@ -40,6 +43,3 @@ public class SuffixInterval
         return String.format("[%,d, %,d]", lowerBound, upperBound);
     }
 }
-
-
-

@@ -55,7 +55,7 @@ public class FMIndex
         return C.get(c) + O.getOcc(c, index);
     }
 
-    public int size() {
+    public int textSize() {
         return bwt.size();
     }
 }

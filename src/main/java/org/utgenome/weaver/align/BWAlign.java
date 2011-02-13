@@ -40,9 +40,9 @@ import org.xerial.util.opt.Option;
  * @author leo
  * 
  */
-public class BurrowsWheelerAlignment implements Command
+public class BWAlign implements Command
 {
-    private static Logger _logger = Logger.getLogger(BurrowsWheelerAlignment.class);
+    private static Logger _logger = Logger.getLogger(BWAlign.class);
 
     @Override
     public String name() {
@@ -93,7 +93,7 @@ public class BurrowsWheelerAlignment implements Command
 
         if (query != null) {
             _logger.info("query sequence: " + query);
-            FMIndexAlign aln = new FMIndexAlign(bwtF, occF, C, new Reporter<AlignmentResult>() {
+            FMIndexAlign aln = new FMIndexAlign(new FMIndex(bwtF, occF, C), new Reporter<AlignmentResult>() {
                 @Override
                 public void emit(AlignmentResult result) {
                     _logger.info(SilkLens.toSilk("alignment", result));
@@ -128,22 +128,17 @@ public class BurrowsWheelerAlignment implements Command
     public static class FMIndexAlign
     {
 
-        private final IUPACSequence             bwt;
-        private final OccurrenceCountTable      occ;
-        private final CharacterCount            C;
+        private final FMIndex                   fmIndex;
         private final Reporter<AlignmentResult> out;
 
-        public FMIndexAlign(IUPACSequence bwt, OccurrenceCountTable occ, CharacterCount C, Reporter<AlignmentResult> out) {
-            this.bwt = bwt;
-            this.occ = occ;
-            this.C = C;
+        public FMIndexAlign(FMIndex fmIndex, Reporter<AlignmentResult> out) {
+            this.fmIndex = fmIndex;
             this.out = out;
 
         }
 
         public void align(String seq) {
-
-            align(seq, seq.length() - 1, 0, new SuffixInterval(0, bwt.size() - 1));
+            align(seq, seq.length() - 1, 0, new SuffixInterval(0, fmIndex.textSize() - 1));
         }
 
         public void align(String seq, int cursor, int numMismatchesAllowed, SuffixInterval si) {
@@ -164,10 +159,8 @@ public class BurrowsWheelerAlignment implements Command
 
             IUPAC currentBase = IUPAC.encode(seq.charAt(cursor));
             for (IUPAC nextBase : new IUPAC[] { IUPAC.A, IUPAC.C, IUPAC.G, IUPAC.T }) {
-                int lowerBound = C.get(nextBase) + occ.getOcc(nextBase, si.lowerBound - 1);
-                int upperBound = C.get(nextBase) + occ.getOcc(nextBase, si.upperBound) - 1;
-                if (lowerBound < upperBound) {
-                    SuffixInterval next = new SuffixInterval(lowerBound, upperBound);
+                SuffixInterval next = fmIndex.backwardSearch(nextBase, si);
+                if (next.isValidRange()) {
                     // Search for insertion
                     align(seq, cursor, numMismatchesAllowed - 1, next);
 

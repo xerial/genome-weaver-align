@@ -36,24 +36,31 @@ package org.utgenome.weaver.align;
  */
 public class SparseSuffixArray
 {
-    private final int[]   sparseSA;
-    private final int     L;
-    private final FMIndex fmIndex;
+    private final int[] sparseSA;
+    private final int   L;
 
-    public SparseSuffixArray(int[] sparseSA, int L, FMIndex fmIndex) {
+    public SparseSuffixArray(int[] sparseSA, int L) {
         this.sparseSA = sparseSA;
-        this.fmIndex = fmIndex;
         this.L = L;
     }
 
-    public int get(int index) {
+    public static SparseSuffixArray buildFromSuffixArray(int[] SA, int L) {
+        int N = SA.length / L + 1;
+        int[] sparseSA = new int[N];
+        for (int i = 0; i < N; ++i) {
+            sparseSA[i] = SA[i * L];
+        }
+        return new SparseSuffixArray(sparseSA, L);
+    }
+
+    public int get(int index, FMIndex fmIndex) {
         int pos = index / L;
         int offset = index % L;
         if (offset == 0)
             return sparseSA[pos];
 
         int cursor = index;
-        final int N = fmIndex.size();
+        final int N = fmIndex.textSize();
         for (int j = 0; j < N; j++) {
             cursor = fmIndex.inverseSA(cursor);
             if (cursor % L == 0)
