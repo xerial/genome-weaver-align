@@ -24,7 +24,9 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.utgenome.weaver.align.IUPACSequence.IUPACBinaryInfo;
@@ -81,6 +83,14 @@ public class BWAlign implements Command
         IUPACSequence bwtF = new IUPACSequence(bwtForwardFile, N);
         IUPACSequence bwtR = new IUPACSequence(bwtReverseFile, N);
 
+        // loading sparse SA
+        File sparseForwardSAFile = new File(fastaFilePrefix + ".sa");
+        File sparseReverseSAFile = new File(fastaFilePrefix + ".rsa");
+        SparseSuffixArray saF = SparseSuffixArray.loadFrom(new BufferedInputStream(new FileInputStream(
+                sparseForwardSAFile)));
+        SparseSuffixArray saR = SparseSuffixArray.loadFrom(new BufferedInputStream(new FileInputStream(
+                sparseReverseSAFile)));
+
         //        _logger.info(Arrays.toString(bwtF.toArray()));
         //        _logger.info(Arrays.toString(bwtR.toArray()));
 
@@ -97,6 +107,7 @@ public class BWAlign implements Command
                 @Override
                 public void emit(AlignmentResult result) {
                     _logger.info(SilkLens.toSilk("alignment", result));
+
                 }
             });
 

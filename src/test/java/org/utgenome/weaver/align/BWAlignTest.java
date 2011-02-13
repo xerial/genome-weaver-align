@@ -33,7 +33,7 @@ import org.utgenome.util.TestHelper;
 import org.utgenome.weaver.GenomeWeaver;
 import org.xerial.util.FileType;
 
-public class BurrowsWheelerAlignmentTest
+public class BWAlignTest
 {
     File tmpDir;
 

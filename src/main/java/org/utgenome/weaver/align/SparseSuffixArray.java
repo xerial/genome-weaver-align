@@ -74,13 +74,19 @@ public class SparseSuffixArray
         out.flush();
     }
 
-    public SparseSuffixArray loadFrom(InputStream in) throws IOException {
-        final int L = readInt(in);
-        int sparseSA[] = new int[L];
-        for (int i = 0; i < L; ++i) {
-            sparseSA[0] = readInt(in);
+    public static SparseSuffixArray loadFrom(InputStream in) throws IOException {
+        try {
+            final int L = readInt(in);
+            int sparseSA[] = new int[L];
+            for (int i = 0; i < L; ++i) {
+                sparseSA[0] = readInt(in);
+            }
+            return new SparseSuffixArray(sparseSA, L);
         }
-        return new SparseSuffixArray(sparseSA, L);
+        finally {
+            if (in != null)
+                in.close();
+        }
     }
 
     public static SparseSuffixArray buildFromSuffixArray(int[] SA, int L) {
