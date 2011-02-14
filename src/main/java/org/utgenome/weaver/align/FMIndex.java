@@ -50,7 +50,13 @@ public class FMIndex
         return new SuffixInterval(lowerBound, upperBound);
     }
 
-    public int inverseSA(int index) {
+    /**
+     * Follow the suffix link using the equation SA(x) - 1 = C(x) + Occ(c, x-1)
+     * 
+     * @param index
+     * @return
+     */
+    public int suffixLink(int index) {
         if (index >= bwt.size() - 1) {
             return 0;
         }

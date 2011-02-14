@@ -112,15 +112,15 @@ public class SparseSuffixArray
 
         int cursor = index;
         final int N = fmIndex.textSize();
-        for (int j = 1; j <= Integer.MAX_VALUE; j++) {
-            cursor = fmIndex.inverseSA(cursor);
+        for (int j = 1; j <= L; j++) {
+            cursor = fmIndex.suffixLink(cursor);
             if (cursor == 0) {
                 return j - 1;
             }
             if (cursor % L == 0)
                 return sparseSA[cursor / L] + j;
         }
-        throw new IllegalStateException("cannot reach here");
+        throw new IllegalStateException(String.format("cannot reach here: get(index:%d)", index));
 
     }
 }
