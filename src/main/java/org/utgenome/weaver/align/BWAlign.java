@@ -27,6 +27,9 @@ package org.utgenome.weaver.align;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.PriorityQueue;
 
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
@@ -141,51 +144,146 @@ public class BWAlign implements Command
         public void emit(T result) throws Exception;
     }
 
+    public static class Gap
+    {
+        public int pos;
+    }
+
+    public static class AlignmentScoreConfig
+    {
+        public final int matchScore          = 1;
+        public final int mismatchPenalty     = 3;
+        public final int gapOpenPenalty      = 11;
+        public final int gapExtentionPenalty = 4;
+    }
+
+    public static class AlignmentState implements Comparable<AlignmentState>
+    {
+        public int            wordIndex;
+        public SuffixInterval suffixInterval;
+        public int            numMismatches;
+        public int            alignmentScore;
+        public List<Integer>  mismatchPosition;
+        public List<Integer>  gapPosition;
+
+        private AlignmentState(int wordIndex, SuffixInterval suffixInterval, int numMismatches, int alignmentScore,
+                List<Integer> mismatchPosition, List<Integer> gapPosition) {
+            this.wordIndex = wordIndex;
+            this.suffixInterval = suffixInterval;
+            this.numMismatches = numMismatches;
+            this.alignmentScore = alignmentScore;
+            this.mismatchPosition = mismatchPosition;
+            this.gapPosition = gapPosition;
+        }
+
+        public AlignmentState extendWithMatch(SuffixInterval next, AlignmentScoreConfig config) {
+            return new AlignmentState(this.wordIndex - 1, next, numMismatches, alignmentScore + config.matchScore,
+                    mismatchPosition, gapPosition);
+        }
+
+        public AlignmentState extendWithMisMatch(SuffixInterval next, AlignmentScoreConfig config) {
+            ArrayList<Integer> newMismatchPosition = new ArrayList<Integer>();
+            if (mismatchPosition != null)
+                newMismatchPosition.addAll(mismatchPosition);
+            newMismatchPosition.add(wordIndex + 1);
+            return new AlignmentState(this.wordIndex - 1, next, numMismatches + 1, alignmentScore
+                    - config.mismatchPenalty, newMismatchPosition, gapPosition);
+        }
+
+        public AlignmentState extendWithDeletion(AlignmentScoreConfig config) {
+            ArrayList<Integer> newGapPosition = new ArrayList<Integer>();
+            if (gapPosition != null)
+                newGapPosition.addAll(gapPosition);
+            newGapPosition.add(wordIndex + 1);
+            return new AlignmentState(this.wordIndex - 1, suffixInterval, numMismatches + 1, alignmentScore
+                    - config.gapExtentionPenalty, mismatchPosition, gapPosition);
+        }
+
+        public AlignmentState extendWithInsertion(AlignmentScoreConfig config) {
+            ArrayList<Integer> newGapPosition = new ArrayList<Integer>();
+            if (gapPosition != null)
+                newGapPosition.addAll(gapPosition);
+            // TODO distinguish indels
+            newGapPosition.add(wordIndex + 1);
+            return new AlignmentState(this.wordIndex - 1, suffixInterval, numMismatches + 1, alignmentScore
+                    - config.gapExtentionPenalty, mismatchPosition, gapPosition);
+        }
+
+        public static AlignmentState initialState(String seq, FMIndex fmIndex) {
+            return new AlignmentState(seq.length() - 1, new SuffixInterval(0, fmIndex.textSize() - 1), 0, 0, null, null);
+        }
+
+        @Override
+        public int compareTo(AlignmentState o) {
+            // Ascending order of the score
+            return o.alignmentScore - this.alignmentScore;
+        }
+
+    }
+
     public static class FMIndexAlign
     {
-        private final FMIndex                   fmIndex;
-        private final Reporter<AlignmentResult> out;
+        private final FMIndex                       fmIndex;
+        private final Reporter<AlignmentResult>     out;
+
+        private final PriorityQueue<AlignmentState> alignmentQueue       = new PriorityQueue<AlignmentState>();
+        private final int                           numMismatchesAllowed = 0;
+
+        private final AlignmentScoreConfig          config               = new AlignmentScoreConfig();
 
         public FMIndexAlign(FMIndex fmIndex, Reporter<AlignmentResult> out) {
             this.fmIndex = fmIndex;
             this.out = out;
-
         }
 
         public void align(String seq) throws Exception {
-            align(seq, seq.length() - 1, 0, new SuffixInterval(0, fmIndex.textSize() - 1));
+
+            alignmentQueue.add(AlignmentState.initialState(seq, fmIndex));
+            alignSeq(seq);
         }
 
-        public void align(String seq, int cursor, int numMismatchesAllowed, SuffixInterval si) throws Exception {
+        /**
+         * 
+         * @param seq
+         * @param cursor
+         * @param numMismatchesAllowed
+         * @param si
+         * @throws Exception
+         */
+        public void alignSeq(String seq) throws Exception {
 
-            if (numMismatchesAllowed < 0)
-                return;
+            while (!alignmentQueue.isEmpty()) {
 
-            if (cursor < 0) {
-                AlignmentResult result = new AlignmentResult();
-                result.suffixInterval = si;
-                result.numMismatches = numMismatchesAllowed;
-                out.emit(result);
-                return;
-            }
+                AlignmentState current = alignmentQueue.poll();
+                if (current.numMismatches > numMismatchesAllowed) {
+                    continue;
+                }
 
-            // Search for deletion
-            align(seq, cursor - 1, numMismatchesAllowed - 1, si);
+                if (current.wordIndex < 0) {
+                    AlignmentResult result = new AlignmentResult();
+                    result.suffixInterval = current.suffixInterval;
+                    result.numMismatches = current.numMismatches;
+                    out.emit(result);
+                    continue;
+                }
 
-            IUPAC currentBase = IUPAC.encode(seq.charAt(cursor));
-            for (IUPAC nextBase : new IUPAC[] { IUPAC.A, IUPAC.C, IUPAC.G, IUPAC.T }) {
-                SuffixInterval next = fmIndex.backwardSearch(nextBase, si);
-                if (next.isValidRange()) {
-                    // Search for insertion
-                    align(seq, cursor, numMismatchesAllowed - 1, next);
-
-                    if ((nextBase.bitFlag & currentBase.bitFlag) != 0) {
-                        // match
-                        align(seq, cursor - 1, numMismatchesAllowed, next);
-                    }
-                    else {
-                        // mismatch
-                        align(seq, cursor - 1, numMismatchesAllowed - 1, next);
+                // Search for deletion
+                alignmentQueue.add(current.extendWithDeletion(config));
+                //align(seq, cursor - 1, numMismatchesAllowed - 1, si);
+                IUPAC currentBase = IUPAC.encode(seq.charAt(current.wordIndex));
+                for (IUPAC nextBase : new IUPAC[] { IUPAC.A, IUPAC.C, IUPAC.G, IUPAC.T }) {
+                    SuffixInterval next = fmIndex.backwardSearch(nextBase, current.suffixInterval);
+                    if (next.isValidRange()) {
+                        // Search for insertion
+                        alignmentQueue.add(current.extendWithInsertion(config));
+                        if ((nextBase.bitFlag & currentBase.bitFlag) != 0) {
+                            // match
+                            alignmentQueue.add(current.extendWithMatch(next, config));
+                        }
+                        else {
+                            // mismatch
+                            alignmentQueue.add(current.extendWithMisMatch(next, config));
+                        }
                     }
                 }
             }
