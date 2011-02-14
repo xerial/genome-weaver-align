@@ -41,10 +41,12 @@ import java.io.OutputStream;
 public class SparseSuffixArray
 {
     private final int[] sparseSA;
+    private final int   N;
     private final int   L;
 
-    public SparseSuffixArray(int[] sparseSA, int L) {
+    private SparseSuffixArray(int[] sparseSA, int N, int L) {
         this.sparseSA = sparseSA;
+        this.N = N;
         this.L = L;
     }
 
@@ -67,7 +69,9 @@ public class SparseSuffixArray
     }
 
     public void saveTo(OutputStream out) throws IOException {
+        writeInt(N, out);
         writeInt(L, out);
+        writeInt(sparseSA.length, out);
         for (int i = 0; i < sparseSA.length; ++i) {
             writeInt(sparseSA[i], out);
         }
@@ -76,12 +80,14 @@ public class SparseSuffixArray
 
     public static SparseSuffixArray loadFrom(InputStream in) throws IOException {
         try {
+            final int N = readInt(in);
             final int L = readInt(in);
-            int sparseSA[] = new int[L];
-            for (int i = 0; i < L; ++i) {
+            final int sparseSALength = readInt(in);
+            int sparseSA[] = new int[sparseSALength];
+            for (int i = 0; i < sparseSA.length; ++i) {
                 sparseSA[0] = readInt(in);
             }
-            return new SparseSuffixArray(sparseSA, L);
+            return new SparseSuffixArray(sparseSA, N, L);
         }
         finally {
             if (in != null)
@@ -90,12 +96,12 @@ public class SparseSuffixArray
     }
 
     public static SparseSuffixArray buildFromSuffixArray(int[] SA, int L) {
-        int N = SA.length / L + 1;
-        int[] sparseSA = new int[N];
-        for (int i = 0; i < N; ++i) {
+        int sparseSA_length = SA.length / L + 1;
+        int[] sparseSA = new int[sparseSA_length];
+        for (int i = 0; i < sparseSA_length; ++i) {
             sparseSA[i] = SA[i * L];
         }
-        return new SparseSuffixArray(sparseSA, L);
+        return new SparseSuffixArray(sparseSA, SA.length, L);
     }
 
     public int get(int index, FMIndex fmIndex) {
@@ -106,8 +112,11 @@ public class SparseSuffixArray
 
         int cursor = index;
         final int N = fmIndex.textSize();
-        for (int j = 0; j < N; j++) {
+        for (int j = 1; j <= Integer.MAX_VALUE; j++) {
             cursor = fmIndex.inverseSA(cursor);
+            if (cursor == 0) {
+                return j - 1;
+            }
             if (cursor % L == 0)
                 return sparseSA[cursor / L] + j;
         }

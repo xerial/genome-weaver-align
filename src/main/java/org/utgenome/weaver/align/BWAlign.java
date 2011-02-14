@@ -64,7 +64,7 @@ public class BWAlign implements Command
     @Argument(index = 0)
     private String fastaFilePrefix;
 
-    @Option(symbol = "L", description = "Save occurrence count  (default = 256)")
+    @Option(symbol = "L", description = "1/L of the Occ table will be precomputed. (default L = 256)")
     private int    L = 256;
 
     @Option(symbol = "q", description = "query sequence")
@@ -77,22 +77,19 @@ public class BWAlign implements Command
         final int N = index.totalSize;
         final int K = IUPAC.values().length;
 
-        // loading BWT sequences
+        // Load BWT sequences
         File bwtForwardFile = new File(fastaFilePrefix + ".bwt");
         File bwtReverseFile = new File(fastaFilePrefix + ".rbwt");
         IUPACSequence bwtF = new IUPACSequence(bwtForwardFile, N);
         IUPACSequence bwtR = new IUPACSequence(bwtReverseFile, N);
 
-        // loading sparse SA
+        // Load sparse suffix arrays
         File sparseForwardSAFile = new File(fastaFilePrefix + ".sa");
         File sparseReverseSAFile = new File(fastaFilePrefix + ".rsa");
-        SparseSuffixArray saF = SparseSuffixArray.loadFrom(new BufferedInputStream(new FileInputStream(
+        final SparseSuffixArray saF = SparseSuffixArray.loadFrom(new BufferedInputStream(new FileInputStream(
                 sparseForwardSAFile)));
-        SparseSuffixArray saR = SparseSuffixArray.loadFrom(new BufferedInputStream(new FileInputStream(
+        final SparseSuffixArray saR = SparseSuffixArray.loadFrom(new BufferedInputStream(new FileInputStream(
                 sparseReverseSAFile)));
-
-        //        _logger.info(Arrays.toString(bwtF.toArray()));
-        //        _logger.info(Arrays.toString(bwtR.toArray()));
 
         // Compute the occurrence tables
         OccurrenceCountTable occF = new OccurrenceCountTable(bwtF, L);
@@ -103,11 +100,15 @@ public class BWAlign implements Command
 
         if (query != null) {
             _logger.info("query sequence: " + query);
-            FMIndexAlign aln = new FMIndexAlign(new FMIndex(bwtF, occF, C), new Reporter<AlignmentResult>() {
+            final FMIndex fmIndex = new FMIndex(bwtF, occF, C);
+            FMIndexAlign aln = new FMIndexAlign(fmIndex, new Reporter<AlignmentResult>() {
                 @Override
                 public void emit(AlignmentResult result) {
                     _logger.info(SilkLens.toSilk("alignment", result));
-
+                    for (int i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
+                        int pos = saF.get(i, fmIndex);
+                        _logger.info(" start: " + pos);
+                    }
                 }
             });
 
@@ -138,7 +139,6 @@ public class BWAlign implements Command
 
     public static class FMIndexAlign
     {
-
         private final FMIndex                   fmIndex;
         private final Reporter<AlignmentResult> out;
 

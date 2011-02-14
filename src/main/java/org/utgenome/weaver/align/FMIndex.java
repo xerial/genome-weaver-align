@@ -51,8 +51,11 @@ public class FMIndex
     }
 
     public int inverseSA(int index) {
+        if (index >= bwt.size() - 1) {
+            return 0;
+        }
         IUPAC c = bwt.getIUPAC(index);
-        return C.get(c) + O.getOcc(c, index);
+        return C.get(c) + O.getOcc(c, index - 1);
     }
 
     public int textSize() {
