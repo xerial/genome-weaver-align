@@ -45,6 +45,7 @@ public class FMIndex
     }
 
     public SuffixInterval backwardSearch(IUPAC ch, SuffixInterval current) {
+        // Occ is the rank(ch, index). 
         long lowerBound = C.get(ch) + O.getOcc(ch, current.lowerBound - 1);
         long upperBound = C.get(ch) + O.getOcc(ch, current.upperBound) - 1;
         return new SuffixInterval(lowerBound, upperBound);
