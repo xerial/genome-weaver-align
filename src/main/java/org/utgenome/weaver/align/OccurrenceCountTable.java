@@ -89,11 +89,15 @@ public class OccurrenceCountTable
      * @param index
      * @return
      */
-    public int getOcc(IUPAC code, int index) {
-        int blockPos = index / W;
-        int occ = blockPos <= 0 ? 0 : occTable.get(code.bitFlag)[blockPos - 1];
-        final int upperLimit = Math.min(index, seq.size() - 1);
-        for (int i = blockPos * W; i <= upperLimit; i++) {
+    public int getOcc(IUPAC code, long index) {
+        // TODO index / W must be smaller than Integer.MIN 
+        long blockPos = index / W;
+        if (blockPos > Integer.MAX_VALUE) {
+            throw new IllegalStateException("Occ table size cannot exceed 2^31-1");
+        }
+        int occ = blockPos <= 0 ? 0 : occTable.get(code.bitFlag)[(int) (blockPos - 1)];
+        final long upperLimit = Math.min(index, seq.size() - 1);
+        for (int i = (int) blockPos * W; i <= upperLimit; i++) {
             if (seq.getIUPAC(i) == code) {
                 occ++;
             }

@@ -48,9 +48,9 @@ public class IUPACSequence implements BaseArray
 
     private SequenceBoundary binaryInfo;
     private byte[]           seq;
-    private int              numBases;
+    private long             numBases;
 
-    public IUPACSequence(File iupacFile, int numBases) throws UTGBException {
+    public IUPACSequence(File iupacFile, long numBases) throws UTGBException {
         initSeq(numBases, iupacFile);
     }
 
@@ -65,9 +65,9 @@ public class IUPACSequence implements BaseArray
         initSeq(binaryInfo.totalSize, iupacFile);
     }
 
-    private void initSeq(int numBases, File iupacFile) throws UTGBException {
+    private void initSeq(long numBases, File iupacFile) throws UTGBException {
         this.numBases = numBases;
-        int byteSize = (numBases / 2) + (numBases & 0x01);
+        int byteSize = (int) ((numBases / 2) + (numBases & 0x01));
         this.seq = new byte[byteSize];
         try {
 
@@ -87,11 +87,12 @@ public class IUPACSequence implements BaseArray
     }
 
     public int size() {
-        return numBases;
+        // TODO fix for more than 2GB size
+        return (int) numBases;
     }
 
-    public IUPAC getIUPAC(int index) {
-        byte code = (byte) ((seq[index >> 1] >>> (1 - (index & 1)) * 4) & 0x0F);
+    public IUPAC getIUPAC(long index) {
+        byte code = (byte) ((seq[(int) (index >> 1)] >>> (1 - (index & 1)) * 4) & 0x0F);
         return IUPAC.decode(code);
     }
 
@@ -102,12 +103,18 @@ public class IUPACSequence implements BaseArray
 
     }
 
-    public IUPAC[] toArray() {
-        IUPAC[] result = new IUPAC[size()];
-        for (int i = 0; i < result.length; ++i) {
-            result[i] = getIUPAC(i);
+    @Override
+    public String toString() {
+        StringBuilder b = new StringBuilder();
+        b.append("[");
+        for (int i = 0; i < numBases; ++i) {
+            if (i != 0)
+                b.append(", ");
+            IUPAC base = getIUPAC(i);
+            b.append(base.toString());
         }
-        return result;
+        b.append("]");
+        return b.toString();
     }
 
     public void reverse(OutputStream out) throws IOException {

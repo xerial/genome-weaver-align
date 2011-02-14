@@ -104,21 +104,26 @@ public class SparseSuffixArray
         return new SparseSuffixArray(sparseSA, SA.length, L);
     }
 
-    public int get(int index, FMIndex fmIndex) {
-        int pos = index / L;
-        int offset = index % L;
-        if (offset == 0)
-            return sparseSA[pos];
+    public long get(long index, FMIndex fmIndex) {
+        long pos = index / L;
+        long offset = index % L;
 
-        int cursor = index;
-        final int N = fmIndex.textSize();
-        for (int j = 1; j <= N; j++) {
+        if (pos > Integer.MAX_VALUE) {
+            throw new ArrayIndexOutOfBoundsException("index: " + index);
+        }
+
+        if (offset == 0)
+            return sparseSA[(int) pos];
+
+        long cursor = index;
+        final long N = fmIndex.textSize();
+        for (long j = 1; j <= N; j++) {
             cursor = fmIndex.suffixLink(cursor);
             if (cursor == 0) {
                 return j - 1;
             }
             if (cursor % L == 0)
-                return sparseSA[cursor / L] + j;
+                return sparseSA[(int) cursor / L] + j;
         }
         throw new IllegalStateException(String.format("cannot reach here: get(index:%d)", index));
 

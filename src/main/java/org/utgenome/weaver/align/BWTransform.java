@@ -150,7 +150,7 @@ public class BWTransform implements Command
                 IUPACSequenceWriter encoder = new IUPACSequenceWriter(new BufferedOutputStream(new FileOutputStream(
                         reverseIupacFileName)));
                 // reverse IN[0..n-2] (excludes the sentinel)
-                for (int i = forwardSeq.size() - 2; i >= 0; --i) {
+                for (long i = forwardSeq.size() - 2; i >= 0; --i) {
                     encoder.append(forwardSeq.getIUPAC(i));
                 }
                 // append a sentinel.
@@ -181,7 +181,8 @@ public class BWTransform implements Command
     public static void buildSuffixArray(IUPACSequence seq, File suffixArrayFile, File bwtFile) throws IOException {
 
         StopWatch timer = new StopWatch();
-        int[] SA = new int[seq.size()];
+        // TODO to make applicable more than 2GB sequence
+        int[] SA = new int[(int) seq.size()];
         {
             SAIS.suffixsort(seq, SA, 16);
             _logger.info("Sparse SA file: " + suffixArrayFile);
@@ -198,7 +199,7 @@ public class BWTransform implements Command
             IUPAC[] bwt = bwt(seq, SA);
             if (_logger.isDebugEnabled()) {
                 _logger.debug("SA : " + Arrays.toString(SA));
-                _logger.debug("IN : " + Arrays.toString(seq.toArray()));
+                _logger.debug("IN : " + seq.toString());
                 _logger.debug("BWT: " + Arrays.toString(bwt));
             }
 

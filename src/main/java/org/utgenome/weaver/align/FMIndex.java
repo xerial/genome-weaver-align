@@ -45,8 +45,8 @@ public class FMIndex
     }
 
     public SuffixInterval backwardSearch(IUPAC ch, SuffixInterval current) {
-        int lowerBound = C.get(ch) + O.getOcc(ch, current.lowerBound - 1);
-        int upperBound = C.get(ch) + O.getOcc(ch, current.upperBound) - 1;
+        long lowerBound = C.get(ch) + O.getOcc(ch, current.lowerBound - 1);
+        long upperBound = C.get(ch) + O.getOcc(ch, current.upperBound) - 1;
         return new SuffixInterval(lowerBound, upperBound);
     }
 
@@ -57,7 +57,7 @@ public class FMIndex
      *            index on the suffix array
      * @return index p on the suffix array that satisfies SA[p] = SA[x] - 1.
      */
-    public int suffixLink(int index) {
+    public long suffixLink(long index) {
         if (index >= bwt.size() - 1) { // If the index reaches the sentinel 
             return 0; // Return the smallest SA index
         }
@@ -65,7 +65,7 @@ public class FMIndex
         return C.get(c) + O.getOcc(c, index - 1);
     }
 
-    public int textSize() {
+    public long textSize() {
         return bwt.size();
     }
 }

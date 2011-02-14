@@ -26,10 +26,10 @@ package org.utgenome.weaver.align;
 
 public class SuffixInterval
 {
-    public final int lowerBound;
-    public final int upperBound;
+    public final long lowerBound;
+    public final long upperBound;
 
-    public SuffixInterval(int lowerBound, int upperBound) {
+    public SuffixInterval(long lowerBound, long upperBound) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
     }

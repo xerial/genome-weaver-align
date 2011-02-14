@@ -111,9 +111,9 @@ public class BWAlign implements Command
                 @Override
                 public void emit(AlignmentState result) throws Exception {
                     _logger.info(SilkLens.toSilk("alignment", result));
-                    for (int i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
-                        int pos = saF.get(i, fmIndex);
-                        PosOnGenome loc = boundary.translate(pos);
+                    for (long i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
+                        long pos = saF.get(i, fmIndex);
+                        PosOnGenome loc = boundary.translate(pos, false);
                         _logger.info(SilkLens.toSilk("loc", loc));
                     }
                 }
@@ -312,12 +312,6 @@ public class BWAlign implements Command
             this.out = out;
         }
 
-        public void align(String seq) throws Exception {
-
-            alignmentQueue.add(AlignmentState.initialState(seq, fmIndex));
-            alignSeq(seq);
-        }
-
         /**
          * 
          * @param seq
@@ -326,7 +320,9 @@ public class BWAlign implements Command
          * @param si
          * @throws Exception
          */
-        public void alignSeq(String seq) throws Exception {
+        public void align(String seq) throws Exception {
+
+            alignmentQueue.add(AlignmentState.initialState(seq, fmIndex));
 
             while (!alignmentQueue.isEmpty()) {
 
