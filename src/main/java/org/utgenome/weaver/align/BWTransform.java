@@ -37,7 +37,7 @@ import org.utgenome.UTGBException;
 import org.utgenome.format.fasta.CompactFASTA;
 import org.utgenome.format.fasta.FASTAPullParser;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
-import org.utgenome.weaver.align.IUPACSequence.SequenceIndex;
+import org.utgenome.weaver.align.SequenceBoundary.SequenceIndex;
 import org.xerial.lens.SilkLens;
 import org.xerial.silk.SilkWriter;
 import org.xerial.util.FileType;
@@ -184,8 +184,8 @@ public class BWTransform implements Command
         int[] SA = new int[seq.size()];
         {
             SAIS.suffixsort(seq, SA, 16);
-            _logger.info("SA file: " + suffixArrayFile);
-            SparseSuffixArray sparseSA = SparseSuffixArray.buildFromSuffixArray(SA, 32);
+            _logger.info("Sparse SA file: " + suffixArrayFile);
+            SparseSuffixArray sparseSA = SparseSuffixArray.buildFromSuffixArray(SA, 16);
             BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(suffixArrayFile));
             sparseSA.saveTo(out);
             out.close();

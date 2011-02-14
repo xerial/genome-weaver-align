@@ -24,19 +24,15 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.List;
 
 import org.utgenome.UTGBErrorCode;
 import org.utgenome.UTGBException;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.utgenome.weaver.align.SAIS.BaseArray;
-import org.xerial.lens.SilkLens;
 import org.xerial.util.FileType;
 import org.xerial.util.log.Logger;
 
@@ -48,54 +44,11 @@ import org.xerial.util.log.Logger;
  */
 public class IUPACSequence implements BaseArray
 {
-    private static Logger _logger = Logger.getLogger(IUPACSequence.class);
+    private static Logger    _logger = Logger.getLogger(IUPACSequence.class);
 
-    public static class SequenceIndex
-    {
-        public String name;
-        public String desc;
-        public long   length;
-        public long   offset;
-
-        public SequenceIndex(String name, String desc, long length, long offset) {
-            this.name = name;
-            this.desc = desc;
-            this.length = length;
-            this.offset = offset;
-        }
-    }
-
-    public static class IUPACBinaryInfo
-    {
-        public List<SequenceIndex> index;
-        public int                 totalSize;
-
-        public static File getFileName(String prefix) {
-            return new File(prefix + ".i.silk");
-        }
-
-        public static IUPACBinaryInfo loadSilk(File silkFile) throws UTGBException {
-            BufferedReader input = null;
-            try {
-                try {
-                    input = new BufferedReader(new FileReader(silkFile));
-                    return SilkLens.loadSilk(IUPACBinaryInfo.class, input);
-                }
-                finally {
-                    if (input != null)
-                        input.close();
-                }
-            }
-            catch (Exception e) {
-                throw UTGBException.convert(e);
-            }
-
-        }
-    }
-
-    private IUPACBinaryInfo binaryInfo;
-    private byte[]          seq;
-    private int             numBases;
+    private SequenceBoundary binaryInfo;
+    private byte[]           seq;
+    private int              numBases;
 
     public IUPACSequence(File iupacFile, int numBases) throws UTGBException {
         initSeq(numBases, iupacFile);
@@ -103,8 +56,8 @@ public class IUPACSequence implements BaseArray
 
     public IUPACSequence(File iupacFile) throws UTGBException {
 
-        File silkIndexFile = IUPACBinaryInfo.getFileName(FileType.removeFileExt(iupacFile.getPath()));
-        binaryInfo = IUPACBinaryInfo.loadSilk(silkIndexFile);
+        File silkIndexFile = SequenceBoundary.getFileName(FileType.removeFileExt(iupacFile.getPath()));
+        binaryInfo = SequenceBoundary.loadSilk(silkIndexFile);
 
         if (binaryInfo == null)
             throw new UTGBException(UTGBErrorCode.INVALID_INPUT, "failed to load index file");

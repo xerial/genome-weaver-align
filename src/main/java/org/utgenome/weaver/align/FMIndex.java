@@ -27,7 +27,7 @@ package org.utgenome.weaver.align;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 
 /**
- * 
+ * Text-search index based on BWT string
  * 
  * @author leo
  * 
@@ -51,14 +51,15 @@ public class FMIndex
     }
 
     /**
-     * Follow the suffix link using the equation SA(x) - 1 = C(x) + Occ(c, x-1)
+     * Follow the suffix link using the equation SA[x] - 1 = C(x) + Occ(c, x-1).
      * 
      * @param index
-     * @return
+     *            index on the suffix array
+     * @return index p on the suffix array that satisfies SA[p] = SA[x] - 1.
      */
     public int suffixLink(int index) {
-        if (index >= bwt.size() - 1) {
-            return 0;
+        if (index >= bwt.size() - 1) { // If the index reaches the sentinel 
+            return 0; // Return the smallest SA index
         }
         IUPAC c = bwt.getIUPAC(index);
         return C.get(c) + O.getOcc(c, index - 1);

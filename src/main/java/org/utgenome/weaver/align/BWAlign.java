@@ -29,7 +29,7 @@ import java.io.File;
 import java.io.FileInputStream;
 
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
-import org.utgenome.weaver.align.IUPACSequence.IUPACBinaryInfo;
+import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
@@ -73,7 +73,7 @@ public class BWAlign implements Command
     @Override
     public void execute(String[] args) throws Exception {
 
-        IUPACBinaryInfo index = IUPACBinaryInfo.loadSilk(IUPACBinaryInfo.getFileName(fastaFilePrefix));
+        SequenceBoundary index = SequenceBoundary.loadSilk(SequenceBoundary.getFileName(fastaFilePrefix));
         final int N = index.totalSize;
         final int K = IUPAC.values().length;
 
@@ -82,6 +82,9 @@ public class BWAlign implements Command
         File bwtReverseFile = new File(fastaFilePrefix + ".rbwt");
         IUPACSequence bwtF = new IUPACSequence(bwtForwardFile, N);
         IUPACSequence bwtR = new IUPACSequence(bwtReverseFile, N);
+
+        // Load the boundary information of the concatenated chr sequences 
+        final SequenceBoundary boundary = SequenceBoundary.loadSilk(SequenceBoundary.getFileName(fastaFilePrefix));
 
         // Load sparse suffix arrays
         File sparseForwardSAFile = new File(fastaFilePrefix + ".sa");
@@ -103,11 +106,12 @@ public class BWAlign implements Command
             final FMIndex fmIndex = new FMIndex(bwtF, occF, C);
             FMIndexAlign aln = new FMIndexAlign(fmIndex, new Reporter<AlignmentResult>() {
                 @Override
-                public void emit(AlignmentResult result) {
+                public void emit(AlignmentResult result) throws Exception {
                     _logger.info(SilkLens.toSilk("alignment", result));
                     for (int i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
                         int pos = saF.get(i, fmIndex);
-                        _logger.info(" start: " + pos);
+                        PosOnGenome loc = boundary.translate(pos);
+                        _logger.info(SilkLens.toSilk("loc", loc));
                     }
                 }
             });
@@ -134,7 +138,7 @@ public class BWAlign implements Command
 
     public static interface Reporter<T>
     {
-        public void emit(T result);
+        public void emit(T result) throws Exception;
     }
 
     public static class FMIndexAlign
@@ -148,11 +152,11 @@ public class BWAlign implements Command
 
         }
 
-        public void align(String seq) {
+        public void align(String seq) throws Exception {
             align(seq, seq.length() - 1, 0, new SuffixInterval(0, fmIndex.textSize() - 1));
         }
 
-        public void align(String seq, int cursor, int numMismatchesAllowed, SuffixInterval si) {
+        public void align(String seq, int cursor, int numMismatchesAllowed, SuffixInterval si) throws Exception {
 
             if (numMismatchesAllowed < 0)
                 return;

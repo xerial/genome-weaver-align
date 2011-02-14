@@ -85,7 +85,7 @@ public class SparseSuffixArray
             final int sparseSALength = readInt(in);
             int sparseSA[] = new int[sparseSALength];
             for (int i = 0; i < sparseSA.length; ++i) {
-                sparseSA[0] = readInt(in);
+                sparseSA[i] = readInt(in);
             }
             return new SparseSuffixArray(sparseSA, N, L);
         }
@@ -96,7 +96,7 @@ public class SparseSuffixArray
     }
 
     public static SparseSuffixArray buildFromSuffixArray(int[] SA, int L) {
-        int sparseSA_length = SA.length / L + 1;
+        int sparseSA_length = (SA.length + L - 1) / L;
         int[] sparseSA = new int[sparseSA_length];
         for (int i = 0; i < sparseSA_length; ++i) {
             sparseSA[i] = SA[i * L];
@@ -112,7 +112,7 @@ public class SparseSuffixArray
 
         int cursor = index;
         final int N = fmIndex.textSize();
-        for (int j = 1; j <= L; j++) {
+        for (int j = 1; j <= N; j++) {
             cursor = fmIndex.suffixLink(cursor);
             if (cursor == 0) {
                 return j - 1;
