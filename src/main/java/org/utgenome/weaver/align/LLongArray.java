@@ -58,18 +58,28 @@ public class LLongArray
         return size;
     }
 
-    public long get(long index) {
-        int container = (int) (index >> 31);
-        int remainder = (int) index & 0x7FFFFFFF;
+    private long[] container(long index) {
+        return array.get((int) (index >> 31));
+    }
 
-        return array.get(container)[remainder];
+    private static int offset(long index) {
+        return (int) index & 0x7FFFFFFF;
+    }
+
+    public long get(long index) {
+        return container(index)[offset(index)];
     }
 
     public void set(long index, long value) {
-        int container = (int) (index >> 31);
-        int remainder = (int) index & 0x7FFFFFFF;
+        container(index)[offset(index)] = value;
+    }
 
-        array.get(container)[remainder] = value;
+    public void setOR(long index, long value) {
+        container(index)[offset(index)] |= value;
+    }
+
+    public void setAND(long index, long value) {
+        container(index)[offset(index)] &= value;
     }
 
     public void fill(long value) {

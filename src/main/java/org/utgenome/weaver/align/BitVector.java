@@ -81,14 +81,14 @@ public class BitVector
     public void set(long index) {
         long blockPos = index / NBITS_IN_LONG;
         long offset = index % NBITS_IN_LONG;
-        block.set(blockPos, (block.get(blockPos) | (1L << offset)));
+        block.setOR(blockPos, 1L << offset);
     }
 
     public void reset(long index) {
         long blockPos = index / NBITS_IN_LONG;
         long offset = index % NBITS_IN_LONG;
         long mask = 1L << offset;
-        block.set(blockPos, (block.get(blockPos) & ~mask));
+        block.setAND(blockPos, ~mask);
     }
 
     public long rank(boolean c, long index) {
