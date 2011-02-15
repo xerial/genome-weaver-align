@@ -34,13 +34,10 @@ import org.utgenome.gwt.utgb.client.bio.IUPAC;
  */
 public class FMIndex
 {
-    private final IUPACSequence  bwt;
     private final WaveletArray   W;
-    //private final OccurrenceCountTable O;
     private final CharacterCount C;
 
-    public FMIndex(IUPACSequence bwt, WaveletArray W, CharacterCount C) {
-        this.bwt = bwt;
+    public FMIndex(WaveletArray W, CharacterCount C) {
         this.W = W;
         this.C = C;
     }
@@ -63,15 +60,15 @@ public class FMIndex
      * @return index p in the suffix array that satisfies SA[p] = SA[x] - 1.
      */
     public long suffixLink(long index) {
-        if (index >= bwt.size() - 1) { // If the index reaches the sentinel 
+        if (index >= W.textSize() - 1) { // If the index reaches the sentinel 
             return 0; // Return the smallest SA index
         }
-        IUPAC c = bwt.getIUPAC(index);
+        IUPAC c = IUPAC.decode((byte) W.lookup(index));
         //        return C.get(c) + O.getOcc(c, index - 1);
         return C.get(c) + W.rank(c.bitFlag, index);
     }
 
     public long textSize() {
-        return bwt.size();
+        return W.textSize();
     }
 }

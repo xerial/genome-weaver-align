@@ -32,7 +32,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class WaveletArray
+public class WaveletArray implements LSeq
 {
     private ArrayList<BitVector> bitVector       = new ArrayList<BitVector>();
     private BitVector            occ;
@@ -57,6 +57,10 @@ public class WaveletArray
         this.size = size;
         this.bitVector = bitVector;
         this.occ = occ;
+    }
+
+    public long textSize() {
+        return size;
     }
 
     public static long log2(long x) {
@@ -193,6 +197,30 @@ public class WaveletArray
         }
         long rank = pos - beg_node;
         return new Rank(rank, rankLessThan, rankMoreThan);
+    }
+
+    public long lookup(long pos) {
+        if (pos >= size)
+            return 0;
+        long st = 0;
+        long en = size;
+        long c = 0;
+        for (int i = 0; i < bitVector.size(); ++i) {
+            BitVector ba = bitVector.get(i);
+            long boundary = st + ba.rank(false, en) - ba.rank(false, st);
+            boolean bit = ba.get(st + pos);
+            c <<= 1;
+            if (bit) {
+                pos = ba.rank(true, st + pos) - ba.rank(true, st);
+                st = boundary;
+                c |= 1L;
+            }
+            else {
+                pos = ba.rank(false, st + pos) - ba.rank(false, st);
+                en = boundary;
+            }
+        }
+        return c;
     }
 
     public DataOutputStream saveTo(DataOutputStream out) throws IOException {

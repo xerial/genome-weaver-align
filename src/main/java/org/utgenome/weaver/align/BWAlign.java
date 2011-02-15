@@ -80,12 +80,6 @@ public class BWAlign implements Command
         final int N = index.totalSize;
         final int K = IUPAC.values().length;
 
-        // Load BWT sequences
-        File bwtForwardFile = new File(fastaFilePrefix + ".bwt");
-        File bwtReverseFile = new File(fastaFilePrefix + ".rbwt");
-        IUPACSequence bwtF = new IUPACSequence(bwtForwardFile, N);
-        IUPACSequence bwtR = new IUPACSequence(bwtReverseFile, N);
-
         // Load the boundary information of the concatenated chr sequences 
         final SequenceBoundary boundary = SequenceBoundary.loadSilk(SequenceBoundary.getFileName(fastaFilePrefix));
 
@@ -97,10 +91,6 @@ public class BWAlign implements Command
         final SparseSuffixArray saR = SparseSuffixArray.loadFrom(new BufferedInputStream(new FileInputStream(
                 sparseReverseSAFile)));
 
-        // Compute the occurrence tables
-        // OccurrenceCountTable occF = new OccurrenceCountTable(bwtF, L);
-        // OccurrenceCountTable occR = new OccurrenceCountTable(bwtR, L);
-
         // Load Wavelet arrays
         _logger.info("Loading a Wavelet array of the forward BWT");
         WaveletArray wvF = WaveletArray.loadFrom(new File(fastaFilePrefix + ".wv"));
@@ -108,11 +98,11 @@ public class BWAlign implements Command
         WaveletArray wvR = WaveletArray.loadFrom(new File(fastaFilePrefix + ".rwv"));
 
         // Count the character frequencies 
-        CharacterCount C = new CharacterCount(bwtF);
+        CharacterCount C = new CharacterCount(wvF);
 
         if (query != null) {
             _logger.info("query sequence: " + query);
-            final FMIndex fmIndex = new FMIndex(bwtF, wvF, C);
+            final FMIndex fmIndex = new FMIndex(wvF, C);
             FMIndexAlign aln = new FMIndexAlign(fmIndex, new Reporter<AlignmentState>() {
                 @Override
                 public void emit(AlignmentState result) throws Exception {

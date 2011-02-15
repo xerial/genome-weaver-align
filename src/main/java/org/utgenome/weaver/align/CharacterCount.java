@@ -39,15 +39,15 @@ public class CharacterCount
     private static int K = IUPAC.values().length;
     private int[]      C = new int[K];
 
-    public CharacterCount(IUPACSequence seq) {
+    public CharacterCount(LSeq seq) {
 
         int[] count = new int[K];
         for (int i = 0; i < K; ++i) {
             count[i] = 0;
         }
 
-        for (int i = 0; i < seq.size(); ++i) {
-            IUPAC code = seq.getIUPAC(i);
+        for (long i = 0; i < seq.textSize(); ++i) {
+            IUPAC code = IUPAC.decode((byte) seq.lookup(i));
             count[code.bitFlag]++;
         }
         // Decrement the character count for the sentinel since BWT based count contains one additional sentinel.   
