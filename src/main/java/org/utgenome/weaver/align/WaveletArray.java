@@ -251,11 +251,9 @@ public class WaveletArray implements LSeq
         ArrayList<BitVector> bitVector = new ArrayList<BitVector>((int) vecSize);
         for (int i = 0; i < vecSize; ++i) {
             BitVector v = BitVector.loadFrom(in);
-            //v.prepareRankTable();
             bitVector.add(v);
         }
         BitVector occ = BitVector.loadFrom(in);
-        //occ.prepareRankTable();
         return new WaveletArray(bitVector, occ, alphabetSize, size);
     }
 

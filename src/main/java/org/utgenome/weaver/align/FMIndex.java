@@ -43,17 +43,13 @@ public class FMIndex
     }
 
     public SuffixInterval backwardSearch(IUPAC ch, SuffixInterval current) {
-        // Occ is the rank(ch, index). 
-        //        long lowerBound = C.get(ch) + O.getOcc(ch, current.lowerBound - 1);
-        //        long upperBound = C.get(ch) + O.getOcc(ch, current.upperBound) - 1;
         long lowerBound = C.get(ch) + W.rank(ch.bitFlag, current.lowerBound);
         long upperBound = C.get(ch) + W.rank(ch.bitFlag, current.upperBound + 1) - 1;
         return new SuffixInterval(lowerBound, upperBound);
     }
 
     /**
-     * Follow the suffix link using the equation: SA[x] - 1 = C(x) + Rank(c,
-     * x-1).
+     * Follow the suffix link using the equation: SA[x] - 1 = C(x) + Rank(c, x).
      * 
      * @param index
      *            index x in the suffix array
@@ -64,7 +60,6 @@ public class FMIndex
             return 0; // Return the smallest SA index
         }
         IUPAC c = IUPAC.decode((byte) W.lookup(index));
-        //        return C.get(c) + O.getOcc(c, index - 1);
         return C.get(c) + W.rank(c.bitFlag, index);
     }
 
