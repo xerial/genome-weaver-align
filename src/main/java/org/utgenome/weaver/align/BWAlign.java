@@ -99,10 +99,15 @@ public class BWAlign implements Command
 
         // Count the character frequencies 
         CharacterCount C = new CharacterCount(wvF);
+        final FMIndex fmIndex = new FMIndex(wvF, C);
+
+        //        _logger.info("building sparse SA");
+        //        SparseSuffixArray saF2 = SparseSuffixArray.buildFromFMIndex(fmIndex, 16);
+        //        _logger.info("done.");
 
         if (query != null) {
             _logger.info("query sequence: " + query);
-            final FMIndex fmIndex = new FMIndex(wvF, C);
+
             FMIndexAlign aln = new FMIndexAlign(fmIndex, new Reporter<AlignmentState>() {
                 @Override
                 public void emit(AlignmentState result) throws Exception {

@@ -104,6 +104,40 @@ public class SparseSuffixArray
         return new SparseSuffixArray(sparseSA, SA.length, L);
     }
 
+    //    public static SparseSuffixArray buildFromFMIndex(FMIndex fmIndex, int L) {
+    //        // TODO use long[] instead of int[]
+    //        int N = (int) fmIndex.textSize();
+    //        int sparseSA_length = ((N + L - 1) / L);
+    //        int[] sparseSA = new int[sparseSA_length];
+    //        for (int i = 0; i < sparseSA_length; ++i) {
+    //            sparseSA[i] = -1;
+    //        }
+    //        sparseSA[0] = N - 1;
+    //        for (int i = L; i < N; i += L) {
+    //            computeSA(sparseSA, i, N, L, fmIndex);
+    //        }
+    //        return new SparseSuffixArray(sparseSA, (int) fmIndex.textSize(), L);
+    //    }
+    //
+    //    public static long computeSA(int[] sparseSA, long cursor, int N, int L, FMIndex fmIndex) {
+    //        for (long j = 1; j <= N; j++) {
+    //            cursor = fmIndex.suffixLink(cursor);
+    //            if (cursor == 0) {
+    //                return j - 1;
+    //            }
+    //            if (cursor % L == 0) {
+    //                int pos = (int) (cursor / L);
+    //                if (sparseSA[pos] != -1)
+    //                    return sparseSA[pos] + j;
+    //                else {
+    //                    sparseSA[pos] = (int) (computeSA(sparseSA, cursor, N, L, fmIndex));
+    //                    return sparseSA[pos] + j;
+    //                }
+    //            }
+    //        }
+    //        throw new IllegalStateException(String.format("cannot reach here: cursor=%d)", cursor));
+    //    }
+
     public long get(long index, FMIndex fmIndex) {
         long pos = index / L;
         long offset = index % L;
