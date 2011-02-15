@@ -42,41 +42,23 @@ import java.io.OutputStream;
  */
 public class SparseSuffixArray
 {
-    private final long[] sparseSA;
-    private final long   N;
-    private final int    L;
+    private final LIntArray sparseSA;
+    private final long      N;
+    private final int       L;
 
-    private SparseSuffixArray(long[] sparseSA, long N, int L) {
+    private SparseSuffixArray(LIntArray sparseSA, long N, int L) {
         this.sparseSA = sparseSA;
         this.N = N;
         this.L = L;
-    }
-
-    private static void writeInt(int value, OutputStream out) throws IOException {
-        out.write((value >>> 24) & 0xFF);
-        out.write((value >>> 16) & 0xFF);
-        out.write((value >>> 8) & 0xFF);
-        out.write((value & 0xFF));
-    }
-
-    private static int readInt(InputStream in) throws IOException {
-        int value = in.read();
-        value <<= 8;
-        value |= in.read();
-        value <<= 8;
-        value |= in.read();
-        value <<= 8;
-        value |= in.read();
-        return value;
     }
 
     public void saveTo(OutputStream out) throws IOException {
         DataOutputStream d = new DataOutputStream(out);
         d.writeLong(N);
         d.writeInt(L);
-        d.writeInt(sparseSA.length);
-        for (int i = 0; i < sparseSA.length; ++i) {
-            d.writeLong(sparseSA[i]);
+        d.writeLong(sparseSA.size());
+        for (int i = 0; i < sparseSA.size(); ++i) {
+            d.writeInt((int) sparseSA.get(i));
         }
         d.flush();
     }
@@ -86,10 +68,10 @@ public class SparseSuffixArray
         try {
             final long N = d.readLong();
             final int L = d.readInt();
-            final int sparseSALength = d.readInt();
-            long sparseSA[] = new long[sparseSALength];
-            for (int i = 0; i < sparseSA.length; ++i) {
-                sparseSA[i] = d.readLong();
+            final long sparseSALength = d.readLong();
+            LIntArray sparseSA = new LIntArray(sparseSALength);
+            for (int i = 0; i < sparseSA.size(); ++i) {
+                sparseSA.set(i, 1L | d.readInt());
             }
             return new SparseSuffixArray(sparseSA, N, L);
         }
@@ -101,9 +83,9 @@ public class SparseSuffixArray
 
     public static SparseSuffixArray buildFromSuffixArray(LIntArray SA, int L) {
         long sparseSA_length = (SA.size() + L - 1) / L;
-        long[] sparseSA = new long[(int) sparseSA_length];
-        for (int i = 0; i < sparseSA_length; ++i) {
-            sparseSA[i] = SA.get(i * L);
+        LIntArray sparseSA = new LIntArray(sparseSA_length);
+        for (long i = 0; i < sparseSA_length; ++i) {
+            sparseSA.set(i, SA.get(i * L));
         }
         return new SparseSuffixArray(sparseSA, SA.size(), L);
     }
@@ -151,7 +133,7 @@ public class SparseSuffixArray
         }
 
         if (offset == 0)
-            return sparseSA[(int) pos];
+            return sparseSA.get(pos);
 
         long cursor = index;
         final long N = fmIndex.textSize();
@@ -161,7 +143,7 @@ public class SparseSuffixArray
                 return j - 1;
             }
             if (cursor % L == 0)
-                return sparseSA[(int) cursor / L] + j;
+                return sparseSA.get(cursor / L) + j;
         }
         throw new IllegalStateException(String.format("cannot reach here: get(index:%d)", index));
 
