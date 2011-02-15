@@ -32,8 +32,8 @@ package org.utgenome.weaver.align;
  */
 public class BitVector
 {
-    private static final int NBITS_IN_LONG      = 64;
-    private static final int NUM_CLUSTER_BLOCKS = 4;
+    private static final int NBITS_IN_LONG            = 64;
+    private static final int NUM_BLOCKS_IN_RANK_TABLE = 4;
     private LLongArray       block;
     private LLongArray       rankTable;
     private long             size;
@@ -42,27 +42,30 @@ public class BitVector
         this.size = size;
         long numBlocks = (size + NBITS_IN_LONG - 1) / NBITS_IN_LONG;
         block = new LLongArray(numBlocks);
-        long tableSize = (numBlocks + NUM_CLUSTER_BLOCKS - 1) / NUM_CLUSTER_BLOCKS + 1;
-        rankTable = new LLongArray(tableSize);
         clear();
+    }
+
+    public long size() {
+        return size;
     }
 
     public void clear() {
         block.fill(0L);
-        rankTable.fill(0L);
+        rankTable = null;
     }
 
     public void prepareRankTable() {
-        long tableSize = (block.size() + NUM_CLUSTER_BLOCKS - 1) / NUM_CLUSTER_BLOCKS + 1;
+        long tableSize = (block.size() + NUM_BLOCKS_IN_RANK_TABLE - 1) / NUM_BLOCKS_IN_RANK_TABLE + 1;
         rankTable = new LLongArray(tableSize);
+        rankTable.fill(0L);
         long count = 0;
         for (long i = 0; i < block.size(); ++i) {
-            if ((i % NUM_CLUSTER_BLOCKS) == 0) {
-                rankTable.set(i / NUM_CLUSTER_BLOCKS, count);
+            if ((i % NUM_BLOCKS_IN_RANK_TABLE) == 0) {
+                rankTable.set(i / NUM_BLOCKS_IN_RANK_TABLE, count);
             }
             count += popCount(block.get(i));
         }
-        block.set(block.size() - 1, count);
+        rankTable.set(rankTable.size() - 1, count);
     }
 
     public boolean get(long index) {
@@ -71,7 +74,7 @@ public class BitVector
             return false;
 
         long offset = index % NBITS_IN_LONG;
-        long mask = 0x01 << offset;
+        long mask = 1L << offset;
         return (block.get(blockPos) & mask) != 0;
     }
 
@@ -98,19 +101,32 @@ public class BitVector
     }
 
     private long rankOne(long index) {
+        if (rankTable == null) {
+            prepareRankTable();
+        }
+
         long blockPos = index / NBITS_IN_LONG;
-        long tablePos = blockPos / NUM_CLUSTER_BLOCKS;
+        long tablePos = blockPos / NUM_BLOCKS_IN_RANK_TABLE;
 
         long rank = rankTable.get(tablePos);
-        for (long i = tablePos * NUM_CLUSTER_BLOCKS; i < blockPos; ++i) {
+        for (long i = tablePos * NUM_BLOCKS_IN_RANK_TABLE; i < blockPos; ++i) {
             rank += popCount(block.get(i));
         }
         long offset = index % NBITS_IN_LONG;
-        if (offset != 0)
-            rank += popCount(block.get(blockPos) & ((1L << offset) - 1));
+        if (offset != 0) {
+            long val = block.get(blockPos);
+            long mask = (1L << offset) - 1;
+            rank += popCount(val & mask);
+        }
         return rank;
     }
 
+    /**
+     * Count the number of 1s in the input
+     * 
+     * @param x
+     * @return the number of 1-bit in the input x
+     */
     public static long popCount(long x) {
         x = (x & 0x5555555555555555L) + ((x >>> 1) & 0x5555555555555555L);
         x = (x & 0x3333333333333333L) + ((x >>> 2) & 0x3333333333333333L);
@@ -118,8 +134,15 @@ public class BitVector
         x = x + (x >>> 8);
         x = x + (x >>> 16);
         x = x + (x >>> 32);
+        return x & 0x7F;
+    }
 
-        return x;
+    @Override
+    public String toString() {
+        StringBuilder buf = new StringBuilder();
+        for (int i = 0; i < size; i++)
+            buf.append(get(i) ? "1" : "0");
+        return buf.toString();
     }
 
 }
