@@ -43,7 +43,7 @@ public class SAIS
 
         public int update(int i, int val);
 
-        public int size();
+        public long size();
     }
 
     private static class ByteArray implements BaseArray
@@ -69,7 +69,7 @@ public class SAIS
         }
 
         @Override
-        public int size() {
+        public long size() {
             return m_A.length - m_pos;
         }
     }
@@ -97,7 +97,7 @@ public class SAIS
         }
 
         @Override
-        public int size() {
+        public long size() {
             return m_A.length - m_pos;
         }
 
@@ -126,7 +126,7 @@ public class SAIS
         }
 
         @Override
-        public int size() {
+        public long size() {
             return m_A.length - m_pos;
         }
     }
@@ -154,7 +154,7 @@ public class SAIS
         }
 
         @Override
-        public int size() {
+        public long size() {
             return m_A.length - m_pos;
         }
     }
@@ -180,7 +180,7 @@ public class SAIS
         }
 
         @Override
-        public int size() {
+        public long size() {
             return m_A.length() - m_pos;
         }
     }
@@ -629,7 +629,7 @@ public class SAIS
     public static int suffixsort(BaseArray T, int[] SA, int k) {
         if (T == null || SA == null)
             throw new NullPointerException();
-        final int n = T.size();
+        final int n = (int) T.size();
         if (SA.length < n)
             throw new IllegalArgumentException("The suffix array container (SA) size is smaller than the input");
 

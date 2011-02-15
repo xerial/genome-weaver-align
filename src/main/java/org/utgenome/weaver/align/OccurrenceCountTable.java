@@ -56,7 +56,7 @@ public class OccurrenceCountTable
 
         _logger.info("preparing occurrence count table...");
         final int K = IUPAC.values().length;
-        final int tableSize = (seq.size() + W) / W;
+        final int tableSize = (int) ((seq.size() + W) / W);
 
         occTable = new ArrayList<int[]>(K);
         for (int k = 0; k < K; ++k) {

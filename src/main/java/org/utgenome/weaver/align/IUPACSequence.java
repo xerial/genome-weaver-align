@@ -42,7 +42,7 @@ import org.xerial.util.log.Logger;
  * @author leo
  * 
  */
-public class IUPACSequence implements BaseArray
+public class IUPACSequence implements BaseArray, LSeq
 {
     private static Logger    _logger = Logger.getLogger(IUPACSequence.class);
 
@@ -86,9 +86,8 @@ public class IUPACSequence implements BaseArray
 
     }
 
-    public int size() {
-        // TODO fix for more than 2GB size
-        return (int) numBases;
+    public long size() {
+        return numBases;
     }
 
     public IUPAC getIUPAC(long index) {
@@ -138,6 +137,16 @@ public class IUPACSequence implements BaseArray
     @Override
     public int update(int i, int val) {
         throw new UnsupportedOperationException("update");
+    }
+
+    @Override
+    public long lookup(long index) {
+        return getIUPAC(index).bitFlag;
+    }
+
+    @Override
+    public long textSize() {
+        return numBases;
     }
 
 }

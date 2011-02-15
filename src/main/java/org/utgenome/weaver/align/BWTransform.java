@@ -182,7 +182,7 @@ public class BWTransform implements Command
 
         StopWatch timer = new StopWatch();
         // TODO to make applicable more than 2GB sequencel
-        int[] SA = new int[seq.size()];
+        int[] SA = new int[(int) seq.size()];
         {
             SAIS.suffixsort(seq, SA, 16);
             _logger.info("Sparse SA file: " + suffixArrayFile);
