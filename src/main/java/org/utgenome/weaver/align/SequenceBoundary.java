@@ -59,7 +59,7 @@ public class SequenceBoundary
     }
 
     public List<SequenceIndex>    index;
-    public int                    totalSize;
+    public long                   totalSize;
 
     private TreeMap<Long, String> indexToChrTable;
 
