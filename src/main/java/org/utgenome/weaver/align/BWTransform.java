@@ -164,7 +164,7 @@ public class BWTransform implements Command
                 _logger.info("Creating a suffix array of the forward sequence");
                 File suffixArrayFile = new File(fastaPrefix + ".sa");
                 File bwtFile = new File(fastaPrefix + ".bwt");
-                File wvFile = new File(fastaPrefix + ".wv");
+                File wvFile = new File(fastaPrefix + ".bwt.wv");
                 buildSuffixArray(forwardSeq, suffixArrayFile, bwtFile, wvFile);
             }
         }
@@ -175,7 +175,7 @@ public class BWTransform implements Command
             _logger.info("Creating a suffix array of the reverse sequence");
             File suffixArrayFile = new File(fastaPrefix + ".rsa");
             File bwtFile = new File(fastaPrefix + ".rbwt");
-            File wvFile = new File(fastaPrefix + ".rwv");
+            File wvFile = new File(fastaPrefix + ".rbwt.wv");
             buildSuffixArray(reverseSeq, suffixArrayFile, bwtFile, wvFile);
         }
 

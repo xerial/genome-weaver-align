@@ -93,9 +93,9 @@ public class BWAlign implements Command
 
         // Load Wavelet arrays
         _logger.info("Loading a Wavelet array of the forward BWT");
-        WaveletArray wvF = WaveletArray.loadFrom(new File(fastaFilePrefix + ".wv"));
+        WaveletArray wvF = WaveletArray.loadFrom(new File(fastaFilePrefix + ".bwt.wv"));
         _logger.info("Loading a Wavelet array of the reverse BWT");
-        WaveletArray wvR = WaveletArray.loadFrom(new File(fastaFilePrefix + ".rwv"));
+        WaveletArray wvR = WaveletArray.loadFrom(new File(fastaFilePrefix + ".rbwt.wv"));
 
         // Count the character frequencies 
         CharacterCount C = new CharacterCount(wvF);
