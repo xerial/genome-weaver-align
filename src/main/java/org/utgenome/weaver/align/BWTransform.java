@@ -163,7 +163,7 @@ public class BWTransform implements Command
 
         {
             // Create a suffix array of the reverse IUPAC sequence
-            IUPACSequence reverseSeq = new IUPACSequence(files.iupacReverse(), files);
+            IUPACSequence reverseSeq = new IUPACSequence(files.iupacReverse(), totalSize);
             _logger.info("Creating a suffix array of the reverse sequence");
             File suffixArrayFile = files.sparseSuffixArrayReverse();
             File bwtFile = files.bwtReverse();

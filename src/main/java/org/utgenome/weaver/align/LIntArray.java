@@ -70,16 +70,16 @@ public class LIntArray implements LArray, Iterable<Long>
     }
 
     public long get(long index) {
-        return 0L | array.get(pos(index))[offset(index)];
+        return array.get(pos(index))[offset(index)] & 0xFFFFFFFFL;
     }
 
     public void set(long index, long value) {
-        array.get(pos(index))[offset(index)] = (int) (value & 0xFFFFFFFF);
+        array.get(pos(index))[offset(index)] = (int) (value & 0xFFFFFFFFL);
     }
 
     @Override
     public long update(long index, long val) {
-        return array.get(pos(index))[offset(index)] += (int) (val & 0xFFFFFFFF);
+        return array.get(pos(index))[offset(index)] += (int) (val & 0xFFFFFFFFL);
     }
 
     @Override
