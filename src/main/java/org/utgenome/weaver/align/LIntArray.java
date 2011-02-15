@@ -46,7 +46,7 @@ public class LIntArray implements LArray, Iterable<Long>
         // (flag)|---(array pos)------|---------------------------|
         // (flag)|------(32 bit)-------|------(index: 30bit)------|
         int container = pos(size);
-        int remainder = (int) (size & 0x7FFFFFFFL);
+        int remainder = offset(size);
 
         array = new ArrayList<int[]>(container + 1);
         for (int i = 0; i < container; i++) {
