@@ -24,6 +24,10 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
 /**
  * Bit-vector supporting rank/select operations
  * 
@@ -32,18 +36,23 @@ package org.utgenome.weaver.align;
  */
 public class BitVector
 {
-    private static final int B          = 64; // the number of bits in a block
-    private static final int M          = 4; // block width to precompute the ranks  
-    private LLongArray       block;
-    private LLongArray       rankTable;
-    private long             size;
+    private static final int B          = 64;  // the number of bits in a block
+    private static final int M          = 4;   // block width to precompute the ranks  
+    private final LLongArray block;
+    private LLongArray       rankTable  = null;
+    private final long       size;
     private long             numberOf1s = 0;
 
     public BitVector(long size) {
         this.size = size;
-        long numBlocks = (size + B - 1) / B;
-        block = new LLongArray(numBlocks);
+        this.block = new LLongArray((size + B - 1) / B);
         clear();
+    }
+
+    private BitVector(long size, LLongArray block) {
+        this.size = size;
+        this.block = block;
+        prepareRankTable();
     }
 
     public long size() {
@@ -55,7 +64,7 @@ public class BitVector
         rankTable = null;
     }
 
-    public void prepareRankTable() {
+    protected void prepareRankTable() {
         long tableSize = (block.size() + M - 1) / M + 1;
         rankTable = new LLongArray(tableSize);
         rankTable.fill(0L);
@@ -254,6 +263,19 @@ public class BitVector
         for (int i = 0; i < size; i++)
             buf.append(get(i) ? "1" : "0");
         return buf.toString();
+    }
+
+    public DataOutputStream saveTo(DataOutputStream out) throws IOException {
+        out.writeLong(size);
+        block.saveTo(out);
+        return out;
+    }
+
+    public static BitVector loadFrom(DataInputStream in) throws IOException {
+        long size = in.readLong();
+        LLongArray block = LLongArray.loadFrom(in);
+        BitVector v = new BitVector(size, block);
+        return v;
     }
 
 }

@@ -24,6 +24,12 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class WaveletArray
@@ -43,6 +49,14 @@ public class WaveletArray
 
         setArray(input);
         setOccs(input);
+    }
+
+    private WaveletArray(ArrayList<BitVector> bitVector, BitVector occ, long alphabetSize, long size) {
+        this.alphabetSize = alphabetSize;
+        this.alphabetBitSize = log2(alphabetSize);
+        this.size = size;
+        this.bitVector = bitVector;
+        this.occ = occ;
     }
 
     public static long log2(long x) {
@@ -179,6 +193,42 @@ public class WaveletArray
         }
         long rank = pos - beg_node;
         return new Rank(rank, rankLessThan, rankMoreThan);
+    }
+
+    public DataOutputStream saveTo(DataOutputStream out) throws IOException {
+        out.writeLong(alphabetSize);
+        out.writeLong(size);
+        out.writeLong(bitVector.size());
+        for (BitVector each : bitVector) {
+            each.saveTo(out);
+        }
+        occ.saveTo(out);
+        return out;
+    }
+
+    public static WaveletArray loadFrom(File file) throws IOException {
+        DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
+        try {
+            return WaveletArray.loadFrom(in);
+        }
+        finally {
+            in.close();
+        }
+    }
+
+    public static WaveletArray loadFrom(DataInputStream in) throws IOException {
+        long alphabetSize = in.readLong();
+        long size = in.readLong();
+        long vecSize = in.readLong();
+        ArrayList<BitVector> bitVector = new ArrayList<BitVector>((int) vecSize);
+        for (int i = 0; i < vecSize; ++i) {
+            BitVector v = BitVector.loadFrom(in);
+            //v.prepareRankTable();
+            bitVector.add(v);
+        }
+        BitVector occ = BitVector.loadFrom(in);
+        //occ.prepareRankTable();
+        return new WaveletArray(bitVector, occ, alphabetSize, size);
     }
 
 }

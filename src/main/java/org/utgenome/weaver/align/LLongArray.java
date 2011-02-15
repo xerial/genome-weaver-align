@@ -22,6 +22,9 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 
 /**
@@ -51,7 +54,6 @@ public class LLongArray
         }
         if (remainder > 0)
             array.add(new long[remainder]);
-
     }
 
     public long size() {
@@ -89,6 +91,22 @@ public class LLongArray
                 container[i] = value;
             }
         }
+    }
+
+    public void saveTo(DataOutputStream out) throws IOException {
+        out.writeLong(size);
+        for (long i = 0; i < size; ++i) {
+            out.writeLong(get(i));
+        }
+    }
+
+    public static LLongArray loadFrom(DataInputStream in) throws IOException {
+        long size = in.readLong();
+        LLongArray array = new LLongArray(size);
+        for (long i = 0; i < size; ++i) {
+            array.set(i, in.readLong());
+        }
+        return array;
     }
 
 }

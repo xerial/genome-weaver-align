@@ -26,6 +26,7 @@ package org.utgenome.weaver.align;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
@@ -163,7 +164,8 @@ public class BWTransform implements Command
                 _logger.info("Creating a suffix array of the forward sequence");
                 File suffixArrayFile = new File(fastaPrefix + ".sa");
                 File bwtFile = new File(fastaPrefix + ".bwt");
-                buildSuffixArray(forwardSeq, suffixArrayFile, bwtFile);
+                File wvFile = new File(fastaPrefix + ".wv");
+                buildSuffixArray(forwardSeq, suffixArrayFile, bwtFile, wvFile);
             }
         }
 
@@ -173,12 +175,14 @@ public class BWTransform implements Command
             _logger.info("Creating a suffix array of the reverse sequence");
             File suffixArrayFile = new File(fastaPrefix + ".rsa");
             File bwtFile = new File(fastaPrefix + ".rbwt");
-            buildSuffixArray(reverseSeq, suffixArrayFile, bwtFile);
+            File wvFile = new File(fastaPrefix + ".rwv");
+            buildSuffixArray(reverseSeq, suffixArrayFile, bwtFile, wvFile);
         }
 
     }
 
-    public static void buildSuffixArray(IUPACSequence seq, File suffixArrayFile, File bwtFile) throws IOException {
+    public static void buildSuffixArray(IUPACSequence seq, File suffixArrayFile, File bwtFile, File wvFile)
+            throws IOException, UTGBException {
 
         StopWatch timer = new StopWatch();
         // TODO to make applicable more than 2GB sequencel
@@ -193,7 +197,7 @@ public class BWTransform implements Command
         }
         _logger.info(String.format("Suffix array construction finshed. %.2f sec.", timer.getElapsedTime()));
 
-        // Create a BWT string of the forward IUPAC sequence from the generated suffix array
+        // Create a BWT string of the IUPAC sequence from the generated suffix array
         {
             _logger.info("Creating a BWT string");
             IUPAC[] bwt = bwt(seq, SA);
@@ -210,6 +214,16 @@ public class BWTransform implements Command
                 writer.append(bwt[i]);
             }
             writer.close();
+        }
+
+        // Create a Wavelet array 
+        {
+            _logger.info("Loading BWT: " + bwtFile);
+            IUPACSequence bwt = new IUPACSequence(bwtFile);
+            _logger.info("Creating Wavelet Array");
+            WaveletArray wv = new WaveletArray(bwt, 16);
+            _logger.info("Saving to : " + wvFile);
+            wv.saveTo(new DataOutputStream(new BufferedOutputStream(new FileOutputStream(wvFile)))).close();
         }
 
     }

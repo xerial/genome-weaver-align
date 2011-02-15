@@ -67,8 +67,8 @@ public class BWAlign implements Command
     @Argument(index = 0)
     private String fastaFilePrefix;
 
-    @Option(symbol = "L", description = "1/L of the Occ table will be precomputed. (default L = 256)")
-    private int    L = 256;
+    //    @Option(symbol = "L", description = "1/L of the Occ table will be precomputed. (default L = 256)")
+    //    private int    L = 256;
 
     @Option(symbol = "q", description = "query sequence")
     private String query;
@@ -98,10 +98,14 @@ public class BWAlign implements Command
                 sparseReverseSAFile)));
 
         // Compute the occurrence tables
-        //OccurrenceCountTable occF = new OccurrenceCountTable(bwtF, L);
+        // OccurrenceCountTable occF = new OccurrenceCountTable(bwtF, L);
         // OccurrenceCountTable occR = new OccurrenceCountTable(bwtR, L);
-        WaveletArray wvF = new WaveletArray(bwtF, 16);
-        WaveletArray wvR = new WaveletArray(bwtR, 16);
+
+        // Load Wavelet arrays
+        _logger.info("Loading a Wavelet array of the forward BWT");
+        WaveletArray wvF = WaveletArray.loadFrom(new File(fastaFilePrefix + ".wv"));
+        _logger.info("Loading a Wavelet array of the reverse BWT");
+        WaveletArray wvR = WaveletArray.loadFrom(new File(fastaFilePrefix + ".rwv"));
 
         // Count the character frequencies 
         CharacterCount C = new CharacterCount(bwtF);
