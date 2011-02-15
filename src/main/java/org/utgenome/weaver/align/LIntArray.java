@@ -83,10 +83,9 @@ public class LIntArray implements LArray, Iterable<Long>
 
     @Override
     public long update(long index, long val) {
-        if (flag.get(index))
-            return array.get(pos(index))[offset(index)] -= (int) (val & 0xFFFFFFFFL);
-        else
-            return array.get(pos(index))[offset(index)] += (int) (val & 0xFFFFFFFFL);
+        long next = get(index) + val;
+        set(index, next);
+        return next;
     }
 
     @Override
