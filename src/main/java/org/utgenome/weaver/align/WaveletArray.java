@@ -35,8 +35,14 @@ public class WaveletArray
     private long                 alphabetBitSize = 0;
     private long                 size            = 0;
 
-    public WaveletArray() {
+    public WaveletArray(LSeq input, long K) {
+        alphabetSize = K;
+        alphabetBitSize = log2(K);
 
+        size = input.textSize();
+
+        setArray(input);
+        setOccs(input);
     }
 
     public static long log2(long x) {
@@ -48,16 +54,6 @@ public class WaveletArray
             ++bit_num;
         }
         return bit_num;
-    }
-
-    public void init(LSeq input, long K) {
-        alphabetSize = K;
-        alphabetBitSize = log2(K);
-
-        size = input.textSize();
-
-        setArray(input);
-        setOccs(input);
     }
 
     protected static long prefixCode(long x, long len, long bitNum) {
@@ -72,6 +68,9 @@ public class WaveletArray
         if (alphabetSize == 0)
             return;
         bitVector = new ArrayList<BitVector>((int) alphabetBitSize);
+        for (int i = 0; i < alphabetBitSize; ++i) {
+            bitVector.add(new BitVector(size));
+        }
 
         ArrayList<long[]> beg_poses = getBegPoses(input, alphabetBitSize);
 
@@ -87,7 +86,7 @@ public class WaveletArray
 
     protected ArrayList<long[]> getBegPoses(LSeq input, long alphabetBitNum) {
         ArrayList<long[]> beg_poses = new ArrayList<long[]>((int) alphabetBitNum);
-        for (long i = 0; i < beg_poses.size(); ++i) {
+        for (long i = 0; i < alphabetBitNum; ++i) {
             long[] v = new long[1 << i];
             for (int k = 0; k < v.length; ++k)
                 v[k] = 0L;
@@ -97,7 +96,8 @@ public class WaveletArray
         for (long i = 0; i < input.textSize(); ++i) {
             long c = input.lookup(i);
             for (int j = 0; j < alphabetBitNum; ++j) {
-                beg_poses.get(j)[(int) prefixCode(c, j, alphabetBitNum)]++;
+                int code = (int) prefixCode(c, j, alphabetBitNum);
+                beg_poses.get(j)[code]++;
             }
         }
 

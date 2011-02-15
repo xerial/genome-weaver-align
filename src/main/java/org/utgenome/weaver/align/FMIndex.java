@@ -34,20 +34,23 @@ import org.utgenome.gwt.utgb.client.bio.IUPAC;
  */
 public class FMIndex
 {
-    private final IUPACSequence        bwt;
-    private final OccurrenceCountTable O;
-    private final CharacterCount       C;
+    private final IUPACSequence  bwt;
+    private final WaveletArray   W;
+    //private final OccurrenceCountTable O;
+    private final CharacterCount C;
 
-    public FMIndex(IUPACSequence bwt, OccurrenceCountTable O, CharacterCount C) {
+    public FMIndex(IUPACSequence bwt, WaveletArray W, CharacterCount C) {
         this.bwt = bwt;
-        this.O = O;
+        this.W = W;
         this.C = C;
     }
 
     public SuffixInterval backwardSearch(IUPAC ch, SuffixInterval current) {
         // Occ is the rank(ch, index). 
-        long lowerBound = C.get(ch) + O.getOcc(ch, current.lowerBound - 1);
-        long upperBound = C.get(ch) + O.getOcc(ch, current.upperBound) - 1;
+        //        long lowerBound = C.get(ch) + O.getOcc(ch, current.lowerBound - 1);
+        //        long upperBound = C.get(ch) + O.getOcc(ch, current.upperBound) - 1;
+        long lowerBound = C.get(ch) + W.rank(ch.bitFlag, current.lowerBound);
+        long upperBound = C.get(ch) + W.rank(ch.bitFlag, current.upperBound + 1) - 1;
         return new SuffixInterval(lowerBound, upperBound);
     }
 
@@ -64,7 +67,8 @@ public class FMIndex
             return 0; // Return the smallest SA index
         }
         IUPAC c = bwt.getIUPAC(index);
-        return C.get(c) + O.getOcc(c, index - 1);
+        //        return C.get(c) + O.getOcc(c, index - 1);
+        return C.get(c) + W.rank(c.bitFlag, index);
     }
 
     public long textSize() {

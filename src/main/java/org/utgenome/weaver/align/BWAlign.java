@@ -98,15 +98,17 @@ public class BWAlign implements Command
                 sparseReverseSAFile)));
 
         // Compute the occurrence tables
-        OccurrenceCountTable occF = new OccurrenceCountTable(bwtF, L);
-        OccurrenceCountTable occR = new OccurrenceCountTable(bwtR, L);
+        //OccurrenceCountTable occF = new OccurrenceCountTable(bwtF, L);
+        // OccurrenceCountTable occR = new OccurrenceCountTable(bwtR, L);
+        WaveletArray wvF = new WaveletArray(bwtF, 16);
+        WaveletArray wvR = new WaveletArray(bwtR, 16);
 
         // Count the character frequencies 
         CharacterCount C = new CharacterCount(bwtF);
 
         if (query != null) {
             _logger.info("query sequence: " + query);
-            final FMIndex fmIndex = new FMIndex(bwtF, occF, C);
+            final FMIndex fmIndex = new FMIndex(bwtF, wvF, C);
             FMIndexAlign aln = new FMIndexAlign(fmIndex, new Reporter<AlignmentState>() {
                 @Override
                 public void emit(AlignmentState result) throws Exception {
