@@ -63,10 +63,6 @@ public class SequenceBoundary
 
     private TreeMap<Long, String> indexToChrTable;
 
-    public static File getFileName(String prefix) {
-        return new File(prefix + ".i.silk");
-    }
-
     public static class PosOnGenome
     {
         public final String chr;

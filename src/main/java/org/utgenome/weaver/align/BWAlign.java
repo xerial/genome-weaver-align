@@ -24,9 +24,6 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -67,44 +64,33 @@ public class BWAlign implements Command
     @Argument(index = 0)
     private String fastaFilePrefix;
 
-    //    @Option(symbol = "L", description = "1/L of the Occ table will be precomputed. (default L = 256)")
-    //    private int    L = 256;
-
     @Option(symbol = "q", description = "query sequence")
     private String query;
 
     @Override
     public void execute(String[] args) throws Exception {
 
-        SequenceBoundary index = SequenceBoundary.loadSilk(SequenceBoundary.getFileName(fastaFilePrefix));
+        BWTFiles files = new BWTFiles(fastaFilePrefix);
+
+        // Load the boundary information of the concatenated chr sequences 
+        final SequenceBoundary index = SequenceBoundary.loadSilk(files.pacFileIndex());
         final int N = index.totalSize;
         final int K = IUPAC.values().length;
 
-        // Load the boundary information of the concatenated chr sequences 
-        final SequenceBoundary boundary = SequenceBoundary.loadSilk(SequenceBoundary.getFileName(fastaFilePrefix));
-
         // Load sparse suffix arrays
         _logger.info("Loading sparse suffix arrays");
-        File sparseForwardSAFile = new File(fastaFilePrefix + ".sa");
-        File sparseReverseSAFile = new File(fastaFilePrefix + ".rsa");
-        final SparseSuffixArray saF = SparseSuffixArray.loadFrom(new BufferedInputStream(new FileInputStream(
-                sparseForwardSAFile)));
-        final SparseSuffixArray saR = SparseSuffixArray.loadFrom(new BufferedInputStream(new FileInputStream(
-                sparseReverseSAFile)));
+        final SparseSuffixArray saF = SparseSuffixArray.loadFrom(files.sparseSuffixArrayForward());
+        final SparseSuffixArray saR = SparseSuffixArray.loadFrom(files.sparseSuffixArrayReverse());
 
         // Load Wavelet arrays
         _logger.info("Loading a Wavelet array of the forward BWT");
-        WaveletArray wvF = WaveletArray.loadFrom(new File(fastaFilePrefix + ".bwt.wv"));
+        WaveletArray wvF = WaveletArray.loadFrom(files.bwtWaveletForward());
         _logger.info("Loading a Wavelet array of the reverse BWT");
-        WaveletArray wvR = WaveletArray.loadFrom(new File(fastaFilePrefix + ".rbwt.wv"));
+        WaveletArray wvR = WaveletArray.loadFrom(files.bwtWaveletReverse());
 
         // Count the character frequencies 
         CharacterCount C = new CharacterCount(wvF);
         final FMIndex fmIndex = new FMIndex(wvF, C);
-
-        //        _logger.info("building sparse SA");
-        //        SparseSuffixArray saF2 = SparseSuffixArray.buildFromFMIndex(fmIndex, 16);
-        //        _logger.info("done.");
 
         if (query != null) {
             _logger.info("query sequence: " + query);
@@ -115,7 +101,7 @@ public class BWAlign implements Command
                     _logger.info(SilkLens.toSilk("alignment", result));
                     for (long i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
                         long pos = saF.get(i, fmIndex);
-                        PosOnGenome loc = boundary.translate(pos, false);
+                        PosOnGenome loc = index.translate(pos, false);
                         System.out.println(SilkLens.toSilk("loc", loc));
                     }
                 }

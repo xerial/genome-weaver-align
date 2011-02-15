@@ -33,7 +33,6 @@ import org.utgenome.UTGBErrorCode;
 import org.utgenome.UTGBException;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.utgenome.weaver.align.LSAIS.LArray;
-import org.xerial.util.FileType;
 import org.xerial.util.log.Logger;
 
 /**
@@ -54,9 +53,9 @@ public class IUPACSequence implements LArray, LSeq
         initSeq(numBases, iupacFile);
     }
 
-    public IUPACSequence(File iupacFile) throws UTGBException {
+    public IUPACSequence(File iupacFile, BWTFiles f) throws UTGBException {
 
-        File silkIndexFile = SequenceBoundary.getFileName(FileType.removeFileExt(iupacFile.getPath()));
+        File silkIndexFile = f.pacFileIndex();
         binaryInfo = SequenceBoundary.loadSilk(silkIndexFile);
 
         if (binaryInfo == null)
@@ -83,7 +82,6 @@ public class IUPACSequence implements LArray, LSeq
         catch (IOException e) {
             throw UTGBException.convert(e);
         }
-
     }
 
     public long size() {

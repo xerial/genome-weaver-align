@@ -25,10 +25,12 @@
 package org.utgenome.weaver.align;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -221,6 +223,17 @@ public class WaveletArray implements LSeq
             }
         }
         return c;
+    }
+
+    public void saveTo(File f) throws IOException {
+        DataOutputStream d = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
+        try {
+            saveTo(d);
+        }
+        finally {
+            d.close();
+        }
+
     }
 
     public DataOutputStream saveTo(DataOutputStream out) throws IOException {

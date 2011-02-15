@@ -24,11 +24,14 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 /**
  * 
@@ -52,8 +55,17 @@ public class SparseSuffixArray
         this.L = L;
     }
 
-    public void saveTo(OutputStream out) throws IOException {
-        DataOutputStream d = new DataOutputStream(out);
+    public void saveTo(File f) throws IOException {
+        DataOutputStream d = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
+        try {
+            saveTo(d);
+        }
+        finally {
+            d.close();
+        }
+    }
+
+    public void saveTo(DataOutputStream d) throws IOException {
         d.writeLong(N);
         d.writeInt(L);
         d.writeLong(sparseSA.size());
@@ -63,22 +75,25 @@ public class SparseSuffixArray
         d.flush();
     }
 
-    public static SparseSuffixArray loadFrom(InputStream in) throws IOException {
-        DataInputStream d = new DataInputStream(in);
+    public static SparseSuffixArray loadFrom(File f) throws IOException {
+        DataInputStream d = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));
         try {
-            final long N = d.readLong();
-            final int L = d.readInt();
-            final long sparseSALength = d.readLong();
-            LIntArray sparseSA = new LIntArray(sparseSALength);
-            for (int i = 0; i < sparseSA.size(); ++i) {
-                sparseSA.set(i, 1L | d.readInt());
-            }
-            return new SparseSuffixArray(sparseSA, N, L);
+            return SparseSuffixArray.loadFrom(d);
         }
         finally {
-            if (in != null)
-                in.close();
+            d.close();
         }
+    }
+
+    public static SparseSuffixArray loadFrom(DataInputStream d) throws IOException {
+        final long N = d.readLong();
+        final int L = d.readInt();
+        final long sparseSALength = d.readLong();
+        LIntArray sparseSA = new LIntArray(sparseSALength);
+        for (int i = 0; i < sparseSA.size(); ++i) {
+            sparseSA.set(i, 1L | d.readInt());
+        }
+        return new SparseSuffixArray(sparseSA, N, L);
     }
 
     public static SparseSuffixArray buildFromSuffixArray(LIntArray SA, int L) {
@@ -89,40 +104,6 @@ public class SparseSuffixArray
         }
         return new SparseSuffixArray(sparseSA, SA.size(), L);
     }
-
-    //    public static SparseSuffixArray buildFromFMIndex(FMIndex fmIndex, int L) {
-    //        // TODO use long[] instead of int[]
-    //        int N = (int) fmIndex.textSize();
-    //        int sparseSA_length = ((N + L - 1) / L);
-    //        int[] sparseSA = new int[sparseSA_length];
-    //        for (int i = 0; i < sparseSA_length; ++i) {
-    //            sparseSA[i] = -1;
-    //        }
-    //        sparseSA[0] = N - 1;
-    //        for (int i = L; i < N; i += L) {
-    //            computeSA(sparseSA, i, N, L, fmIndex);
-    //        }
-    //        return new SparseSuffixArray(sparseSA, (int) fmIndex.textSize(), L);
-    //    }
-    //
-    //    public static long computeSA(int[] sparseSA, long cursor, int N, int L, FMIndex fmIndex) {
-    //        for (long j = 1; j <= N; j++) {
-    //            cursor = fmIndex.suffixLink(cursor);
-    //            if (cursor == 0) {
-    //                return j - 1;
-    //            }
-    //            if (cursor % L == 0) {
-    //                int pos = (int) (cursor / L);
-    //                if (sparseSA[pos] != -1)
-    //                    return sparseSA[pos] + j;
-    //                else {
-    //                    sparseSA[pos] = (int) (computeSA(sparseSA, cursor, N, L, fmIndex));
-    //                    return sparseSA[pos] + j;
-    //                }
-    //            }
-    //        }
-    //        throw new IllegalStateException(String.format("cannot reach here: cursor=%d)", cursor));
-    //    }
 
     public long get(long index, FMIndex fmIndex) {
         long pos = index / L;

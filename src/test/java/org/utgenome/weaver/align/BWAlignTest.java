@@ -31,7 +31,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.utgenome.util.TestHelper;
 import org.utgenome.weaver.GenomeWeaver;
-import org.xerial.util.FileType;
 
 public class BWAlignTest
 {
@@ -56,7 +55,7 @@ public class BWAlignTest
 
         File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "test.fa", new File(tmpDir, "test.fa"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
-        GenomeWeaver.execute(String.format("align %s -q TATAA", FileType.removeFileExt(fastaArchive.getPath())));
+        GenomeWeaver.execute(String.format("align %s -q TATAA", fastaArchive.getPath()));
 
     }
 }
