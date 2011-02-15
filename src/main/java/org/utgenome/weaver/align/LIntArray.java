@@ -43,18 +43,26 @@ public class LIntArray implements LArray, Iterable<Long>
     public LIntArray(long size) {
         this.size = size;
 
-        // (flag)|---(array index)----|---------------------------|
-        // (flag)|------(31 bit)-------|------(index: 31bit)------|
-        int container = (int) (size >> 31);
-        int remainder = (int) size & 0x7FFFFFFF;
+        // (flag)|---(array pos)------|---------------------------|
+        // (flag)|------(32 bit)-------|------(index: 30bit)------|
+        int container = pos(size);
+        int remainder = (int) (size & 0x7FFFFFFFL);
 
         array = new ArrayList<int[]>(container + 1);
         for (int i = 0; i < container; i++) {
-            array.add(new int[Integer.MAX_VALUE]);
+            array.add(new int[0x40000000]);
         }
         if (remainder > 0)
             array.add(new int[remainder]);
 
+    }
+
+    private static int pos(long index) {
+        return (int) (index >>> 30);
+    }
+
+    private static int offset(long index) {
+        return (int) (index & 0x3FFFFFFFL);
     }
 
     public long size() {
@@ -62,24 +70,16 @@ public class LIntArray implements LArray, Iterable<Long>
     }
 
     public long get(long index) {
-        int container = (int) (index >> 31);
-        int remainder = (int) index & 0x7FFFFFFF;
-        return 0L | array.get(container)[remainder];
+        return 0L | array.get(pos(index))[offset(index)];
     }
 
     public void set(long index, long value) {
-        int container = (int) (index >> 31);
-        int remainder = (int) index & 0x7FFFFFFF;
-
-        array.get(container)[remainder] = (int) (value & 0xFFFFFFFF);
+        array.get(pos(index))[offset(index)] = (int) (value & 0xFFFFFFFF);
     }
 
     @Override
     public long update(long index, long val) {
-        int container = (int) (index >> 31);
-        int remainder = (int) index & 0x7FFFFFFF;
-
-        return array.get(container)[remainder] += (int) (val & 0xFFFFFFFF);
+        return array.get(pos(index))[offset(index)] += (int) (val & 0xFFFFFFFF);
     }
 
     @Override
