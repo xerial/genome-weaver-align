@@ -31,7 +31,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.utgenome.UTGBErrorCode;
 import org.utgenome.UTGBException;
@@ -186,9 +185,9 @@ public class BWTransform implements Command
 
         StopWatch timer = new StopWatch();
         // TODO to make applicable more than 2GB sequencel
-        int[] SA = new int[(int) seq.size()];
+        LIntArray SA = new LIntArray(seq.textSize());
         {
-            SAIS.suffixsort(seq, SA, 16);
+            LSAIS.suffixsort(seq, SA, 16);
             _logger.info("Sparse SA file: " + suffixArrayFile);
             SparseSuffixArray sparseSA = SparseSuffixArray.buildFromSuffixArray(SA, 16);
             BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(suffixArrayFile));
@@ -200,19 +199,17 @@ public class BWTransform implements Command
         // Create a BWT string of the IUPAC sequence from the generated suffix array
         {
             _logger.info("Creating a BWT string");
-            IUPAC[] bwt = bwt(seq, SA);
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("SA : " + Arrays.toString(SA));
-                _logger.debug("IN : " + seq.toString());
-                _logger.debug("BWT: " + Arrays.toString(bwt));
-            }
+            //            IUPAC[] bwt = bwt(seq, SA);
+            //            if (_logger.isDebugEnabled()) {
+            //                _logger.debug("SA : " + Arrays.toString(SA));
+            //                _logger.debug("IN : " + seq.toString());
+            //                _logger.debug("BWT: " + Arrays.toString(bwt));
+            //            }
 
             _logger.info("BWT file: " + bwtFile);
             IUPACSequenceWriter writer = new IUPACSequenceWriter(
                     new BufferedOutputStream(new FileOutputStream(bwtFile)));
-            for (int i = 0; i < bwt.length; ++i) {
-                writer.append(bwt[i]);
-            }
+            bwt(seq, SA, writer);
             writer.close();
         }
 
@@ -228,19 +225,15 @@ public class BWTransform implements Command
 
     }
 
-    public static IUPAC[] bwt(IUPACSequence seq, int[] SA) {
-        IUPAC[] bwt = new IUPAC[SA.length];
-
-        for (int i = 0; i < SA.length; ++i) {
-            if (SA[i] == 0) {
-                bwt[i] = IUPAC.None;
+    public static void bwt(IUPACSequence seq, LIntArray SA, IUPACSequenceWriter out) throws IOException {
+        for (long i = 0; i < SA.size(); ++i) {
+            if (SA.get(i) == 0) {
+                out.append(IUPAC.None);
             }
             else {
-                bwt[i] = seq.getIUPAC(SA[i] - 1);
+                out.append(seq.getIUPAC(SA.get(i) - 1));
             }
         }
-
-        return bwt;
     }
 
 }

@@ -32,7 +32,7 @@ import java.io.OutputStream;
 import org.utgenome.UTGBErrorCode;
 import org.utgenome.UTGBException;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
-import org.utgenome.weaver.align.SAIS.BaseArray;
+import org.utgenome.weaver.align.LSAIS.LArray;
 import org.xerial.util.FileType;
 import org.xerial.util.log.Logger;
 
@@ -42,7 +42,7 @@ import org.xerial.util.log.Logger;
  * @author leo
  * 
  */
-public class IUPACSequence implements BaseArray, LSeq
+public class IUPACSequence implements LArray, LSeq
 {
     private static Logger    _logger = Logger.getLogger(IUPACSequence.class);
 
@@ -125,21 +125,6 @@ public class IUPACSequence implements BaseArray, LSeq
     }
 
     @Override
-    public int get(int i) {
-        return getIUPAC(i).bitFlag;
-    }
-
-    @Override
-    public void set(int i, int val) {
-        throw new UnsupportedOperationException("set");
-    }
-
-    @Override
-    public int update(int i, int val) {
-        throw new UnsupportedOperationException("update");
-    }
-
-    @Override
     public long lookup(long index) {
         return getIUPAC(index).bitFlag;
     }
@@ -147,6 +132,21 @@ public class IUPACSequence implements BaseArray, LSeq
     @Override
     public long textSize() {
         return numBases;
+    }
+
+    @Override
+    public long get(long i) {
+        return getIUPAC(i).bitFlag;
+    }
+
+    @Override
+    public void set(long i, long val) {
+        throw new UnsupportedOperationException("set");
+    }
+
+    @Override
+    public long update(long i, long val) {
+        throw new UnsupportedOperationException("update");
     }
 
 }

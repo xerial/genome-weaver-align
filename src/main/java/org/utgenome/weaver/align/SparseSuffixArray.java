@@ -24,6 +24,8 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -40,11 +42,11 @@ import java.io.OutputStream;
  */
 public class SparseSuffixArray
 {
-    private final int[] sparseSA;
-    private final int   N;
-    private final int   L;
+    private final long[] sparseSA;
+    private final long   N;
+    private final int    L;
 
-    private SparseSuffixArray(int[] sparseSA, int N, int L) {
+    private SparseSuffixArray(long[] sparseSA, long N, int L) {
         this.sparseSA = sparseSA;
         this.N = N;
         this.L = L;
@@ -69,23 +71,25 @@ public class SparseSuffixArray
     }
 
     public void saveTo(OutputStream out) throws IOException {
-        writeInt(N, out);
-        writeInt(L, out);
-        writeInt(sparseSA.length, out);
+        DataOutputStream d = new DataOutputStream(out);
+        d.writeLong(N);
+        d.writeInt(L);
+        d.writeInt(sparseSA.length);
         for (int i = 0; i < sparseSA.length; ++i) {
-            writeInt(sparseSA[i], out);
+            d.writeLong(sparseSA[i]);
         }
-        out.flush();
+        d.flush();
     }
 
     public static SparseSuffixArray loadFrom(InputStream in) throws IOException {
+        DataInputStream d = new DataInputStream(in);
         try {
-            final int N = readInt(in);
-            final int L = readInt(in);
-            final int sparseSALength = readInt(in);
-            int sparseSA[] = new int[sparseSALength];
+            final long N = d.readLong();
+            final int L = d.readInt();
+            final int sparseSALength = d.readInt();
+            long sparseSA[] = new long[sparseSALength];
             for (int i = 0; i < sparseSA.length; ++i) {
-                sparseSA[i] = readInt(in);
+                sparseSA[i] = d.readLong();
             }
             return new SparseSuffixArray(sparseSA, N, L);
         }
@@ -95,13 +99,13 @@ public class SparseSuffixArray
         }
     }
 
-    public static SparseSuffixArray buildFromSuffixArray(int[] SA, int L) {
-        int sparseSA_length = (SA.length + L - 1) / L;
-        int[] sparseSA = new int[sparseSA_length];
+    public static SparseSuffixArray buildFromSuffixArray(LIntArray SA, int L) {
+        long sparseSA_length = (SA.size() + L - 1) / L;
+        long[] sparseSA = new long[(int) sparseSA_length];
         for (int i = 0; i < sparseSA_length; ++i) {
-            sparseSA[i] = SA[i * L];
+            sparseSA[i] = SA.get(i * L);
         }
-        return new SparseSuffixArray(sparseSA, SA.length, L);
+        return new SparseSuffixArray(sparseSA, SA.size(), L);
     }
 
     //    public static SparseSuffixArray buildFromFMIndex(FMIndex fmIndex, int L) {

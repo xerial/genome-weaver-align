@@ -23,8 +23,9 @@
 package org.utgenome.weaver.align;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
-import org.utgenome.weaver.align.LSAIS.LSAISInput;
+import org.utgenome.weaver.align.LSAIS.LArray;
 
 /**
  * Array capable to store more than 2G (2 x 1024 x 1024 x 1024) entries
@@ -32,7 +33,7 @@ import org.utgenome.weaver.align.LSAIS.LSAISInput;
  * @author leo
  * 
  */
-public class LIntArray implements LSAISInput
+public class LIntArray implements LArray, Iterable<Long>
 {
 
     private final long       size;
@@ -79,6 +80,29 @@ public class LIntArray implements LSAISInput
         int remainder = (int) index & 0x7FFFFFFF;
 
         return array.get(container)[remainder] += (int) (val & 0xFFFFFFFF);
+    }
+
+    @Override
+    public Iterator<Long> iterator() {
+        return new Iterator<Long>() {
+
+            private long cursor = 0;
+
+            @Override
+            public boolean hasNext() {
+                return cursor < size;
+            }
+
+            @Override
+            public Long next() {
+                return get(cursor++);
+            }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException("remove");
+            }
+        };
     }
 
 }

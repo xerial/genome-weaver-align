@@ -26,6 +26,7 @@
 
 package org.utgenome.weaver.align;
 
+
 /**
  * Suffix-array construction algorithm based on induced-sorting. This
  * implementation uses SAIS by Yuta Mori
@@ -35,7 +36,7 @@ package org.utgenome.weaver.align;
  */
 public class LSAIS
 {
-    public static interface LSAISInput
+    public static interface LArray
     {
         public long get(long i);
 
@@ -46,7 +47,7 @@ public class LSAIS
         public long size();
     }
 
-    private static class IntArray implements LSAISInput
+    private static class IntArray implements LArray
     {
         private int[] m_A   = null;
         private int   m_pos = 0;
@@ -74,7 +75,7 @@ public class LSAIS
         }
     }
 
-    private static class SubIntArray implements LSAISInput
+    private static class SubIntArray implements LArray
     {
         private LIntArray m_A   = null;
         private long      m_pos = 0;
@@ -102,8 +103,39 @@ public class LSAIS
         }
     }
 
+    private static class StringArray implements LArray
+    {
+        private String m_A   = null;
+        private int    m_pos = 0;
+
+        StringArray(String A, int pos) {
+            m_A = A;
+            m_pos = pos;
+        }
+
+        @Override
+        public long size() {
+            return m_A.length() - m_pos;
+        }
+
+        @Override
+        public long get(long i) {
+            return (m_A.charAt((int) (m_pos + i)) & 0xffff);
+        }
+
+        @Override
+        public void set(long i, long val) {
+
+        }
+
+        @Override
+        public long update(long i, long val) {
+            return 0;
+        }
+    }
+
     /* find the start or end of each bucket */
-    private static void getCounts(LSAISInput T, LSAISInput C, long n, int k) {
+    private static void getCounts(LArray T, LArray C, long n, int k) {
         int i;
         for (i = 0; i < k; ++i) {
             C.set(i, 0);
@@ -113,7 +145,7 @@ public class LSAIS
         }
     }
 
-    private static void getBuckets(LSAISInput C, LSAISInput B, int k, boolean end) {
+    private static void getBuckets(LArray C, LArray B, int k, boolean end) {
         int i, sum = 0;
         if (end != false) {
             for (i = 0; i < k; ++i) {
@@ -130,7 +162,7 @@ public class LSAIS
     }
 
     /* sort all type LMS suffixes */
-    private static void LMSsort(LSAISInput T, LIntArray SA, LSAISInput C, LSAISInput B, long n, int k) {
+    private static void LMSsort(LArray T, LIntArray SA, LArray C, LArray B, long n, int k) {
         long b, i, j;
         long c0, c1;
         /* compute SAl */
@@ -174,7 +206,7 @@ public class LSAIS
         }
     }
 
-    private static int LMSpostproc(LSAISInput T, LIntArray SA, long n, long m) {
+    private static int LMSpostproc(LArray T, LIntArray SA, long n, long m) {
         long i, j, p, q, plen, qlen;
         int name;
         long c0, c1;
@@ -243,7 +275,7 @@ public class LSAIS
     }
 
     /* compute SA and BWT */
-    private static void induceSA(LSAISInput T, LIntArray SA, LSAISInput C, LSAISInput B, long n, int k) {
+    private static void induceSA(LArray T, LIntArray SA, LArray C, LArray B, long n, int k) {
         long b, i, j;
         long c0, c1;
         /* compute SAl */
@@ -286,8 +318,8 @@ public class LSAIS
 
     /* find the suffix array SA of T[0..n-1] in {0..k-1}^n
        use a working space (excluding T and SA) of at most 2n+O(1) for a constant alphabet */
-    private static long SA_IS(LSAISInput T, LIntArray SA, long fs, long n, int k) {
-        LSAISInput C, B, RA;
+    private static long SA_IS(LArray T, LIntArray SA, long fs, long n, int k) {
+        LArray C, B, RA;
         long b, m, i, j, c, p, q, pidx = 0, newfs;
         int name;
         long c0, c1;
@@ -469,8 +501,7 @@ public class LSAIS
     }
 
     /** Suffix Sorting **/
-
-    public static long suffixsort(LSAISInput T, LIntArray SA, int k) {
+    public static long suffixsort(LArray T, LIntArray SA, int k) {
         if (T == null || SA == null)
             throw new NullPointerException();
         final int n = (int) T.size();
@@ -484,6 +515,23 @@ public class LSAIS
             return 0;
         }
         return SA_IS(T, SA, 0, n, k);
+    }
+
+    /* String */
+    public static long suffixsort(String T, LIntArray SA) {
+        if (T == null || SA == null)
+            throw new NullPointerException();
+        final int n = T.length();
+        if (SA.size() < n)
+            throw new IllegalArgumentException("The suffix array container (SA) size is smaller than the input");
+
+        if (n <= 1) {
+            if (n == 1) {
+                SA.set(0, 0);
+            }
+            return 0;
+        }
+        return SA_IS(new StringArray(T, 0), SA, 0, n, 65536);
     }
 
 }
