@@ -39,9 +39,11 @@ public class LIntArray implements LArray, Iterable<Long>
     private final long       size;
 
     private ArrayList<int[]> array;
+    private BitVector        flag;
 
     public LIntArray(long size) {
         this.size = size;
+        flag = new BitVector(size);
 
         // (flag)|---(array pos)------|---------------------------|
         // (flag)|------(32 bit)-------|------(index: 30bit)------|
@@ -70,16 +72,35 @@ public class LIntArray implements LArray, Iterable<Long>
     }
 
     public long get(long index) {
-        return array.get(pos(index))[offset(index)] & 0xFFFFFFFFL;
+        long v = array.get(pos(index))[offset(index)] & 0xFFFFFFFFL;
+        return flag.get(index) ? -v : v;
     }
 
     public void set(long index, long value) {
-        array.get(pos(index))[offset(index)] = (int) (value & 0xFFFFFFFFL);
+        flag.setBit(value < 0, index);
+        array.get(pos(index))[offset(index)] = (int) Math.abs(value);
     }
 
     @Override
     public long update(long index, long val) {
-        return array.get(pos(index))[offset(index)] += (int) (val & 0xFFFFFFFFL);
+        if (flag.get(index))
+            return array.get(pos(index))[offset(index)] -= (int) (val & 0xFFFFFFFFL);
+        else
+            return array.get(pos(index))[offset(index)] += (int) (val & 0xFFFFFFFFL);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder b = new StringBuilder();
+        int i = 0;
+        b.append("[");
+        for (long each : this) {
+            if (i++ > 0)
+                b.append(", ");
+            b.append(each);
+        }
+        b.append("]");
+        return b.toString();
     }
 
     @Override

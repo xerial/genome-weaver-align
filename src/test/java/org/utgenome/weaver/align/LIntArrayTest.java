@@ -42,9 +42,18 @@ public class LIntArrayTest
     @Test
     public void exhaustiveCheck() throws Exception {
         LIntArray array = new LIntArray(1);
-        for (long i = 0; i < 0xFFFFFFFF; ++i) {
+        for (long i = -0xFFFFFFFF; i < 0xFFFFFFFF; ++i) {
             array.set(0, i);
             assertEquals(i, array.get(i));
         }
+    }
+
+    @Test
+    public void neg() throws Exception {
+        LIntArray array = new LIntArray(1);
+        long v = ~11L;
+        array.set(0, v);
+        assertEquals(v, array.get(0));
+
     }
 }
