@@ -52,11 +52,12 @@ public class FMIndex
     }
 
     /**
-     * Follow the suffix link using the equation SA[x] - 1 = C(x) + Occ(c, x-1).
+     * Follow the suffix link using the equation: SA[x] - 1 = C(x) + Rank(c,
+     * x-1).
      * 
      * @param index
-     *            index on the suffix array
-     * @return index p on the suffix array that satisfies SA[p] = SA[x] - 1.
+     *            index x in the suffix array
+     * @return index p in the suffix array that satisfies SA[p] = SA[x] - 1.
      */
     public long suffixLink(long index) {
         if (index >= bwt.size() - 1) { // If the index reaches the sentinel 

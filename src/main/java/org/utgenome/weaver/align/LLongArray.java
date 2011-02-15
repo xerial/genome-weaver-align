@@ -72,4 +72,13 @@ public class LLongArray
         array.get(container)[remainder] = value;
     }
 
+    public void fill(long value) {
+        for (int c = 0; c < array.size(); ++c) {
+            long[] container = array.get(c);
+            for (int i = 0; i < container.length; ++i) {
+                container[i] = value;
+            }
+        }
+    }
+
 }
