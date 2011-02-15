@@ -39,14 +39,14 @@ public class IUPACSequenceWriter
 {
     private final OutputStream out;
     private byte               cache  = 0;
-    private int                cursor = 0;
+    private long               cursor = 0;
 
     public IUPACSequenceWriter(OutputStream out) {
         this.out = out;
     }
 
     public void append(IUPAC code) throws IOException {
-        int offset = cursor % 2;
+        long offset = cursor % 2;
 
         if (offset == 0) {
             cache = 0;
@@ -61,7 +61,7 @@ public class IUPACSequenceWriter
         cursor++;
     }
 
-    public int size() {
+    public long size() {
         return cursor;
     }
 

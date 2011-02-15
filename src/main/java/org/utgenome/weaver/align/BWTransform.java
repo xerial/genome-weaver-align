@@ -87,15 +87,15 @@ public class BWTransform implements Command
         _logger.info("IUPAC file: " + files.iupacForward());
         _logger.info("index file: " + files.pacFileIndex());
 
-        int totalSize = -1;
+        long totalSize = -1;
         {
             // Read the input FASTA file, then encode the sequences using the IUPAC code         
             BufferedOutputStream iupacFile = new BufferedOutputStream(new FileOutputStream(files.iupacForward()));
             SilkWriter indexOut = new SilkWriter(new BufferedWriter(new FileWriter(files.pacFileIndex())));
             IUPACSequenceWriter encoder = new IUPACSequenceWriter(iupacFile);
             FASTAPullParser fasta = new FASTAPullParser(new File(fastaFile));
-            int lineCount = 1;
-            int offset = 0;
+            long lineCount = 1;
+            long offset = 0;
             for (String desc; (desc = fasta.nextDescriptionLine()) != null; lineCount++) {
                 String seqName = CompactFASTA.pickSequenceName(desc);
                 _logger.info(String.format("reading %s", seqName));
@@ -116,8 +116,8 @@ public class BWTransform implements Command
                     }
                 }
 
-                int pos = encoder.size();
-                int sequenceSize = pos - offset;
+                long pos = encoder.size();
+                long sequenceSize = pos - offset;
                 SequenceIndex index = new SequenceIndex(seqName, desc, sequenceSize, offset);
                 indexOut.leafObject("index", index);
                 _logger.info("\n" + SilkLens.toSilk("index", index));
