@@ -84,6 +84,7 @@ public class BWAlign implements Command
         final SequenceBoundary boundary = SequenceBoundary.loadSilk(SequenceBoundary.getFileName(fastaFilePrefix));
 
         // Load sparse suffix arrays
+        _logger.info("Loading sparse suffix arrays");
         File sparseForwardSAFile = new File(fastaFilePrefix + ".sa");
         File sparseReverseSAFile = new File(fastaFilePrefix + ".rsa");
         final SparseSuffixArray saF = SparseSuffixArray.loadFrom(new BufferedInputStream(new FileInputStream(
@@ -115,7 +116,7 @@ public class BWAlign implements Command
                     for (long i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
                         long pos = saF.get(i, fmIndex);
                         PosOnGenome loc = boundary.translate(pos, false);
-                        _logger.info(SilkLens.toSilk("loc", loc));
+                        System.out.println(SilkLens.toSilk("loc", loc));
                     }
                 }
             });

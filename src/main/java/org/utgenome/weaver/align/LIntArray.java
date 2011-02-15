@@ -24,13 +24,15 @@ package org.utgenome.weaver.align;
 
 import java.util.ArrayList;
 
+import org.utgenome.weaver.align.LSAIS.LSAISInput;
+
 /**
  * Array capable to store more than 2G (2 x 1024 x 1024 x 1024) entries
  * 
  * @author leo
  * 
  */
-public class LIntArray
+public class LIntArray implements LSAISInput
 {
 
     private final long       size;
@@ -58,18 +60,25 @@ public class LIntArray
         return size;
     }
 
-    public int get(long index) {
+    public long get(long index) {
         int container = (int) (index >> 31);
         int remainder = (int) index & 0x7FFFFFFF;
-
-        return array.get(container)[remainder];
+        return 0L | array.get(container)[remainder];
     }
 
-    public void set(long index, int value) {
+    public void set(long index, long value) {
         int container = (int) (index >> 31);
         int remainder = (int) index & 0x7FFFFFFF;
 
-        array.get(container)[remainder] = value;
+        array.get(container)[remainder] = (int) (value & 0xFFFFFFFF);
+    }
+
+    @Override
+    public long update(long index, long val) {
+        int container = (int) (index >> 31);
+        int remainder = (int) index & 0x7FFFFFFF;
+
+        return array.get(container)[remainder] += (int) (val & 0xFFFFFFFF);
     }
 
 }
