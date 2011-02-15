@@ -74,7 +74,7 @@ public class BWAlign implements Command
 
         // Load the boundary information of the concatenated chr sequences 
         final SequenceBoundary index = SequenceBoundary.loadSilk(files.pacFileIndex());
-        final int N = index.totalSize;
+        final long N = index.totalSize;
         final int K = IUPAC.values().length;
 
         // Load sparse suffix arrays

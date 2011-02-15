@@ -116,7 +116,7 @@ public class IUPACSequence implements LArray, LSeq
 
     public void reverse(OutputStream out) throws IOException {
         IUPACSequenceWriter encoder = new IUPACSequenceWriter(out);
-        for (int i = binaryInfo.totalSize - 1; i >= 0; --i) {
+        for (long i = binaryInfo.totalSize - 1; i >= 0; --i) {
             encoder.append(this.getIUPAC(i));
         }
         encoder.close();
