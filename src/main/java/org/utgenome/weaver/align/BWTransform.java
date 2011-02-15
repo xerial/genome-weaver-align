@@ -135,36 +135,35 @@ public class BWTransform implements Command
             indexOut.close();
         }
 
-        // Reverse the IUPAC sequence
         {
+            // Reverse the IUPAC sequence
             IUPACSequence forwardSeq = new IUPACSequence(files.iupacForward(), files);
-            {
-                _logger.info("Reverse the sequence");
-                _logger.info("Reverse IUPAC file: " + files.iupacReverse());
-                IUPACSequenceWriter encoder = new IUPACSequenceWriter(new BufferedOutputStream(new FileOutputStream(
-                        files.iupacReverse())));
-                // reverse IN[0..n-2] (excludes the sentinel)
-                for (long i = forwardSeq.size() - 2; i >= 0; --i) {
-                    encoder.append(forwardSeq.getIUPAC(i));
-                }
-                // append a sentinel.
-                encoder.append(IUPAC.None);
-                encoder.close();
+            _logger.info("Reverse the sequence");
+            _logger.info("Reverse IUPAC file: " + files.iupacReverse());
+            IUPACSequenceWriter encoder = new IUPACSequenceWriter(new BufferedOutputStream(new FileOutputStream(
+                    files.iupacReverse())));
+            // reverse IN[0..n-2] (excludes the sentinel)
+            for (long i = forwardSeq.size() - 2; i >= 0; --i) {
+                encoder.append(forwardSeq.getIUPAC(i));
             }
+            // append a sentinel.
+            encoder.append(IUPAC.None);
+            encoder.close();
+        }
 
-            {
-                // Create a suffix array and BWT string of the forward IUPAC sequence
-                _logger.info("Creating a suffix array of the forward sequence");
-                File suffixArrayFile = files.sparseSuffixArrayForward();
-                File bwtFile = files.bwtForward();
-                File wvFile = files.bwtWaveletForward();
-                buildSuffixArray(forwardSeq, files, suffixArrayFile, bwtFile, wvFile);
-            }
+        {
+            // Create a suffix array and BWT string of the forward IUPAC sequence
+            IUPACSequence forwardSeq = new IUPACSequence(files.iupacForward(), files);
+            _logger.info("Creating a suffix array of the forward sequence");
+            File suffixArrayFile = files.sparseSuffixArrayForward();
+            File bwtFile = files.bwtForward();
+            File wvFile = files.bwtWaveletForward();
+            buildSuffixArray(forwardSeq, files, suffixArrayFile, bwtFile, wvFile);
         }
 
         {
             // Create a suffix array of the reverse IUPAC sequence
-            IUPACSequence reverseSeq = new IUPACSequence(files.iupacReverse(), totalSize);
+            IUPACSequence reverseSeq = new IUPACSequence(files.iupacReverse(), files);
             _logger.info("Creating a suffix array of the reverse sequence");
             File suffixArrayFile = files.sparseSuffixArrayReverse();
             File bwtFile = files.bwtReverse();
