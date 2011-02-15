@@ -43,10 +43,12 @@ public class BitVectorTest
         pos.add(3L);
         pos.add(63L);
         pos.add(80L);
+        pos.add(10L);
+        pos.add(34L);
         for (long each : pos) {
             v.set(each);
         }
-        _logger.info(v);
+        _logger.debug(v);
 
         for (long i = 0; i < v.size(); ++i) {
             if (pos.contains(i))
@@ -58,8 +60,31 @@ public class BitVectorTest
         long count = 0;
         for (long i = 0; i < v.size(); ++i) {
             assertEquals("index i=" + i, count, v.rank(true, i));
+            assertEquals("index i=" + i, i - count, v.rank(false, i));
             if (pos.contains(i))
                 count++;
+        }
+    }
+
+    @Test
+    public void select() throws Exception {
+        BitVector v = new BitVector(100);
+        assertEquals(100, v.size());
+        TreeSet<Long> pos = new TreeSet<Long>();
+        pos.add(3L);
+        pos.add(10L);
+        pos.add(34L);
+        pos.add(63L);
+        pos.add(80L);
+        for (long each : pos) {
+            v.set(each);
+        }
+        _logger.debug(v);
+
+        long count = 0;
+        for (long each : pos) {
+            count++;
+            assertEquals(each, v.select(true, count));
         }
 
     }

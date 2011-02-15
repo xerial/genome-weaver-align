@@ -37,6 +37,7 @@ public class BitVector
     private LLongArray       block;
     private LLongArray       rankTable;
     private long             size;
+    private long             numberOf1s               = 0;
 
     public BitVector(long size) {
         this.size = size;
@@ -66,6 +67,7 @@ public class BitVector
             count += popCount(block.get(i));
         }
         rankTable.set(rankTable.size() - 1, count);
+        numberOf1s = count;
     }
 
     public boolean get(long index) {
@@ -101,9 +103,8 @@ public class BitVector
     }
 
     private long rankOne(long index) {
-        if (rankTable == null) {
+        if (rankTable == null)
             prepareRankTable();
-        }
 
         long blockPos = index / NBITS_IN_LONG;
         long tablePos = blockPos / NUM_BLOCKS_IN_RANK_TABLE;
@@ -121,8 +122,111 @@ public class BitVector
         return rank;
     }
 
+    public long select(boolean c, long rank) {
+        if (rankTable == null)
+            prepareRankTable();
+
+        if (c) {
+            if (rank > numberOf1s)
+                return -1;
+        }
+        else {
+            if (rank > size - numberOf1s)
+                return -1;
+        }
+
+        RankAndPos rp = selectOutBlock(c, rank);
+        long val = c ? block.get(rp.pos) : ~block.get(rp.pos);
+        return rp.pos * NBITS_IN_LONG + selectInBlock(val, rp.rank);
+    }
+
+    private long getBitNum(long oneNum, long num, boolean bit) {
+        if (bit)
+            return oneNum;
+        else
+            return num - oneNum;
+    }
+
+    private static class RankAndPos
+    {
+        public final long rank;
+        public final long pos;
+
+        public RankAndPos(long rank, long pos) {
+            this.rank = rank;
+            this.pos = pos;
+        }
+    }
+
+    private RankAndPos selectOutBlock(boolean c, long rank) {
+        // binary search over tables
+        long left = 0;
+        long right = rankTable.size();
+        while (left < right) {
+            long mid = (left + right) / 2;
+            long length = NBITS_IN_LONG * NUM_BLOCKS_IN_RANK_TABLE * mid;
+            if (getBitNum(rankTable.get(mid), length, c) < rank) {
+                left = mid + 1;
+            }
+            else {
+                right = mid;
+            }
+        }
+
+        long table_ind = (left != 0) ? left - 1 : 0;
+        long block_pos = table_ind * NUM_BLOCKS_IN_RANK_TABLE;
+        rank -= getBitNum(rankTable.get(table_ind), block_pos * NBITS_IN_LONG, c);
+
+        // sequential search over blocks
+        for (; block_pos < block.size(); ++block_pos) {
+            long rank_next = getBitNum(popCount(block.get(block_pos)), NBITS_IN_LONG, c);
+            if (rank <= rank_next) {
+                break;
+            }
+            rank -= rank_next;
+        }
+
+        return new RankAndPos(rank, block_pos);
+    }
+
+    private long selectInBlock(long x, long rank) {
+        long x1 = x - ((x & 0xAAAAAAAAAAAAAAAAL) >>> 1);
+        long x2 = (x1 & 0x3333333333333333L) + ((x1 >>> 2) & 0x3333333333333333L);
+        long x3 = (x2 + (x2 >>> 4)) & 0x0F0F0F0F0F0F0F0FL;
+
+        long pos = 0;
+        for (;; pos += 8) {
+            long rank_next = (x3 >>> pos) & 0xFFL;
+            if (rank <= rank_next)
+                break;
+            rank -= rank_next;
+        }
+
+        long v2 = (x2 >>> pos) & 0xFL;
+        if (rank > v2) {
+            rank -= v2;
+            pos += 4;
+        }
+
+        long v1 = (x1 >> pos) & 0x3L;
+        if (rank > v1) {
+            rank -= v1;
+            pos += 2;
+        }
+
+        long v0 = (x >> pos) & 0x1L;
+        if (v0 < rank) {
+            rank -= v0;
+            pos += 1;
+        }
+
+        return pos;
+
+    }
+
     /**
-     * Count the number of 1s in the input
+     * Count the number of 1s in the input. See also the Hacker's Delight:
+     * http://hackers-delight.org.ua/038.htm
      * 
      * @param x
      * @return the number of 1-bit in the input x
@@ -134,7 +238,7 @@ public class BitVector
         x = x + (x >>> 8);
         x = x + (x >>> 16);
         x = x + (x >>> 32);
-        return x & 0x7F;
+        return x & 0x7FL;
     }
 
     @Override
