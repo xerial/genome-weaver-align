@@ -29,6 +29,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -66,7 +69,18 @@ public class LaunchJava implements CommandModule
             return;
         }
 
-        CommandExecutor.exec(StringUtil.join(args, " "), CommandExecutor.prepareEnvironmentVariables(), null);
+        CommandExecutor.exec(concatenate(args), CommandExecutor.prepareEnvironmentVariables(), null);
+    }
+
+    private static String concatenate(String[] args) {
+        ArrayList<String> cmd = new ArrayList<String>();
+        for (String each : args) {
+            if (each.contains(" ")) {
+                each = StringUtil.doubleQuote(each);
+            }
+            cmd.add(each);
+        }
+        return StringUtil.join(cmd, " ");
     }
 
     private static abstract class ProcessOutputReader implements Runnable
@@ -93,12 +107,40 @@ public class LaunchJava implements CommandModule
         }
     }
 
+    private static class ProcessInputWriter implements Runnable
+    {
+        private final PrintWriter    writer;
+        private final BufferedReader systemIn;
+
+        public ProcessInputWriter(OutputStream out) {
+            writer = new PrintWriter(out);
+            systemIn = new BufferedReader(new InputStreamReader(System.in));
+        }
+
+        @Override
+        public void run() {
+            try {
+                String line;
+                while ((line = systemIn.readLine()) != null) {
+                    writer.println(line);
+                }
+            }
+            catch (IOException e) {
+                _logger.debug(e);
+            }
+
+        }
+
+    }
+
     public static class CommandExecutor
     {
-        final ExecutorService threadManager = Executors.newFixedThreadPool(2);
+        final ExecutorService threadManager = Executors.newFixedThreadPool(3);
         Process               proc          = null;
         Future< ? >           stdoutReader;
         Future< ? >           stderrReader;
+
+        //Future< ? >           stdInWriter;
 
         private void dispose() {
             if (proc != null) {
@@ -135,6 +177,8 @@ public class LaunchJava implements CommandModule
                         System.err.println(line);
                     }
                 });
+
+                //stdInWriter = threadManager.submit(new ProcessInputWriter(proc.getOutputStream()));
 
                 int ret = proc.waitFor();
                 return ret;
