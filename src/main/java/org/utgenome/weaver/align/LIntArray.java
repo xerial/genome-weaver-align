@@ -47,7 +47,7 @@ public class LIntArray implements LArray, Iterable<Long>
 
         // (flag)|---(array pos)------|---------------------------|
         // (flag)|------(32 bit)-------|------(index: 30bit)------|
-        int container = pos(size);
+        int container = (int) (size >>> 30);
         int remainder = offset(size);
 
         array = new ArrayList<int[]>(container + 1);
@@ -59,8 +59,8 @@ public class LIntArray implements LArray, Iterable<Long>
 
     }
 
-    private static int pos(long index) {
-        return (int) (index >>> 30);
+    private int[] container(long index) {
+        return array.get((int) (index >>> 30));
     }
 
     private static int offset(long index) {
@@ -72,13 +72,13 @@ public class LIntArray implements LArray, Iterable<Long>
     }
 
     public long get(long index) {
-        long v = array.get(pos(index))[offset(index)] & 0xFFFFFFFFL;
+        long v = container(index)[offset(index)] & 0xFFFFFFFFL;
         return flag.get(index) ? -v : v;
     }
 
     public void set(long index, long value) {
         flag.setBit(value < 0, index);
-        array.get(pos(index))[offset(index)] = (int) Math.abs(value);
+        container(index)[offset(index)] = (int) Math.abs(value);
     }
 
     @Override

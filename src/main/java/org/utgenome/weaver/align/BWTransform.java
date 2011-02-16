@@ -181,7 +181,7 @@ public class BWTransform implements Command
         {
             LSAIS.suffixsort(seq, SA, 16);
             _logger.info("Sparse SA file: " + suffixArrayFile);
-            SparseSuffixArray sparseSA = SparseSuffixArray.buildFromSuffixArray(SA, 16);
+            SparseSuffixArray sparseSA = SparseSuffixArray.buildFromSuffixArray(SA, 32);
             sparseSA.saveTo(suffixArrayFile);
         }
         _logger.info(String.format("Suffix array construction finshed. %.2f sec.", timer.getElapsedTime()));

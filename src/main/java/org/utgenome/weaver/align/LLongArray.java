@@ -26,6 +26,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * Array capable to store more than 2G (2 x 1024 x 1024 x 1024) entries
@@ -33,7 +34,7 @@ import java.util.ArrayList;
  * @author leo
  * 
  */
-public class LLongArray
+public class LLongArray implements Iterable<Long>
 {
 
     private final long        size;
@@ -45,12 +46,12 @@ public class LLongArray
 
         // (flag)|---(array index)----|---------------------------|
         // (flag)|------(31 bit)-------|------(index: 31bit)------|
-        int container = (int) (size >> 31);
-        int remainder = (int) size & 0x7FFFFFFF;
+        int container = (int) (size >> 30);
+        int remainder = offset(size);
 
         array = new ArrayList<long[]>(container + 1);
         for (int i = 0; i < container; i++) {
-            array.add(new long[Integer.MAX_VALUE]);
+            array.add(new long[0x40000000]);
         }
         if (remainder > 0)
             array.add(new long[remainder]);
@@ -65,7 +66,7 @@ public class LLongArray
     }
 
     private static int offset(long index) {
-        return (int) index & 0x7FFFFFFF;
+        return (int) (index & 0x3FFFFFFFL);
     }
 
     public long get(long index) {
@@ -107,6 +108,43 @@ public class LLongArray
             array.set(i, in.readLong());
         }
         return array;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder b = new StringBuilder();
+        int i = 0;
+        b.append("[");
+        for (long each : this) {
+            if (i++ > 0)
+                b.append(", ");
+            b.append(each);
+        }
+        b.append("]");
+        return b.toString();
+    }
+
+    @Override
+    public Iterator<Long> iterator() {
+        return new Iterator<Long>() {
+
+            private long cursor = 0;
+
+            @Override
+            public boolean hasNext() {
+                return cursor < size;
+            }
+
+            @Override
+            public Long next() {
+                return get(cursor++);
+            }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException("remove");
+            }
+        };
     }
 
 }
