@@ -63,6 +63,7 @@ public class LaunchJava implements CommandModule
     public void execute(String[] args) throws Exception {
         if (args.length <= 0) {
             _logger.error("Empty command");
+            return;
         }
 
         CommandExecutor.exec(StringUtil.join(args, " "), CommandExecutor.prepareEnvironmentVariables(), null);

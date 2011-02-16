@@ -42,6 +42,7 @@ install: $(TARGET)/genome-weaver-$(VERSION)-bin.tar.gz
 	tar xvfz $< -C "$(INSTALL_DIR)"
 	ln -sfn "genome-weaver-$(VERSION)" "$(INSTALL_DIR)/current"
 	ln -sf "../genome-weaver/current/bin/gw" "$(PREFIX)/bin/gw"
+	ln -sf "../genome-weaver/current/bin/gw" "$(PREFIX)/bin/gw"
 
 uninstall:
 	rm -rf "$(INSTALL_DIR)/genome-weaver-$(VERSION)"
