@@ -89,7 +89,7 @@ public class IUPACSequence implements LArray, LSeq
     }
 
     public IUPAC getIUPAC(long index) {
-        byte code = (byte) ((seq[(int) (index >> 1)] >>> (1 - (index & 1)) * 4) & 0x0F);
+        byte code = (byte) ((seq[(int) (index >>> 1)] >>> (1 - (index & 1)) * 4) & 0x0F);
         return IUPAC.decode(code);
     }
 

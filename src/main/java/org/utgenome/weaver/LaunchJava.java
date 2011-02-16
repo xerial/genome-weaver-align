@@ -46,12 +46,12 @@ public class LaunchJava implements CommandModule
 
     @Override
     public String name() {
-        return "fork";
+        return "e";
     }
 
     @Override
     public String getOneLineDescription() {
-        return "launch command in a child process";
+        return "launch a command in a child process";
     }
 
     @Override
