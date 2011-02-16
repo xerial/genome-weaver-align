@@ -61,6 +61,10 @@ public class LaunchJava implements CommandModule
 
     @Override
     public void execute(String[] args) throws Exception {
+        if (args.length <= 0) {
+            _logger.error("Empty command");
+        }
+
         CommandExecutor.exec(StringUtil.join(args, " "), CommandExecutor.prepareEnvironmentVariables(), null);
     }
 
@@ -121,13 +125,13 @@ public class LaunchJava implements CommandModule
                 stdoutReader = threadManager.submit(new ProcessOutputReader(proc.getInputStream()) {
                     @Override
                     public void output(String line) {
-                        _logger.info(line);
+                        System.out.println(line);
                     }
                 });
                 stderrReader = threadManager.submit(new ProcessOutputReader(proc.getErrorStream()) {
                     @Override
                     public void output(String line) {
-                        _logger.error(line);
+                        System.err.println(line);
                     }
                 });
 
