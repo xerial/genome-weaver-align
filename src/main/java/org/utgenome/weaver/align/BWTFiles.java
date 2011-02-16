@@ -54,7 +54,7 @@ public class BWTFiles
     }
 
     public File pacIndex() {
-        return new File(prefix + ".silk");
+        return new File(prefix + ".i.silk");
     }
 
     public File iupac() {
