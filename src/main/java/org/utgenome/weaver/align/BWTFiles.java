@@ -35,48 +35,42 @@ import java.io.File;
 public class BWTFiles
 {
     private String prefix;
+    private String prefixWithStrand;
 
-    public BWTFiles(String fastaFile) {
+    public BWTFiles(String fastaFile, Strand strand) {
         if (fastaFile.endsWith("tar.gz"))
             this.prefix = fastaFile.substring(0, fastaFile.length() - "tar.gz".length() - 1);
         else
             this.prefix = fastaFile;
+
+        switch (strand) {
+        case FORWARD:
+            prefixWithStrand = prefix + ".f";
+            break;
+        case REVERSE:
+            prefixWithStrand = prefix + ".r";
+            break;
+        }
     }
 
-    public File pacFileIndex() {
-        return new File(prefix + ".i.silk");
+    public File pacIndex() {
+        return new File(prefix + ".silk");
     }
 
-    public File iupacForward() {
-        return new File(prefix + ".f.iupac");
+    public File iupac() {
+        return new File(prefixWithStrand + ".iupac");
     }
 
-    public File iupacReverse() {
-        return new File(prefix + ".r.iupac");
+    public File bwt() {
+        return new File(prefixWithStrand + ".bwt");
     }
 
-    public File bwtForward() {
-        return new File(prefix + ".f.bwt");
+    public File sparseSuffixArray() {
+        return new File(prefixWithStrand + ".ssa");
     }
 
-    public File bwtReverse() {
-        return new File(prefix + ".r.bwt");
-    }
-
-    public File sparseSuffixArrayForward() {
-        return new File(prefix + ".f.ssa");
-    }
-
-    public File sparseSuffixArrayReverse() {
-        return new File(prefix + ".r.ssa");
-    }
-
-    public File bwtWaveletForward() {
-        return new File(prefix + ".f.bwt.wv");
-    }
-
-    public File bwtWaveletReverse() {
-        return new File(prefix + ".r.bwt.wv");
+    public File bwtWavelet() {
+        return new File(prefixWithStrand + ".bwt.wv");
     }
 
 }

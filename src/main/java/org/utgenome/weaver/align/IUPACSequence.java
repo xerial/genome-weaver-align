@@ -53,15 +53,15 @@ public class IUPACSequence implements LArray, LSeq
         initSeq(numBases, iupacFile);
     }
 
-    public IUPACSequence(File iupacFile, BWTFiles f) throws UTGBException {
+    public IUPACSequence(BWTFiles db) throws UTGBException {
 
-        File silkIndexFile = f.pacFileIndex();
+        File silkIndexFile = db.pacIndex();
         binaryInfo = SequenceBoundary.loadSilk(silkIndexFile);
 
         if (binaryInfo == null)
             throw new UTGBException(UTGBErrorCode.INVALID_INPUT, "failed to load index file");
 
-        initSeq(binaryInfo.totalSize, iupacFile);
+        initSeq(binaryInfo.totalSize, db.iupac());
     }
 
     private void initSeq(long numBases, File iupacFile) throws UTGBException {

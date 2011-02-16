@@ -70,23 +70,24 @@ public class BWAlign implements Command
     @Override
     public void execute(String[] args) throws Exception {
 
-        BWTFiles files = new BWTFiles(fastaFilePrefix);
+        BWTFiles forwardDB = new BWTFiles(fastaFilePrefix, Strand.FORWARD);
+        BWTFiles reverseDB = new BWTFiles(fastaFilePrefix, Strand.REVERSE);
 
         // Load the boundary information of the concatenated chr sequences 
-        final SequenceBoundary index = SequenceBoundary.loadSilk(files.pacFileIndex());
+        final SequenceBoundary index = SequenceBoundary.loadSilk(forwardDB.pacIndex());
         final long N = index.totalSize;
         final int K = IUPAC.values().length;
 
         // Load sparse suffix arrays
         _logger.info("Loading sparse suffix arrays");
-        final SparseSuffixArray saF = SparseSuffixArray.loadFrom(files.sparseSuffixArrayForward());
-        final SparseSuffixArray saR = SparseSuffixArray.loadFrom(files.sparseSuffixArrayReverse());
+        final SparseSuffixArray saF = SparseSuffixArray.loadFrom(forwardDB.sparseSuffixArray());
+        final SparseSuffixArray saR = SparseSuffixArray.loadFrom(reverseDB.sparseSuffixArray());
 
         // Load Wavelet arrays
         _logger.info("Loading a Wavelet array of the forward BWT");
-        WaveletArray wvF = WaveletArray.loadFrom(files.bwtWaveletForward());
+        WaveletArray wvF = WaveletArray.loadFrom(forwardDB.bwtWavelet());
         _logger.info("Loading a Wavelet array of the reverse BWT");
-        WaveletArray wvR = WaveletArray.loadFrom(files.bwtWaveletReverse());
+        WaveletArray wvR = WaveletArray.loadFrom(reverseDB.bwtWavelet());
 
         // Count the character frequencies 
         CharacterCount C = new CharacterCount(wvF);

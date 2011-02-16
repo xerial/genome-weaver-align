@@ -63,21 +63,30 @@ public class Pac2BWT implements Command
         if (fastaFile == null)
             throw new UTGBException(UTGBErrorCode.MISSING_FILES, "no input fasta file");
 
-        BWTFiles b = new BWTFiles(fastaFile);
+        BWTFiles forwardDB = new BWTFiles(fastaFile, Strand.FORWARD);
+        BWTFiles reverseDB = new BWTFiles(fastaFile, Strand.REVERSE);
+
+        pac2bwt(forwardDB);
+        pac2bwt(reverseDB);
+    }
+
+    public static void pac2bwt(BWTFiles db) throws UTGBException, IOException {
+
         StopWatch timer = new StopWatch();
         {
-            IUPACSequence seq = new IUPACSequence(b.iupacForward(), b);
+            IUPACSequence seq = new IUPACSequence(db);
             LIntArray SA = new LIntArray(seq.textSize());
             _logger.info("Creating a suffix array");
             LSAIS.suffixsort(seq, SA, 16);
 
-            _logger.info("Creating a BWT string: " + b.bwtForward());
-            IUPACSequenceWriter writer = new IUPACSequenceWriter(new BufferedOutputStream(new FileOutputStream(
-                    b.bwtForward())));
+            _logger.info("Creating a BWT string: " + db.bwt());
+            IUPACSequenceWriter writer = new IUPACSequenceWriter(new BufferedOutputStream(
+                    new FileOutputStream(db.bwt())));
             bwt(seq, SA, writer);
             writer.close();
         }
         _logger.info("done: " + timer.getElapsedTime() + " sec.");
+
     }
 
     public static void bwt(IUPACSequence seq, LIntArray SA, IUPACSequenceWriter out) throws IOException {

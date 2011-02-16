@@ -82,16 +82,15 @@ public class BWTransform implements Command
             throw new UTGBException(UTGBErrorCode.MISSING_FILES, "no input FASTA file is given");
 
         // Output IUPAC sequence to a file
-        BWTFiles files = new BWTFiles(fastaFile);
+        BWTFiles forwardDB = new BWTFiles(fastaFile, Strand.FORWARD);
+        BWTFiles reverseDB = new BWTFiles(fastaFile, Strand.REVERSE);
         _logger.info("input FASTA file: " + fastaFile);
-        _logger.info("IUPAC file: " + files.iupacForward());
-        _logger.info("index file: " + files.pacFileIndex());
 
         long totalSize = -1;
         {
             // Read the input FASTA file, then encode the sequences using the IUPAC code         
-            BufferedOutputStream iupacFile = new BufferedOutputStream(new FileOutputStream(files.iupacForward()));
-            SilkWriter indexOut = new SilkWriter(new BufferedWriter(new FileWriter(files.pacFileIndex())));
+            BufferedOutputStream iupacFile = new BufferedOutputStream(new FileOutputStream(forwardDB.iupac()));
+            SilkWriter indexOut = new SilkWriter(new BufferedWriter(new FileWriter(forwardDB.pacIndex())));
             IUPACSequenceWriter encoder = new IUPACSequenceWriter(iupacFile);
             FASTAPullParser fasta = new FASTAPullParser(new File(fastaFile));
             long lineCount = 1;
@@ -137,11 +136,11 @@ public class BWTransform implements Command
 
         {
             // Reverse the IUPAC sequence
-            IUPACSequence forwardSeq = new IUPACSequence(files.iupacForward(), files);
+            IUPACSequence forwardSeq = new IUPACSequence(forwardDB);
             _logger.info("Reverse the sequence");
-            _logger.info("Reverse IUPAC file: " + files.iupacReverse());
+            _logger.info("Reverse IUPAC file: " + reverseDB.iupac());
             IUPACSequenceWriter encoder = new IUPACSequenceWriter(new BufferedOutputStream(new FileOutputStream(
-                    files.iupacReverse())));
+                    reverseDB.iupac())));
             // reverse IN[0..n-2] (excludes the sentinel)
             for (long i = forwardSeq.size() - 2; i >= 0; --i) {
                 encoder.append(forwardSeq.getIUPAC(i));
@@ -153,55 +152,41 @@ public class BWTransform implements Command
 
         {
             // Create a suffix array and BWT string of the forward IUPAC sequence
-            IUPACSequence forwardSeq = new IUPACSequence(files.iupacForward(), files);
-            _logger.info("Creating a suffix array of the forward sequence");
-            File suffixArrayFile = files.sparseSuffixArrayForward();
-            File bwtFile = files.bwtForward();
-            File wvFile = files.bwtWaveletForward();
-            buildSuffixArray(forwardSeq, files, suffixArrayFile, bwtFile, wvFile);
-        }
-
-        {
-            // Create a suffix array of the reverse IUPAC sequence
-            IUPACSequence reverseSeq = new IUPACSequence(files.iupacReverse(), totalSize);
-            _logger.info("Creating a suffix array of the reverse sequence");
-            File suffixArrayFile = files.sparseSuffixArrayReverse();
-            File bwtFile = files.bwtReverse();
-            File wvFile = files.bwtWaveletReverse();
-            buildSuffixArray(reverseSeq, files, suffixArrayFile, bwtFile, wvFile);
+            buildSuffixArray(forwardDB);
+            buildSuffixArray(reverseDB);
         }
 
     }
 
-    public static void buildSuffixArray(IUPACSequence seq, BWTFiles f, File suffixArrayFile, File bwtFile, File wvFile)
-            throws IOException, UTGBException {
+    public static void buildSuffixArray(BWTFiles db) throws IOException, UTGBException {
+        IUPACSequence seq = new IUPACSequence(db);
 
         StopWatch timer = new StopWatch();
         LIntArray SA = new LIntArray(seq.textSize());
         {
+            _logger.info("Creating a suffix array of " + db.iupac());
             LSAIS.suffixsort(seq, SA, 16);
-            _logger.info("Sparse SA file: " + suffixArrayFile);
+            _logger.info("Sparse SA file: " + db.sparseSuffixArray());
             SparseSuffixArray sparseSA = SparseSuffixArray.buildFromSuffixArray(SA, 32);
-            sparseSA.saveTo(suffixArrayFile);
+            sparseSA.saveTo(db.sparseSuffixArray());
         }
         _logger.info(String.format("Suffix array construction finshed. %.2f sec.", timer.getElapsedTime()));
 
         // Create a BWT string of the IUPAC sequence from the generated suffix array
         {
-            _logger.info("Creating a BWT string: " + bwtFile);
-            IUPACSequenceWriter writer = new IUPACSequenceWriter(
-                    new BufferedOutputStream(new FileOutputStream(bwtFile)));
+            _logger.info("Creating a BWT string: " + db.bwt());
+            IUPACSequenceWriter writer = new IUPACSequenceWriter(new BufferedOutputStream(
+                    new FileOutputStream(db.bwt())));
             bwt(seq, SA, writer);
             writer.close();
         }
 
         // Create a Wavelet array 
         {
-            _logger.info("Loading BWT: " + bwtFile);
-            IUPACSequence bwt = new IUPACSequence(bwtFile, f);
-            _logger.info("Creating wavelet array " + wvFile);
+            _logger.info("Creating wavelet array " + db.bwtWavelet());
+            IUPACSequence bwt = new IUPACSequence(db);
             WaveletArray wv = new WaveletArray(bwt, 16);
-            wv.saveTo(wvFile);
+            wv.saveTo(db.bwtWavelet());
         }
 
     }
