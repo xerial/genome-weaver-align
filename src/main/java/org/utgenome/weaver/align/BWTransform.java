@@ -70,6 +70,8 @@ public class BWTransform implements Command
         if (fastaFile == null)
             throw new UTGBException(UTGBErrorCode.MISSING_FILES, "no input FASTA file is given");
 
+        StopWatch timer = new StopWatch();
+
         // Create IUPAC sequences (forward/reverse) from the given FASTA file
         EncodeFasta.encode(fastaFile);
 
@@ -79,6 +81,8 @@ public class BWTransform implements Command
         // Create a suffix array and BWT string of the forward/reverse IUPAC sequence
         buildBWT(forwardDB);
         buildBWT(reverseDB);
+
+        _logger.info(String.format("finised %.2f sec.", timer.getElapsedTime()));
     }
 
     public static void buildBWT(BWTFiles db) throws IOException, UTGBException {

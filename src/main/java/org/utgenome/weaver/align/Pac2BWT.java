@@ -113,4 +113,15 @@ public class Pac2BWT implements Command
         }
     }
 
+    public static void bwt(IUPACSequence seq, LSeq SA, IUPACSequence out) throws IOException {
+        for (long i = 0; i < SA.textSize(); ++i) {
+            if (SA.lookup(i) == 0) {
+                out.setIUPAC(i, IUPAC.None);
+            }
+            else {
+                out.setIUPAC(i, seq.getIUPAC(SA.lookup(i) - 1));
+            }
+        }
+    }
+
 }

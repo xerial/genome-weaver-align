@@ -114,7 +114,7 @@ public class EncodeFasta implements Command
                 long sequenceSize = pos - offset;
                 SequenceIndex index = new SequenceIndex(seqName, desc, sequenceSize, offset);
                 indexOut.leafObject("index", index);
-                _logger.info("\n" + SilkLens.toSilk("index", index));
+                _logger.debug("\n" + SilkLens.toSilk("index", index));
 
                 // append a sentinel
                 encoder.append(IUPAC.None);

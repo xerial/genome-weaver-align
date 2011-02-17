@@ -50,6 +50,20 @@ public class IUPACSequence implements LSeq
     private byte[]        seq;
     private long          numBases;
 
+    public IUPACSequence(String s) {
+        this.numBases = s.length() + 1; // add 1 for sentinel
+        long byteSize = (numBases / 2) + (numBases & 0x01);
+        seq = new byte[(int) byteSize];
+        for (int i = 0; i < seq.length; ++i)
+            seq[i] = 0;
+
+        for (int i = 0; i < s.length(); ++i) {
+            char c = Character.toUpperCase(s.charAt(i));
+            setIUPAC(i, IUPAC.encode(c));
+        }
+        setIUPAC(s.length(), IUPAC.None);
+    }
+
     public IUPACSequence(long numBases) throws UTGBException {
         this.numBases = numBases;
         long byteSize = (numBases / 2) + (numBases & 0x01);
@@ -83,6 +97,11 @@ public class IUPACSequence implements LSeq
         int byteSize = (int) (numBases / 2);
         byte[] seq = new byte[byteSize];
         in.read(seq, 0, byteSize);
+
+        if (seq[byteSize - 1] == 0) {
+            // $$ (continguous sentinel) indicates -1 num bases from byteSize * 2
+            numBases--;
+        }
         return new IUPACSequence(numBases, seq);
     }
 
@@ -105,11 +124,14 @@ public class IUPACSequence implements LSeq
         return IUPAC.decode(code);
     }
 
-    public void setIUPAC(int index, IUPAC val) {
-        int pos = index / 2;
-        int offset = index % 2;
+    public void setIUPAC(long index, IUPAC val) {
+        int pos = (int) (index / 2);
+        int offset = (int) (index % 2);
         byte code = (byte) val.bitFlag;
 
+        byte mask = (byte) ~(0xF0 >>> (offset * 4));
+        seq[pos] &= mask;
+        seq[pos] |= (byte) (code << (1 - offset) * 4);
     }
 
     @Override

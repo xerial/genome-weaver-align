@@ -67,7 +67,7 @@ public class CharacterCount
         // Decrement the character count for the sentinel since BWT based count contains one additional sentinel.   
         //count[IUPAC.None.bitFlag]--;
 
-        long sum = 0; // add 1 for $ (end of string)
+        long sum = 0;
         for (int i = 0; i < K; ++i) {
             C[i] = sum;
             sum += count[i];

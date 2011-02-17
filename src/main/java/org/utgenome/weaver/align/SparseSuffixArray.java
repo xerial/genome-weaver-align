@@ -126,6 +126,14 @@ public class SparseSuffixArray
         return new SparseSuffixArray(sparseSA, SA.textSize(), L);
     }
 
+    /**
+     * Get the index in the text
+     * 
+     * @param index
+     *            index on the suffix array
+     * @param fmIndex
+     * @return
+     */
     public long get(long index, FMIndex fmIndex) {
         long pos = index / L;
         long offset = index % L;

@@ -68,7 +68,6 @@ public class IUPACSequenceWriter
     public void close() throws IOException {
         if (cursor % 2 == 1) {
             cache <<= 4;
-            cache |= (byte) IUPAC.N.bitFlag; // fill the tail with N
             out.write(cache);
         }
         out.flush();
