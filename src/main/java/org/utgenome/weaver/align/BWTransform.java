@@ -77,26 +77,29 @@ public class BWTransform implements Command
         BWTFiles reverseDB = new BWTFiles(fastaFile, Strand.REVERSE);
 
         // Create a suffix array and BWT string of the forward IUPAC sequence
-        buildSuffixArray(forwardDB);
-        buildSuffixArray(reverseDB);
+        buildBWT(forwardDB);
+        buildBWT(reverseDB);
     }
 
-    public static void buildSuffixArray(BWTFiles db) throws IOException, UTGBException {
-        IUPACSequence seq = IUPACSequence.loadFrom(db.iupac());
+    public static void buildBWT(BWTFiles db) throws IOException, UTGBException {
 
+        // Create BWT string
         Pac2BWT.pac2bwt(db);
 
+        StopWatch timer = new StopWatch();
         // Create a Wavelet array 
         {
-            StopWatch timer = new StopWatch();
             _logger.info("Creating wavelet array " + db.bwtWavelet());
             IUPACSequence bwt = IUPACSequence.loadFrom(db.bwt());
             WaveletArray wv = new WaveletArray(bwt, 16);
             wv.saveTo(db.bwtWavelet());
             _logger.info(String.format("done. %.2f sec.", timer.getElapsedTime()));
+        }
 
-            _logger.info("Creating sparse suffix array " + db.sparseSuffixArray());
+        {
             timer.reset();
+            WaveletArray wv = WaveletArray.loadFrom(db.bwtWavelet());
+            _logger.info("Creating sparse suffix array " + db.sparseSuffixArray());
             SparseSuffixArray ssa = SparseSuffixArray.createFromWaveletBWT(wv, 32);
             ssa.saveTo(db.sparseSuffixArray());
             _logger.info(String.format("done. %.2f sec.", timer.getElapsedTime()));

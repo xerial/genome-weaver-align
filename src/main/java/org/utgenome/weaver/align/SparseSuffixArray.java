@@ -62,8 +62,8 @@ public class SparseSuffixArray
         final long sparseSA_length = (N + suffixInterval - 1) / suffixInterval;
         LIntArray sparseSA = new LIntArray(sparseSA_length);
 
-        long sa = 0;
-        long saIndex = N - 1;
+        long sa = N - 1;
+        long saIndex = 0;
         for (long i = 0; i < N; ++i) {
             if (saIndex % suffixInterval == 0) {
                 sparseSA.set(saIndex / suffixInterval, sa);
