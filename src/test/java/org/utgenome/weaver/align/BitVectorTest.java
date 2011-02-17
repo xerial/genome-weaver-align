@@ -45,7 +45,7 @@ public class BitVectorTest
 
     @Test
     public void vector() throws Exception {
-        BitVector v = new BitVector(100);
+        RSBitVector v = new RSBitVector(100);
         assertEquals(100, v.size());
         TreeSet<Long> pos = new TreeSet<Long>();
         pos.add(3L);
@@ -76,7 +76,7 @@ public class BitVectorTest
 
     @Test
     public void select() throws Exception {
-        BitVector v = new BitVector(100);
+        RSBitVector v = new RSBitVector(100);
         assertEquals(100, v.size());
         TreeSet<Long> pos = new TreeSet<Long>();
         pos.add(3L);
@@ -99,7 +99,7 @@ public class BitVectorTest
 
     @Test
     public void save() throws Exception {
-        BitVector v = new BitVector(100);
+        RSBitVector v = new RSBitVector(100);
         for (long i = 0; i < v.size(); ++i) {
             if (i % 3 == 0 || i % 5 == 0)
                 v.set(i);
@@ -113,7 +113,7 @@ public class BitVectorTest
         out.close();
 
         DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(tmp)));
-        BitVector v2 = BitVector.loadFrom(in);
+        RSBitVector v2 = RSBitVector.loadFrom(in);
         in.close();
 
         assertEquals(v.size(), v2.size());

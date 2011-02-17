@@ -35,7 +35,7 @@ import java.io.IOException;
  * @author leo
  * 
  */
-public class BitVector
+public class RSBitVector
 {
     private static final int B          = 64;  // the number of bits in a block
     private static final int M          = 4;   // block width to pre-compute the ranks  
@@ -44,7 +44,7 @@ public class BitVector
     private final long       size;
     private long             numberOf1s = 0;
 
-    public BitVector(long size) {
+    public RSBitVector(long size) {
         this.size = size;
         long blockSize = (size + B - 1) / B;
         if (blockSize > Integer.MAX_VALUE)
@@ -55,7 +55,7 @@ public class BitVector
         clear();
     }
 
-    private BitVector(long size, long[] block) {
+    private RSBitVector(long size, long[] block) {
         this.size = size;
         this.block = block;
         refreshRankTable();
@@ -294,13 +294,13 @@ public class BitVector
         return out;
     }
 
-    public static BitVector loadFrom(DataInputStream in) throws IOException {
+    public static RSBitVector loadFrom(DataInputStream in) throws IOException {
         long size = in.readLong();
         int blockSize = in.readInt();
         long[] block = new long[blockSize];
         for (int i = 0; i < blockSize; ++i)
             block[i] = in.readLong();
-        BitVector v = new BitVector(size, block);
+        RSBitVector v = new RSBitVector(size, block);
         return v;
     }
 

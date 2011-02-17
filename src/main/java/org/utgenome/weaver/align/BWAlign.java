@@ -24,6 +24,7 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import java.util.ArrayList;
 import java.util.PriorityQueue;
 
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
@@ -92,14 +93,14 @@ public class BWAlign implements Command
         if (query != null) {
             _logger.info("query sequence: " + query);
 
-            FMIndexAlign aln = new FMIndexAlign(fmIndex, new Reporter<AlignmentState>() {
+            FMIndexAlign aln = new FMIndexAlign(fmIndex, new Reporter<Alignment>() {
                 @Override
-                public void emit(AlignmentState result) throws Exception {
+                public void emit(Alignment result) throws Exception {
                     _logger.info(SilkLens.toSilk("alignment", result));
                     for (long i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
                         long pos = saR.get(i, fmIndex);
-                        if (result.strand == Strand.FORWARD) {
-                            pos = (fmIndex.textSize() - 1 - pos) - query.length();
+                        if (result.common.strand == Strand.FORWARD) {
+                            pos = (fmIndex.textSize() - 1 - pos) - result.common.query.length();
                         }
                         PosOnGenome loc = index.translate(pos);
                         System.out.println(SilkLens.toSilk("loc", loc));
@@ -189,19 +190,40 @@ public class BWAlign implements Command
         }
     }
 
+    /**
+     * Alignment process using FM-Index
+     * 
+     * @author leo
+     * 
+     */
     public static class FMIndexAlign
     {
-        private final FMIndex                       fmIndex;
-        private final Reporter<AlignmentState>      out;
+        private final FMIndex                  fmIndex;
+        private final Reporter<Alignment>      out;
 
-        private final PriorityQueue<AlignmentState> alignmentQueue       = new PriorityQueue<AlignmentState>();
-        private final int                           numMismatchesAllowed = 0;
+        private final PriorityQueue<Alignment> alignmentQueue       = new PriorityQueue<Alignment>();
+        private final int                      numMismatchesAllowed = 1;
 
-        private final AlignmentScoreConfig          config               = new AlignmentScoreConfig();
+        private final AlignmentScoreConfig     config               = new AlignmentScoreConfig();
 
-        public FMIndexAlign(FMIndex fmIndex, Reporter<AlignmentState> out) {
+        private final ArrayList<IUPAC>         lettersInGenome      = new ArrayList<IUPAC>();
+
+        private int                            bestScore            = -1;
+
+        public FMIndexAlign(FMIndex fmIndex, Reporter<Alignment> out) {
             this.fmIndex = fmIndex;
             this.out = out;
+
+            CharacterCount C = fmIndex.getCharacterCount();
+            for (IUPAC base : IUPAC.values()) {
+                if (base == IUPAC.None)
+                    continue;
+
+                if (C.getCount(base) > 0) {
+                    lettersInGenome.add(base);
+                }
+            }
+
         }
 
         /**
@@ -214,30 +236,35 @@ public class BWAlign implements Command
          */
         public void align(String seq) throws Exception {
 
-            alignmentQueue.add(AlignmentState.initialState(seq, Strand.FORWARD, fmIndex));
+            alignmentQueue.add(Alignment.initialState(seq, Strand.FORWARD, fmIndex));
 
             while (!alignmentQueue.isEmpty()) {
 
-                AlignmentState current = alignmentQueue.poll();
+                Alignment current = alignmentQueue.poll();
                 if (current.numMismatches > numMismatchesAllowed) {
                     continue;
                 }
 
                 if (current.wordIndex >= seq.length()) {
-                    out.emit(current);
+                    if (current.alignmentScore >= bestScore) {
+                        bestScore = current.alignmentScore;
+                        out.emit(current);
+                    }
+
                     continue;
                 }
 
                 // Search for deletion
                 alignmentQueue.add(current.extendWithDeletion(config));
-
                 //align(seq, cursor - 1, numMismatchesAllowed - 1, si);
                 IUPAC currentBase = IUPAC.encode(seq.charAt(current.wordIndex));
-                for (IUPAC nextBase : new IUPAC[] { IUPAC.A, IUPAC.C, IUPAC.G, IUPAC.T }) {
+                for (IUPAC nextBase : lettersInGenome) {
                     SuffixInterval next = fmIndex.backwardSearch(nextBase, current.suffixInterval);
                     if (next.isValidRange()) {
                         // Search for insertion
-                        alignmentQueue.add(current.extendWithInsertion(config));
+                        if (current.wordIndex > 0 && current.wordIndex < seq.length() - 2) {
+                            alignmentQueue.add(current.extendWithInsertion(config));
+                        }
                         if ((nextBase.bitFlag & currentBase.bitFlag) != 0) {
                             // match
                             alignmentQueue.add(current.extendWithMatch(next, config));

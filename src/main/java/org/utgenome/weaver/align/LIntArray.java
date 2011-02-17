@@ -37,11 +37,11 @@ public class LIntArray implements LSeq, Iterable<Long>
     private final long       size;
 
     private ArrayList<int[]> array;
-    private BitVector        flag;
+    private RSBitVector        flag;
 
     public LIntArray(long size) {
         this.size = size;
-        flag = new BitVector(size);
+        flag = new RSBitVector(size);
 
         // (flag)|---(array pos)------|---------------------------|
         // (flag)|------(32 bit)-------|------(index: 30bit)------|

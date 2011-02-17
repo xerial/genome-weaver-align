@@ -36,8 +36,8 @@ import java.util.ArrayList;
 
 public class WaveletArray
 {
-    private ArrayList<BitVector> bitVector       = new ArrayList<BitVector>();
-    private BitVector            occ;
+    private ArrayList<RSBitVector> bitVector       = new ArrayList<RSBitVector>();
+    private RSBitVector            occ;
 
     private long                 alphabetSize    = 0;
     private long                 alphabetBitSize = 0;
@@ -53,7 +53,7 @@ public class WaveletArray
         setOccs(input);
     }
 
-    private WaveletArray(ArrayList<BitVector> bitVector, BitVector occ, long alphabetSize, long size) {
+    private WaveletArray(ArrayList<RSBitVector> bitVector, RSBitVector occ, long alphabetSize, long size) {
         this.alphabetSize = alphabetSize;
         this.alphabetBitSize = log2(alphabetSize);
         this.size = size;
@@ -87,9 +87,9 @@ public class WaveletArray
     protected void setArray(LSeq input) {
         if (alphabetSize == 0)
             return;
-        bitVector = new ArrayList<BitVector>((int) alphabetBitSize);
+        bitVector = new ArrayList<RSBitVector>((int) alphabetBitSize);
         for (int i = 0; i < alphabetBitSize; ++i) {
-            bitVector.add(new BitVector(size));
+            bitVector.add(new RSBitVector(size));
         }
 
         ArrayList<long[]> beg_poses = getBegPoses(input, alphabetBitSize);
@@ -140,7 +140,7 @@ public class WaveletArray
             counts[(int) input.lookup(i)]++;
         }
 
-        occ = new BitVector(input.textSize() + alphabetSize + 1);
+        occ = new RSBitVector(input.textSize() + alphabetSize + 1);
         long sum = 0;
         for (int i = 0; i < counts.length; ++i) {
             occ.setBit(true, sum);
@@ -150,8 +150,33 @@ public class WaveletArray
     }
 
     public long rank(long c, long pos) {
-        Rank r = rankAll(c, pos);
-        return r.rank;
+        if (c >= alphabetSize) {
+            return 0;
+        }
+        if (pos >= size) {
+            pos = size;
+        }
+        long beg_node = 0;
+        long end_node = size;
+        long rankLessThan = 0;
+        long rankMoreThan = 0;
+
+        for (int i = 0; i < bitVector.size() && beg_node < end_node; ++i) {
+            RSBitVector ba = bitVector.get(i);
+            long beg_node_zero = ba.rank(false, beg_node);
+            long bit = getMSB(c, i, bitVector.size());
+            if (bit == 0) {
+                pos = beg_node + ba.rank(false, pos) - beg_node_zero;
+            }
+            else {
+                long end_node_zero = ba.rank(false, end_node);
+                long boundary = beg_node + end_node_zero - beg_node_zero;
+                pos = boundary + ba.rank(true, pos) - (beg_node - beg_node_zero);
+                beg_node = boundary;
+            }
+        }
+        long rank = pos - beg_node;
+        return rank;
     }
 
     private static class Rank
@@ -180,7 +205,7 @@ public class WaveletArray
         long rankMoreThan = 0;
 
         for (int i = 0; i < bitVector.size() && beg_node < end_node; ++i) {
-            BitVector ba = bitVector.get(i);
+            RSBitVector ba = bitVector.get(i);
             long beg_node_zero = ba.rank(false, beg_node);
             long beg_node_one = beg_node - beg_node_zero;
             long end_node_zero = ba.rank(false, end_node);
@@ -208,7 +233,7 @@ public class WaveletArray
         long en = size;
         long c = 0;
         for (int i = 0; i < bitVector.size(); ++i) {
-            BitVector ba = bitVector.get(i);
+            RSBitVector ba = bitVector.get(i);
             long boundary = st + ba.rank(false, en) - ba.rank(false, st);
             boolean bit = ba.get(st + pos);
             c <<= 1;
@@ -240,7 +265,7 @@ public class WaveletArray
         out.writeLong(alphabetSize);
         out.writeLong(size);
         out.writeLong(bitVector.size());
-        for (BitVector each : bitVector) {
+        for (RSBitVector each : bitVector) {
             each.saveTo(out);
         }
         occ.saveTo(out);
@@ -261,12 +286,12 @@ public class WaveletArray
         long alphabetSize = in.readLong();
         long size = in.readLong();
         long vecSize = in.readLong();
-        ArrayList<BitVector> bitVector = new ArrayList<BitVector>((int) vecSize);
+        ArrayList<RSBitVector> bitVector = new ArrayList<RSBitVector>((int) vecSize);
         for (int i = 0; i < vecSize; ++i) {
-            BitVector v = BitVector.loadFrom(in);
+            RSBitVector v = RSBitVector.loadFrom(in);
             bitVector.add(v);
         }
-        BitVector occ = BitVector.loadFrom(in);
+        RSBitVector occ = RSBitVector.loadFrom(in);
         return new WaveletArray(bitVector, occ, alphabetSize, size);
     }
 

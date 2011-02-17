@@ -42,6 +42,10 @@ public class FMIndex
         this.C = new CharacterCount(W);
     }
 
+    public CharacterCount getCharacterCount() {
+        return C;
+    }
+
     public SuffixInterval backwardSearch(IUPAC ch, SuffixInterval current) {
         long lowerBound = C.getCharacterCountSmallerThan(ch) + W.rank(ch.bitFlag, current.lowerBound);
         long upperBound = C.getCharacterCountSmallerThan(ch) + W.rank(ch.bitFlag, current.upperBound + 1) - 1;
