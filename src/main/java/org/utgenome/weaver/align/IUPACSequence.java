@@ -33,7 +33,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import org.utgenome.UTGBException;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.xerial.util.log.Logger;
 
@@ -71,7 +70,7 @@ public class IUPACSequence implements LSeq
         numBases = cursor;
     }
 
-    public IUPACSequence(long numBases) throws UTGBException {
+    public IUPACSequence(long numBases) {
         this.numBases = numBases;
         long byteSize = (numBases / 2) + (numBases & 0x01);
         if (byteSize > Integer.MAX_VALUE)
@@ -86,6 +85,16 @@ public class IUPACSequence implements LSeq
     private IUPACSequence(long numBases, byte[] seq) {
         this.numBases = numBases;
         this.seq = seq;
+    }
+
+    public IUPACSequence reverse() {
+        IUPACSequence rev = new IUPACSequence(numBases);
+        long cursor = 0;
+        for (long i = numBases - 2; i >= 0; --i) {
+            rev.setIUPAC(cursor++, getIUPAC(i));
+        }
+        rev.setIUPAC(cursor, IUPAC.None);
+        return rev;
     }
 
     public static IUPACSequence loadFrom(File f) throws IOException {

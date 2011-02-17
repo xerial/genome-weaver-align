@@ -29,6 +29,7 @@ import java.io.StringWriter;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.xerial.util.opt.Argument;
 import org.xerial.util.opt.Command;
+import org.xerial.util.opt.Option;
 
 public class PrintSA implements Command
 {
@@ -49,12 +50,18 @@ public class PrintSA implements Command
     }
 
     @Argument(index = 0, required = true)
-    private String seq;
+    private String  seq;
+
+    @Option(symbol = "r", description = "create SA for reverse string")
+    private boolean isReverse = false;
 
     @Override
     public void execute(String[] args) throws Exception {
 
         IUPACSequence s = new IUPACSequence(seq);
+        if (isReverse)
+            s = s.reverse();
+
         LSeq SA = new LSAIS.IntArray(new int[(int) s.textSize()], 0);
         LSAIS.suffixsort(s, SA, IUPAC.values().length);
 

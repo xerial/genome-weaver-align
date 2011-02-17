@@ -24,8 +24,6 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.PriorityQueue;
 
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
@@ -89,9 +87,7 @@ public class BWAlign implements Command
         _logger.info("Loading a Wavelet array of the reverse BWT");
         WaveletArray wvR = WaveletArray.loadFrom(reverseDB.bwtWavelet());
 
-        // Count the character frequencies 
-        //CharacterCount C = new CharacterCount(wvF);
-        final FMIndex fmIndex = new FMIndex(wvF);
+        final FMIndex fmIndex = new FMIndex(wvR);
 
         if (query != null) {
             _logger.info("query sequence: " + query);
@@ -101,8 +97,11 @@ public class BWAlign implements Command
                 public void emit(AlignmentState result) throws Exception {
                     _logger.info(SilkLens.toSilk("alignment", result));
                     for (long i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
-                        long pos = saF.get(i, fmIndex);
-                        PosOnGenome loc = index.translate(pos, false);
+                        long pos = saR.get(i, fmIndex);
+                        if (result.strand == Strand.FORWARD) {
+                            pos = (fmIndex.textSize() - 1 - pos) - query.length();
+                        }
+                        PosOnGenome loc = index.translate(pos);
                         System.out.println(SilkLens.toSilk("loc", loc));
                     }
                 }
@@ -190,102 +189,6 @@ public class BWAlign implements Command
         }
     }
 
-    public static class AlignmentState implements Comparable<AlignmentState>
-    {
-        public static enum IndelState {
-            NORMAL, INSERTION, DELETION
-        };
-
-        public final int            wordIndex;
-        public final IndelState     indel;
-        public final SuffixInterval suffixInterval;
-        public final int            numMismatches;
-        public final int            alignmentScore;
-        public final List<Integer>  mismatchPosition;
-        public final List<Gap>      gapPosition;
-
-        private AlignmentState(int wordIndex, IndelState indel, SuffixInterval suffixInterval, int numMismatches,
-                int alignmentScore, List<Integer> mismatchPosition, List<Gap> gapPosition) {
-            this.wordIndex = wordIndex;
-            this.indel = indel;
-            this.suffixInterval = suffixInterval;
-            this.numMismatches = numMismatches;
-            this.alignmentScore = alignmentScore;
-            this.mismatchPosition = mismatchPosition;
-            this.gapPosition = gapPosition;
-        }
-
-        public AlignmentState extendWithMatch(SuffixInterval next, AlignmentScoreConfig config) {
-            return new AlignmentState(this.wordIndex - 1, IndelState.NORMAL, next, numMismatches, alignmentScore
-                    + config.matchScore, mismatchPosition, gapPosition);
-        }
-
-        public AlignmentState extendWithMisMatch(SuffixInterval next, AlignmentScoreConfig config) {
-            ArrayList<Integer> newMismatchPosition = new ArrayList<Integer>();
-            if (mismatchPosition != null)
-                newMismatchPosition.addAll(mismatchPosition);
-            newMismatchPosition.add(wordIndex + 1);
-            return new AlignmentState(this.wordIndex - 1, IndelState.NORMAL, next, numMismatches + 1, alignmentScore
-                    - config.mismatchPenalty, newMismatchPosition, gapPosition);
-        }
-
-        public AlignmentState extendWithDeletion(AlignmentScoreConfig config) {
-
-            ArrayList<Gap> newGapPosition = new ArrayList<Gap>();
-
-            int newScore = alignmentScore;
-            if (indel == IndelState.DELETION) {
-                assert (gapPosition != null);
-                newScore -= config.gapExtentionPenalty;
-                int i = 0;
-                for (; i < gapPosition.size() - 1; ++i) {
-                    newGapPosition.add(gapPosition.get(i));
-                }
-                newGapPosition.add(gapPosition.get(i).extendOne());
-            }
-            else {
-                newScore -= config.gapOpenPenalty;
-                // update gap
-                newGapPosition.add(new Deletion(wordIndex - 1, 1));
-            }
-            return new AlignmentState(this.wordIndex, IndelState.DELETION, suffixInterval, numMismatches + 1, newScore,
-                    mismatchPosition, newGapPosition);
-        }
-
-        public AlignmentState extendWithInsertion(AlignmentScoreConfig config) {
-            ArrayList<Gap> newGapPosition = new ArrayList<Gap>();
-
-            int newScore = alignmentScore;
-            if (indel == IndelState.INSERTION) {
-                newScore -= config.gapExtentionPenalty;
-
-                int i = 0;
-                for (; i < gapPosition.size() - 1; ++i) {
-                    newGapPosition.add(gapPosition.get(i));
-                }
-                newGapPosition.add(gapPosition.get(i).extendOne());
-            }
-            else {
-                newScore -= config.gapOpenPenalty;
-                newGapPosition.add(new Insertion(wordIndex - 1, 1));
-            }
-            return new AlignmentState(this.wordIndex - 1, IndelState.INSERTION, suffixInterval, numMismatches + 1,
-                    alignmentScore - config.gapExtentionPenalty, mismatchPosition, newGapPosition);
-        }
-
-        public static AlignmentState initialState(String seq, FMIndex fmIndex) {
-            return new AlignmentState(seq.length() - 1, IndelState.NORMAL,
-                    new SuffixInterval(0, fmIndex.textSize() - 1), 0, 0, null, null);
-        }
-
-        @Override
-        public int compareTo(AlignmentState o) {
-            // Ascending order of the score
-            return o.alignmentScore - this.alignmentScore;
-        }
-
-    }
-
     public static class FMIndexAlign
     {
         private final FMIndex                       fmIndex;
@@ -311,7 +214,7 @@ public class BWAlign implements Command
          */
         public void align(String seq) throws Exception {
 
-            alignmentQueue.add(AlignmentState.initialState(seq, fmIndex));
+            alignmentQueue.add(AlignmentState.initialState(seq, Strand.FORWARD, fmIndex));
 
             while (!alignmentQueue.isEmpty()) {
 
@@ -320,7 +223,7 @@ public class BWAlign implements Command
                     continue;
                 }
 
-                if (current.wordIndex < 0) {
+                if (current.wordIndex >= seq.length()) {
                     out.emit(current);
                     continue;
                 }

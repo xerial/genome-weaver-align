@@ -56,7 +56,7 @@ public class FMIndex
      * @return index p in the suffix array that satisfies SA[p] = SA[x] - 1.
      */
     public long suffixLink(long index) {
-        if (index >= W.textSize() - 1) { // If the index reaches the sentinel 
+        if (index >= W.textSize()) { // If the index reaches the sentinel 
             return 0; // Return the smallest SA index
         }
         IUPAC c = IUPAC.decode((byte) W.lookup(index));

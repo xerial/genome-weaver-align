@@ -79,7 +79,7 @@ public class SequenceBoundary
      * @return 1-origin index
      * @throws UTGBException
      */
-    public PosOnGenome translate(long textIndex, boolean isReverse) throws UTGBException {
+    public PosOnGenome translate(long textIndex) throws UTGBException {
 
         if (indexToChrTable == null) {
             indexToChrTable = new TreeMap<Long, String>();
@@ -87,9 +87,6 @@ public class SequenceBoundary
                 indexToChrTable.put(each.offset, each.name);
             }
         }
-
-        if (isReverse)
-            textIndex = totalSize - textIndex - 1;
 
         SortedMap<Long, String> headMap = indexToChrTable.headMap(textIndex + 1);
         if (headMap == null || headMap.isEmpty())
