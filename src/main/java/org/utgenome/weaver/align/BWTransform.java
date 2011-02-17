@@ -70,13 +70,13 @@ public class BWTransform implements Command
         if (fastaFile == null)
             throw new UTGBException(UTGBErrorCode.MISSING_FILES, "no input FASTA file is given");
 
-        // Output IUPAC sequence to a file
+        // Create IUPAC sequences (forward/reverse) from the given FASTA file
         EncodeFasta.encode(fastaFile);
 
         BWTFiles forwardDB = new BWTFiles(fastaFile, Strand.FORWARD);
         BWTFiles reverseDB = new BWTFiles(fastaFile, Strand.REVERSE);
 
-        // Create a suffix array and BWT string of the forward IUPAC sequence
+        // Create a suffix array and BWT string of the forward/reverse IUPAC sequence
         buildBWT(forwardDB);
         buildBWT(reverseDB);
     }
@@ -86,9 +86,9 @@ public class BWTransform implements Command
         // Create BWT string
         Pac2BWT.pac2bwt(db);
 
-        StopWatch timer = new StopWatch();
         // Create a Wavelet array 
         {
+            StopWatch timer = new StopWatch();
             _logger.info("Creating wavelet array " + db.bwtWavelet());
             IUPACSequence bwt = IUPACSequence.loadFrom(db.bwt());
             WaveletArray wv = new WaveletArray(bwt, 16);
@@ -96,14 +96,7 @@ public class BWTransform implements Command
             _logger.info(String.format("done. %.2f sec.", timer.getElapsedTime()));
         }
 
-        {
-            timer.reset();
-            WaveletArray wv = WaveletArray.loadFrom(db.bwtWavelet());
-            _logger.info("Creating sparse suffix array " + db.sparseSuffixArray());
-            SparseSuffixArray ssa = SparseSuffixArray.createFromWaveletBWT(wv, 32);
-            ssa.saveTo(db.sparseSuffixArray());
-            _logger.info(String.format("done. %.2f sec.", timer.getElapsedTime()));
-        }
+        //BWT2SparseSA.bwt2sparseSA(db);
 
     }
 

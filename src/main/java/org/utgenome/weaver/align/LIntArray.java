@@ -25,15 +25,13 @@ package org.utgenome.weaver.align;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import org.utgenome.weaver.align.LSAIS.LArray;
-
 /**
  * Array capable to store more than 2G (2 x 1024 x 1024 x 1024) entries
  * 
  * @author leo
  * 
  */
-public class LIntArray implements LArray, Iterable<Long>
+public class LIntArray implements LSeq, Iterable<Long>
 {
 
     private final long       size;
@@ -67,11 +65,11 @@ public class LIntArray implements LArray, Iterable<Long>
         return (int) (index & 0x3FFFFFFFL);
     }
 
-    public long size() {
+    public long textSize() {
         return size;
     }
 
-    public long get(long index) {
+    public long lookup(long index) {
         long v = container(index)[offset(index)] & 0xFFFFFFFFL;
         return flag.get(index) ? -v : v;
     }
@@ -83,7 +81,7 @@ public class LIntArray implements LArray, Iterable<Long>
 
     @Override
     public long update(long index, long val) {
-        long next = get(index) + val;
+        long next = lookup(index) + val;
         set(index, next);
         return next;
     }
@@ -115,7 +113,7 @@ public class LIntArray implements LArray, Iterable<Long>
 
             @Override
             public Long next() {
-                return get(cursor++);
+                return lookup(cursor++);
             }
 
             @Override

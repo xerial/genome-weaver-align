@@ -35,7 +35,7 @@ public class LIntArrayTest
         LIntArray array = new LIntArray(5);
         final long ans = Integer.MAX_VALUE + 10L;
         array.set(0, ans);
-        long v = array.get(0);
+        long v = array.lookup(0);
         assertEquals(ans, v);
     }
 
@@ -44,7 +44,7 @@ public class LIntArrayTest
         LIntArray array = new LIntArray(1);
         for (long i = -0xFFFFFFFF; i < 0xFFFFFFFF; ++i) {
             array.set(0, i);
-            assertEquals(i, array.get(i));
+            assertEquals(i, array.lookup(i));
         }
     }
 
@@ -53,7 +53,7 @@ public class LIntArrayTest
         LIntArray array = new LIntArray(1);
         long v = ~11L;
         array.set(0, v);
-        assertEquals(v, array.get(0));
+        assertEquals(v, array.lookup(0));
 
     }
 }

@@ -29,4 +29,9 @@ public interface LSeq
     public long lookup(long index);
 
     public long textSize();
+
+    public void set(long index, long value);
+
+    public long update(long index, long value);
+
 }

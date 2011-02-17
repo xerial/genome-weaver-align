@@ -75,27 +75,40 @@ public class Pac2BWT implements Command
         StopWatch timer = new StopWatch();
         {
             IUPACSequence seq = IUPACSequence.loadFrom(db.iupac());
-            LIntArray SA = new LIntArray(seq.textSize());
-            _logger.info("Creating a suffix array");
+            timer.reset();
+            _logger.info("Creating a suffix array of " + db.iupac());
+            LSeq SA = null;
+            if (seq.textSize() < Integer.MAX_VALUE) {
+                SA = new LSAIS.IntArray(new int[(int) seq.textSize()], 0);
+            }
+            else
+                SA = new LIntArray(seq.textSize());
+
             LSAIS.suffixsort(seq, SA, 16);
+            _logger.info(String.format("%.2f sec.", timer.getElapsedTime()));
+
+            _logger.info("Creating sparse suffix array " + db.sparseSuffixArray());
+            SparseSuffixArray ssa = SparseSuffixArray.buildFromSuffixArray(SA, 32);
+            ssa.saveTo(db.sparseSuffixArray());
 
             _logger.info("Creating a BWT string: " + db.bwt());
+            timer.reset();
             IUPACSequenceWriter writer = new IUPACSequenceWriter(new BufferedOutputStream(
                     new FileOutputStream(db.bwt())));
             bwt(seq, SA, writer);
             writer.close();
+            _logger.info(String.format("%.2f sec.", timer.getElapsedTime()));
         }
-        _logger.info("done: " + timer.getElapsedTime() + " sec.");
 
     }
 
-    public static void bwt(IUPACSequence seq, LIntArray SA, IUPACSequenceWriter out) throws IOException {
-        for (long i = 0; i < SA.size(); ++i) {
-            if (SA.get(i) == 0) {
+    public static void bwt(IUPACSequence seq, LSeq SA, IUPACSequenceWriter out) throws IOException {
+        for (long i = 0; i < SA.textSize(); ++i) {
+            if (SA.lookup(i) == 0) {
                 out.append(IUPAC.None);
             }
             else {
-                out.append(seq.getIUPAC(SA.get(i) - 1));
+                out.append(seq.getIUPAC(SA.lookup(i) - 1));
             }
         }
     }

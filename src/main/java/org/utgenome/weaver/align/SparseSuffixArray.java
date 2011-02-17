@@ -62,7 +62,7 @@ public class SparseSuffixArray
         final long sparseSA_length = (N + suffixInterval - 1) / suffixInterval;
         LIntArray sparseSA = new LIntArray(sparseSA_length);
 
-        long sa = N - 1;
+        long sa = N;
         long saIndex = 0;
         for (long i = 0; i < N; ++i) {
             if (saIndex % suffixInterval == 0) {
@@ -89,9 +89,9 @@ public class SparseSuffixArray
     public void saveTo(DataOutputStream d) throws IOException {
         d.writeLong(N);
         d.writeInt(L);
-        d.writeLong(sparseSA.size());
-        for (int i = 0; i < sparseSA.size(); ++i) {
-            d.writeInt((int) sparseSA.get(i));
+        d.writeLong(sparseSA.textSize());
+        for (int i = 0; i < sparseSA.textSize(); ++i) {
+            d.writeInt((int) sparseSA.lookup(i));
         }
         d.flush();
     }
@@ -111,19 +111,19 @@ public class SparseSuffixArray
         final int L = d.readInt();
         final long sparseSALength = d.readLong();
         LIntArray sparseSA = new LIntArray(sparseSALength);
-        for (int i = 0; i < sparseSA.size(); ++i) {
+        for (int i = 0; i < sparseSA.textSize(); ++i) {
             sparseSA.set(i, 1L | d.readInt());
         }
         return new SparseSuffixArray(sparseSA, N, L);
     }
 
-    public static SparseSuffixArray buildFromSuffixArray(LIntArray SA, int L) {
-        long sparseSA_length = (SA.size() + L - 1) / L;
+    public static SparseSuffixArray buildFromSuffixArray(LSeq SA, int L) {
+        long sparseSA_length = (SA.textSize() + L - 1) / L;
         LIntArray sparseSA = new LIntArray(sparseSA_length);
         for (long i = 0; i < sparseSA_length; ++i) {
-            sparseSA.set(i, SA.get(i * L));
+            sparseSA.set(i, SA.lookup(i * L));
         }
-        return new SparseSuffixArray(sparseSA, SA.size(), L);
+        return new SparseSuffixArray(sparseSA, SA.textSize(), L);
     }
 
     public long get(long index, FMIndex fmIndex) {
@@ -135,7 +135,7 @@ public class SparseSuffixArray
         }
 
         if (offset == 0)
-            return sparseSA.get(pos);
+            return sparseSA.lookup(pos);
 
         long cursor = index;
         final long N = fmIndex.textSize();
@@ -145,7 +145,7 @@ public class SparseSuffixArray
                 return j - 1;
             }
             if (cursor % L == 0)
-                return sparseSA.get(cursor / L) + j;
+                return sparseSA.lookup(cursor / L) + j;
         }
         throw new IllegalStateException(String.format("cannot reach here: get(index:%d)", index));
 

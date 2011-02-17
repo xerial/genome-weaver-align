@@ -26,7 +26,6 @@
 
 package org.utgenome.weaver.align;
 
-
 /**
  * Suffix-array construction algorithm based on induced-sorting. This
  * implementation uses SAIS by Yuta Mori
@@ -36,18 +35,7 @@ package org.utgenome.weaver.align;
  */
 public class LSAIS
 {
-    public static interface LArray
-    {
-        public long get(long i);
-
-        public void set(long i, long val);
-
-        public long update(long i, long val);
-
-        public long size();
-    }
-
-    private static class IntArray implements LArray
+    public static class IntArray implements LSeq
     {
         private int[] m_A   = null;
         private int   m_pos = 0;
@@ -57,7 +45,7 @@ public class LSAIS
             m_pos = pos;
         }
 
-        public long get(long i) {
+        public long lookup(long i) {
             return m_A[(int) (m_pos + i)];
         }
 
@@ -70,23 +58,23 @@ public class LSAIS
         }
 
         @Override
-        public long size() {
+        public long textSize() {
             return m_A.length - m_pos;
         }
     }
 
-    private static class SubIntArray implements LArray
+    private static class SubIntArray implements LSeq
     {
-        private LIntArray m_A   = null;
-        private long      m_pos = 0;
+        private LSeq m_A   = null;
+        private long m_pos = 0;
 
-        SubIntArray(LIntArray A, long pos) {
+        SubIntArray(LSeq A, long pos) {
             m_A = A;
             m_pos = pos;
         }
 
-        public long get(long i) {
-            return m_A.get(m_pos + i);
+        public long lookup(long i) {
+            return m_A.lookup(m_pos + i);
         }
 
         public void set(long i, long val) {
@@ -98,12 +86,12 @@ public class LSAIS
         }
 
         @Override
-        public long size() {
-            return m_A.size() - m_pos;
+        public long textSize() {
+            return m_A.textSize() - m_pos;
         }
     }
 
-    private static class StringArray implements LArray
+    private static class StringArray implements LSeq
     {
         private String m_A   = null;
         private int    m_pos = 0;
@@ -114,12 +102,12 @@ public class LSAIS
         }
 
         @Override
-        public long size() {
+        public long textSize() {
             return m_A.length() - m_pos;
         }
 
         @Override
-        public long get(long i) {
+        public long lookup(long i) {
             return (m_A.charAt((int) (m_pos + i)) & 0xffff);
         }
 
@@ -135,34 +123,34 @@ public class LSAIS
     }
 
     /* find the start or end of each bucket */
-    private static void getCounts(LArray T, LArray C, long n, int k) {
+    private static void getCounts(LSeq T, LSeq C, long n, int k) {
         int i;
         for (i = 0; i < k; ++i) {
             C.set(i, 0);
         }
         for (i = 0; i < n; ++i) {
-            C.update(T.get(i), 1);
+            C.update(T.lookup(i), 1);
         }
     }
 
-    private static void getBuckets(LArray C, LArray B, int k, boolean end) {
+    private static void getBuckets(LSeq C, LSeq B, int k, boolean end) {
         int i, sum = 0;
         if (end != false) {
             for (i = 0; i < k; ++i) {
-                sum += C.get(i);
+                sum += C.lookup(i);
                 B.set(i, sum);
             }
         }
         else {
             for (i = 0; i < k; ++i) {
-                sum += C.get(i);
-                B.set(i, sum - C.get(i));
+                sum += C.lookup(i);
+                B.set(i, sum - C.lookup(i));
             }
         }
     }
 
     /* sort all type LMS suffixes */
-    private static void LMSsort(LArray T, LIntArray SA, LArray C, LArray B, long n, int k) {
+    private static void LMSsort(LSeq T, LSeq SA, LSeq C, LSeq B, long n, int k) {
         long b, i, j;
         long c0, c1;
         /* compute SAl */
@@ -171,17 +159,17 @@ public class LSAIS
         }
         getBuckets(C, B, k, false); /* find starts of buckets */
         j = n - 1;
-        b = B.get(c1 = T.get(j));
+        b = B.lookup(c1 = T.lookup(j));
         --j;
-        SA.set(b++, (T.get(j) < c1) ? ~j : j);
+        SA.set(b++, (T.lookup(j) < c1) ? ~j : j);
         for (i = 0; i < n; ++i) {
-            if (0 < (j = SA.get(i))) {
-                if ((c0 = T.get(j)) != c1) {
+            if (0 < (j = SA.lookup(i))) {
+                if ((c0 = T.lookup(j)) != c1) {
                     B.set(c1, b);
-                    b = B.get(c1 = c0);
+                    b = B.lookup(c1 = c0);
                 }
                 --j;
-                SA.set(b++, (T.get(j) < c1) ? ~j : j);
+                SA.set(b++, (T.lookup(j) < c1) ? ~j : j);
                 SA.set(i, 0);
             }
             else if (j < 0) {
@@ -193,20 +181,20 @@ public class LSAIS
             getCounts(T, C, n, k);
         }
         getBuckets(C, B, k, true); /* find ends of buckets */
-        for (i = n - 1, b = B.get(c1 = 0); 0 <= i; --i) {
-            if (0 < (j = SA.get(i))) {
-                if ((c0 = T.get(j)) != c1) {
+        for (i = n - 1, b = B.lookup(c1 = 0); 0 <= i; --i) {
+            if (0 < (j = SA.lookup(i))) {
+                if ((c0 = T.lookup(j)) != c1) {
                     B.set(c1, b);
-                    b = B.get(c1 = c0);
+                    b = B.lookup(c1 = c0);
                 }
                 --j;
-                SA.set(--b, (T.get(j) > c1) ? ~(j + 1) : j);
+                SA.set(--b, (T.lookup(j) > c1) ? ~(j + 1) : j);
                 SA.set(i, 0);
             }
         }
     }
 
-    private static int LMSpostproc(LArray T, LIntArray SA, long n, long m) {
+    private static int LMSpostproc(LSeq T, LSeq SA, long n, long m) {
         long i, j, p, q, plen, qlen;
         int name;
         long c0, c1;
@@ -214,12 +202,12 @@ public class LSAIS
 
         /* compact all the sorted substrings into the first m items of SA
             2*m must be not larger than n (proveable) */
-        for (i = 0; (p = SA.get(i)) < 0; ++i) {
+        for (i = 0; (p = SA.lookup(i)) < 0; ++i) {
             SA.set(i, ~p);
         }
         if (i < m) {
             for (j = i, ++i;; ++i) {
-                if ((p = SA.get(i)) < 0) {
+                if ((p = SA.lookup(i)) < 0) {
                     SA.set(j++, ~p);
                     SA.set(i, 0);
                     if (j == m) {
@@ -232,33 +220,33 @@ public class LSAIS
         /* store the length of all substrings */
         i = n - 1;
         j = n - 1;
-        c0 = T.get(n - 1);
+        c0 = T.lookup(n - 1);
         do {
             c1 = c0;
         }
-        while ((0 <= --i) && ((c0 = T.get(i)) >= c1));
+        while ((0 <= --i) && ((c0 = T.lookup(i)) >= c1));
         for (; 0 <= i;) {
             do {
                 c1 = c0;
             }
-            while ((0 <= --i) && ((c0 = T.get(i)) <= c1));
+            while ((0 <= --i) && ((c0 = T.lookup(i)) <= c1));
             if (0 <= i) {
                 SA.set(m + ((i + 1) >> 1), j - i);
                 j = i + 1;
                 do {
                     c1 = c0;
                 }
-                while ((0 <= --i) && ((c0 = T.get(i)) >= c1));
+                while ((0 <= --i) && ((c0 = T.lookup(i)) >= c1));
             }
         }
 
         /* find the lexicographic names of all substrings */
         for (i = 0, name = 0, q = n, qlen = 0; i < m; ++i) {
-            p = SA.get(i);
-            plen = SA.get(m + (p >> 1));
+            p = SA.lookup(i);
+            plen = SA.lookup(m + (p >> 1));
             diff = true;
             if ((plen == qlen) && ((q + plen) < n)) {
-                for (j = 0; (j < plen) && (T.get(p + j) == T.get(q + j)); ++j) {}
+                for (j = 0; (j < plen) && (T.lookup(p + j) == T.lookup(q + j)); ++j) {}
                 if (j == plen) {
                     diff = false;
                 }
@@ -275,7 +263,7 @@ public class LSAIS
     }
 
     /* compute SA and BWT */
-    private static void induceSA(LArray T, LIntArray SA, LArray C, LArray B, long n, int k) {
+    private static void induceSA(LSeq T, LSeq SA, LSeq C, LSeq B, long n, int k) {
         long b, i, j;
         long c0, c1;
         /* compute SAl */
@@ -284,17 +272,17 @@ public class LSAIS
         }
         getBuckets(C, B, k, false); /* find starts of buckets */
         j = n - 1;
-        b = B.get(c1 = T.get(j));
-        SA.set(b++, ((0 < j) && (T.get(j - 1) < c1)) ? ~j : j);
+        b = B.lookup(c1 = T.lookup(j));
+        SA.set(b++, ((0 < j) && (T.lookup(j - 1) < c1)) ? ~j : j);
         for (i = 0; i < n; ++i) {
-            j = SA.get(i);
+            j = SA.lookup(i);
             SA.set(i, ~j);
             if (0 < j) {
-                if ((c0 = T.get(--j)) != c1) {
+                if ((c0 = T.lookup(--j)) != c1) {
                     B.set(c1, b);
-                    b = B.get(c1 = c0);
+                    b = B.lookup(c1 = c0);
                 }
-                SA.set(b++, ((0 < j) && (T.get(j - 1) < c1)) ? ~j : j);
+                SA.set(b++, ((0 < j) && (T.lookup(j - 1) < c1)) ? ~j : j);
             }
         }
         /* compute SAs */
@@ -302,13 +290,13 @@ public class LSAIS
             getCounts(T, C, n, k);
         }
         getBuckets(C, B, k, true); /* find ends of buckets */
-        for (i = n - 1, b = B.get(c1 = 0); 0 <= i; --i) {
-            if (0 < (j = SA.get(i))) {
-                if ((c0 = T.get(--j)) != c1) {
+        for (i = n - 1, b = B.lookup(c1 = 0); 0 <= i; --i) {
+            if (0 < (j = SA.lookup(i))) {
+                if ((c0 = T.lookup(--j)) != c1) {
                     B.set(c1, b);
-                    b = B.get(c1 = c0);
+                    b = B.lookup(c1 = c0);
                 }
-                SA.set(--b, ((j == 0) || (T.get(j - 1) > c1)) ? ~j : j);
+                SA.set(--b, ((j == 0) || (T.lookup(j - 1) > c1)) ? ~j : j);
             }
             else {
                 SA.set(i, ~j);
@@ -318,8 +306,8 @@ public class LSAIS
 
     /* find the suffix array SA of T[0..n-1] in {0..k-1}^n
        use a working space (excluding T and SA) of at most 2n+O(1) for a constant alphabet */
-    private static long SA_IS(LArray T, LIntArray SA, long fs, long n, int k) {
-        LArray C, B, RA;
+    private static long SA_IS(LSeq T, LSeq SA, long fs, long n, int k) {
+        LSeq C, B, RA;
         long b, m, i, j, c, p, q, pidx = 0, newfs;
         int name;
         long c0, c1;
@@ -367,16 +355,16 @@ public class LSAIS
         i = n - 1;
         j = n;
         m = 0;
-        c0 = T.get(n - 1);
+        c0 = T.lookup(n - 1);
         do {
             c1 = c0;
         }
-        while ((0 <= --i) && ((c0 = T.get(i)) >= c1));
+        while ((0 <= --i) && ((c0 = T.lookup(i)) >= c1));
         for (; 0 <= i;) {
             do {
                 c1 = c0;
             }
-            while ((0 <= --i) && ((c0 = T.get(i)) <= c1));
+            while ((0 <= --i) && ((c0 = T.lookup(i)) <= c1));
             if (0 <= i) {
                 if (0 <= b) {
                     SA.set(b, j);
@@ -387,7 +375,7 @@ public class LSAIS
                 do {
                     c1 = c0;
                 }
-                while ((0 <= --i) && ((c0 = T.get(i)) >= c1));
+                while ((0 <= --i) && ((c0 = T.lookup(i)) >= c1));
             }
         }
         if (1 < m) {
@@ -422,8 +410,8 @@ public class LSAIS
                 }
             }
             for (i = m + (n >> 1) - 1, j = m * 2 + newfs - 1; m <= i; --i) {
-                if (SA.get(i) != 0) {
-                    SA.set(j--, SA.get(i) - 1);
+                if (SA.lookup(i) != 0) {
+                    SA.set(j--, SA.lookup(i) - 1);
                 }
             }
             RA = new SubIntArray(SA, m + newfs);
@@ -432,27 +420,27 @@ public class LSAIS
 
             i = n - 1;
             j = m * 2 - 1;
-            c0 = T.get(n - 1);
+            c0 = T.lookup(n - 1);
             do {
                 c1 = c0;
             }
-            while ((0 <= --i) && ((c0 = T.get(i)) >= c1));
+            while ((0 <= --i) && ((c0 = T.lookup(i)) >= c1));
             for (; 0 <= i;) {
                 do {
                     c1 = c0;
                 }
-                while ((0 <= --i) && ((c0 = T.get(i)) <= c1));
+                while ((0 <= --i) && ((c0 = T.lookup(i)) <= c1));
                 if (0 <= i) {
                     SA.set(j--, i + 1);
                     do {
                         c1 = c0;
                     }
-                    while ((0 <= --i) && ((c0 = T.get(i)) >= c1));
+                    while ((0 <= --i) && ((c0 = T.lookup(i)) >= c1));
                 }
             }
 
             for (i = 0; i < m; ++i) {
-                SA.set(i, SA.get(m + SA.get(i)));
+                SA.set(i, SA.lookup(m + SA.lookup(i)));
             }
             if ((flags & 4) != 0) {
                 C = B = new IntArray(new int[k], 0);
@@ -471,10 +459,10 @@ public class LSAIS
             getBuckets(C, B, k, true); /* find ends of buckets */
             i = m - 1;
             j = n;
-            p = SA.get(m - 1);
-            c1 = T.get(p);
+            p = SA.lookup(m - 1);
+            c1 = T.lookup(p);
             do {
-                q = B.get(c0 = c1);
+                q = B.lookup(c0 = c1);
                 while (q < j) {
                     SA.set(--j, 0);
                 }
@@ -483,9 +471,9 @@ public class LSAIS
                     if (--i < 0) {
                         break;
                     }
-                    p = SA.get(i);
+                    p = SA.lookup(i);
                 }
-                while ((c1 = T.get(p)) == c0);
+                while ((c1 = T.lookup(p)) == c0);
             }
             while (0 <= i);
             while (0 < j) {
@@ -501,11 +489,11 @@ public class LSAIS
     }
 
     /** Suffix Sorting **/
-    public static long suffixsort(LArray T, LIntArray SA, int k) {
+    public static long suffixsort(LSeq T, LSeq SA, int k) {
         if (T == null || SA == null)
             throw new NullPointerException();
-        final int n = (int) T.size();
-        if (SA.size() < n)
+        final int n = (int) T.textSize();
+        if (SA.textSize() < n)
             throw new IllegalArgumentException("The suffix array container (SA) size is smaller than the input");
 
         if (n <= 1) {
@@ -517,12 +505,30 @@ public class LSAIS
         return SA_IS(T, SA, 0, n, k);
     }
 
+    public static long suffixsort(LSeq T, int[] SA, int k) {
+        if (T == null || SA == null)
+            throw new NullPointerException();
+        final int n = (int) T.textSize();
+        if (SA.length < n)
+            throw new IllegalArgumentException("The suffix array container (SA) size is smaller than the input");
+
+        IntArray iSA = new IntArray(SA, 0);
+
+        if (n <= 1) {
+            if (n == 1) {
+                iSA.set(0, 0);
+            }
+            return 0;
+        }
+        return SA_IS(T, iSA, 0, n, k);
+    }
+
     /* String */
     public static long suffixsort(String T, LIntArray SA) {
         if (T == null || SA == null)
             throw new NullPointerException();
         final int n = T.length();
-        if (SA.size() < n)
+        if (SA.textSize() < n)
             throw new IllegalArgumentException("The suffix array container (SA) size is smaller than the input");
 
         if (n <= 1) {

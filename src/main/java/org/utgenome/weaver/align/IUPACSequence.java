@@ -35,7 +35,6 @@ import java.io.IOException;
 
 import org.utgenome.UTGBException;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
-import org.utgenome.weaver.align.LSAIS.LArray;
 import org.xerial.util.log.Logger;
 
 /**
@@ -44,7 +43,7 @@ import org.xerial.util.log.Logger;
  * @author leo
  * 
  */
-public class IUPACSequence implements LArray, LSeq
+public class IUPACSequence implements LSeq
 {
     private static Logger _logger = Logger.getLogger(IUPACSequence.class);
 
@@ -101,10 +100,6 @@ public class IUPACSequence implements LArray, LSeq
         }
     }
 
-    public long size() {
-        return numBases;
-    }
-
     public IUPAC getIUPAC(long index) {
         byte code = (byte) ((seq[(int) (index >>> 1)] >>> (1 - (index & 1)) * 4) & 0x0F);
         return IUPAC.decode(code);
@@ -133,17 +128,12 @@ public class IUPACSequence implements LArray, LSeq
 
     @Override
     public long lookup(long index) {
-        return getIUPAC(index).bitFlag;
+        return ((seq[(int) (index >>> 1)] >>> (1 - (index & 1)) * 4) & 0x0F);
     }
 
     @Override
     public long textSize() {
         return numBases;
-    }
-
-    @Override
-    public long get(long i) {
-        return getIUPAC(i).bitFlag;
     }
 
     @Override

@@ -34,7 +34,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class WaveletArray implements LSeq
+public class WaveletArray
 {
     private ArrayList<BitVector> bitVector       = new ArrayList<BitVector>();
     private BitVector            occ;

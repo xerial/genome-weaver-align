@@ -28,15 +28,18 @@ import java.io.IOException;
 
 import org.utgenome.UTGBErrorCode;
 import org.utgenome.UTGBException;
+import org.xerial.util.StopWatch;
+import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
 import org.xerial.util.opt.Command;
 
 public class BWT2SparseSA implements Command
 {
+    private static Logger _logger = Logger.getLogger(BWT2SparseSA.class);
 
     @Override
     public String name() {
-        return "bwt2ssa";
+        return "ssa";
     }
 
     @Override
@@ -64,9 +67,13 @@ public class BWT2SparseSA implements Command
     }
 
     public static void bwt2sparseSA(BWTFiles db) throws IOException {
+        StopWatch timer = new StopWatch();
+        _logger.info("Loading wavelet array: " + db.bwtWavelet());
         WaveletArray wv = WaveletArray.loadFrom(db.bwtWavelet());
+        _logger.info("Creating sparse suffix array " + db.sparseSuffixArray());
         SparseSuffixArray ssa = SparseSuffixArray.createFromWaveletBWT(wv, 32);
         ssa.saveTo(db.sparseSuffixArray());
+        _logger.info(String.format("%.2f sec.", timer.getElapsedTime()));
     }
 
 }

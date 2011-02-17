@@ -139,7 +139,7 @@ public class EncodeFasta implements Command
         IUPACSequenceWriter encoder = new IUPACSequenceWriter(new BufferedOutputStream(new FileOutputStream(
                 reverseDB.iupac())));
         // reverse IN[0..n-2] (excludes the sentinel)
-        for (long i = forwardSeq.size() - 2; i >= 0; --i) {
+        for (long i = forwardSeq.textSize() - 2; i >= 0; --i) {
             encoder.append(forwardSeq.getIUPAC(i));
         }
         // append a sentinel.

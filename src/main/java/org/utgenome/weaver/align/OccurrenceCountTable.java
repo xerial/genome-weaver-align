@@ -56,7 +56,7 @@ public class OccurrenceCountTable
 
         _logger.info("preparing occurrence count table...");
         final int K = IUPAC.values().length;
-        final int tableSize = (int) ((seq.size() + W) / W);
+        final int tableSize = (int) ((seq.textSize() + W) / W);
 
         occTable = new ArrayList<int[]>(K);
         for (int k = 0; k < K; ++k) {
@@ -66,7 +66,7 @@ public class OccurrenceCountTable
             occTable.add(occ);
         }
 
-        for (int i = 0; i < seq.size(); ++i) {
+        for (int i = 0; i < seq.textSize(); ++i) {
             IUPAC code = seq.getIUPAC(i);
             int codeIndex = code.bitFlag;
             final int blockIndex = i / W;
@@ -96,7 +96,7 @@ public class OccurrenceCountTable
             throw new IllegalStateException("Occ table size cannot exceed 2^31-1");
         }
         int occ = blockPos <= 0 ? 0 : occTable.get(code.bitFlag)[(int) (blockPos - 1)];
-        final long upperLimit = Math.min(index, seq.size() - 1);
+        final long upperLimit = Math.min(index, seq.textSize() - 1);
         for (int i = (int) blockPos * W; i <= upperLimit; i++) {
             if (seq.getIUPAC(i) == code) {
                 occ++;
