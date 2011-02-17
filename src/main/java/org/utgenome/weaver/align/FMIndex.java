@@ -37,14 +37,14 @@ public class FMIndex
     private final WaveletArray   W;
     private final CharacterCount C;
 
-    public FMIndex(WaveletArray W, CharacterCount C) {
+    public FMIndex(WaveletArray W) {
         this.W = W;
-        this.C = C;
+        this.C = new CharacterCount(W);
     }
 
     public SuffixInterval backwardSearch(IUPAC ch, SuffixInterval current) {
-        long lowerBound = C.get(ch) + W.rank(ch.bitFlag, current.lowerBound);
-        long upperBound = C.get(ch) + W.rank(ch.bitFlag, current.upperBound + 1) - 1;
+        long lowerBound = C.getCharacterCountSmallerThan(ch) + W.rank(ch.bitFlag, current.lowerBound);
+        long upperBound = C.getCharacterCountSmallerThan(ch) + W.rank(ch.bitFlag, current.upperBound + 1) - 1;
         return new SuffixInterval(lowerBound, upperBound);
     }
 
@@ -60,7 +60,7 @@ public class FMIndex
             return 0; // Return the smallest SA index
         }
         IUPAC c = IUPAC.decode((byte) W.lookup(index));
-        return C.get(c) + W.rank(c.bitFlag, index);
+        return C.getCharacterCountSmallerThan(c) + W.rank(c.bitFlag, index);
     }
 
     public long textSize() {

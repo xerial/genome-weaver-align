@@ -65,15 +65,19 @@ public class IUPACSequence implements LArray, LSeq
     }
 
     private void initSeq(long numBases, File iupacFile) throws UTGBException {
+
         this.numBases = numBases;
-        int byteSize = (int) ((numBases / 2) + (numBases & 0x01));
-        this.seq = new byte[byteSize];
+        long byteSize = (numBases / 2) + (numBases & 0x01);
+        if (byteSize > Integer.MAX_VALUE)
+            throw new IllegalArgumentException(String.format("iupac sequence cannot be larger than 4GB: %,d", numBases));
+
+        this.seq = new byte[(int) byteSize];
         try {
 
             FileInputStream seqIn = new FileInputStream(iupacFile);
             try {
                 _logger.info("loading " + iupacFile);
-                int read = seqIn.read(seq, 0, byteSize);
+                int read = seqIn.read(seq, 0, (int) byteSize);
             }
             finally {
                 seqIn.close();

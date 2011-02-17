@@ -26,9 +26,17 @@ package org.utgenome.weaver.align;
 
 import static org.junit.Assert.*;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.TreeSet;
 
 import org.junit.Test;
+import org.xerial.util.FileUtil;
 import org.xerial.util.log.Logger;
 
 public class BitVectorTest
@@ -88,4 +96,32 @@ public class BitVectorTest
         }
 
     }
+
+    @Test
+    public void save() throws Exception {
+        BitVector v = new BitVector(100);
+        for (long i = 0; i < v.size(); ++i) {
+            if (i % 3 == 0 || i % 5 == 0)
+                v.set(i);
+        }
+        File tmp = FileUtil.createTempFile(new File("target"), "bitvector", ".b");
+        tmp.deleteOnExit();
+
+        // save
+        DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tmp)));
+        v.saveTo(out);
+        out.close();
+
+        DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(tmp)));
+        BitVector v2 = BitVector.loadFrom(in);
+        in.close();
+
+        assertEquals(v.size(), v2.size());
+        for (long i = 0; i < v.size(); ++i) {
+            assertEquals(v.get(i), v2.get(i));
+        }
+        assertEquals(v.toString(), v2.toString());
+
+    }
+
 }

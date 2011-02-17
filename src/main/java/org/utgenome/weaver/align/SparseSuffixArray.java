@@ -55,6 +55,27 @@ public class SparseSuffixArray
         this.L = L;
     }
 
+    public static SparseSuffixArray createFromWaveletBWT(WaveletArray W, int suffixInterval) {
+        FMIndex F = new FMIndex(W);
+
+        final long N = W.textSize();
+        final long sparseSA_length = (N + suffixInterval - 1) / suffixInterval;
+        LIntArray sparseSA = new LIntArray(sparseSA_length);
+
+        long sa = 0;
+        long saIndex = N - 1;
+        for (long i = 0; i < N; ++i) {
+            if (saIndex % suffixInterval == 0) {
+                sparseSA.set(saIndex / suffixInterval, sa);
+            }
+            --sa;
+
+            saIndex = F.suffixLink(saIndex);
+        }
+
+        return new SparseSuffixArray(sparseSA, N, suffixInterval);
+    }
+
     public void saveTo(File f) throws IOException {
         DataOutputStream d = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
         try {

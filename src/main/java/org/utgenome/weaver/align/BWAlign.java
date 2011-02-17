@@ -90,8 +90,8 @@ public class BWAlign implements Command
         WaveletArray wvR = WaveletArray.loadFrom(reverseDB.bwtWavelet());
 
         // Count the character frequencies 
-        CharacterCount C = new CharacterCount(wvF);
-        final FMIndex fmIndex = new FMIndex(wvF, C);
+        //CharacterCount C = new CharacterCount(wvF);
+        final FMIndex fmIndex = new FMIndex(wvF);
 
         if (query != null) {
             _logger.info("query sequence: " + query);

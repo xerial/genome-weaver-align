@@ -36,12 +36,12 @@ import org.utgenome.gwt.utgb.client.bio.IUPAC;
  */
 public class CharacterCount
 {
-    private static int K = IUPAC.values().length;
-    private long[]     C = new long[K];
+    private static int K     = IUPAC.values().length;
+    private long[]     C     = new long[K];
+    private long[]     count = new long[K];
 
     public CharacterCount(LSeq seq) {
 
-        long[] count = new long[K];
         for (int i = 0; i < K; ++i) {
             count[i] = 0;
         }
@@ -50,7 +50,7 @@ public class CharacterCount
             IUPAC code = IUPAC.decode((byte) seq.lookup(i));
             count[code.bitFlag]++;
         }
-        // Decrement the character count for the sentinel since BWT based count contains one additional sentinel.   
+        // Decrement the character count for the sentinel since BWT based count contains one additional sentinel $.   
         count[IUPAC.None.bitFlag]--;
 
         long sum = 1; // add 1 for $ (end of string)
@@ -61,7 +61,6 @@ public class CharacterCount
     }
 
     public CharacterCount(WaveletArray W) {
-        long[] count = new long[K];
         for (int i = 0; i < K; ++i) {
             count[i] = (int) W.rank(i, W.textSize());
         }
@@ -75,8 +74,12 @@ public class CharacterCount
         }
     }
 
-    public long get(IUPAC code) {
+    public long getCharacterCountSmallerThan(IUPAC code) {
         return C[code.bitFlag];
+    }
+
+    public long getCount(IUPAC code) {
+        return count[code.bitFlag];
     }
 
 }
