@@ -63,20 +63,19 @@ public class PrintSA implements Command
 
         for (int i = 0; i < SA.textSize(); ++i) {
             int sa = (int) SA.lookup(i);
-            System.out.println(String.format("%3d %3d %s %s", i, sa, rotateLeft(seq, sa), bwt.getIUPAC(i)));
+            System.out.println(String.format("%3d %3d %s %s", i, sa, rotateLeft(s, sa), bwt.getIUPAC(i)));
         }
     }
 
-    public static String rotateLeft(String s, int shift) {
+    public static String rotateLeft(IUPACSequence s, int shift) {
         StringWriter w = new StringWriter();
-        for (int i = shift; i <= shift + s.length(); ++i) {
-
-            if (i == s.length()) {
+        for (int i = shift; i < shift + s.textSize(); ++i) {
+            if (i == s.textSize() - 1) {
                 w.append("$");
                 continue;
             }
-            int pos = i % s.length();
-            w.append(s.charAt(pos));
+            int pos = (int) (i % s.textSize());
+            w.append(s.getIUPAC(pos).name());
         }
         return w.toString();
     }

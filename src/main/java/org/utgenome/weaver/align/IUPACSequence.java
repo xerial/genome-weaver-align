@@ -57,11 +57,18 @@ public class IUPACSequence implements LSeq
         for (int i = 0; i < seq.length; ++i)
             seq[i] = 0;
 
-        for (int i = 0; i < s.length(); ++i) {
-            char c = Character.toUpperCase(s.charAt(i));
-            setIUPAC(i, IUPAC.encode(c));
+        int cursor = 0;
+        for (; cursor < s.length(); ++cursor) {
+            char c = Character.toUpperCase(s.charAt(cursor));
+            setIUPAC(cursor, IUPAC.encode(c));
         }
-        setIUPAC(s.length(), IUPAC.None);
+        // ensure the sequence size is 2n
+        if (cursor % 2 == 0)
+            setIUPAC(cursor++, IUPAC.N);
+        // append a sentinal
+        setIUPAC(cursor++, IUPAC.None);
+
+        numBases = cursor;
     }
 
     public IUPACSequence(long numBases) throws UTGBException {
@@ -98,10 +105,6 @@ public class IUPACSequence implements LSeq
         byte[] seq = new byte[byteSize];
         in.read(seq, 0, byteSize);
 
-        if (seq[byteSize - 1] == 0) {
-            // $$ (continguous sentinel) indicates -1 num bases from byteSize * 2
-            numBases--;
-        }
         return new IUPACSequence(numBases, seq);
     }
 

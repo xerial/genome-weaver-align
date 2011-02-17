@@ -116,6 +116,9 @@ public class EncodeFasta implements Command
                 indexOut.leafObject("index", index);
                 _logger.debug("\n" + SilkLens.toSilk("index", index));
 
+                // This part ensure the sequence size (including sentinel $) becomes 2n, which fits in a byte array 
+                if (encoder.size() % 2 == 0)
+                    encoder.append(IUPAC.N);
                 // append a sentinel
                 encoder.append(IUPAC.None);
 

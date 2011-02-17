@@ -31,6 +31,6 @@ public class PrintSATest
 {
     @Test
     public void print() throws Exception {
-        GenomeWeaver.execute("sa-debug ACGTCCTTATACTTTATCTCATGGGATAT");
+        GenomeWeaver.execute("sa-debug ACGTCCTTATACTTTATCTCATGGGATA");
     }
 }
