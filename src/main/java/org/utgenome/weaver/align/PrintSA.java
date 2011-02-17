@@ -69,7 +69,7 @@ public class PrintSA implements Command
 
     public static String rotateLeft(String s, int shift) {
         StringWriter w = new StringWriter();
-        for (int i = shift; i < shift + s.length(); ++i) {
+        for (int i = shift; i <= shift + s.length(); ++i) {
 
             if (i == s.length()) {
                 w.append("$");

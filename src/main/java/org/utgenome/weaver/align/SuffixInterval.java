@@ -35,7 +35,7 @@ public class SuffixInterval
     }
 
     public boolean isValidRange() {
-        return lowerBound < upperBound;
+        return lowerBound <= upperBound;
     }
 
     @Override

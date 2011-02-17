@@ -63,6 +63,6 @@ public class BWAlignTest
     public void align2() throws Exception {
         File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "test2.fa", new File(tmpDir, "test.fa"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
-        GenomeWeaver.execute(String.format("align %s -q ATCTCATGGG", fastaArchive.getPath()));
+        GenomeWeaver.execute(String.format("align %s -q ATCTCATGGGA", fastaArchive.getPath()));
     }
 }
