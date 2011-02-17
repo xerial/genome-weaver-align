@@ -126,9 +126,8 @@ public class EncodeFasta implements Command
             }
             encoder.close();
             totalSize = encoder.size();
-            _logger.info("total size: " + totalSize);
+            _logger.info(String.format("total num bases: %,d", totalSize));
             indexOut.leaf("total size", totalSize);
-
             indexOut.close();
         }
 
