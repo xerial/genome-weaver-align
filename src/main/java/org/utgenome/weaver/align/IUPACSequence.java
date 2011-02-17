@@ -24,12 +24,15 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 
-import org.utgenome.UTGBErrorCode;
 import org.utgenome.UTGBException;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.utgenome.weaver.align.LSAIS.LArray;
@@ -43,48 +46,58 @@ import org.xerial.util.log.Logger;
  */
 public class IUPACSequence implements LArray, LSeq
 {
-    private static Logger    _logger = Logger.getLogger(IUPACSequence.class);
+    private static Logger _logger = Logger.getLogger(IUPACSequence.class);
 
-    private SequenceBoundary binaryInfo;
-    private byte[]           seq;
-    private long             numBases;
+    private byte[]        seq;
+    private long          numBases;
 
-    public IUPACSequence(File iupacFile, long numBases) throws UTGBException {
-        initSeq(numBases, iupacFile);
-    }
-
-    public IUPACSequence(BWTFiles db) throws UTGBException {
-
-        File silkIndexFile = db.pacIndex();
-        binaryInfo = SequenceBoundary.loadSilk(silkIndexFile);
-
-        if (binaryInfo == null)
-            throw new UTGBException(UTGBErrorCode.INVALID_INPUT, "failed to load index file");
-
-        initSeq(binaryInfo.totalSize, db.iupac());
-    }
-
-    private void initSeq(long numBases, File iupacFile) throws UTGBException {
-
+    public IUPACSequence(long numBases) throws UTGBException {
         this.numBases = numBases;
         long byteSize = (numBases / 2) + (numBases & 0x01);
         if (byteSize > Integer.MAX_VALUE)
             throw new IllegalArgumentException(String.format("iupac sequence cannot be larger than 4GB: %,d", numBases));
 
         this.seq = new byte[(int) byteSize];
-        try {
 
-            FileInputStream seqIn = new FileInputStream(iupacFile);
-            try {
-                _logger.info("loading " + iupacFile);
-                int read = seqIn.read(seq, 0, (int) byteSize);
-            }
-            finally {
-                seqIn.close();
-            }
+        for (int i = 0; i < seq.length; ++i)
+            seq[i] = 0;
+    }
+
+    private IUPACSequence(long numBases, byte[] seq) {
+        this.numBases = numBases;
+        this.seq = seq;
+    }
+
+    public static IUPACSequence loadFrom(File f) throws IOException {
+        long numBases = f.length() * 2;
+        DataInputStream d = new DataInputStream(new BufferedInputStream(new FileInputStream(f), 4 * 1024 * 1024));
+        try {
+            return IUPACSequence.loadFrom(d, numBases);
         }
-        catch (IOException e) {
-            throw UTGBException.convert(e);
+        finally {
+            d.close();
+        }
+    }
+
+    public static IUPACSequence loadFrom(DataInputStream in, long numBases) throws IOException {
+        // The num bases must be always 2
+        int byteSize = (int) (numBases / 2);
+        byte[] seq = new byte[byteSize];
+        in.read(seq, 0, byteSize);
+        return new IUPACSequence(numBases, seq);
+    }
+
+    public void saveTo(DataOutputStream out) throws IOException {
+        out.write(seq, 0, seq.length);
+    }
+
+    public void saveTo(File file) throws IOException {
+        DataOutputStream d = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
+        try {
+            saveTo(d);
+        }
+        finally {
+            d.close();
         }
     }
 
@@ -116,14 +129,6 @@ public class IUPACSequence implements LArray, LSeq
         }
         b.append("]");
         return b.toString();
-    }
-
-    public void reverse(OutputStream out) throws IOException {
-        IUPACSequenceWriter encoder = new IUPACSequenceWriter(out);
-        for (long i = binaryInfo.totalSize - 1; i >= 0; --i) {
-            encoder.append(this.getIUPAC(i));
-        }
-        encoder.close();
     }
 
     @Override

@@ -16,38 +16,32 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// IUPAC2BWT.java
-// Since: 2011/02/16
+// BWT2SparseSA.java
+// Since: 2011/02/17
 //
 // $URL$ 
 // $Author$
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 import org.utgenome.UTGBErrorCode;
 import org.utgenome.UTGBException;
-import org.utgenome.gwt.utgb.client.bio.IUPAC;
-import org.xerial.util.StopWatch;
-import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
 import org.xerial.util.opt.Command;
 
-public class Pac2BWT implements Command
+public class BWT2SparseSA implements Command
 {
-    private static Logger _logger = Logger.getLogger(Pac2BWT.class);
 
     @Override
     public String name() {
-        return "pac2bwt";
+        return "bwt2ssa";
     }
 
     @Override
     public String getOneLineDescription() {
-        return "create BWT from an IUPAC file";
+        return "Create a sparse suffix array from BWT string";
     }
 
     @Override
@@ -61,43 +55,18 @@ public class Pac2BWT implements Command
     @Override
     public void execute(String[] args) throws Exception {
         if (fastaFile == null)
-            throw new UTGBException(UTGBErrorCode.MISSING_FILES, "no input fasta file");
+            throw new UTGBException(UTGBErrorCode.MISSING_OPTION, "no FASTA file is given");
 
         BWTFiles forwardDB = new BWTFiles(fastaFile, Strand.FORWARD);
         BWTFiles reverseDB = new BWTFiles(fastaFile, Strand.REVERSE);
-
-        pac2bwt(forwardDB);
-        pac2bwt(reverseDB);
+        bwt2sparseSA(forwardDB);
+        bwt2sparseSA(reverseDB);
     }
 
-    public static void pac2bwt(BWTFiles db) throws UTGBException, IOException {
-
-        StopWatch timer = new StopWatch();
-        {
-            IUPACSequence seq = IUPACSequence.loadFrom(db.iupac());
-            LIntArray SA = new LIntArray(seq.textSize());
-            _logger.info("Creating a suffix array");
-            LSAIS.suffixsort(seq, SA, 16);
-
-            _logger.info("Creating a BWT string: " + db.bwt());
-            IUPACSequenceWriter writer = new IUPACSequenceWriter(new BufferedOutputStream(
-                    new FileOutputStream(db.bwt())));
-            bwt(seq, SA, writer);
-            writer.close();
-        }
-        _logger.info("done: " + timer.getElapsedTime() + " sec.");
-
-    }
-
-    public static void bwt(IUPACSequence seq, LIntArray SA, IUPACSequenceWriter out) throws IOException {
-        for (long i = 0; i < SA.size(); ++i) {
-            if (SA.get(i) == 0) {
-                out.append(IUPAC.None);
-            }
-            else {
-                out.append(seq.getIUPAC(SA.get(i) - 1));
-            }
-        }
+    public static void bwt2sparseSA(BWTFiles db) throws IOException {
+        WaveletArray wv = WaveletArray.loadFrom(db.bwtWavelet());
+        SparseSuffixArray ssa = SparseSuffixArray.createFromWaveletBWT(wv, 32);
+        ssa.saveTo(db.sparseSuffixArray());
     }
 
 }
