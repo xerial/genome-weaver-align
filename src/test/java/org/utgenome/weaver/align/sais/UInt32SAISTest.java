@@ -45,7 +45,7 @@ public class UInt32SAISTest
         for (long each : SA)
             SA_v.add(each);
 
-        long[] answer = { 15, 14, 10, 6, 2, 11, 7, 3, 1, 0, 13, 12, 9, 5, 8, 4 };
+        long[] answer = { 16, 15, 14, 10, 6, 2, 11, 7, 3, 1, 0, 13, 12, 9, 5, 8, 4 };
         List<Long> ans = new ArrayList<Long>();
         for (long each : answer)
             ans.add(each);

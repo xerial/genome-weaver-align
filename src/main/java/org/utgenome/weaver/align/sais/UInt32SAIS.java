@@ -101,7 +101,7 @@ public class UInt32SAIS
         this.T = T;
         this.N = T.textSize();
         this.K = K;
-        this.bucket = new long[K + 1];
+        this.bucket = new long[K];
         typeLS = new RSBitVector(N);
     }
 
@@ -165,46 +165,31 @@ public class UInt32SAIS
             SA.set(i, 0);
 
         // Find the lexicographic names of the LMS substrings
-        int name = 0;
-        long prev = -1;
-        long qlen = 0;
-        for (long i = 0; i < numLMS; ++i) {
-            final long pos = SA.lookup(i);
-            //final long plen = SA.lookup(numLMS + (pos >> 1));
-            boolean diff = false;
-
-            for (long d = 0; d < N; ++d) {
-                if (prev == -1 || T.lookup(pos + d) != T.lookup(prev + d)
-                        || typeLS.get(pos + d) != typeLS.get(prev + d)) {
-                    diff = true;
-                    break;
-                }
-                else if (d > 0 && (isLMS(pos + d) || isLMS(prev + d)))
-                    break;
+        int name = 1;
+        SA.set(numLMS + (SA.lookup(0) >> 1), name++);
+        for (long i = 1; i < numLMS; ++i) {
+            final long prev = SA.lookup(i - 1);
+            final long current = SA.lookup(i);
+            if (!isEqualLMS_substr(T, prev, current)) {
+                name++;
             }
-
-            if (diff) {
-                ++name;
-                prev = pos;
-            }
-
-            SA.set(numLMS + (pos >> 1), name - 1);
+            SA.set(numLMS + (current >> 1), name - 1);
         }
 
         for (long i = N - 1, j = N - 1; i >= numLMS; --i) {
             if (SA.lookup(i) != 0)
-                SA.set(j--, SA.lookup(i));
+                SA.set(j--, SA.lookup(i) - 1);
         }
 
         // Step 2: solve the reduced problem
-        // Build SA1 
-        LSeq SA1 = new ArrayWrap(SA, 0, N - numLMS);
+        // Create SA1, a view of SA[0, numLMS-1]
+        LSeq SA1 = new ArrayWrap(SA, 0, numLMS);
         LSeq T1 = new ArrayWrap(SA, N - numLMS, numLMS);
-        if (name < numLMS) {
+        if (name <= numLMS) {
             new UInt32SAIS(T1, name - 1).SAIS(SA1);
         }
         else {
-            // Generate the suffix array of inputS1 directory.
+            // When each LMS substring is assigned a unique name
             for (long i = 0; i < numLMS; i++)
                 SA1.set(T1.lookup(i), i);
         }
@@ -215,6 +200,7 @@ public class UInt32SAIS
             if (isLMS(i))
                 T1.set(j++, i); // get p1
         }
+        // get index 
         for (long i = 0; i < numLMS; ++i) {
             SA1.set(i, T1.lookup(SA1.lookup(i)));
         }
@@ -222,10 +208,13 @@ public class UInt32SAIS
         for (long i = numLMS; i < N; ++i) {
             SA.set(i, 0);
         }
-        for (long i = numLMS - 1; i >= 0; --i) {
+        SA.set(0, T.textSize() - 1);
+        for (long i = numLMS - 1; i > 0; --i) {
             long j = SA.lookup(i);
             SA.set(i, 0);
-            SA.set(--bucket[(int) T.lookup(j)], j);
+            long index = --bucket[(int) T.lookup(j)];
+            if (index >= 0)
+                SA.set(index, j);
         }
         induceSA_left(SA);
         induceSA_right(SA);
@@ -236,7 +225,7 @@ public class UInt32SAIS
         initBuckets();
         // compute the start of the buckets
         int sum = 0;
-        for (int i = 0; i <= K; ++i) {
+        for (int i = 0; i < K; ++i) {
             sum += bucket[i];
             bucket[i] = sum - bucket[i];
         }
@@ -246,7 +235,7 @@ public class UInt32SAIS
         initBuckets();
         // compute the end of the buckets
         long sum = 0;
-        for (int i = 0; i <= K; ++i) {
+        for (int i = 0; i < K; ++i) {
             sum += bucket[i];
             bucket[i] = sum;
         }
@@ -254,7 +243,7 @@ public class UInt32SAIS
 
     private void initBuckets() {
         // initialize buckets
-        for (int i = 0; i <= K; ++i) {
+        for (int i = 0; i < K; ++i) {
             bucket[i] = 0;
         }
         // compute the size of each bucket
@@ -285,6 +274,21 @@ public class UInt32SAIS
             if (j >= 0 && typeLS.get(j))
                 SA.set(--bucket[(int) T.lookup(j)], j);
         }
+    }
+
+    boolean isEqualLMS_substr(LSeq T, long pos1, long pos2) {
+        boolean prevLS = SType;
+        for (; pos1 < N && pos2 < N; ++pos1, ++pos2) {
+            if (T.lookup(pos1) == T.lookup(pos2) && typeLS.get(pos1) == typeLS.get(pos2)) {
+                if (prevLS == LType && typeLS.get(pos1) == SType)
+                    return true; // equal LMS substring
+                prevLS = typeLS.get(pos1);
+                continue;
+            }
+            else
+                return false;
+        }
+        return false;
     }
 
 }

@@ -61,6 +61,20 @@ public class LSAIS
         public long textSize() {
             return m_A.length - m_pos;
         }
+
+        @Override
+        public String toString() {
+            StringBuilder w = new StringBuilder();
+            w.append("[");
+            for (long i = 0; i < textSize(); ++i) {
+                if (i != 0)
+                    w.append(", ");
+                w.append(lookup(i));
+            }
+            w.append("]");
+            return w.toString();
+        }
+
     }
 
     private static class SubIntArray implements LSeq
