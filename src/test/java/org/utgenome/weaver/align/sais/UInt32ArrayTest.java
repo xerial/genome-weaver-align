@@ -49,6 +49,13 @@ public class UInt32ArrayTest
         assertEquals(0xFFFFFFFFL, array.lookup(0));
     }
 
+    //    @Test
+    //    public void moreThan2GBTest() {
+    //        long size = Integer.MAX_VALUE + 100L;
+    //        UInt32Array array = new UInt32Array(size);
+    //
+    //    }
+
     @Test
     public void performance() throws Exception {
         StopWatch timer = new StopWatch();

@@ -46,11 +46,11 @@ public class UInt32Array implements LSeq, Iterable<Long>
     public UInt32Array(long size) {
         this.size = size;
 
-        int container = (int) (size >>> B);
+        int numContainers = (int) ((size + BLOCK_SIZE - 1) / BLOCK_SIZE);
+        int numFullBlockContainers = (int) (size / BLOCK_SIZE);
         int remainder = offset(size);
-
-        array = new ArrayList<int[]>(container + 1);
-        for (int i = 0; i < container; i++) {
+        array = new ArrayList<int[]>(numContainers);
+        for (int i = 0; i < numFullBlockContainers; i++) {
             array.add(new int[BLOCK_SIZE]);
         }
         if (remainder > 0)
@@ -58,7 +58,11 @@ public class UInt32Array implements LSeq, Iterable<Long>
     }
 
     private int[] container(long index) {
-        return array.get((int) (index >>> B));
+        int block = (int) (index >>> B);
+        if (block < 0)
+            throw new ArrayIndexOutOfBoundsException(String.format("invalid index:%d, block:%d", index, block));
+
+        return array.get(block);
     }
 
     private static int offset(long index) {
