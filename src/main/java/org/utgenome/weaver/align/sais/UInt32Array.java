@@ -99,6 +99,14 @@ public class UInt32Array implements LSeq, Iterable<Long>
         return b.toString();
     }
 
+    public long[] toArray() {
+        long[] r = new long[(int) textSize()];
+        for (long i = 0; i < textSize(); ++i) {
+            r[(int) i] = lookup(i);
+        }
+        return r;
+    }
+
     @Override
     public Iterator<Long> iterator() {
         return new Iterator<Long>() {

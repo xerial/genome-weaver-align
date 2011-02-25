@@ -40,7 +40,7 @@ public class UInt32SAIS
     private final LSeq           T;
     private final long           N;
     private final int            K;
-    private final long[]         bucketStart;
+    private final long[]         bucketEnd;
     private RSBitVector          LS;
 
     private final static boolean LType = false;
@@ -103,7 +103,7 @@ public class UInt32SAIS
         this.T = T;
         this.N = T.textSize();
         this.K = K;
-        this.bucketStart = new long[K];
+        this.bucketEnd = new long[K];
         LS = new RSBitVector(N);
     }
 
@@ -142,26 +142,26 @@ public class UInt32SAIS
 
         // Initialize the buckets. 
         // A bucket is a container of the suffixes sharing the same first character
-        Arrays.fill(bucketStart, 0);
+        Arrays.fill(bucketEnd, 0);
         // Compute the size of each bucket
         for (int i = 0; i < N; ++i) {
-            ++bucketStart[(int) T.lookup(i)];
+            ++bucketEnd[(int) T.lookup(i)];
         }
         // Accumulate the character counts. The bucketStart holds the pointers to beginning of the buckets in SA
-        for (int i = 1; i < bucketStart.length; ++i) {
-            bucketStart[i] += bucketStart[i - 1];
+        for (int i = 1; i < bucketEnd.length; ++i) {
+            bucketEnd[i] += bucketEnd[i - 1];
         }
 
         // Step 1: reduce the problem by at least 1/2 
         // Sort all the S-substrings
 
         // Find LMS characters
-        long[] cursorInBucket = Arrays.copyOf(bucketStart, bucketStart.length);
+        long[] cursorInBucket = Arrays.copyOf(bucketEnd, bucketEnd.length);
         for (int i = 1; i < N; ++i) {
             if (isLMS(i))
                 SA.set(--cursorInBucket[(int) T.lookup(i)], i);
         }
-
+        SA.set(0, N - 1);
         // Induced sorting LMS prefixes
         induceSA(SA);
 
@@ -179,14 +179,14 @@ public class UInt32SAIS
 
         // Find the lexicographic names of the LMS substrings
         int name = 1;
-        SA.set(numLMS + (SA.lookup(0) >> 1), name++);
+        SA.set(numLMS + (SA.lookup(0) / 2), name++);
         for (long i = 1; i < numLMS; ++i) {
             final long prev = SA.lookup(i - 1);
             final long current = SA.lookup(i);
-            if (!isEqualLMS_substr(T, prev, current)) {
+            if (!isEqualLMS_substr(prev, current)) {
                 name++;
             }
-            SA.set(numLMS + (current >> 1), name - 1);
+            SA.set(numLMS + (current / 2), name - 1);
         }
 
         for (long i = N - 1, j = N - 1; i >= numLMS; --i) {
@@ -198,7 +198,7 @@ public class UInt32SAIS
         // Create SA1, a view of SA[0, numLMS-1]
         LSeq SA1 = new ArrayWrap(SA, 0, numLMS);
         LSeq T1 = new ArrayWrap(SA, N - numLMS, numLMS);
-        if (name <= numLMS) {
+        if (name - 1 != numLMS) {
             new UInt32SAIS(T1, name - 1).SAIS(SA1);
         }
         else {
@@ -208,68 +208,43 @@ public class UInt32SAIS
         }
 
         // Step 3: Induce SA from SA1
+        // Construct P1 using T1 buffer
         for (long i = 1, j = 0; i < N; ++i) {
             if (isLMS(i))
-                T1.set(j++, i); // get p1
+                T1.set(j++, i); // 
         }
-        // get index in T 
+        // Translate short name into the original index at T
+        // SA1 now holds the LMS-substring indexes
         for (long i = 0; i < numLMS; ++i) {
             SA1.set(i, T1.lookup(SA1.lookup(i)));
         }
 
-        System.arraycopy(bucketStart, 0, cursorInBucket, 0, bucketStart.length);
-        // init SA[N1 .. N-1]
+        // Step 3-1: Put all the items in SA1 into corresponding S-type buckets of SA
+
+        // Clear SA[N1 .. N-1]
         for (long i = numLMS; i < N; ++i) {
-            SA.set(--cursorInBucket[(int) T.lookup(SA1.lookup(i))], SA1.lookup(i));
+            SA.set(i, 0);
+        }
+        // Put SA1 contents into S-type buckets of SA 
+        System.arraycopy(bucketEnd, 0, cursorInBucket, 0, bucketEnd.length);
+        for (int i = numLMS - 1; i >= 0; --i) {
+            long si = SA1.lookup(i);
+            SA.set(i, 0);
+            SA.set(--cursorInBucket[(int) T.lookup(si)], si);
         }
         SA.set(0, T.textSize() - 1);
 
-        for (int i = numLMS - 1; i > 0; --i) {
-            while (cursorInBucket[i] > bucketStart[i - 1])
-                SA.set(--cursorInBucket[i], 0);
-        }
-
+        // Step 3-2, 3-3
         induceSA(SA);
 
     }
-
-    //    private void findStartOfBuckets() {
-    //        initBuckets();
-    //        // compute the start of the buckets
-    //        int sum = 0;
-    //        for (int i = 0; i < K; ++i) {
-    //            sum += bucketStart[i];
-    //            bucketStart[i] = sum - bucketStart[i];
-    //        }
-    //    }
-    //
-    //    private void findEndOfBuckets() {
-    //        initBuckets();
-    //        // compute the end of the buckets
-    //        long sum = 0;
-    //        for (int i = 0; i < K; ++i) {
-    //            sum += bucketStart[i];
-    //            bucketStart[i] = sum;
-    //        }
-    //    }
-    //
-    //    private void initBuckets() {
-    //        // initialize buckets
-    //        for (int i = 0; i < K; ++i) {
-    //            bucketStart[i] = 0;
-    //        }
-    //        // compute the size of each bucket
-    //        for (int i = 0; i < N; ++i) {
-    //            ++bucketStart[(int) T.lookup(i)];
-    //        }
-    //    }
 
     boolean isLMS(long pos) {
         return LS.get(pos) == SType && LS.get(pos - 1) == LType;
     }
 
     private void induceSA(LSeq SA) {
-        long[] cursorInBucket = Arrays.copyOf(bucketStart, bucketStart.length);
+        long[] cursorInBucket = Arrays.copyOf(bucketEnd, bucketEnd.length);
 
         // induce left
         for (long i = 0; i < N; ++i) {
@@ -281,17 +256,18 @@ public class UInt32SAIS
         }
 
         // induce right
-        System.arraycopy(bucketStart, 0, cursorInBucket, 0, bucketStart.length);
+        System.arraycopy(bucketEnd, 0, cursorInBucket, 0, bucketEnd.length);
         for (long i = N - 1; i >= 0; --i) {
             long si = SA.lookup(i);
             if (si == 0)
                 continue;
-            else if (LS.get(si - 1) == SType)
+
+            if (LS.get(si - 1) == SType)
                 SA.set(--cursorInBucket[(int) T.lookup(si - 1)], si - 1);
         }
     }
 
-    boolean isEqualLMS_substr(LSeq T, long pos1, long pos2) {
+    boolean isEqualLMS_substr(long pos1, long pos2) {
         boolean prevLS = SType;
         for (; pos1 < N && pos2 < N; ++pos1, ++pos2) {
             if (T.lookup(pos1) == T.lookup(pos2) && LS.get(pos1) == LS.get(pos2)) {

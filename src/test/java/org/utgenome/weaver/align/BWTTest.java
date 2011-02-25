@@ -50,7 +50,15 @@ public class BWTTest
     }
 
     @Test
-    public void bwt() throws Exception {
+    public void bwt1() throws Exception {
+
+        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "test.fa", new File(tmpDir, "test.fa"));
+        GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+
+    }
+
+    @Test
+    public void bwt2() throws Exception {
 
         File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "sample-archive.fa.tar.gz", new File(tmpDir,
                 "sample.fa.tar.gz"));
