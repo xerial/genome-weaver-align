@@ -31,6 +31,7 @@ import java.io.IOException;
 import org.utgenome.UTGBErrorCode;
 import org.utgenome.UTGBException;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
+import org.utgenome.weaver.align.sais.UInt32Array;
 import org.utgenome.weaver.align.sais.UInt32SAIS;
 import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
@@ -83,7 +84,7 @@ public class Pac2BWT implements Command
                 SA = new LSAIS.IntArray(new int[(int) seq.textSize()], 0);
             }
             else
-                SA = new LIntArray(seq.textSize());
+                SA = new UInt32Array(seq.textSize());
 
             UInt32SAIS.SAIS(seq, SA, 16);
             //LSAIS.suffixsort(seq, SA, 16);
