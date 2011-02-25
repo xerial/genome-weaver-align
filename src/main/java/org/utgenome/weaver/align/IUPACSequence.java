@@ -154,7 +154,7 @@ public class IUPACSequence implements LSeq
             //            if (i != 0)
             //                b.append(", ");
             IUPAC base = getIUPAC(i);
-            b.append(base.name());
+            b.append(base == IUPAC.None ? "$" : base.name());
         }
         return b.toString();
     }

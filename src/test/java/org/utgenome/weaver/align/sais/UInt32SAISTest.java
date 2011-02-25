@@ -45,12 +45,13 @@ public class UInt32SAISTest
 
     @Test
     public void saisSeq() {
-        IUPACSequence s = new IUPACSequence("ACGTTA ACGTTA");
-        //IUPACSequence s = new IUPACSequence("ACT ACTA");
+        //IUPACSequence s = new IUPACSequence("ACGTTA ACGTTA");
+        IUPACSequence s = new IUPACSequence("ACT ACTA");
         UInt32Array SA = UInt32SAIS.SAIS(s, 16);
         _logger.debug(SA);
 
-        long answer[] = { 13, 6, 12, 5, 7, 0, 8, 1, 9, 2, 11, 4, 10, 3 };
+        //long answer[] = { 13, 6, 12, 5, 7, 0, 8, 1, 9, 2, 11, 4, 10, 3 };
+        long answer[] = { 9, 3, 0, 4, 7, 1, 5, 2, 6, 8 };
 
         assertArrayEquals(answer, SA.toArray());
 

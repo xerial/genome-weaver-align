@@ -161,16 +161,19 @@ public class UInt32SAIS
             if (isLMS(i))
                 SA.set(--cursorInBucket[(int) T.lookup(i)], i);
         }
-        SA.set(0, N - 1);
+
         // Induced sorting LMS prefixes
         induceSA(SA);
 
         int numLMS = 0;
         // Compact all the sorted substrings into the first M items of SA
         // 2*M must be not larger than N 
+
+        // 
         for (long i = 0; i < N; ++i) {
-            if (isLMS(SA.lookup(i)))
-                SA.set(numLMS++, SA.lookup(i));
+            long si = SA.lookup(i);
+            if (si > 0 && isLMS(si))
+                SA.set(numLMS++, si);
         }
 
         // Initialize the name array buffer
