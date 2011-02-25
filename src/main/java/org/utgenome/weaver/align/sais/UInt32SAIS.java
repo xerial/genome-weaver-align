@@ -231,7 +231,7 @@ public class UInt32SAIS
         // A bucket is a container of the suffixes sharing the same first character
         Arrays.fill(bucketEnd, 0);
         // Compute the size of each bucket
-        for (int i = 0; i < N; ++i) {
+        for (long i = 0; i < N; ++i) {
             ++bucketEnd[(int) T.lookup(i)];
         }
         // Accumulate the character counts. The bucketStart holds the pointers to beginning of the buckets in SA
@@ -244,7 +244,7 @@ public class UInt32SAIS
 
         // Find LMS characters
         int[] cursorInBucket = Arrays.copyOf(bucketEnd, bucketEnd.length);
-        for (int i = 1; i < N; ++i) {
+        for (long i = 1; i < N; ++i) {
             if (isLMS(i))
                 SA.set(--cursorInBucket[(int) T.lookup(i)], i);
         }
