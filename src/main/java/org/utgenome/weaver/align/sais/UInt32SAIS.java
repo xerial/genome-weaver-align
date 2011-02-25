@@ -27,7 +27,7 @@ package org.utgenome.weaver.align.sais;
 import java.util.Arrays;
 
 import org.utgenome.weaver.align.LSeq;
-import org.utgenome.weaver.align.RSBitVector;
+import org.xerial.util.BitVector;
 
 /**
  * Suffix-array (SA) construction algorithm based on Induced Sorting (IS)
@@ -40,11 +40,98 @@ public class UInt32SAIS
     private final LSeq           T;
     private final long           N;
     private final int            K;
-    private final long[]         bucketEnd;
-    private RSBitVector          LS;
+    private final int[]          bucketEnd;
+    private LSType               LS;
 
     private final static boolean LType = false;
     private final static boolean SType = true;
+
+    public static class LSType
+    {
+        private final static int BIT_LENGTH = 32;
+        private int[]            bitVector;
+        private long             size;
+
+        public LSType(long n) {
+            int blockSize = (int) ((n + BIT_LENGTH - 1) / BIT_LENGTH);
+            bitVector = new int[blockSize];
+            this.size = n;
+        }
+
+        public void set(long index, boolean flag) {
+            int pos = (int) (index / BIT_LENGTH);
+            int offset = (int) (index % BIT_LENGTH);
+            int mask = 0x01 << (offset - 1);
+
+            if (flag)
+                bitVector[pos] |= mask;
+            else
+                bitVector[pos] &= ~mask;
+        }
+
+        public boolean get(long index) {
+            int pos = (int) (index / BIT_LENGTH);
+            int offset = (int) (index % BIT_LENGTH);
+            int mask = 0x01 << (offset - 1);
+            return (bitVector[pos] & mask) != 0;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (!BitVector.class.isInstance(obj))
+                return false;
+
+            LSType other = LSType.class.cast(obj);
+
+            // compare the size
+            if (size() != other.size())
+                return false;
+
+            // compare each byte
+            int byteLength = byteLength();
+
+            for (int i = 0; i < byteLength; i++) {
+                if (this.bitVector[i] != other.bitVector[i])
+                    return false;
+            }
+
+            return true;
+        }
+
+        private int byteLength() {
+            return (int) ((size + BIT_LENGTH - 1) / BIT_LENGTH);
+        }
+
+        @Override
+        public int hashCode() {
+            int hashValue = 3;
+
+            int byteLength = byteLength();
+            for (int i = 0; i < byteLength; i++) {
+                hashValue += hashValue * 137 + bitVector[i];
+            }
+
+            return hashValue % 1987;
+        }
+
+        public long size() {
+            return size;
+        }
+
+        public void clear() {
+            bitVector = null;
+            size = 0;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder buf = new StringBuilder();
+            for (int i = 0; i < size; i++)
+                buf.append(get(i) ? "1" : "0");
+            return buf.toString();
+        }
+
+    }
 
     static class ArrayWrap implements LSeq
     {
@@ -103,8 +190,8 @@ public class UInt32SAIS
         this.T = T;
         this.N = T.textSize();
         this.K = K;
-        this.bucketEnd = new long[K];
-        LS = new RSBitVector(N);
+        this.bucketEnd = new int[K];
+        LS = new LSType(N);
     }
 
     public static UInt32Array SAIS(LSeq T, int K) {
@@ -125,19 +212,19 @@ public class UInt32SAIS
         for (long i = 0; i < N; ++i)
             SA.set(i, 0);
 
-        LS.setBit(SType, N - 1); // the sentinel 
-        LS.setBit(LType, N - 2);
+        LS.set(N - 1, SType); // the sentinel 
+        LS.set(N - 2, LType);
 
         // set the type of each character
         for (long i = N - 2; i > 0; --i) {
             long x = T.lookup(i);
             long y = T.lookup(i - 1);
             if (x < y)
-                LS.setBit(LType, i - 1);
+                LS.set(i - 1, LType);
             else if (x > y)
-                LS.setBit(SType, i - 1);
+                LS.set(i - 1, SType);
             else
-                LS.setBit(LS.get(i), i - 1);
+                LS.set(i - 1, LS.get(i));
         }
 
         // Initialize the buckets. 
@@ -156,7 +243,7 @@ public class UInt32SAIS
         // Sort all the S-substrings
 
         // Find LMS characters
-        long[] cursorInBucket = Arrays.copyOf(bucketEnd, bucketEnd.length);
+        int[] cursorInBucket = Arrays.copyOf(bucketEnd, bucketEnd.length);
         for (int i = 1; i < N; ++i) {
             if (isLMS(i))
                 SA.set(--cursorInBucket[(int) T.lookup(i)], i);
@@ -186,7 +273,7 @@ public class UInt32SAIS
         for (long i = 1; i < numLMS; ++i) {
             final long prev = SA.lookup(i - 1);
             final long current = SA.lookup(i);
-            if (!isEqualLMS_substr(prev, current)) {
+            if (!isEqualLMSSubstring(prev, current)) {
                 name++;
             }
             SA.set(numLMS + (current / 2), name - 1);
@@ -247,7 +334,7 @@ public class UInt32SAIS
     }
 
     private void induceSA(LSeq SA) {
-        long[] cursorInBucket = Arrays.copyOf(bucketEnd, bucketEnd.length);
+        int[] cursorInBucket = Arrays.copyOf(bucketEnd, bucketEnd.length);
 
         // induce left
         for (long i = 0; i < N; ++i) {
@@ -270,7 +357,7 @@ public class UInt32SAIS
         }
     }
 
-    boolean isEqualLMS_substr(long pos1, long pos2) {
+    boolean isEqualLMSSubstring(long pos1, long pos2) {
         boolean prevLS = SType;
         for (; pos1 < N && pos2 < N; ++pos1, ++pos2) {
             if (T.lookup(pos1) == T.lookup(pos2) && LS.get(pos1) == LS.get(pos2)) {
