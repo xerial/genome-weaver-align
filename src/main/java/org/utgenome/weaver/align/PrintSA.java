@@ -82,7 +82,8 @@ public class PrintSA implements Command
                 continue;
             }
             int pos = (int) (i % s.textSize());
-            w.append(s.getIUPAC(pos).name());
+            IUPAC c = s.getIUPAC(pos);
+            w.append(c == IUPAC.None ? "$" : c.name());
         }
         return w.toString();
     }

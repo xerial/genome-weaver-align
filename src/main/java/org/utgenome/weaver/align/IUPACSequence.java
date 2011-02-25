@@ -149,14 +149,13 @@ public class IUPACSequence implements LSeq
     @Override
     public String toString() {
         StringBuilder b = new StringBuilder();
-        b.append("[");
+        //b.append("[");
         for (int i = 0; i < numBases; ++i) {
-            if (i != 0)
-                b.append(", ");
+            //            if (i != 0)
+            //                b.append(", ");
             IUPAC base = getIUPAC(i);
-            b.append(base.toString());
+            b.append(base.name());
         }
-        b.append("]");
         return b.toString();
     }
 

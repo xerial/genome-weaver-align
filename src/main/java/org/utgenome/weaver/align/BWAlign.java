@@ -99,7 +99,7 @@ public class BWAlign implements Command
                     _logger.info(SilkLens.toSilk("alignment", result));
                     for (long i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
                         long pos = saR.get(i, fmIndex);
-                        if (result.common.strand == Strand.FORWARD) {
+                        if (result.strand == Strand.FORWARD) {
                             pos = (fmIndex.textSize() - 1 - pos) - result.common.query.length();
                         }
                         PosOnGenome loc = index.translate(pos);
@@ -109,6 +109,18 @@ public class BWAlign implements Command
             });
 
             aln.align(query);
+        }
+
+    }
+
+    static class FowardReverseFMIndex
+    {
+        final FMIndex F;
+        final FMIndex R;
+
+        public FowardReverseFMIndex(FMIndex forward, FMIndex reverse) {
+            this.F = forward;
+            this.R = reverse;
         }
 
     }

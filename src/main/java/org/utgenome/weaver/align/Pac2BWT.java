@@ -31,7 +31,6 @@ import java.io.IOException;
 import org.utgenome.UTGBErrorCode;
 import org.utgenome.UTGBException;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
-import org.utgenome.weaver.align.sais.UInt32SAIS;
 import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
@@ -85,8 +84,8 @@ public class Pac2BWT implements Command
             else
                 SA = new LIntArray(seq.textSize());
 
-            UInt32SAIS.SAIS(seq, SA, 16);
-            //LSAIS.suffixsort(seq, SA, 16);
+            //UInt32SAIS.SAIS(seq, SA, 16);
+            LSAIS.suffixsort(seq, SA, 16);
             _logger.info(String.format("%.2f sec.", timer.getElapsedTime()));
 
             _logger.info("Creating sparse suffix array " + db.sparseSuffixArray());

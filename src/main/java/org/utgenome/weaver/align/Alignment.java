@@ -41,15 +41,14 @@ public class Alignment implements Comparable<Alignment>
     public static class CommonInfo
     {
         public final String query;
-        public final Strand strand;
 
-        public CommonInfo(String query, Strand strand) {
+        public CommonInfo(String query) {
             this.query = query;
-            this.strand = strand;
         }
     }
 
     public final CommonInfo           common;
+    public final Strand               strand;
     public final int                  wordIndex;
     public final Alignment.IndelState indel;
     public final SuffixInterval       suffixInterval;
@@ -58,9 +57,11 @@ public class Alignment implements Comparable<Alignment>
     public final MismatchPosition     mismatchPosition;
     public final List<Gap>            gapPosition;
 
-    private Alignment(CommonInfo common, int wordIndex, Alignment.IndelState indel, SuffixInterval suffixInterval,
-            int numMismatches, int alignmentScore, MismatchPosition mismatchPosition, List<Gap> gapPosition) {
+    private Alignment(CommonInfo common, Strand strand, int wordIndex, Alignment.IndelState indel,
+            SuffixInterval suffixInterval, int numMismatches, int alignmentScore, MismatchPosition mismatchPosition,
+            List<Gap> gapPosition) {
         this.common = common;
+        this.strand = strand;
         this.wordIndex = wordIndex;
         this.indel = indel;
         this.suffixInterval = suffixInterval;
@@ -71,7 +72,7 @@ public class Alignment implements Comparable<Alignment>
     }
 
     public Alignment extendWithMatch(SuffixInterval next, AlignmentScoreConfig config) {
-        return new Alignment(common, this.wordIndex + 1, IndelState.NORMAL, next, numMismatches, alignmentScore
+        return new Alignment(common, strand, this.wordIndex + 1, IndelState.NORMAL, next, numMismatches, alignmentScore
                 + config.matchScore, mismatchPosition, gapPosition);
     }
 
@@ -82,8 +83,8 @@ public class Alignment implements Comparable<Alignment>
         else
             newMM = mismatchPosition.copyAndSet(wordIndex + 1);
 
-        return new Alignment(common, this.wordIndex + 1, IndelState.NORMAL, next, numMismatches + 1, alignmentScore
-                - config.mismatchPenalty, newMM, gapPosition);
+        return new Alignment(common, strand, this.wordIndex + 1, IndelState.NORMAL, next, numMismatches + 1,
+                alignmentScore - config.mismatchPenalty, newMM, gapPosition);
     }
 
     public Alignment extendWithDeletion(AlignmentScoreConfig config) {
@@ -105,8 +106,8 @@ public class Alignment implements Comparable<Alignment>
             // update gap
             newGapPosition.add(new Deletion(wordIndex + 1, 1));
         }
-        return new Alignment(common, this.wordIndex, IndelState.DELETION, suffixInterval, numMismatches + 1, newScore,
-                mismatchPosition, newGapPosition);
+        return new Alignment(common, strand, this.wordIndex, IndelState.DELETION, suffixInterval, numMismatches + 1,
+                newScore, mismatchPosition, newGapPosition);
     }
 
     public Alignment extendWithInsertion(AlignmentScoreConfig config) {
@@ -126,12 +127,12 @@ public class Alignment implements Comparable<Alignment>
             newScore -= config.gapOpenPenalty;
             newGapPosition.add(new Insertion(wordIndex + 1, 1));
         }
-        return new Alignment(common, this.wordIndex + 1, IndelState.INSERTION, suffixInterval, numMismatches + 1,
-                alignmentScore - config.gapExtentionPenalty, mismatchPosition, newGapPosition);
+        return new Alignment(common, strand, this.wordIndex + 1, IndelState.INSERTION, suffixInterval,
+                numMismatches + 1, alignmentScore - config.gapExtentionPenalty, mismatchPosition, newGapPosition);
     }
 
     public static Alignment initialState(String seq, Strand strand, FMIndex fmIndex) {
-        return new Alignment(new CommonInfo(seq, strand), 0, IndelState.NORMAL, new SuffixInterval(0,
+        return new Alignment(new CommonInfo(seq), strand, 0, IndelState.NORMAL, new SuffixInterval(0,
                 fmIndex.textSize() - 1), 0, 0, null, null);
     }
 
