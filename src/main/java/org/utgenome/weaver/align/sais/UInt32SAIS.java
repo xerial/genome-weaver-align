@@ -28,6 +28,7 @@ import java.util.Arrays;
 
 import org.utgenome.weaver.align.LSeq;
 import org.xerial.util.BitVector;
+import org.xerial.util.log.Logger;
 
 /**
  * Suffix-array (SA) construction algorithm based on Induced Sorting (IS)
@@ -40,7 +41,7 @@ public class UInt32SAIS
     private final LSeq           T;
     private final long           N;
     private final int            K;
-    private final int[]          bucketEnd;
+    private final long[]         bucketEnd;
     private LSType               LS;
 
     private final static boolean LType = false;
@@ -190,7 +191,7 @@ public class UInt32SAIS
         this.T = T;
         this.N = T.textSize();
         this.K = K;
-        this.bucketEnd = new int[K];
+        this.bucketEnd = new long[K];
         LS = new LSType(N);
     }
 
@@ -206,7 +207,11 @@ public class UInt32SAIS
         return SA;
     }
 
+    private static Logger _logger = Logger.getLogger(UInt32SAIS.class);
+
     public void SAIS(LSeq SA) {
+
+        _logger.info("SAIS: N=" + SA.textSize());
 
         // initialize the suffix array
         for (long i = 0; i < N; ++i)
@@ -243,7 +248,7 @@ public class UInt32SAIS
         // Sort all the S-substrings
 
         // Find LMS characters
-        int[] cursorInBucket = Arrays.copyOf(bucketEnd, bucketEnd.length);
+        long[] cursorInBucket = Arrays.copyOf(bucketEnd, bucketEnd.length);
         for (long i = 1; i < N; ++i) {
             if (isLMS(i))
                 SA.set(--cursorInBucket[(int) T.lookup(i)], i);
@@ -334,7 +339,7 @@ public class UInt32SAIS
     }
 
     private void induceSA(LSeq SA) {
-        int[] cursorInBucket = Arrays.copyOf(bucketEnd, bucketEnd.length);
+        long[] cursorInBucket = Arrays.copyOf(bucketEnd, bucketEnd.length);
 
         // induce left
         for (long i = 0; i < N; ++i) {
