@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
+import org.utgenome.weaver.align.sais.SAIS;
 import org.xerial.util.log.Logger;
 
 public class SAISTest

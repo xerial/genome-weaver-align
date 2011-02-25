@@ -24,7 +24,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.utgenome.weaver.align;
+package org.utgenome.weaver.align.sais;
 
 /**
  * Suffix-array construction algorithm based on induced-sorting. This

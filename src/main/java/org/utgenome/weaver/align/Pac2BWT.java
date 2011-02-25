@@ -24,16 +24,8 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
 import org.utgenome.UTGBErrorCode;
 import org.utgenome.UTGBException;
-import org.utgenome.gwt.utgb.client.bio.IUPAC;
-import org.utgenome.weaver.align.sais.UInt32Array;
-import org.utgenome.weaver.align.sais.UInt32SAIS;
-import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
 import org.xerial.util.opt.Command;
@@ -68,63 +60,8 @@ public class Pac2BWT implements Command
         BWTFiles forwardDB = new BWTFiles(fastaFile, Strand.FORWARD);
         BWTFiles reverseDB = new BWTFiles(fastaFile, Strand.REVERSE);
 
-        pac2bwt(forwardDB);
-        pac2bwt(reverseDB);
-    }
-
-    public static void pac2bwt(BWTFiles db) throws UTGBException, IOException {
-
-        StopWatch timer = new StopWatch();
-        {
-            IUPACSequence seq = IUPACSequence.loadFrom(db.iupac());
-            timer.reset();
-            _logger.info("Creating a suffix array of " + db.iupac());
-            LSeq SA = null;
-            if (seq.textSize() < Integer.MAX_VALUE) {
-                SA = new LSAIS.IntArray(new int[(int) seq.textSize()], 0);
-            }
-            else
-                SA = new UInt32Array(seq.textSize());
-
-            UInt32SAIS.SAIS(seq, SA, 16);
-            //LSAIS.suffixsort(seq, SA, 16);
-            _logger.info(String.format("%.2f sec.", timer.getElapsedTime()));
-
-            _logger.info("Creating sparse suffix array " + db.sparseSuffixArray());
-            SparseSuffixArray ssa = SparseSuffixArray.buildFromSuffixArray(SA, 32);
-            ssa.saveTo(db.sparseSuffixArray());
-
-            _logger.info("Creating a BWT string: " + db.bwt());
-            timer.reset();
-            IUPACSequenceWriter writer = new IUPACSequenceWriter(new BufferedOutputStream(
-                    new FileOutputStream(db.bwt())));
-            bwt(seq, SA, writer);
-            writer.close();
-            _logger.info(String.format("%.2f sec.", timer.getElapsedTime()));
-        }
-
-    }
-
-    public static void bwt(IUPACSequence seq, LSeq SA, IUPACSequenceWriter out) throws IOException {
-        for (long i = 0; i < SA.textSize(); ++i) {
-            if (SA.lookup(i) == 0) {
-                out.append(IUPAC.None);
-            }
-            else {
-                out.append(seq.getIUPAC(SA.lookup(i) - 1));
-            }
-        }
-    }
-
-    public static void bwt(IUPACSequence seq, LSeq SA, IUPACSequence out) throws IOException {
-        for (long i = 0; i < SA.textSize(); ++i) {
-            if (SA.lookup(i) == 0) {
-                out.setIUPAC(i, IUPAC.None);
-            }
-            else {
-                out.setIUPAC(i, seq.getIUPAC(SA.lookup(i) - 1));
-            }
-        }
+        BWTransform.pac2bwt(forwardDB);
+        BWTransform.pac2bwt(reverseDB);
     }
 
 }

@@ -22,11 +22,14 @@
 // $URL$ 
 // $Author$
 //--------------------------------------
-package org.utgenome.weaver.align;
+package org.utgenome.weaver.align.sais;
 
 import java.io.StringWriter;
 
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
+import org.utgenome.weaver.align.BWTransform;
+import org.utgenome.weaver.align.IUPACSequence;
+import org.utgenome.weaver.align.LSeq;
 import org.xerial.util.opt.Argument;
 import org.xerial.util.opt.Command;
 import org.xerial.util.opt.Option;
@@ -66,7 +69,7 @@ public class PrintSA implements Command
         LSAIS.suffixsort(s, SA, IUPAC.values().length);
 
         IUPACSequence bwt = new IUPACSequence(s.textSize());
-        Pac2BWT.bwt(s, SA, bwt);
+        BWTransform.bwt(s, SA, bwt);
 
         for (int i = 0; i < SA.textSize(); ++i) {
             int sa = (int) SA.lookup(i);

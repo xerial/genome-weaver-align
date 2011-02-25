@@ -24,7 +24,10 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.utgenome.weaver.align;
+package org.utgenome.weaver.align.sais;
+
+import org.utgenome.weaver.align.LIntArray;
+import org.utgenome.weaver.align.LSeq;
 
 /**
  * Suffix-array construction algorithm based on induced-sorting. This
@@ -40,7 +43,7 @@ public class LSAIS
         private int[] m_A   = null;
         private int   m_pos = 0;
 
-        IntArray(int[] A, int pos) {
+        public IntArray(int[] A, int pos) {
             m_A = A;
             m_pos = pos;
         }
