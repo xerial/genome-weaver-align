@@ -28,6 +28,7 @@ import java.util.Arrays;
 
 import org.utgenome.weaver.align.LSeq;
 import org.xerial.util.BitVector;
+import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
 
 /**
@@ -211,6 +212,7 @@ public class UInt32SAIS
 
     public void SAIS(LSeq SA) {
 
+        StopWatch timer = new StopWatch();
         _logger.info("SAIS: N=" + SA.textSize());
 
         // initialize the suffix array
@@ -255,7 +257,11 @@ public class UInt32SAIS
         }
 
         // Induced sorting LMS prefixes
-        induceSA(SA);
+        {
+            StopWatch t2 = new StopWatch();
+            induceSA(SA);
+            _logger.info(String.format("[N=%,d] induced sorting %.2f sec.", SA.textSize(), t2.getElapsedTime()));
+        }
 
         int numLMS = 0;
         // Compact all the sorted substrings into the first M items of SA
@@ -273,6 +279,7 @@ public class UInt32SAIS
             SA.set(i, 0);
 
         // Find the lexicographic names of the LMS substrings
+        _logger.debug("sorting LMS substrings: N=" + SA.textSize());
         int name = 1;
         SA.set(numLMS + (SA.lookup(0) / 2), name++);
         for (long i = 1; i < numLMS; ++i) {
@@ -291,6 +298,7 @@ public class UInt32SAIS
 
         // Step 2: solve the reduced problem
         // Create SA1, a view of SA[0, numLMS-1]
+        _logger.debug("solving the reduced problem: N=" + SA.textSize());
         LSeq SA1 = new ArrayWrap(SA, 0, numLMS);
         LSeq T1 = new ArrayWrap(SA, N - numLMS, numLMS);
         if (name - 1 != numLMS) {
@@ -304,6 +312,8 @@ public class UInt32SAIS
 
         // Step 3: Induce SA from SA1
         // Construct P1 using T1 buffer
+        _logger.debug("prepareing induced sort from SA1: N=" + SA.textSize());
+
         for (long i = 1, j = 0; i < N; ++i) {
             if (isLMS(i))
                 T1.set(j++, i); // 
@@ -330,8 +340,10 @@ public class UInt32SAIS
         SA.set(0, T.textSize() - 1);
 
         // Step 3-2, 3-3
+        _logger.info("inducing SA from SA1: N=" + SA.textSize());
         induceSA(SA);
 
+        _logger.info(String.format("done. %.2f sec.", timer.getElapsedTime()));
     }
 
     boolean isLMS(long pos) {

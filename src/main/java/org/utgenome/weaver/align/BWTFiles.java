@@ -38,8 +38,10 @@ public class BWTFiles
     private String prefixWithStrand;
 
     public BWTFiles(String fastaFile, Strand strand) {
-        if (fastaFile.endsWith("tar.gz"))
-            this.prefix = fastaFile.substring(0, fastaFile.length() - "tar.gz".length() - 1);
+        if (fastaFile.endsWith(".tar.gz"))
+            this.prefix = fastaFile.substring(0, fastaFile.length() - ".tar.gz".length());
+        else if (fastaFile.endsWith(".gz"))
+            this.prefix = fastaFile.substring(0, fastaFile.length() - ".gz".length());
         else
             this.prefix = fastaFile;
 

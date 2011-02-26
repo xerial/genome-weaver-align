@@ -161,7 +161,9 @@ public class IUPACSequence implements LSeq
 
     @Override
     public long lookup(long index) {
-        return ((seq[(int) (index >>> 1)] >>> (1 - (index & 1)) * 4) & 0x0F);
+        int pos = (int) (index >>> 1);
+        int shift = (index % 2 == 0) ? 4 : 0;
+        return ((seq[pos] >>> shift) & 0x0F);
     }
 
     @Override

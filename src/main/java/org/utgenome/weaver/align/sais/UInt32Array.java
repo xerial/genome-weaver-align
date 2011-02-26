@@ -59,8 +59,8 @@ public class UInt32Array implements LSeq, Iterable<Long>
 
     private int[] container(long index) {
         int block = (int) (index >>> B);
-        if (block < 0)
-            throw new ArrayIndexOutOfBoundsException(String.format("invalid index:%d, block:%d", index, block));
+        //        if (block < 0)
+        //            throw new ArrayIndexOutOfBoundsException(String.format("invalid index:%d, block:%d", index, block));
 
         return array.get(block);
     }
@@ -74,6 +74,7 @@ public class UInt32Array implements LSeq, Iterable<Long>
     }
 
     public long lookup(long index) {
+
         long v = container(index)[offset(index)] & 0xFFFFFFFFL;
         return v;
     }
