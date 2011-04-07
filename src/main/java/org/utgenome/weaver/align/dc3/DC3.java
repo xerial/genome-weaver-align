@@ -76,7 +76,13 @@ public class DC3
 
         // sort S by the 3-mer T[S[i], S[i]+2]
         new TrimerQuickSort().sort();
-        UInt32Array nameArray = name(S);
+        UInt32Array P = name(S);
+
+        if (P.lookup(P.textSize() - 1) != S.textSize()) {
+            // The names in P are not unique  
+            // Sort the (name, i:S[i]) in P by (i%3, i/3)
+
+        }
 
         return null;
     }
