@@ -39,13 +39,35 @@ import org.xerial.util.StringUtil;
  */
 public class DC3
 {
+    private final LSeq  T;
+    private UInt32Array S;
+
+    private DC3(LSeq T) {
+        this.T = T;
+    }
+
+    protected int compareTrimer(long x, long y) {
+        long N = T.textSize();
+        for (int i = 0; i < 3; ++i) {
+            long Sx = x + i < N ? T.lookup(x + i) : 0;
+            long Sy = y + i < N ? T.lookup(y + i) : 0;
+            if (Sx == Sy)
+                continue;
+            else
+                return (Sx < Sy) ? -1 : 1;
+        }
+        return 0;
+    }
 
     public static UInt32Array buildSuffixArray(LSeq T) {
+        return new DC3(T).buildSuffixArray();
+    }
 
+    public UInt32Array buildSuffixArray() {
         final long N = (T.textSize() * 2 / 3) + (T.textSize() % 3);
 
         // S := {(T[i, i+2], i): i \in [0, N), i mod 3 != 0 }
-        UInt32Array S = new UInt32Array(N);
+        S = new UInt32Array(N);
         for (long i = 0, j = 0; i < T.textSize(); ++i) {
             if (i % 3 == 0)
                 continue;
@@ -53,20 +75,28 @@ public class DC3
         }
 
         // sort S by the 3-mer T[S[i], S[i]+2]
-        sortTrimer(T, S);
+        new TrimerQuickSort().sort();
+        UInt32Array nameArray = name(S);
 
         return null;
     }
 
-    public static void sortTrimer(LSeq T, UInt32Array S) {
-        TrimerQuickSort.sort(T, S);
+    UInt32Array name(UInt32Array S) {
+        UInt32Array nameArray = new UInt32Array(S.textSize());
+        long name = 1;
+        for (long i = 0; i < S.textSize() - 1; ++i) {
+            nameArray.set(i, name);
+            if (compareTrimer(S.lookup(i), S.lookup(i + 1)) != 0)
+                name++;
+        }
+        nameArray.set(S.textSize() - 1, name);
+        return nameArray;
+
     }
 
-    public static class TrimerQuickSort
+    public class TrimerQuickSort
     {
-        private final LSeq        T;
-        private final UInt32Array S;
-        private final Random      random = new Random(0);
+        private final Random random = new Random(0);
 
         @Override
         public String toString() {
@@ -82,13 +112,8 @@ public class DC3
             return StringUtil.join(l, ", ");
         }
 
-        private TrimerQuickSort(LSeq T, UInt32Array S) {
-            this.T = T;
-            this.S = S;
-        }
-
-        public static void sort(LSeq T, UInt32Array S) {
-            new TrimerQuickSort(T, S).quickSort(0, S.textSize() - 1);
+        public void sort() {
+            quickSort(0, S.textSize() - 1);
         }
 
         private void swap(long i, long j) {
@@ -106,7 +131,7 @@ public class DC3
             // move pivot to the last of the array 
             swap(pivotIndex, upperBound);
 
-            // partition
+            // partinnntion
             long splitIndex = lowerBound;
             for (long i = lowerBound; i < upperBound - 1; ++i) {
                 long x = S.lookup(i);
@@ -119,19 +144,6 @@ public class DC3
 
             quickSort(lowerBound, splitIndex - 1);
             quickSort(splitIndex + 1, upperBound);
-        }
-
-        private int compareTrimer(long x, long y) {
-            long N = T.textSize();
-            for (int i = 0; i < 3; ++i) {
-                long Sx = x + i < N ? T.lookup(x + i) : 0;
-                long Sy = y + i < N ? T.lookup(y + i) : 0;
-                if (Sx == Sy)
-                    continue;
-                else
-                    return (Sx < Sy) ? -1 : 1;
-            }
-            return 0;
         }
 
     }
