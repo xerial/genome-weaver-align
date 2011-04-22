@@ -25,6 +25,7 @@
 package org.utgenome.weaver.align;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.PriorityQueue;
 
@@ -235,6 +236,33 @@ public class BWAlign implements Command
 
         }
 
+        public static String complement(String seq) {
+            StringWriter rev = new StringWriter(seq.length());
+            for (int i = 0; i < seq.length(); ++i) {
+                char ch = Character.toUpperCase(seq.charAt(i));
+                switch (ch) {
+                case 'A':
+                    rev.append('T');
+                    break;
+                case 'C':
+                    rev.append('G');
+                    break;
+                case 'G':
+                    rev.append('C');
+                    break;
+                case 'T':
+                    rev.append('A');
+                    break;
+                default:
+                case 'N':
+                    rev.append('N');
+                    break;
+                // TODO IUPAC sequences
+                }
+            }
+            return rev.toString();
+        }
+
         /**
          * 
          * @param seq
@@ -246,7 +274,7 @@ public class BWAlign implements Command
         public void align(String seq) throws Exception {
 
             alignmentQueue.add(Alignment.initialState(seq, Strand.FORWARD, fmIndex.fmIndexR.textSize()));
-            alignmentQueue.add(Alignment.initialState(seq, Strand.REVERSE, fmIndex.fmIndexF.textSize()));
+            alignmentQueue.add(Alignment.initialState(complement(seq), Strand.REVERSE, fmIndex.fmIndexF.textSize()));
 
             while (!alignmentQueue.isEmpty()) {
 
@@ -266,7 +294,7 @@ public class BWAlign implements Command
                 // Search for deletion
                 alignmentQueue.add(current.extendWithDeletion(config));
                 //align(seq, cursor - 1, numMismatchesAllowed - 1, si);
-                IUPAC currentBase = IUPAC.encode(seq.charAt(current.wordIndex));
+                IUPAC currentBase = IUPAC.encode(current.common.query.charAt(current.wordIndex));
                 for (IUPAC nextBase : lettersInGenome) {
                     FMIndex fm = current.strand == Strand.FORWARD ? fmIndex.fmIndexR : fmIndex.fmIndexF;
                     SuffixInterval next = fm.backwardSearch(nextBase, current.suffixInterval);

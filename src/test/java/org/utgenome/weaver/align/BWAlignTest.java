@@ -24,6 +24,8 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import static org.junit.Assert.*;
+
 import java.io.File;
 
 import org.junit.After;
@@ -81,8 +83,20 @@ public class BWAlignTest
             @Override
             public void handle(PosOnGenome input) throws Exception {
                 _logger.info(SilkLens.toSilk(input));
+                assertEquals("seq", input.chr);
+                assertEquals(9, input.pos);
             }
         });
+
+        BWAlign.query(fastaArchive.getPath(), "TAAAGTAT", new ObjectHandlerBase<PosOnGenome>() {
+            @Override
+            public void handle(PosOnGenome input) throws Exception {
+                _logger.info(SilkLens.toSilk(input));
+                assertEquals("seq", input.chr);
+                assertEquals(9, input.pos);
+            }
+        });
+
     }
 
 }
