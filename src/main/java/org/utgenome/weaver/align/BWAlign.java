@@ -82,7 +82,7 @@ public class BWAlign implements Command
         query(fastaFilePrefix, query, new ObjectHandlerBase<PosOnGenome>() {
             @Override
             public void handle(PosOnGenome input) throws Exception {
-                _logger.info(SilkLens.toSilk(input));
+                System.out.println(SilkLens.toSilk("alignment", input));
             }
         });
     }
