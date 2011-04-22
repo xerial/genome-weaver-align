@@ -28,9 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.utgenome.weaver.align.BWAlign.AlignmentScoreConfig;
-import org.utgenome.weaver.align.BWAlign.Deletion;
-import org.utgenome.weaver.align.BWAlign.Gap;
-import org.utgenome.weaver.align.BWAlign.Insertion;
 
 public class Alignment implements Comparable<Alignment>
 {
@@ -44,6 +41,61 @@ public class Alignment implements Comparable<Alignment>
 
         public CommonInfo(String query) {
             this.query = query;
+        }
+    }
+
+    public static abstract class Gap
+    {
+        public static enum Type {
+            INSERTION, DELETION
+        }
+
+        public final int pos;
+        public final int len;
+
+        public Gap(int pos, int len) {
+            this.pos = pos;
+            this.len = len;
+        }
+
+        public abstract Gap extendOne();
+
+        public abstract Type getType();
+    }
+
+    public static class Insertion extends Gap
+    {
+
+        public Insertion(int pos, int len) {
+            super(pos, len);
+        }
+
+        @Override
+        public Gap extendOne() {
+            return new Insertion(pos, len + 1);
+        }
+
+        @Override
+        public Type getType() {
+            return Type.INSERTION;
+        }
+    }
+
+    public static class Deletion extends Gap
+    {
+
+        public Deletion(int pos, int len) {
+            super(pos, len);
+        }
+
+        @Override
+        public Gap extendOne() {
+            return new Deletion(pos, len + 1);
+        }
+
+        @Override
+        public Type getType() {
+            return Type.INSERTION;
         }
     }
 
@@ -131,9 +183,9 @@ public class Alignment implements Comparable<Alignment>
                 numMismatches + 1, alignmentScore - config.gapExtentionPenalty, mismatchPosition, newGapPosition);
     }
 
-    public static Alignment initialState(String seq, Strand strand, FMIndex fmIndex) {
-        return new Alignment(new CommonInfo(seq), strand, 0, IndelState.NORMAL, new SuffixInterval(0,
-                fmIndex.textSize() - 1), 0, 0, null, null);
+    public static Alignment initialState(String seq, Strand strand, long textSize) {
+        return new Alignment(new CommonInfo(seq), strand, 0, IndelState.NORMAL, new SuffixInterval(0, textSize - 1), 0,
+                0, null, null);
     }
 
     @Override

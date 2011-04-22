@@ -31,10 +31,16 @@ import org.junit.Before;
 import org.junit.Test;
 import org.utgenome.util.TestHelper;
 import org.utgenome.weaver.GenomeWeaver;
+import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
+import org.xerial.lens.SilkLens;
+import org.xerial.util.ObjectHandlerBase;
+import org.xerial.util.log.Logger;
 
 public class BWAlignTest
 {
-    File tmpDir;
+    private static Logger _logger = Logger.getLogger(BWAlignTest.class);
+
+    File                  tmpDir;
 
     @Before
     public void setUp() throws Exception {
@@ -65,4 +71,18 @@ public class BWAlignTest
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
         GenomeWeaver.execute(String.format("align %s -q ATCTCATGGGA", fastaArchive.getPath()));
     }
+
+    @Test
+    public void align3() throws Exception {
+        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "test2.fa", new File(tmpDir, "test.fa"));
+        GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+
+        BWAlign.query(fastaArchive.getPath(), "ATACTTTA", new ObjectHandlerBase<PosOnGenome>() {
+            @Override
+            public void handle(PosOnGenome input) throws Exception {
+                _logger.info(SilkLens.toSilk(input));
+            }
+        });
+    }
+
 }

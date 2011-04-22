@@ -77,7 +77,6 @@ public class DC3
         // sort S by the 3-mer T[S[i], S[i]+2]
         new TrimerQuickSort().sort();
         UInt32Array P = name(S);
-
         if (P.lookup(P.textSize() - 1) != S.textSize()) {
             // The names in P are not unique  
             // Sort the (name, i:S[i]) in P by (i%3, i/3)
@@ -132,12 +131,13 @@ public class DC3
             if (lowerBound >= upperBound)
                 return;
 
+            // Chose a pivot randomly
             long pivotIndex = (Math.abs(random.nextLong()) % (upperBound - lowerBound)) + lowerBound;
             long pivot = S.lookup(pivotIndex);
-            // move pivot to the last of the array 
+            // Move pivot to the last entry
             swap(pivotIndex, upperBound);
 
-            // partinnntion
+            // Partition the data using the pivot
             long splitIndex = lowerBound;
             for (long i = lowerBound; i < upperBound - 1; ++i) {
                 long x = S.lookup(i);
@@ -146,6 +146,7 @@ public class DC3
                     splitIndex++;
                 }
             }
+            // Move back the pivot to the split index
             swap(splitIndex, upperBound);
 
             quickSort(lowerBound, splitIndex - 1);

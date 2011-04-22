@@ -25,5 +25,12 @@
 package org.utgenome.weaver.align;
 
 public enum Strand {
-    FORWARD, REVERSE
+    FORWARD, REVERSE;
+
+    public static Strand toStrand(char plusOrMinus) {
+        if (plusOrMinus == '+')
+            return FORWARD;
+        else
+            return REVERSE;
+    }
 }
