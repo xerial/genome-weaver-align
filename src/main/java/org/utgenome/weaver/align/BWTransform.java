@@ -37,7 +37,6 @@ import org.utgenome.weaver.align.sais.UInt32SAIS;
 import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
-import org.xerial.util.opt.Command;
 
 /**
  * Performs burrows-wheeler transform
@@ -45,7 +44,7 @@ import org.xerial.util.opt.Command;
  * @author leo
  * 
  */
-public class BWTransform implements Command
+public class BWTransform extends GenomeWeaverCommand
 {
     private static Logger _logger = Logger.getLogger(BWTransform.class);
 

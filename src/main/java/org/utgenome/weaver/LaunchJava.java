@@ -31,6 +31,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -42,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 import org.xerial.util.StringUtil;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.CommandModule;
+import org.xerial.util.opt.GlobalCommandOption;
 
 public class LaunchJava implements CommandModule
 {
@@ -228,6 +230,16 @@ public class LaunchJava implements CommandModule
     public void printUsage() throws Exception {
         System.out.println("[usage]");
         System.out.println("> gw fork (command line...)");
+    }
+
+    @Override
+    public URL getHelpMessageResource() {
+        return null;
+    }
+
+    @Override
+    public void execute(GlobalCommandOption globalOption, String[] args) throws Exception {
+        execute(args);
     }
 
 }

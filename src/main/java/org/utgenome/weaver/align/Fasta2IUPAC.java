@@ -39,9 +39,8 @@ import org.xerial.lens.SilkLens;
 import org.xerial.silk.SilkWriter;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
-import org.xerial.util.opt.Command;
 
-public class Fasta2IUPAC implements Command
+public class Fasta2IUPAC extends GenomeWeaverCommand
 {
     private static Logger _logger = Logger.getLogger(Fasta2IUPAC.class);
 

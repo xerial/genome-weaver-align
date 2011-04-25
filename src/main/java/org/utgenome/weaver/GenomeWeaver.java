@@ -24,7 +24,13 @@
 //--------------------------------------
 package org.utgenome.weaver;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
 import org.xerial.util.StringUtil;
+import org.xerial.util.log.Logger;
+import org.xerial.util.opt.CommandHelpMessage;
 import org.xerial.util.opt.CommandLauncher;
 
 /**
@@ -35,12 +41,17 @@ import org.xerial.util.opt.CommandLauncher;
  */
 public class GenomeWeaver
 {
+    private static Logger _logger = Logger.getLogger(GenomeWeaver.class);
+
     public static void execute(String arg) throws Exception {
         execute(StringUtil.tokenizeCommandLineArgument(arg));
     }
 
     public static void execute(String[] arg) throws Exception {
         CommandLauncher l = new CommandLauncher();
+        CommandHelpMessage m = new CommandHelpMessage();
+        m.defaultHeader = String.format("Genome Weaver: version %s", getVersion());
+        l.setMessage(m);
         l.addCommandsIn(GenomeWeaver.class.getPackage(), true);
         l.execute(arg);
     }
@@ -52,6 +63,38 @@ public class GenomeWeaver
         catch (Exception e) {
             e.printStackTrace(System.err);
         }
+    }
+
+    public static String getVersion() {
+        String version = "(unknown)";
+        try {
+            // load the pom.xml file copied as a resource in utgb-core.jar
+            String propertyName = "version";
+            InputStream pomIn = GenomeWeaver.class
+                    .getResourceAsStream("/META-INF/maven/org.utgenome.weaver/genome-weaver/pom.properties");
+            try {
+                if (pomIn == null) {
+                    // If genome-pweaver is referenced in the workspace scope, use the
+                    // genome-weaver/src/main/resources/genome-weaver.properties, which is created when genome-weaver is
+                    // compiled
+                    pomIn = GenomeWeaver.class.getResourceAsStream("/org/utgenome/weaver/genome-weaver.properties");
+                    propertyName = "genome-weaver-version";
+                }
+                if (pomIn != null) {
+                    Properties prop = new Properties();
+                    prop.load(pomIn);
+                    version = prop.getProperty(propertyName, version);
+                }
+            }
+            finally {
+                if (pomIn != null)
+                    pomIn.close();
+            }
+        }
+        catch (IOException e) {
+            _logger.debug(e);
+        }
+        return version;
     }
 
 }

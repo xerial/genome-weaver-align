@@ -28,13 +28,13 @@ import java.io.StringWriter;
 
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.utgenome.weaver.align.BWTransform;
+import org.utgenome.weaver.align.GenomeWeaverCommand;
 import org.utgenome.weaver.align.IUPACSequence;
 import org.utgenome.weaver.align.LSeq;
 import org.xerial.util.opt.Argument;
-import org.xerial.util.opt.Command;
 import org.xerial.util.opt.Option;
 
-public class PrintSA implements Command
+public class PrintSA extends GenomeWeaverCommand
 {
 
     @Override

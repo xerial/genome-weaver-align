@@ -37,7 +37,6 @@ import org.xerial.util.ObjectHandler;
 import org.xerial.util.ObjectHandlerBase;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
-import org.xerial.util.opt.Command;
 import org.xerial.util.opt.Option;
 
 /**
@@ -46,7 +45,7 @@ import org.xerial.util.opt.Option;
  * @author leo
  * 
  */
-public class BWAlign implements Command
+public class BWAlign extends GenomeWeaverCommand
 {
     private static Logger _logger = Logger.getLogger(BWAlign.class);
 
