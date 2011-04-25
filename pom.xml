@@ -345,6 +345,14 @@
         <enabled>true</enabled>
       </snapshots>
     </repository>
+    
+    <!--  Message pack repository -->
+    <repository>
+      <id>msgpack.org</id>
+      <name>Message Artifact Repository</name>
+      <url>http://msgpack.org/maven2</url>
+    </repository>
+    
 
    <!-- xerial.org repository -->
     <repository>
@@ -429,6 +437,11 @@
 
 
   <dependencies>
+    <dependency>
+      <groupId>org.msgpack</groupId>
+      <artifactId>msgpack-rpc</artifactId>
+      <version>0.6.1-devel</version>
+    </dependency>
     <dependency>
       <groupId>org.utgenome</groupId>
       <artifactId>utgb-core</artifactId>

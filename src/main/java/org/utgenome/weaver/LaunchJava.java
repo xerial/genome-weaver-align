@@ -229,7 +229,7 @@ public class LaunchJava implements CommandModule
     @Override
     public void printUsage() throws Exception {
         System.out.println("[usage]");
-        System.out.println("> gw fork (command line...)");
+        System.out.println("$ genome-weaver e (command line...)");
     }
 
     @Override
