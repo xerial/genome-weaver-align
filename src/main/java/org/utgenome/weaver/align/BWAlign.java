@@ -133,14 +133,14 @@ public class BWAlign implements Command
                 switch (result.strand) {
                 case FORWARD:
                     pos = saR.get(i, fmIndexR);
-                    pos = (fmIndexF.textSize() - 1 - pos) - result.common.query.length();
+                    pos = (fmIndexF.textSize() - 1 - pos) - result.common.query.textSize();
                     break;
                 case REVERSE:
                     pos = saF.get(i, fmIndexF);
                     break;
                 }
                 if (pos != -1)
-                    reporter.handle(index.translate(pos));
+                    reporter.handle(index.translate(pos, result.strand));
             }
             reporter.finish();
         }
@@ -251,6 +251,10 @@ public class BWAlign implements Command
             return rev.toString();
         }
 
+        public void align(String seq) throws Exception {
+            align(new IUPACSequence(seq));
+        }
+
         /**
          * 
          * @param seq
@@ -259,10 +263,10 @@ public class BWAlign implements Command
          * @param si
          * @throws Exception
          */
-        public void align(String seq) throws Exception {
+        public void align(IUPACSequence seq) throws Exception {
 
             alignmentQueue.add(Alignment.initialState(seq, Strand.FORWARD, fmIndex.fmIndexR.textSize()));
-            alignmentQueue.add(Alignment.initialState(complement(seq), Strand.REVERSE, fmIndex.fmIndexF.textSize()));
+            alignmentQueue.add(Alignment.initialState(seq.complement(), Strand.REVERSE, fmIndex.fmIndexF.textSize()));
 
             while (!alignmentQueue.isEmpty()) {
 
@@ -271,7 +275,7 @@ public class BWAlign implements Command
                     continue;
                 }
 
-                if (current.wordIndex >= seq.length()) {
+                if (current.wordIndex >= seq.textSize()) {
                     if (current.alignmentScore >= bestScore) {
                         bestScore = current.alignmentScore;
                         out.handle(current);
@@ -282,14 +286,14 @@ public class BWAlign implements Command
                 // Search for deletion
                 alignmentQueue.add(current.extendWithDeletion(config));
 
-                IUPAC currentBase = IUPAC.encode(current.common.query.charAt(current.wordIndex));
+                IUPAC currentBase = current.common.query.getIUPAC(current.wordIndex);
                 // Traverse for each A, C, G, T, ... etc.
                 for (IUPAC nextBase : lettersInGenome) {
                     FMIndex fm = current.strand == Strand.FORWARD ? fmIndex.fmIndexR : fmIndex.fmIndexF;
                     SuffixInterval next = fm.backwardSearch(nextBase, current.suffixInterval);
                     if (next.isValidRange()) {
                         // Search for insertion
-                        if (current.wordIndex > 0 && current.wordIndex < seq.length() - 2) {
+                        if (current.wordIndex > 0 && current.wordIndex < seq.textSize() - 2) {
                             alignmentQueue.add(current.extendWithInsertion(config));
                         }
                         if ((nextBase.bitFlag & currentBase.bitFlag) != 0) {

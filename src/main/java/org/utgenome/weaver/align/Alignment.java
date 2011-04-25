@@ -37,9 +37,9 @@ public class Alignment implements Comparable<Alignment>
 
     public static class CommonInfo
     {
-        public final String query;
+        public final IUPACSequence query;
 
-        public CommonInfo(String query) {
+        public CommonInfo(IUPACSequence query) {
             this.query = query;
         }
     }
@@ -131,7 +131,7 @@ public class Alignment implements Comparable<Alignment>
     public Alignment extendWithMisMatch(SuffixInterval next, AlignmentScoreConfig config) {
         MismatchPosition newMM;
         if (mismatchPosition == null)
-            newMM = MismatchPosition.oneBitInstance(common.query.length(), wordIndex + 1);
+            newMM = MismatchPosition.oneBitInstance((int) (common.query.textSize() - 1), wordIndex + 1);
         else
             newMM = mismatchPosition.copyAndSet(wordIndex + 1);
 
@@ -183,7 +183,7 @@ public class Alignment implements Comparable<Alignment>
                 numMismatches + 1, alignmentScore - config.gapExtentionPenalty, mismatchPosition, newGapPosition);
     }
 
-    public static Alignment initialState(String seq, Strand strand, long textSize) {
+    public static Alignment initialState(IUPACSequence seq, Strand strand, long textSize) {
         return new Alignment(new CommonInfo(seq), strand, 0, IndelState.NORMAL, new SuffixInterval(0, textSize - 1), 0,
                 0, null, null);
     }

@@ -51,6 +51,10 @@ public class IUPACSequence implements LSeq
     private long          numBases;
 
     public IUPACSequence(String s) {
+        this(s, false);
+    }
+
+    public IUPACSequence(String s, boolean appendSentinel) {
         this.numBases = s.length() + 1; // add 1 for sentinel
         long byteSize = (numBases / 2) + (numBases & 0x01);
         seq = new byte[(int) byteSize];
@@ -62,11 +66,12 @@ public class IUPACSequence implements LSeq
             char c = Character.toUpperCase(s.charAt(cursor));
             setIUPAC(cursor, IUPAC.encode(c));
         }
-        // ensure the sequence size is 2n
-        if (cursor % 2 == 0)
-            setIUPAC(cursor++, IUPAC.N);
-        // append a sentinal
-        setIUPAC(cursor++, IUPAC.None);
+        if (appendSentinel) {
+            if (cursor % 2 == 0)
+                setIUPAC(cursor++, IUPAC.N);
+            // append a sentinal
+            setIUPAC(cursor++, IUPAC.None);
+        }
 
         numBases = cursor;
     }

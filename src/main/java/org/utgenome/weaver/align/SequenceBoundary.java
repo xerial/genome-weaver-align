@@ -67,10 +67,12 @@ public class SequenceBoundary
     {
         public final String chr;
         public final int    pos;
+        public final Strand strand;
 
-        public PosOnGenome(String chr, int pos) {
+        public PosOnGenome(String chr, int pos, Strand strand) {
             this.chr = chr;
             this.pos = pos;
+            this.strand = strand;
         }
     }
 
@@ -79,7 +81,7 @@ public class SequenceBoundary
      * @return 1-origin index
      * @throws UTGBException
      */
-    public PosOnGenome translate(long textIndex) throws UTGBException {
+    public PosOnGenome translate(long textIndex, Strand strand) throws UTGBException {
 
         if (indexToChrTable == null) {
             indexToChrTable = new TreeMap<Long, String>();
@@ -95,7 +97,7 @@ public class SequenceBoundary
         long offset = headMap.lastKey();
         String chr = headMap.get(offset);
         int start = (int) (textIndex - offset + 1);
-        return new PosOnGenome(chr, start);
+        return new PosOnGenome(chr, start, strand);
     }
 
     public static SequenceBoundary loadSilk(File silkFile) throws UTGBException {

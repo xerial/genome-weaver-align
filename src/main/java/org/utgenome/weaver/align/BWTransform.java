@@ -79,7 +79,7 @@ public class BWTransform implements Command
         StopWatch timer = new StopWatch();
 
         // Create IUPAC sequences (forward/reverse) from the given FASTA file
-        EncodeFasta.encode(fastaFile);
+        Fasta2IUPAC.encode(fastaFile);
 
         BWTFiles forwardDB = new BWTFiles(fastaFile, Strand.FORWARD);
         BWTFiles reverseDB = new BWTFiles(fastaFile, Strand.REVERSE);

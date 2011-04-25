@@ -41,13 +41,13 @@ import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
 import org.xerial.util.opt.Command;
 
-public class EncodeFasta implements Command
+public class Fasta2IUPAC implements Command
 {
-    private static Logger _logger = Logger.getLogger(EncodeFasta.class);
+    private static Logger _logger = Logger.getLogger(Fasta2IUPAC.class);
 
     @Override
     public String name() {
-        return "fasta2pac";
+        return "fasta2iupac";
     }
 
     @Override

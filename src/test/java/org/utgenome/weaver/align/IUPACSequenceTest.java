@@ -31,7 +31,7 @@ import org.utgenome.gwt.utgb.client.bio.IUPAC;
 
 public class IUPACSequenceTest
 {
-    private final String orig = "YGYYYCGCADBACGTNKRWVH";
+    private final String orig = "YGYYYCGCADBACGTNKRWVHT";
 
     @Test
     public void constructor() throws Exception {
