@@ -36,7 +36,7 @@ public class IUPACSequenceTest
     @Test
     public void constructor() throws Exception {
         IUPACSequence s = new IUPACSequence(orig);
-        assertEquals(orig.length() + 1, s.textSize());
+        assertEquals(orig.length(), s.textSize());
         for (int i = 0; i < orig.length(); ++i) {
             IUPAC code = s.getIUPAC(i);
             assertEquals(IUPAC.find(String.valueOf(orig.charAt(i))), code);
@@ -47,12 +47,11 @@ public class IUPACSequenceTest
     public void reverse() throws Exception {
         IUPACSequence s = new IUPACSequence(orig);
         IUPACSequence rev = s.reverse();
-        for (int i = 0; i < s.textSize() - 1; ++i) {
+        for (int i = 0; i < s.textSize(); ++i) {
             IUPAC codeRev = rev.getIUPAC(i);
-            IUPAC code = s.getIUPAC(s.textSize() - i - 2);
+            IUPAC code = s.getIUPAC(s.textSize() - i - 1);
             assertEquals(code, codeRev);
         }
-
     }
 
     @Test
@@ -65,7 +64,6 @@ public class IUPACSequenceTest
             IUPAC cr = r.getIUPAC(i);
             assertEquals(c.complement(), cr);
         }
-
     }
 
 }

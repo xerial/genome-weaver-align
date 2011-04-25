@@ -103,12 +103,22 @@ public class IUPACSequence implements LSeq
     public IUPACSequence reverse() {
         IUPACSequence rev = new IUPACSequence(numBases);
         long cursor = 0;
-        // Reverse the sequence except the last sentinel
-        for (long i = numBases - 2; i >= 0; --i) {
+        long i = numBases - 1;
+        boolean hasSentinel = false;
+        if (getIUPAC(textSize() - 1) == IUPAC.None) {
+            // Ignore the sentinel in the last character
+            hasSentinel = true;
+            i--;
+        }
+
+        // Reverse the sequence 
+        for (; i >= 0; --i) {
             rev.setIUPAC(cursor++, getIUPAC(i));
         }
-        // Append a sentinel
-        rev.setIUPAC(cursor, IUPAC.None);
+        if (hasSentinel) {
+            // Append a sentinel
+            rev.setIUPAC(cursor, IUPAC.None);
+        }
         return rev;
     }
 

@@ -46,7 +46,7 @@ public class UInt32SAISTest
     @Test
     public void saisSeq() {
         //IUPACSequence s = new IUPACSequence("ACGTTA ACGTTA");
-        IUPACSequence s = new IUPACSequence("ACT ACTA");
+        IUPACSequence s = new IUPACSequence("ACT ACTA", true);
         UInt32Array SA = UInt32SAIS.SAIS(s, 16);
         _logger.debug(SA);
 
@@ -73,7 +73,7 @@ public class UInt32SAISTest
 
     @Test
     public void saisTATA() {
-        IUPACSequence s = new IUPACSequence("TATAATAATATAATA");
+        IUPACSequence s = new IUPACSequence("TATAATAATATAATA", true);
         UInt32Array SA = UInt32SAIS.SAIS(s, 16);
         _logger.debug(SA);
 

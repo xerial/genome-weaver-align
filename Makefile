@@ -26,6 +26,7 @@ MVN:=mvn ${MVN_OPTS}
 PREFIX:=${HOME}/local
 INSTALL_DIR:=$(PREFIX)/genome-weaver
 
+PROG:=gweaver
 TARGET:=target
 VERSION:=1.0-snapshot
 PACKAGE:=$(TARGET)/genome-weaver-$(VERSION)
@@ -41,8 +42,8 @@ install: $(TARGET)/genome-weaver-$(VERSION)-bin.tar.gz
 	if [ -d "$(INSTALL_DIR)/current/lib" ]; then rm -rf "$(INSTALL_DIR)/current/lib"; fi
 	tar xvfz $< -C "$(INSTALL_DIR)"
 	ln -sfn "genome-weaver-$(VERSION)" "$(INSTALL_DIR)/current"
-	ln -sf "../genome-weaver/current/bin/gw" "$(PREFIX)/bin/gw"
-	ln -sf "../genome-weaver/current/bin/gw" "$(PREFIX)/bin/gw"
+	ln -sf "../genome-weaver/current/bin/$(PROG)" "$(PREFIX)/bin/$(PROG)"
+	ln -sf "../genome-weaver/current/bin/$(PROG)" "$(PREFIX)/bin/$(PROG)"
 
 uninstall:
 	rm -rf "$(INSTALL_DIR)/genome-weaver-$(VERSION)"
