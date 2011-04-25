@@ -166,18 +166,6 @@ public class BWAlign implements Command
 
     }
 
-    static class FowardReverseFMIndex
-    {
-        final FMIndex F;
-        final FMIndex R;
-
-        public FowardReverseFMIndex(FMIndex forward, FMIndex reverse) {
-            this.F = forward;
-            this.R = reverse;
-        }
-
-    }
-
     public static String reverse(String query) {
         final int N = query.length();
         StringBuilder buf = new StringBuilder(N);
@@ -293,8 +281,9 @@ public class BWAlign implements Command
 
                 // Search for deletion
                 alignmentQueue.add(current.extendWithDeletion(config));
-                //align(seq, cursor - 1, numMismatchesAllowed - 1, si);
+
                 IUPAC currentBase = IUPAC.encode(current.common.query.charAt(current.wordIndex));
+                // Traverse for each A, C, G, T, ... etc.
                 for (IUPAC nextBase : lettersInGenome) {
                     FMIndex fm = current.strand == Strand.FORWARD ? fmIndex.fmIndexR : fmIndex.fmIndexF;
                     SuffixInterval next = fm.backwardSearch(nextBase, current.suffixInterval);

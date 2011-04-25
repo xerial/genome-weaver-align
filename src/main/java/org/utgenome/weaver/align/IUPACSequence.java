@@ -26,6 +26,7 @@ package org.utgenome.weaver.align;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -87,14 +88,43 @@ public class IUPACSequence implements LSeq
         this.seq = seq;
     }
 
+    /**
+     * Create a reverse string of the this sequence. The sentinel is appended as
+     * the last character of the resulting sequence.
+     * 
+     * @return Reverse sequence. The returend sequence is not a complement of
+     *         the original sequence.
+     */
     public IUPACSequence reverse() {
         IUPACSequence rev = new IUPACSequence(numBases);
         long cursor = 0;
+        // Reverse the sequence except the last sentinel
         for (long i = numBases - 2; i >= 0; --i) {
             rev.setIUPAC(cursor++, getIUPAC(i));
         }
+        // Append a sentinel
         rev.setIUPAC(cursor, IUPAC.None);
         return rev;
+    }
+
+    /**
+     * Create a complementary sequence (not reversed)
+     * 
+     * @return complementary sequence
+     */
+    public IUPACSequence complement() {
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream(this.seq.length);
+            IUPACSequenceWriter buf = new IUPACSequenceWriter(out);
+            for (long i = 0; i < textSize(); ++i) {
+                buf.append(getIUPAC(i).complement());
+            }
+            buf.close();
+            return new IUPACSequence(textSize(), out.toByteArray());
+        }
+        catch (IOException e) {
+            throw new IllegalStateException("Unexpected IOException: " + e.getMessage());
+        }
     }
 
     public static IUPACSequence loadFrom(File f) throws IOException {
