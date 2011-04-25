@@ -346,6 +346,13 @@
       </snapshots>
     </repository>
 
+   <!-- xerial.org repository -->
+    <repository>
+      <id>xerial</id>
+      <name>Xerial Artifact Repository</name>
+      <url>http://maven.xerial.org/repository/artifact</url>
+    </repository>
+
     <!-- UTGB Repository -->
     <repository>
       <id>utgb</id>
