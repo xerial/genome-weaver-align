@@ -30,11 +30,13 @@ import java.util.PriorityQueue;
 
 import org.utgenome.UTGBException;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
+import org.utgenome.gwt.utgb.client.bio.SAMReadFlag;
 import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandler;
 import org.xerial.util.ObjectHandlerBase;
+import org.xerial.util.StringUtil;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
 import org.xerial.util.opt.Option;
@@ -70,6 +72,12 @@ public class BWAlign extends GenomeWeaverCommand
     @Option(symbol = "q", description = "query sequence")
     private String query;
 
+    //    @Option(longName = "sam", description = "output in SAM format")
+    //    public boolean outputSAM           = false;
+
+    @Option(symbol = "N", description = "Num mismatches allowed. default=0")
+    public int     numMismachesAllowed = 0;
+
     @Override
     public void execute(String[] args) throws Exception {
 
@@ -79,8 +87,26 @@ public class BWAlign extends GenomeWeaverCommand
 
         query(fastaFilePrefix, query, new ObjectHandlerBase<AlignmentRecord>() {
             @Override
-            public void handle(AlignmentRecord input) throws Exception {
-                System.out.println(SilkLens.toSilk("alignment", input));
+            public void handle(AlignmentRecord r) throws Exception {
+
+                ArrayList<Object> rec = new ArrayList<Object>();
+                rec.add(r.readName);
+                int flag = 0;
+                if (r.strand == Strand.REVERSE)
+                    flag |= SAMReadFlag.FLAG_STRAND_OF_QUERY;
+
+                rec.add(flag);
+                rec.add(r.chr);
+                rec.add(r.start);
+                rec.add(r.score);
+                rec.add(r.getCigar().toCIGARString());
+                rec.add("*");
+                rec.add(0);
+                rec.add(0);
+                rec.add(r.querySeq);
+                rec.add("*");
+                rec.add("NM:i:" + r.numMismatches);
+                System.out.println(StringUtil.join(rec, "\t"));
             }
         });
     }
@@ -123,6 +149,10 @@ public class BWAlign extends GenomeWeaverCommand
             fmIndexR = new FMIndex(wvR);
         }
 
+        public void outputSAMHeader() {
+            System.out.print(index.toSAMHeader());
+        }
+
         public void toGenomeCoordinate(String querySeq, Alignment result, ObjectHandler<AlignmentRecord> reporter)
                 throws Exception {
             _logger.info(SilkLens.toSilk("alignment", result));
@@ -139,7 +169,6 @@ public class BWAlign extends GenomeWeaverCommand
                     break;
                 }
                 if (pos != -1) {
-
                     PosOnGenome p = index.translate(pos, result.strand);
                     AlignmentRecord rec = new AlignmentRecord();
                     rec.chr = p.chr;
@@ -147,9 +176,11 @@ public class BWAlign extends GenomeWeaverCommand
                     rec.strand = result.strand;
                     rec.score = result.alignmentScore;
                     rec.numMismatches = result.numMismatches;
-                    rec.querySeq = querySeq;
+                    rec.querySeq = result.strand == Strand.FORWARD ? querySeq : result.common.query.reverse()
+                            .toString();
                     rec.readName = querySeq;
                     rec.end = p.pos + result.wordIndex;
+                    rec.setCIGAR(result.cigar().toCIGARString());
                     reporter.handle(rec);
                 }
             }
@@ -167,6 +198,8 @@ public class BWAlign extends GenomeWeaverCommand
         aligner.query = query;
 
         _logger.info("query sequence: " + query);
+
+        fmIndex.outputSAMHeader();
 
         FMIndexAlign aln = new FMIndexAlign(fmIndex, new ObjectHandlerBase<Alignment>() {
             @Override

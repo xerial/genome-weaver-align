@@ -27,6 +27,7 @@ package org.utgenome.weaver.align;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.utgenome.gwt.utgb.client.bio.CIGAR;
 import org.utgenome.weaver.align.BWAlign.AlignmentScoreConfig;
 
 public class Alignment implements Comparable<Alignment>
@@ -121,6 +122,33 @@ public class Alignment implements Comparable<Alignment>
         this.alignmentScore = alignmentScore;
         this.mismatchPosition = mismatchPosition;
         this.gapPosition = gapPosition;
+    }
+
+    public CIGAR cigar() {
+        int cursor = 0;
+        CIGAR cigar = new CIGAR();
+        if (gapPosition != null) {
+            for (Gap gap : gapPosition) {
+                int matchLen = gap.pos - cursor;
+                if (matchLen > 0)
+                    cigar.add(matchLen, CIGAR.Type.Matches);
+                switch (gap.getType()) {
+                case DELETION:
+                    cigar.add(gap.len, CIGAR.Type.Deletions);
+                    break;
+                case INSERTION:
+                    cigar.add(gap.len, CIGAR.Type.Insertions);
+                    break;
+                }
+                cursor = gap.pos;
+            }
+        }
+
+        int remainingLen = (int) (common.query.textSize() - cursor);
+        if (remainingLen > 0)
+            cigar.add(remainingLen, CIGAR.Type.Matches);
+
+        return cigar;
     }
 
     public Alignment extendWithMatch(SuffixInterval next, AlignmentScoreConfig config) {

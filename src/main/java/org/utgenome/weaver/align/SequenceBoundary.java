@@ -27,6 +27,7 @@ package org.utgenome.weaver.align;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -74,6 +75,14 @@ public class SequenceBoundary
             this.pos = pos;
             this.strand = strand;
         }
+    }
+
+    public String toSAMHeader() {
+        StringWriter buf = new StringWriter();
+        for (SequenceIndex each : index) {
+            buf.append(String.format("@SQ\tSN:%s\tLN:%d\n", each.name, each.length));
+        }
+        return buf.toString();
     }
 
     /**
