@@ -24,8 +24,11 @@
 //--------------------------------------
 package org.utgenome.weaver.parallel;
 
+import org.msgpack.MessagePackObject;
 import org.msgpack.rpc.loop.EventLoop;
+import org.msgpack.rpc.transport.MessageSendable;
 import org.utgenome.weaver.align.GenomeWeaverCommand;
+import org.utgenome.weaver.parallel.Client.RPCInterface;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Option;
 
@@ -43,7 +46,7 @@ public class Server extends GenomeWeaverCommand
         return "Launch a genome-weaver server";
     }
 
-    public class JobManager extends org.msgpack.rpc.Server
+    public class JobManager extends org.msgpack.rpc.Server implements RPCInterface
     {
         public JobManager(EventLoop loop) {
             super(loop);
@@ -51,6 +54,12 @@ public class Server extends GenomeWeaverCommand
 
         public String hello(String message) {
             return String.format("Hello %s!", message);
+        }
+
+        @Override
+        public void onRequest(MessageSendable message, int arg1, String arg2, MessagePackObject arg3) {
+            _logger.info("Recieved a request: " + message);
+            super.onRequest(message, arg1, arg2, arg3);
         }
 
     }
@@ -65,6 +74,8 @@ public class Server extends GenomeWeaverCommand
         JobManager jobManager = new JobManager(loop);
         jobManager.serve(jobManager);
         jobManager.listen(port);
+
+        _logger.info("Started a server ...");
 
         loop.join();
     }

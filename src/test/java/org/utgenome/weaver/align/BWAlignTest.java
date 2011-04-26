@@ -33,7 +33,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.utgenome.util.TestHelper;
 import org.utgenome.weaver.GenomeWeaver;
-import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
+import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandlerBase;
 import org.xerial.util.log.Logger;
@@ -79,21 +79,21 @@ public class BWAlignTest
         File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "test2.fa", new File(tmpDir, "test.fa"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
 
-        BWAlign.query(fastaArchive.getPath(), "ATACTTTA", new ObjectHandlerBase<PosOnGenome>() {
+        BWAlign.query(fastaArchive.getPath(), "ATACTTTA", new ObjectHandlerBase<AlignmentRecord>() {
             @Override
-            public void handle(PosOnGenome input) throws Exception {
+            public void handle(AlignmentRecord input) throws Exception {
                 _logger.info(SilkLens.toSilk(input));
                 assertEquals("seq", input.chr);
-                assertEquals(9, input.pos);
+                assertEquals(9, input.start);
             }
         });
 
-        BWAlign.query(fastaArchive.getPath(), "TAAAGTAT", new ObjectHandlerBase<PosOnGenome>() {
+        BWAlign.query(fastaArchive.getPath(), "TAAAGTAT", new ObjectHandlerBase<AlignmentRecord>() {
             @Override
-            public void handle(PosOnGenome input) throws Exception {
+            public void handle(AlignmentRecord input) throws Exception {
                 _logger.info(SilkLens.toSilk(input));
                 assertEquals("seq", input.chr);
-                assertEquals(9, input.pos);
+                assertEquals(9, input.start);
             }
         });
 

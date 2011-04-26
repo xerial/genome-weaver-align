@@ -27,6 +27,7 @@ package org.utgenome.weaver.parallel;
 import org.msgpack.rpc.loop.EventLoop;
 import org.utgenome.weaver.align.GenomeWeaverCommand;
 import org.xerial.util.log.Logger;
+import org.xerial.util.opt.Argument;
 import org.xerial.util.opt.Option;
 
 public class Client extends GenomeWeaverCommand
@@ -54,13 +55,16 @@ public class Client extends GenomeWeaverCommand
     @Option(symbol = "s", description = "server address. default=localhost")
     private String server = "localhost";
 
+    @Argument()
+    private String input  = "hello";
+
     @Override
     public void execute(String[] args) throws Exception {
         EventLoop loop = EventLoop.defaultEventLoop();
 
         org.msgpack.rpc.Client cli = new org.msgpack.rpc.Client("localhost", 8990, loop);
         RPCInterface iface = cli.proxy(RPCInterface.class);
-        String message = iface.hello("hello");
+        String message = iface.hello(input);
 
         _logger.info(String.format("Recieved a message: %s", message));
     }

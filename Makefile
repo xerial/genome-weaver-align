@@ -34,7 +34,7 @@ PACKAGE:=$(TARGET)/genome-weaver-$(VERSION)
 SRC:=$(shell find src)
 
 $(TARGET)/genome-weaver-$(VERSION)-bin.tar.gz:  $(SRC)
-	$(MVN) package
+	$(MVN) package -Dmaven.test.skip=true
 
 install: $(TARGET)/genome-weaver-$(VERSION)-bin.tar.gz
 	mkdir -p "$(INSTALL_DIR)"
@@ -48,3 +48,5 @@ install: $(TARGET)/genome-weaver-$(VERSION)-bin.tar.gz
 uninstall:
 	rm -rf "$(INSTALL_DIR)/genome-weaver-$(VERSION)"
 
+test:
+	$(MVN) test

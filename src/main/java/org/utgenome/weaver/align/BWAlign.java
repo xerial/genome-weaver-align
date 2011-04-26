@@ -25,13 +25,13 @@
 package org.utgenome.weaver.align;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.PriorityQueue;
 
 import org.utgenome.UTGBException;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
+import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandler;
 import org.xerial.util.ObjectHandlerBase;
@@ -76,11 +76,10 @@ public class BWAlign extends GenomeWeaverCommand
         if (query == null) {
             throw new UTGBException("no query is given");
         }
-        final FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix);
 
-        query(fastaFilePrefix, query, new ObjectHandlerBase<PosOnGenome>() {
+        query(fastaFilePrefix, query, new ObjectHandlerBase<AlignmentRecord>() {
             @Override
-            public void handle(PosOnGenome input) throws Exception {
+            public void handle(AlignmentRecord input) throws Exception {
                 System.out.println(SilkLens.toSilk("alignment", input));
             }
         });
@@ -124,9 +123,10 @@ public class BWAlign extends GenomeWeaverCommand
             fmIndexR = new FMIndex(wvR);
         }
 
-        public void toGenomeCoordinate(Alignment result, ObjectHandler<PosOnGenome> reporter) throws Exception {
+        public void toGenomeCoordinate(String querySeq, Alignment result, ObjectHandler<AlignmentRecord> reporter)
+                throws Exception {
             _logger.info(SilkLens.toSilk("alignment", result));
-            reporter.init();
+
             for (long i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
                 long pos = -1;
                 switch (result.strand) {
@@ -138,15 +138,27 @@ public class BWAlign extends GenomeWeaverCommand
                     pos = saF.get(i, fmIndexF);
                     break;
                 }
-                if (pos != -1)
-                    reporter.handle(index.translate(pos, result.strand));
+                if (pos != -1) {
+
+                    PosOnGenome p = index.translate(pos, result.strand);
+                    AlignmentRecord rec = new AlignmentRecord();
+                    rec.chr = p.chr;
+                    rec.start = p.pos;
+                    rec.strand = result.strand;
+                    rec.score = result.alignmentScore;
+                    rec.numMismatches = result.numMismatches;
+                    rec.querySeq = querySeq;
+                    rec.readName = querySeq;
+                    rec.end = p.pos + result.wordIndex;
+                    reporter.handle(rec);
+                }
             }
-            reporter.finish();
+
         }
     }
 
-    public static void query(String fastaFilePrefix, String query, final ObjectHandler<PosOnGenome> resultHandler)
-            throws Exception {
+    public static void query(String fastaFilePrefix, final String query,
+            final ObjectHandler<AlignmentRecord> resultHandler) throws Exception {
 
         final FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix);
 
@@ -155,13 +167,16 @@ public class BWAlign extends GenomeWeaverCommand
         aligner.query = query;
 
         _logger.info("query sequence: " + query);
+
         FMIndexAlign aln = new FMIndexAlign(fmIndex, new ObjectHandlerBase<Alignment>() {
             @Override
             public void handle(Alignment input) throws Exception {
-                fmIndex.toGenomeCoordinate(input, resultHandler);
+                fmIndex.toGenomeCoordinate(query, input, resultHandler);
             }
         });
+        resultHandler.init();
         aln.align(query);
+        resultHandler.finish();
 
     }
 
@@ -221,33 +236,6 @@ public class BWAlign extends GenomeWeaverCommand
                 }
             }
 
-        }
-
-        public static String complement(String seq) {
-            StringWriter rev = new StringWriter(seq.length());
-            for (int i = 0; i < seq.length(); ++i) {
-                char ch = Character.toUpperCase(seq.charAt(i));
-                switch (ch) {
-                case 'A':
-                    rev.append('T');
-                    break;
-                case 'C':
-                    rev.append('G');
-                    break;
-                case 'G':
-                    rev.append('C');
-                    break;
-                case 'T':
-                    rev.append('A');
-                    break;
-                default:
-                case 'N':
-                    rev.append('N');
-                    break;
-                // TODO IUPAC sequences
-                }
-            }
-            return rev.toString();
         }
 
         public void align(String seq) throws Exception {

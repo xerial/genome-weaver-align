@@ -38,7 +38,7 @@ public class BWT2SparseSA extends GenomeWeaverCommand
 
     @Override
     public String name() {
-        return "ssa";
+        return "bwt2sa";
     }
 
     @Override

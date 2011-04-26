@@ -16,22 +16,37 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// Strand.java
-// Since: 2011/02/16
+// AlignmentRecord.java
+// Since: 2011/04/25
 //
 // $URL$ 
 // $Author$
 //--------------------------------------
-package org.utgenome.weaver.align;
+package org.utgenome.weaver.align.record;
 
-public enum Strand {
-    FORWARD, REVERSE;
+import org.utgenome.gwt.utgb.client.UTGBClientException;
+import org.utgenome.gwt.utgb.client.bio.CIGAR;
+import org.utgenome.weaver.align.Strand;
 
-    public static Strand toStrand(char plusOrMinus) {
-        if (plusOrMinus == '+')
-            return FORWARD;
-        else
-            return REVERSE;
+public class AlignmentRecord
+{
+    public String readName;
+    public String chr;
+    public Strand strand;
+    public int    start;
+    public int    end;
+    public int    numMismatches = 0;
+    private CIGAR cigar;
+    public String querySeq;
+    public String qual;
+    public int    score;
+
+    public CIGAR getCigar() {
+        return cigar;
+    }
+
+    public void setCIGAR(String cigarStr) throws UTGBClientException {
+        this.cigar = new CIGAR(cigarStr);
     }
 
 }
