@@ -252,6 +252,9 @@ public class BWAlign extends GenomeWeaverCommand
          */
         public void align(IUPACSequence seq) throws Exception {
 
+            int minScore = (int) seq.textSize() * config.matchScore - config.mismatchPenalty * numMismatchesAllowed;
+            minScore = Math.max(minScore, (int) (seq.textSize() * 0.5 * config.matchScore));
+
             alignmentQueue.add(Alignment.initialState(seq, Strand.FORWARD, fmIndex.fmIndexR.textSize()));
             alignmentQueue.add(Alignment.initialState(seq.complement(), Strand.REVERSE, fmIndex.fmIndexF.textSize()));
 
@@ -263,7 +266,7 @@ public class BWAlign extends GenomeWeaverCommand
                 }
 
                 if (current.wordIndex >= seq.textSize()) {
-                    if (current.alignmentScore >= bestScore) {
+                    if (current.alignmentScore >= minScore) {
                         bestScore = current.alignmentScore;
                         out.handle(current);
                     }

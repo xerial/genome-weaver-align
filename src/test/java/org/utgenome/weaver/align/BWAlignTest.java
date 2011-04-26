@@ -83,8 +83,10 @@ public class BWAlignTest
             @Override
             public void handle(AlignmentRecord input) throws Exception {
                 _logger.info(SilkLens.toSilk(input));
-                assertEquals("seq", input.chr);
-                assertEquals(9, input.start);
+                assertEquals("seq2", input.chr);
+                assertEquals(Strand.FORWARD, input.strand);
+                assertEquals(9, input.start); // 1-origin
+                assertEquals(17, input.end); // 1-origin
             }
         });
 
@@ -92,8 +94,10 @@ public class BWAlignTest
             @Override
             public void handle(AlignmentRecord input) throws Exception {
                 _logger.info(SilkLens.toSilk(input));
-                assertEquals("seq", input.chr);
+                assertEquals("seq2", input.chr);
+                assertEquals(Strand.REVERSE, input.strand);
                 assertEquals(9, input.start);
+                assertEquals(17, input.end); // 1-origin
             }
         });
 
