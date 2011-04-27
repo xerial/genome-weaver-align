@@ -27,6 +27,7 @@ package org.utgenome.weaver.align;
 import static org.junit.Assert.*;
 
 import java.io.File;
+import java.util.HashMap;
 
 import org.junit.After;
 import org.junit.Before;
@@ -132,14 +133,19 @@ public class BWAlignTest
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
 
         FASTAPullParser fa = new FASTAPullParser(fastaArchive);
-        final FASTASequence seq = fa.nextSequence();
+        FASTASequence seq;
+        final HashMap<String, String> seqMap = new HashMap<String, String>();
+        while ((seq = fa.nextSequence()) != null) {
+            seqMap.put(seq.getSequenceName(), seq.getSequence());
+        }
+
         fa.close();
 
         BWAlign.query(fastaArchive.getPath(), "TTTCAG", new ObjectHandlerBase<AlignmentRecord>() {
             @Override
             public void handle(AlignmentRecord input) throws Exception {
                 _logger.info(SilkLens.toSilk(input));
-                String s = seq.getSequence().substring(input.start - 1, input.end - 1);
+                String s = seqMap.get(input.chr).substring(input.start - 1, input.end - 1);
                 assertEquals(String.format("strand:%s query:%s ref:%s", input.strand, input.querySeq, s), s,
                         input.querySeq);
             }
