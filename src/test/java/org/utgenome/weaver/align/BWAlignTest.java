@@ -126,4 +126,25 @@ public class BWAlignTest
 
     }
 
+    @Test
+    public void sample2() throws Exception {
+        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "sample2.fa", new File(tmpDir, "sample2.fa"));
+        GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+
+        FASTAPullParser fa = new FASTAPullParser(fastaArchive);
+        final FASTASequence seq = fa.nextSequence();
+        fa.close();
+
+        BWAlign.query(fastaArchive.getPath(), "TTTCAG", new ObjectHandlerBase<AlignmentRecord>() {
+            @Override
+            public void handle(AlignmentRecord input) throws Exception {
+                _logger.info(SilkLens.toSilk(input));
+                String s = seq.getSequence().substring(input.start - 1, input.end - 1);
+                assertEquals(String.format("strand:%s query:%s ref:%s", input.strand, input.querySeq, s), s,
+                        input.querySeq);
+            }
+        });
+
+    }
+
 }
