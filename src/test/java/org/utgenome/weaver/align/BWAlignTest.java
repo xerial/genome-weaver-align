@@ -117,10 +117,10 @@ public class BWAlignTest
         BWAlign.query(fastaArchive.getPath(), "TTTCAG", new ObjectHandlerBase<AlignmentRecord>() {
             @Override
             public void handle(AlignmentRecord input) throws Exception {
-
                 _logger.debug(SilkLens.toSilk(input));
                 String s = seq.getSequence().substring(input.start - 1, input.end - 1);
-                _logger.info(String.format("strand:%s query:%s ref:%s", input.strand, input.querySeq, s));
+                assertEquals(String.format("strand:%s query:%s ref:%s", input.strand, input.querySeq, s), s,
+                        input.querySeq);
             }
         });
 
