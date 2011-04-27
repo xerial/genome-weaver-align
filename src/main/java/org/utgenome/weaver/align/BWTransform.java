@@ -120,8 +120,12 @@ public class BWTransform extends GenomeWeaverCommand
             if (seq.textSize() < Integer.MAX_VALUE) {
                 SA = new LSAIS.IntArray(new int[(int) seq.textSize()], 0);
             }
-            else
+            else if (seq.textSize() < Math.pow(2, 32)) {
                 SA = new UInt32Array(seq.textSize());
+            }
+            else {
+                throw new UTGBException("String longer than 4GB is not supported");
+            }
 
             UInt32SAIS.SAIS(seq, SA, 16);
             //LSAIS.suffixsort(seq, SA, 16);

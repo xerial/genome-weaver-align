@@ -105,7 +105,7 @@ public class SequenceBoundary
 
         long offset = headMap.lastKey();
         String chr = headMap.get(offset);
-        int start = (int) (textIndex - offset + 1);
+        int start = (int) (textIndex - offset);
         return new PosOnGenome(chr, start, strand);
     }
 

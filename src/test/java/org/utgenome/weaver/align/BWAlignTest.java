@@ -31,6 +31,8 @@ import java.io.File;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.utgenome.format.fasta.FASTAPullParser;
+import org.utgenome.format.fasta.FASTASequence;
 import org.utgenome.util.TestHelper;
 import org.utgenome.weaver.GenomeWeaver;
 import org.utgenome.weaver.align.record.AlignmentRecord;
@@ -98,6 +100,27 @@ public class BWAlignTest
                 assertEquals(Strand.REVERSE, input.strand);
                 assertEquals(9, input.start);
                 assertEquals(17, input.end); // 1-origin
+            }
+        });
+
+    }
+
+    @Test
+    public void sample() throws Exception {
+        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "sample.fa", new File(tmpDir, "sample.fa"));
+        GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+
+        FASTAPullParser fa = new FASTAPullParser(fastaArchive);
+        final FASTASequence seq = fa.nextSequence();
+        fa.close();
+
+        BWAlign.query(fastaArchive.getPath(), "TTTCAG", new ObjectHandlerBase<AlignmentRecord>() {
+            @Override
+            public void handle(AlignmentRecord input) throws Exception {
+
+                _logger.debug(SilkLens.toSilk(input));
+                String s = seq.getSequence().substring(input.start - 1, input.end - 1);
+                _logger.info(String.format("strand:%s query:%s ref:%s", input.strand, input.querySeq, s));
             }
         });
 

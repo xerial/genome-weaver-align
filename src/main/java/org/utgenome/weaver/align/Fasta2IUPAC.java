@@ -114,15 +114,14 @@ public class Fasta2IUPAC extends GenomeWeaverCommand
                 SequenceIndex index = new SequenceIndex(seqName, desc, sequenceSize, offset);
                 indexOut.leafObject("index", index);
                 _logger.debug("\n" + SilkLens.toSilk("index", index));
-
-                // This part ensure the sequence size (including sentinel $) becomes 2n, which fits in a byte array 
-                if (encoder.size() % 2 == 0)
-                    encoder.append(IUPAC.N);
-                // append a sentinel
-                encoder.append(IUPAC.None);
-
                 offset = encoder.size();
             }
+            // This part ensure the sequence size (including sentinel $) becomes 2n, which fits in a byte array 
+            if (encoder.size() % 2 == 0)
+                encoder.append(IUPAC.N);
+            // append a sentinel
+            encoder.append(IUPAC.None);
+
             encoder.close();
             totalSize = encoder.size();
             _logger.info(String.format("total num bases: %,d", totalSize));
