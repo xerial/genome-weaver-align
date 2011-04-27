@@ -45,9 +45,9 @@ import java.io.IOException;
  */
 public class SparseSuffixArray
 {
-    private final LIntArray sparseSA;
-    private final long      N;
-    private final int       L;
+    final LIntArray    sparseSA;
+    private final long N;
+    private final int  L;
 
     private SparseSuffixArray(LIntArray sparseSA, long N, int L) {
         this.sparseSA = sparseSA;
