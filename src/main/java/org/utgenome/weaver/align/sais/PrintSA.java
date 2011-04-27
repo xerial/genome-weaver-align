@@ -28,9 +28,12 @@ import java.io.StringWriter;
 
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.utgenome.weaver.align.BWTransform;
+import org.utgenome.weaver.align.FMIndex;
 import org.utgenome.weaver.align.GenomeWeaverCommand;
 import org.utgenome.weaver.align.IUPACSequence;
 import org.utgenome.weaver.align.LSeq;
+import org.utgenome.weaver.align.SparseSuffixArray;
+import org.utgenome.weaver.align.WaveletArray;
 import org.xerial.util.opt.Argument;
 import org.xerial.util.opt.Option;
 
@@ -56,23 +59,34 @@ public class PrintSA extends GenomeWeaverCommand
     private String  seq;
 
     @Option(symbol = "r", description = "create SA for reverse string")
-    private boolean isReverse = false;
+    private boolean isReverse     = false;
+
+    @Option(symbol = "u", description = "Use Uint32SAIS")
+    private boolean useUint32SAIS = false;
 
     @Override
     public void execute(String[] args) throws Exception {
 
-        IUPACSequence s = new IUPACSequence(seq);
+        IUPACSequence s = new IUPACSequence(seq, true);
         if (isReverse)
             s = s.reverse();
 
-        LSeq SA = new LSAIS.IntArray(new int[(int) s.textSize()], 0);
-        LSAIS.suffixsort(s, SA, IUPAC.values().length);
+        final int K = IUPAC.values().length;
+
+        //LSeq SA = new LSAIS.IntArray(new int[(int) s.textSize()], 0);
+        // LSAIS.suffixsort(s, SA, IUPAC.values().length);
+        LSeq SA = UInt32SAIS.SAIS(s, K);
 
         IUPACSequence bwt = new IUPACSequence(s.textSize());
         BWTransform.bwt(s, SA, bwt);
 
+        WaveletArray wv = new WaveletArray(bwt, K);
+        SparseSuffixArray ssa = SparseSuffixArray.buildFromSuffixArray(SA, 32);
+        FMIndex fmIndex = new FMIndex(wv);
+
         for (int i = 0; i < SA.textSize(); ++i) {
             int sa = (int) SA.lookup(i);
+            //            int sa_wv = (int) ssa.get(i, fmIndex);
             System.out.println(String.format("%3d %3d %s %s", i, sa, rotateLeft(s, sa), bwt.getIUPAC(i)));
         }
     }

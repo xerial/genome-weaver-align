@@ -155,8 +155,8 @@ public class BWAlign extends GenomeWeaverCommand
 
         public void toGenomeCoordinate(String querySeq, Alignment result, ObjectHandler<AlignmentRecord> reporter)
                 throws Exception {
-            if (_logger.isTraceEnabled())
-                _logger.trace(SilkLens.toSilk("alignment", result));
+            //            if (_logger.isTraceEnabled())
+            _logger.info(SilkLens.toSilk("alignment", result));
 
             for (long i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
                 long pos = -1;

@@ -104,11 +104,9 @@ public class Fasta2IUPAC extends GenomeWeaverCommand
                                     base, lineCount, i + 1));
                             iupac = IUPAC.N;
                         }
-
                         encoder.append(iupac);
                     }
                 }
-
                 long pos = encoder.size();
                 long sequenceSize = pos - offset;
                 SequenceIndex index = new SequenceIndex(seqName, desc, sequenceSize, offset);
@@ -139,7 +137,11 @@ public class Fasta2IUPAC extends GenomeWeaverCommand
         IUPACSequenceWriter encoder = new IUPACSequenceWriter(new BufferedOutputStream(new FileOutputStream(
                 reverseDB.iupac())));
         // reverse IN[0..n-2] (excludes the sentinel)
-        for (long i = forwardSeq.textSize() - 2; i >= 0; --i) {
+        long i = forwardSeq.textSize() - 2;
+        //        if (forwardSeq.getIUPAC(i) == IUPAC.N) {
+        //            i--;
+        //        }
+        for (; i >= 0; --i) {
             encoder.append(forwardSeq.getIUPAC(i));
         }
         // append a sentinel.

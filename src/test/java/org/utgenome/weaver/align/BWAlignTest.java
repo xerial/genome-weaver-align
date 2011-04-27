@@ -78,19 +78,8 @@ public class BWAlignTest
 
     @Test
     public void align3() throws Exception {
-        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "test2.fa", new File(tmpDir, "test.fa"));
+        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "test2.fa", new File(tmpDir, "test2.fa"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
-
-        BWAlign.query(fastaArchive.getPath(), "ATACTTTA", new ObjectHandlerBase<AlignmentRecord>() {
-            @Override
-            public void handle(AlignmentRecord input) throws Exception {
-                _logger.info(SilkLens.toSilk(input));
-                assertEquals("seq2", input.chr);
-                assertEquals(Strand.FORWARD, input.strand);
-                assertEquals(9, input.start); // 1-origin
-                assertEquals(17, input.end); // 1-origin
-            }
-        });
 
         BWAlign.query(fastaArchive.getPath(), "TAAAGTAT", new ObjectHandlerBase<AlignmentRecord>() {
             @Override
@@ -99,6 +88,17 @@ public class BWAlignTest
                 assertEquals("seq2", input.chr);
                 assertEquals(Strand.REVERSE, input.strand);
                 assertEquals(9, input.start);
+                assertEquals(17, input.end); // 1-origin
+            }
+        });
+
+        BWAlign.query(fastaArchive.getPath(), "ATACTTTA", new ObjectHandlerBase<AlignmentRecord>() {
+            @Override
+            public void handle(AlignmentRecord input) throws Exception {
+                _logger.info(SilkLens.toSilk(input));
+                assertEquals("seq2", input.chr);
+                assertEquals(Strand.FORWARD, input.strand);
+                assertEquals(9, input.start); // 1-origin
                 assertEquals(17, input.end); // 1-origin
             }
         });
