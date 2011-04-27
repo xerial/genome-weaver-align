@@ -157,7 +157,7 @@ public class IUPACSequence implements LSeq
         // The num bases must be always 2
         int byteSize = (int) (numBases / 2);
         byte[] seq = new byte[byteSize];
-        in.read(seq, 0, byteSize);
+        int readBytes = in.read(seq, 0, byteSize);
 
         return new IUPACSequence(numBases, seq);
     }

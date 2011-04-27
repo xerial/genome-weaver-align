@@ -158,17 +158,20 @@ public class BWAlign extends GenomeWeaverCommand
             //            if (_logger.isTraceEnabled())
             _logger.info(SilkLens.toSilk("alignment", result));
 
+            final long querySize = result.common.query.textSize();
+
             for (long i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
                 long pos = -1;
                 switch (result.strand) {
                 case FORWARD:
                     pos = saR.get(i, fmIndexR);
-                    pos = (fmIndexF.textSize() - pos) - result.common.query.textSize();
+                    pos = (fmIndexR.textSize() - 1 - pos) - querySize;
                     break;
                 case REVERSE:
-                    pos = saF.get(i, fmIndexF) + 1;
+                    pos = saF.get(i, fmIndexF);
                     break;
                 }
+                pos += 1;
                 if (pos != -1) {
                     PosOnGenome p = index.translate(pos, result.strand);
                     AlignmentRecord rec = new AlignmentRecord();
