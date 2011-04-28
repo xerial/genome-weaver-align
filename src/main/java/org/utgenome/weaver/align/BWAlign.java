@@ -123,7 +123,7 @@ public class BWAlign extends GenomeWeaverCommand
             _logger.info("query sequence: " + query);
             reader = ReadSequenceReaderFactory.singleQueryReader(query);
         }
-        else if (readFile == null) {
+        else if (readFile != null) {
             reader = ReadSequenceReaderFactory.createReader(readFile);
         }
 
