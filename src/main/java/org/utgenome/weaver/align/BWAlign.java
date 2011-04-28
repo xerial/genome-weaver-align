@@ -240,8 +240,9 @@ public class BWAlign extends GenomeWeaverCommand
                     rec.strand = result.strand;
                     rec.score = result.alignmentScore;
                     rec.numMismatches = result.numMismatches;
-                    rec.querySeq = result.strand == Strand.FORWARD ? result.common.query.toString()
-                            : result.common.query.reverse().toString();
+                    // workaround for Picard tools, which cannot accept base character other than ACGT 
+                    rec.querySeq = result.strand == Strand.FORWARD ? result.common.query.toACGTString()
+                            : result.common.query.reverse().toACGTString();
                     rec.readName = result.common.queryName;
                     rec.end = p.pos + result.wordIndex;
                     rec.setCIGAR(result.cigar().toCIGARString());

@@ -204,6 +204,27 @@ public class IUPACSequence implements LSeq
         return b.toString();
     }
 
+    public String toACGTString() {
+        StringBuilder b = new StringBuilder();
+        //b.append("[");
+        for (int i = 0; i < numBases; ++i) {
+            //            if (i != 0)
+            //                b.append(", ");
+            IUPAC base = getIUPAC(i);
+            switch (base) {
+            case A:
+            case C:
+            case G:
+            case T:
+                break;
+            default:
+                base = IUPAC.N;
+            }
+            b.append(base == IUPAC.None ? "$" : base.name());
+        }
+        return b.toString();
+    }
+
     @Override
     public long lookup(long index) {
         int pos = (int) (index >>> 1);
