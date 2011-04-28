@@ -25,11 +25,18 @@
 package org.utgenome.weaver.align;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 
 import org.utgenome.UTGBException;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
+import org.utgenome.util.StandardOutputStream;
 import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.utgenome.weaver.align.record.AlignmentRecord;
+import org.utgenome.weaver.align.record.RawRead;
+import org.utgenome.weaver.align.record.ReadSequenceReader;
+import org.utgenome.weaver.align.record.ReadSequenceReaderFactory;
 import org.utgenome.weaver.align.strategy.BWAStrategy;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandler;
@@ -78,19 +85,91 @@ public class BWAlign extends GenomeWeaverCommand
     @Option(symbol = "N", description = "Num mismatches allowed. default=0")
     public int     numMismachesAllowed = 0;
 
+    public static class SAMOutput implements ObjectHandler<AlignmentRecord>
+    {
+
+        FMIndexOnGenome fmIndex;
+        PrintWriter     out;
+
+        public SAMOutput(FMIndexOnGenome fmIndex, OutputStream out) {
+            this.fmIndex = fmIndex;
+            this.out = new PrintWriter(new OutputStreamWriter(out));
+        }
+
+        @Override
+        public void init() throws Exception {
+            fmIndex.outputSAMHeader(out);
+        }
+
+        @Override
+        public void handle(AlignmentRecord r) throws Exception {
+            out.println(r.toSAMLine());
+        }
+
+        @Override
+        public void finish() throws Exception {
+            out.close();
+        }
+    }
+
     @Override
     public void execute(String[] args) throws Exception {
 
-        if (query == null && readFile == null) {
+        if (query == null && readFile == null)
             throw new UTGBException("no query is given");
+
+        ReadSequenceReader reader = null;
+        if (query != null) {
+            _logger.info("query sequence: " + query);
+            reader = ReadSequenceReaderFactory.singleQueryReader(query);
+        }
+        else if (readFile == null) {
+            reader = ReadSequenceReaderFactory.createReader(readFile);
         }
 
-        query(fastaFilePrefix, query, new ObjectHandlerBase<AlignmentRecord>() {
+        FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix);
+        SAMOutput samOutput = new SAMOutput(fmIndex, new StandardOutputStream());
+        query(fmIndex, reader, samOutput);
+    }
+
+    private static class GenomeCoordinateConverter extends ObjectHandlerBase<AlignmentSA>
+    {
+
+        private FMIndexOnGenome                fmIndex;
+        private ObjectHandler<AlignmentRecord> handler;
+
+        public GenomeCoordinateConverter(FMIndexOnGenome fmIndex, ObjectHandler<AlignmentRecord> handler) {
+            this.fmIndex = fmIndex;
+            this.handler = handler;
+        }
+
+        @Override
+        public void handle(AlignmentSA aln) throws Exception {
+            fmIndex.toGenomeCoordinate(aln.common.queryName, aln, handler);
+        }
+
+    }
+
+    public static void query(final FMIndexOnGenome fmIndex, ReadSequenceReader readReader,
+            final ObjectHandler<AlignmentRecord> handler) throws Exception {
+
+        handler.init();
+        final BWAStrategy aligner = new BWAStrategy(fmIndex);
+        readReader.parse(new ObjectHandlerBase<RawRead>() {
             @Override
-            public void handle(AlignmentRecord r) throws Exception {
-                System.out.println(r.toSAMLine());
-            }
+            public void handle(final RawRead input) throws Exception {
+                aligner.align(input, new GenomeCoordinateConverter(fmIndex, handler));
+            };
         });
+        handler.finish();
+
+    }
+
+    public static void querySingle(String fastaFilePrefix, final String query,
+            final ObjectHandler<AlignmentRecord> resultHandler) throws Exception {
+
+        final FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix);
+        query(fmIndex, ReadSequenceReaderFactory.singleQueryReader(query), resultHandler);
     }
 
     public static class FMIndexOnGenome
@@ -131,11 +210,11 @@ public class BWAlign extends GenomeWeaverCommand
             fmIndexR = new FMIndex(wvR);
         }
 
-        public void outputSAMHeader() {
-            System.out.print(index.toSAMHeader());
+        public void outputSAMHeader(PrintWriter out) {
+            out.print(index.toSAMHeader());
         }
 
-        public void toGenomeCoordinate(String querySeq, Alignment result, ObjectHandler<AlignmentRecord> reporter)
+        public void toGenomeCoordinate(String querySeq, AlignmentSA result, ObjectHandler<AlignmentRecord> reporter)
                 throws Exception {
             //            if (_logger.isTraceEnabled())
             _logger.info(SilkLens.toSilk("alignment", result));
@@ -172,53 +251,6 @@ public class BWAlign extends GenomeWeaverCommand
             }
 
         }
-    }
-
-    public static void query(String fastaFilePrefix, final String query,
-            final ObjectHandler<AlignmentRecord> resultHandler) throws Exception {
-
-        final FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix);
-
-        BWAlign aligner = new BWAlign();
-        aligner.fastaFilePrefix = fastaFilePrefix;
-        aligner.query = query;
-
-        _logger.info("query sequence: " + query);
-
-        fmIndex.outputSAMHeader();
-
-        BWAStrategy aln = new BWAStrategy(fmIndex, new ObjectHandlerBase<Alignment>() {
-            @Override
-            public void handle(Alignment input) throws Exception {
-                fmIndex.toGenomeCoordinate(query, input, resultHandler);
-            }
-        });
-        resultHandler.init();
-        aln.align(query);
-        resultHandler.finish();
-
-    }
-
-    public static String reverse(String query) {
-        final int N = query.length();
-        StringBuilder buf = new StringBuilder(N);
-        for (int i = N - 1; i >= 0; --i) {
-            buf.append(query.charAt(i));
-        }
-        return buf.toString();
-    }
-
-    public static interface Reporter<T>
-    {
-        public void emit(T result) throws Exception;
-    }
-
-    public static class AlignmentScoreConfig
-    {
-        public final int matchScore          = 1;
-        public final int mismatchPenalty     = 3;
-        public final int gapOpenPenalty      = 11;
-        public final int gapExtentionPenalty = 4;
     }
 
 }

@@ -24,9 +24,13 @@
 //--------------------------------------
 package org.utgenome.weaver.align.record;
 
+import java.io.IOException;
+
 import org.xerial.util.ObjectHandler;
 
 public interface ReadSequenceReader
 {
     public void parse(ObjectHandler<RawRead> handler) throws Exception;
+
+    public void close() throws IOException;
 }

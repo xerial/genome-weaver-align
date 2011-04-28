@@ -28,9 +28,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.utgenome.gwt.utgb.client.bio.CIGAR;
-import org.utgenome.weaver.align.BWAlign.AlignmentScoreConfig;
 
-public class Alignment implements Comparable<Alignment>
+/**
+ * Alignment state in a suffix array
+ * 
+ * @author leo
+ * 
+ */
+public class AlignmentSA implements Comparable<AlignmentSA>
 {
     public static enum IndelState {
         NORMAL, INSERTION, DELETION
@@ -38,9 +43,11 @@ public class Alignment implements Comparable<Alignment>
 
     public static class CommonInfo
     {
+        public final String        queryName;
         public final IUPACSequence query;
 
-        public CommonInfo(IUPACSequence query) {
+        public CommonInfo(String queryName, IUPACSequence query) {
+            this.queryName = queryName;
             this.query = query;
         }
     }
@@ -100,17 +107,17 @@ public class Alignment implements Comparable<Alignment>
         }
     }
 
-    public final CommonInfo           common;
-    public final Strand               strand;
-    public final int                  wordIndex;
-    public final Alignment.IndelState indel;
-    public final SuffixInterval       suffixInterval;
-    public final int                  numMismatches;
-    public final int                  alignmentScore;
-    public final MismatchPosition     mismatchPosition;
-    public final List<Gap>            gapPosition;
+    public final CommonInfo             common;
+    public final Strand                 strand;
+    public final int                    wordIndex;
+    public final AlignmentSA.IndelState indel;
+    public final SuffixInterval         suffixInterval;
+    public final int                    numMismatches;
+    public final int                    alignmentScore;
+    public final MismatchPosition       mismatchPosition;
+    public final List<Gap>              gapPosition;
 
-    private Alignment(CommonInfo common, Strand strand, int wordIndex, Alignment.IndelState indel,
+    private AlignmentSA(CommonInfo common, Strand strand, int wordIndex, AlignmentSA.IndelState indel,
             SuffixInterval suffixInterval, int numMismatches, int alignmentScore, MismatchPosition mismatchPosition,
             List<Gap> gapPosition) {
         this.common = common;
@@ -151,23 +158,23 @@ public class Alignment implements Comparable<Alignment>
         return cigar;
     }
 
-    public Alignment extendWithMatch(SuffixInterval next, AlignmentScoreConfig config) {
-        return new Alignment(common, strand, this.wordIndex + 1, IndelState.NORMAL, next, numMismatches, alignmentScore
-                + config.matchScore, mismatchPosition, gapPosition);
+    public AlignmentSA extendWithMatch(SuffixInterval next, AlignmentScoreConfig config) {
+        return new AlignmentSA(common, strand, this.wordIndex + 1, IndelState.NORMAL, next, numMismatches,
+                alignmentScore + config.matchScore, mismatchPosition, gapPosition);
     }
 
-    public Alignment extendWithMisMatch(SuffixInterval next, AlignmentScoreConfig config) {
+    public AlignmentSA extendWithMisMatch(SuffixInterval next, AlignmentScoreConfig config) {
         MismatchPosition newMM;
         if (mismatchPosition == null)
             newMM = MismatchPosition.oneBitInstance((int) (common.query.textSize() - 1), wordIndex + 1);
         else
             newMM = mismatchPosition.copyAndSet(wordIndex + 1);
 
-        return new Alignment(common, strand, this.wordIndex + 1, IndelState.NORMAL, next, numMismatches + 1,
+        return new AlignmentSA(common, strand, this.wordIndex + 1, IndelState.NORMAL, next, numMismatches + 1,
                 alignmentScore - config.mismatchPenalty, newMM, gapPosition);
     }
 
-    public Alignment extendWithDeletion(AlignmentScoreConfig config) {
+    public AlignmentSA extendWithDeletion(AlignmentScoreConfig config) {
 
         ArrayList<Gap> newGapPosition = new ArrayList<Gap>();
 
@@ -186,11 +193,11 @@ public class Alignment implements Comparable<Alignment>
             // update gap
             newGapPosition.add(new Deletion(wordIndex + 1, 1));
         }
-        return new Alignment(common, strand, this.wordIndex, IndelState.DELETION, suffixInterval, numMismatches + 1,
+        return new AlignmentSA(common, strand, this.wordIndex, IndelState.DELETION, suffixInterval, numMismatches + 1,
                 newScore, mismatchPosition, newGapPosition);
     }
 
-    public Alignment extendWithInsertion(AlignmentScoreConfig config) {
+    public AlignmentSA extendWithInsertion(AlignmentScoreConfig config) {
         ArrayList<Gap> newGapPosition = new ArrayList<Gap>();
 
         int newScore = alignmentScore;
@@ -207,17 +214,17 @@ public class Alignment implements Comparable<Alignment>
             newScore -= config.gapOpenPenalty;
             newGapPosition.add(new Insertion(wordIndex + 1, 1));
         }
-        return new Alignment(common, strand, this.wordIndex + 1, IndelState.INSERTION, suffixInterval,
+        return new AlignmentSA(common, strand, this.wordIndex + 1, IndelState.INSERTION, suffixInterval,
                 numMismatches + 1, alignmentScore - config.gapExtentionPenalty, mismatchPosition, newGapPosition);
     }
 
-    public static Alignment initialState(IUPACSequence seq, Strand strand, long textSize) {
-        return new Alignment(new CommonInfo(seq), strand, 0, IndelState.NORMAL, new SuffixInterval(0, textSize - 1), 0,
-                0, null, null);
+    public static AlignmentSA initialState(String queryName, IUPACSequence seq, Strand strand, long textSize) {
+        return new AlignmentSA(new CommonInfo(queryName, seq), strand, 0, IndelState.NORMAL, new SuffixInterval(0,
+                textSize - 1), 0, 0, null, null);
     }
 
     @Override
-    public int compareTo(Alignment o) {
+    public int compareTo(AlignmentSA o) {
         // Ascending order of the score
         return o.alignmentScore - this.alignmentScore;
     }

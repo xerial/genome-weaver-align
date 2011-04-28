@@ -78,6 +78,20 @@ public class ReadSequenceReaderFactory
         return new FASTAReadReader(input);
     }
 
+    public static ReadSequenceReader singleQueryReader(final String query) {
+        return new ReadSequenceReader() {
+            @Override
+            public void parse(ObjectHandler<RawRead> handler) throws Exception {
+                handler.handle(new ReadSequence(query, query, null));
+            }
+
+            @Override
+            public void close() throws IOException {
+                // do nothing
+            }
+        };
+    }
+
     private static class FASTAReadReader implements ReadSequenceReader
     {
         FASTAPullParser input;
@@ -94,6 +108,11 @@ public class ReadSequenceReaderFactory
                 handler.handle(read);
             }
             handler.finish();
+        }
+
+        @Override
+        public void close() throws IOException {
+            input.close();
         }
     }
 
@@ -112,6 +131,11 @@ public class ReadSequenceReaderFactory
                 handler.handle(ReadSequence.createFrom(read));
             }
             handler.finish();
+        }
+
+        @Override
+        public void close() throws IOException {
+            reader.close();
         }
 
     }

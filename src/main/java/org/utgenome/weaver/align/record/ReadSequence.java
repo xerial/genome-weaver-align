@@ -53,6 +53,11 @@ public class ReadSequence implements RawRead
     }
 
     @Override
+    public String name() {
+        return name;
+    }
+
+    @Override
     public String toString() {
         return String.format("%s\t%s\t%s", name, seq, qual);
     }

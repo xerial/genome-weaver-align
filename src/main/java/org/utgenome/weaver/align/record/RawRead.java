@@ -26,9 +26,5 @@ package org.utgenome.weaver.align.record;
 
 public interface RawRead
 {
-
+    public String name();
 }
-
-
-
-

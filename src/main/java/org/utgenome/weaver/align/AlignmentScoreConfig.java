@@ -16,40 +16,24 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// PairedEndRead.java
+// AlignmentScoreConfig.java
 // Since: 2011/04/28
 //
 // $URL$ 
 // $Author$
 //--------------------------------------
-package org.utgenome.weaver.align.record;
-
-import org.xerial.util.StringUtil;
+package org.utgenome.weaver.align;
 
 /**
- * Paired-end read sequence holder
+ * Alignment scoring configuration
  * 
  * @author leo
  * 
  */
-public class PairedEndRead implements RawRead
+public class AlignmentScoreConfig
 {
-    public final ReadSequence first;
-    public final ReadSequence second;
-
-    public PairedEndRead(ReadSequence first, ReadSequence second) {
-        this.first = first;
-        this.second = second;
-    }
-
-    @Override
-    public String name() {
-        return first.name;
-    }
-
-    @Override
-    public String toString() {
-        return StringUtil.join(new ReadSequence[] { first, second }, "\n");
-    }
-
+    public final int matchScore          = 1;
+    public final int mismatchPenalty     = 3;
+    public final int gapOpenPenalty      = 11;
+    public final int gapExtentionPenalty = 4;
 }

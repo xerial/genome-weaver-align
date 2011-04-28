@@ -4,14 +4,16 @@ import java.util.ArrayList;
 import java.util.PriorityQueue;
 
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
-import org.utgenome.weaver.align.Alignment;
-import org.utgenome.weaver.align.BWAlign.AlignmentScoreConfig;
+import org.utgenome.weaver.align.AlignmentSA;
+import org.utgenome.weaver.align.AlignmentScoreConfig;
 import org.utgenome.weaver.align.BWAlign.FMIndexOnGenome;
 import org.utgenome.weaver.align.CharacterCount;
 import org.utgenome.weaver.align.FMIndex;
 import org.utgenome.weaver.align.IUPACSequence;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
+import org.utgenome.weaver.align.record.RawRead;
+import org.utgenome.weaver.align.record.ReadSequence;
 import org.xerial.util.ObjectHandler;
 
 /**
@@ -25,21 +27,14 @@ import org.xerial.util.ObjectHandler;
  */
 public class BWAStrategy
 {
-    private final FMIndexOnGenome          fmIndex;
-    private final ObjectHandler<Alignment> out;
+    private final FMIndexOnGenome      fmIndex;
 
-    private final PriorityQueue<Alignment> alignmentQueue       = new PriorityQueue<Alignment>();
-    private final int                      numMismatchesAllowed = 1;
+    private final int                  numMismatchesAllowed = 1;
+    private final AlignmentScoreConfig config               = new AlignmentScoreConfig();
+    private final ArrayList<IUPAC>     lettersInGenome      = new ArrayList<IUPAC>();
 
-    private final AlignmentScoreConfig     config               = new AlignmentScoreConfig();
-
-    private final ArrayList<IUPAC>         lettersInGenome      = new ArrayList<IUPAC>();
-
-    private int                            bestScore            = -1;
-
-    public BWAStrategy(FMIndexOnGenome fmIndex, ObjectHandler<Alignment> out) {
+    public BWAStrategy(FMIndexOnGenome fmIndex) {
         this.fmIndex = fmIndex;
-        this.out = out;
 
         CharacterCount C = fmIndex.fmIndexF.getCharacterCount();
         for (IUPAC base : IUPAC.values()) {
@@ -50,11 +45,14 @@ public class BWAStrategy
                 lettersInGenome.add(base);
             }
         }
-
     }
 
-    public void align(String seq) throws Exception {
-        align(new IUPACSequence(seq));
+    public void align(RawRead read, ObjectHandler<AlignmentSA> out) throws Exception {
+
+        if (ReadSequence.class.isAssignableFrom(read.getClass())) {
+            ReadSequence s = ReadSequence.class.cast(read);
+            align(read.name(), new IUPACSequence(s.seq), out);
+        }
     }
 
     /**
@@ -65,17 +63,22 @@ public class BWAStrategy
      * @param si
      * @throws Exception
      */
-    public void align(IUPACSequence seq) throws Exception {
+    public void align(String queryName, IUPACSequence seq, ObjectHandler<AlignmentSA> out) throws Exception {
+
+        PriorityQueue<AlignmentSA> alignmentQueue = new PriorityQueue<AlignmentSA>();
+
+        int bestScore = -1;
 
         int minScore = (int) seq.textSize() * config.matchScore - config.mismatchPenalty * numMismatchesAllowed;
         minScore = Math.max(minScore, (int) (seq.textSize() * 0.5 * config.matchScore));
 
-        alignmentQueue.add(Alignment.initialState(seq, Strand.FORWARD, fmIndex.fmIndexR.textSize()));
-        alignmentQueue.add(Alignment.initialState(seq.complement(), Strand.REVERSE, fmIndex.fmIndexF.textSize()));
+        alignmentQueue.add(AlignmentSA.initialState(queryName, seq, Strand.FORWARD, fmIndex.fmIndexR.textSize()));
+        alignmentQueue.add(AlignmentSA.initialState(queryName, seq.complement(), Strand.REVERSE,
+                fmIndex.fmIndexF.textSize()));
 
         while (!alignmentQueue.isEmpty()) {
 
-            Alignment current = alignmentQueue.poll();
+            AlignmentSA current = alignmentQueue.poll();
             if (current.numMismatches > numMismatchesAllowed) {
                 continue;
             }

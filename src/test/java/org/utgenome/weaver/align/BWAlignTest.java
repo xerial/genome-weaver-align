@@ -82,7 +82,7 @@ public class BWAlignTest
         File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "test2.fa", new File(tmpDir, "test2.fa"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
 
-        BWAlign.query(fastaArchive.getPath(), "TAAAGTAT", new ObjectHandlerBase<AlignmentRecord>() {
+        BWAlign.querySingle(fastaArchive.getPath(), "TAAAGTAT", new ObjectHandlerBase<AlignmentRecord>() {
             @Override
             public void handle(AlignmentRecord input) throws Exception {
                 _logger.info(SilkLens.toSilk(input));
@@ -93,7 +93,7 @@ public class BWAlignTest
             }
         });
 
-        BWAlign.query(fastaArchive.getPath(), "ATACTTTA", new ObjectHandlerBase<AlignmentRecord>() {
+        BWAlign.querySingle(fastaArchive.getPath(), "ATACTTTA", new ObjectHandlerBase<AlignmentRecord>() {
             @Override
             public void handle(AlignmentRecord input) throws Exception {
                 _logger.info(SilkLens.toSilk(input));
@@ -115,7 +115,7 @@ public class BWAlignTest
         final FASTASequence seq = fa.nextSequence();
         fa.close();
 
-        BWAlign.query(fastaArchive.getPath(), "TTTCAG", new ObjectHandlerBase<AlignmentRecord>() {
+        BWAlign.querySingle(fastaArchive.getPath(), "TTTCAG", new ObjectHandlerBase<AlignmentRecord>() {
             @Override
             public void handle(AlignmentRecord input) throws Exception {
                 _logger.debug(SilkLens.toSilk(input));
@@ -141,7 +141,7 @@ public class BWAlignTest
 
         fa.close();
 
-        BWAlign.query(fastaArchive.getPath(), "TTTCAG", new ObjectHandlerBase<AlignmentRecord>() {
+        BWAlign.querySingle(fastaArchive.getPath(), "TTTCAG", new ObjectHandlerBase<AlignmentRecord>() {
             @Override
             public void handle(AlignmentRecord input) throws Exception {
                 _logger.debug(SilkLens.toSilk(input));
