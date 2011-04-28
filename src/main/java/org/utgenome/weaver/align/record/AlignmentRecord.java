@@ -24,9 +24,13 @@
 //--------------------------------------
 package org.utgenome.weaver.align.record;
 
+import java.util.ArrayList;
+
 import org.utgenome.gwt.utgb.client.UTGBClientException;
 import org.utgenome.gwt.utgb.client.bio.CIGAR;
+import org.utgenome.gwt.utgb.client.bio.SAMReadFlag;
 import org.utgenome.weaver.align.Strand;
+import org.xerial.util.StringUtil;
 
 public class AlignmentRecord
 {
@@ -47,6 +51,27 @@ public class AlignmentRecord
 
     public void setCIGAR(String cigarStr) throws UTGBClientException {
         this.cigar = new CIGAR(cigarStr);
+    }
+
+    public String toSAMLine() {
+        ArrayList<Object> rec = new ArrayList<Object>();
+        rec.add(readName);
+        int flag = 0;
+        if (strand == Strand.REVERSE)
+            flag |= SAMReadFlag.FLAG_STRAND_OF_QUERY;
+
+        rec.add(flag);
+        rec.add(chr);
+        rec.add(start);
+        rec.add(score);
+        rec.add(getCigar());
+        rec.add("*"); // pair chr
+        rec.add(0); // pair start
+        rec.add(0); // insert size
+        rec.add(querySeq);
+        rec.add("*"); // quality value
+        rec.add("NM:i:" + numMismatches);
+        return StringUtil.join(rec, "\t");
     }
 
 }

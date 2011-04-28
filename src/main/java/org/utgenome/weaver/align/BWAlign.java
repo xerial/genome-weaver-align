@@ -25,18 +25,15 @@
 package org.utgenome.weaver.align;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 import org.utgenome.UTGBException;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
-import org.utgenome.gwt.utgb.client.bio.SAMReadFlag;
 import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.strategy.BWAStrategy;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandler;
 import org.xerial.util.ObjectHandlerBase;
-import org.xerial.util.StringUtil;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
 import org.xerial.util.opt.Option;
@@ -69,6 +66,9 @@ public class BWAlign extends GenomeWeaverCommand
     @Argument(index = 0)
     private String fastaFilePrefix;
 
+    @Argument(index = 1)
+    private String readFile;
+
     @Option(symbol = "q", description = "query sequence")
     private String query;
 
@@ -81,32 +81,14 @@ public class BWAlign extends GenomeWeaverCommand
     @Override
     public void execute(String[] args) throws Exception {
 
-        if (query == null) {
+        if (query == null && readFile == null) {
             throw new UTGBException("no query is given");
         }
 
         query(fastaFilePrefix, query, new ObjectHandlerBase<AlignmentRecord>() {
             @Override
             public void handle(AlignmentRecord r) throws Exception {
-
-                ArrayList<Object> rec = new ArrayList<Object>();
-                rec.add(r.readName);
-                int flag = 0;
-                if (r.strand == Strand.REVERSE)
-                    flag |= SAMReadFlag.FLAG_STRAND_OF_QUERY;
-
-                rec.add(flag);
-                rec.add(r.chr);
-                rec.add(r.start);
-                rec.add(r.score);
-                rec.add(r.getCigar().toCIGARString());
-                rec.add("*");
-                rec.add(0);
-                rec.add(0);
-                rec.add(r.querySeq);
-                rec.add("*");
-                rec.add("NM:i:" + r.numMismatches);
-                System.out.println(StringUtil.join(rec, "\t"));
+                System.out.println(r.toSAMLine());
             }
         });
     }
