@@ -6,9 +6,8 @@ import java.util.PriorityQueue;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.utgenome.weaver.align.AlignmentSA;
 import org.utgenome.weaver.align.AlignmentScoreConfig;
-import org.utgenome.weaver.align.BWAlign.FMIndexOnGenome;
 import org.utgenome.weaver.align.CharacterCount;
-import org.utgenome.weaver.align.FMIndex;
+import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.IUPACSequence;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
@@ -51,7 +50,7 @@ public class BWAStrategy
 
         if (ReadSequence.class.isAssignableFrom(read.getClass())) {
             ReadSequence s = ReadSequence.class.cast(read);
-            align(read.name(), new IUPACSequence(s.seq), out);
+            align(s, out);
         }
     }
 
@@ -63,18 +62,20 @@ public class BWAStrategy
      * @param si
      * @throws Exception
      */
-    public void align(String queryName, IUPACSequence seq, ObjectHandler<AlignmentSA> out) throws Exception {
+    public void align(ReadSequence read, ObjectHandler<AlignmentSA> out) throws Exception {
+        IUPACSequence seq = new IUPACSequence(read.seq);
+
+        int minScore = (int) (seq.textSize() - numMismatchesAllowed) * config.matchScore - config.mismatchPenalty
+                * numMismatchesAllowed;
+        if (minScore < 0)
+            minScore = 1;
 
         PriorityQueue<AlignmentSA> alignmentQueue = new PriorityQueue<AlignmentSA>();
-
         int bestScore = -1;
 
-        int minScore = (int) seq.textSize() * config.matchScore - config.mismatchPenalty * numMismatchesAllowed;
-        minScore = Math.max(minScore, (int) (seq.textSize() * 0.5 * config.matchScore));
-
-        alignmentQueue.add(AlignmentSA.initialState(queryName, seq, Strand.FORWARD, fmIndex.fmIndexR.textSize()));
-        alignmentQueue.add(AlignmentSA.initialState(queryName, seq.complement(), Strand.REVERSE,
-                fmIndex.fmIndexF.textSize()));
+        long N = fmIndex.fmIndexF.textSize();
+        alignmentQueue.add(AlignmentSA.initialState(read.name, seq, Strand.FORWARD, N));
+        alignmentQueue.add(AlignmentSA.initialState(read.name, seq.complement(), Strand.REVERSE, N));
 
         while (!alignmentQueue.isEmpty()) {
 
@@ -85,7 +86,8 @@ public class BWAStrategy
 
             if (current.wordIndex >= seq.textSize()) {
                 if (current.alignmentScore >= minScore) {
-                    bestScore = current.alignmentScore;
+                    if (bestScore < current.alignmentScore)
+                        bestScore = current.alignmentScore;
                     out.handle(current);
                 }
                 continue;
@@ -97,8 +99,7 @@ public class BWAStrategy
             IUPAC currentBase = current.common.query.getIUPAC(current.wordIndex);
             // Traverse for each A, C, G, T, ... etc.
             for (IUPAC nextBase : lettersInGenome) {
-                FMIndex fm = current.strand == Strand.FORWARD ? fmIndex.fmIndexR : fmIndex.fmIndexF;
-                SuffixInterval next = fm.backwardSearch(nextBase, current.suffixInterval);
+                SuffixInterval next = fmIndex.backwardSearch(current.strand, nextBase, current.suffixInterval);
                 if (next.isValidRange()) {
                     // Search for insertion
                     if (current.wordIndex > 0 && current.wordIndex < seq.textSize() - 2) {

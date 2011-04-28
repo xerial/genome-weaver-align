@@ -24,21 +24,17 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 
 import org.utgenome.UTGBException;
-import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.utgenome.util.StandardOutputStream;
-import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.RawRead;
 import org.utgenome.weaver.align.record.ReadSequenceReader;
 import org.utgenome.weaver.align.record.ReadSequenceReaderFactory;
 import org.utgenome.weaver.align.strategy.BWAStrategy;
-import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandler;
 import org.xerial.util.ObjectHandlerBase;
 import org.xerial.util.log.Logger;
@@ -53,7 +49,7 @@ import org.xerial.util.opt.Option;
  */
 public class BWAlign extends GenomeWeaverCommand
 {
-    private static Logger _logger = Logger.getLogger(BWAlign.class);
+    static Logger _logger = Logger.getLogger(BWAlign.class);
 
     @Override
     public String name() {
@@ -170,87 +166,6 @@ public class BWAlign extends GenomeWeaverCommand
 
         final FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix);
         query(fmIndex, ReadSequenceReaderFactory.singleQueryReader(query), resultHandler);
-    }
-
-    public static class FMIndexOnGenome
-    {
-        public final FMIndex            fmIndexF;
-        public final FMIndex            fmIndexR;
-        private final SparseSuffixArray saF;
-        private final SparseSuffixArray saR;
-        private final WaveletArray      wvF;
-        private final WaveletArray      wvR;
-        private final SequenceBoundary  index;
-
-        private final long              N;
-        private final int               K;
-
-        public FMIndexOnGenome(String fastaFilePrefix) throws UTGBException, IOException {
-            BWTFiles forwardDB = new BWTFiles(fastaFilePrefix, Strand.FORWARD);
-            BWTFiles reverseDB = new BWTFiles(fastaFilePrefix, Strand.REVERSE);
-
-            // Load the boundary information of the concatenated chr sequences 
-            index = SequenceBoundary.loadSilk(forwardDB.pacIndex());
-            N = index.totalSize;
-            K = IUPAC.values().length;
-
-            // Load sparse suffix arrays
-            _logger.info("Loading sparse suffix arrays");
-            saF = SparseSuffixArray.loadFrom(forwardDB.sparseSuffixArray());
-            saR = SparseSuffixArray.loadFrom(reverseDB.sparseSuffixArray());
-
-            // Load Wavelet arrays
-            _logger.info("Loading a Wavelet array of the forward BWT");
-            wvF = WaveletArray.loadFrom(forwardDB.bwtWavelet());
-            _logger.info("Loading a Wavelet array of the reverse BWT");
-            wvR = WaveletArray.loadFrom(reverseDB.bwtWavelet());
-
-            // Prepare FM-indexes
-            fmIndexF = new FMIndex(wvF);
-            fmIndexR = new FMIndex(wvR);
-        }
-
-        public void outputSAMHeader(PrintWriter out) {
-            out.print(index.toSAMHeader());
-        }
-
-        public void toGenomeCoordinate(AlignmentSA result, ObjectHandler<AlignmentRecord> reporter) throws Exception {
-            //            if (_logger.isTraceEnabled())
-            _logger.info(SilkLens.toSilk("alignment", result));
-
-            final long querySize = result.common.query.textSize();
-
-            for (long i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
-                long pos = -1;
-                switch (result.strand) {
-                case FORWARD:
-                    pos = saR.get(i, fmIndexR);
-                    pos = (fmIndexR.textSize() - 1 - pos) - querySize;
-                    break;
-                case REVERSE:
-                    pos = saF.get(i, fmIndexF);
-                    break;
-                }
-                pos += 1;
-                if (pos != -1) {
-                    PosOnGenome p = index.translate(pos, result.strand);
-                    AlignmentRecord rec = new AlignmentRecord();
-                    rec.chr = p.chr;
-                    rec.start = p.pos;
-                    rec.strand = result.strand;
-                    rec.score = result.alignmentScore;
-                    rec.numMismatches = result.numMismatches;
-                    // workaround for Picard tools, which cannot accept base character other than ACGT 
-                    rec.querySeq = result.strand == Strand.FORWARD ? result.common.query.toACGTString()
-                            : result.common.query.reverse().toACGTString();
-                    rec.readName = result.common.queryName;
-                    rec.end = p.pos + result.wordIndex;
-                    rec.setCIGAR(result.cigar().toCIGARString());
-                    reporter.handle(rec);
-                }
-            }
-
-        }
     }
 
 }

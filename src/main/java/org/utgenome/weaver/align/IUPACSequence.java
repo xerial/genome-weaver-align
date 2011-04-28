@@ -194,10 +194,7 @@ public class IUPACSequence implements LSeq
     @Override
     public String toString() {
         StringBuilder b = new StringBuilder();
-        //b.append("[");
         for (int i = 0; i < numBases; ++i) {
-            //            if (i != 0)
-            //                b.append(", ");
             IUPAC base = getIUPAC(i);
             b.append(base == IUPAC.None ? "$" : base.name());
         }
@@ -206,10 +203,7 @@ public class IUPACSequence implements LSeq
 
     public String toACGTString() {
         StringBuilder b = new StringBuilder();
-        //b.append("[");
         for (int i = 0; i < numBases; ++i) {
-            //            if (i != 0)
-            //                b.append(", ");
             IUPAC base = getIUPAC(i);
             switch (base) {
             case A:

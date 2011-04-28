@@ -120,8 +120,9 @@ public class BWAlignTest
             public void handle(AlignmentRecord input) throws Exception {
                 _logger.debug(SilkLens.toSilk(input));
                 String s = seq.getSequence().substring(input.start - 1, input.end - 1);
-                assertEquals(String.format("strand:%s query:%s ref:%s", input.strand, input.querySeq, s), s,
-                        input.querySeq);
+                if (input.numMismatches == 0)
+                    assertEquals(String.format("strand:%s query:%s ref:%s", input.strand, input.querySeq, s), s,
+                            input.querySeq);
             }
         });
 
@@ -146,8 +147,9 @@ public class BWAlignTest
             public void handle(AlignmentRecord input) throws Exception {
                 _logger.debug(SilkLens.toSilk(input));
                 String s = seqMap.get(input.chr).substring(input.start - 1, input.end - 1);
-                assertEquals(String.format("strand:%s query:%s ref:%s", input.strand, input.querySeq, s), s,
-                        input.querySeq);
+                if (input.numMismatches == 0)
+                    assertEquals(String.format("strand:%s query:%s ref:%s", input.strand, input.querySeq, s), s,
+                            input.querySeq);
             }
         });
 

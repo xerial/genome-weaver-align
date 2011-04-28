@@ -229,4 +229,10 @@ public class AlignmentSA implements Comparable<AlignmentSA>
         return o.alignmentScore - this.alignmentScore;
     }
 
+    @Override
+    public String toString() {
+        return String.format("strand:%s, index:%d, SA:%s, NM:%d, score:%d", strand, wordIndex, suffixInterval,
+                numMismatches, alignmentScore);
+    }
+
 }
