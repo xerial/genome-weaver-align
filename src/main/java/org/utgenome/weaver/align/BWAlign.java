@@ -145,7 +145,7 @@ public class BWAlign extends GenomeWeaverCommand
 
         @Override
         public void handle(AlignmentSA aln) throws Exception {
-            fmIndex.toGenomeCoordinate(aln.common.queryName, aln, handler);
+            fmIndex.toGenomeCoordinate(aln, handler);
         }
 
     }
@@ -214,8 +214,7 @@ public class BWAlign extends GenomeWeaverCommand
             out.print(index.toSAMHeader());
         }
 
-        public void toGenomeCoordinate(String querySeq, AlignmentSA result, ObjectHandler<AlignmentRecord> reporter)
-                throws Exception {
+        public void toGenomeCoordinate(AlignmentSA result, ObjectHandler<AlignmentRecord> reporter) throws Exception {
             //            if (_logger.isTraceEnabled())
             _logger.info(SilkLens.toSilk("alignment", result));
 
@@ -241,9 +240,9 @@ public class BWAlign extends GenomeWeaverCommand
                     rec.strand = result.strand;
                     rec.score = result.alignmentScore;
                     rec.numMismatches = result.numMismatches;
-                    rec.querySeq = result.strand == Strand.FORWARD ? querySeq : result.common.query.reverse()
-                            .toString();
-                    rec.readName = querySeq;
+                    rec.querySeq = result.strand == Strand.FORWARD ? result.common.query.toString()
+                            : result.common.query.reverse().toString();
+                    rec.readName = result.common.queryName;
                     rec.end = p.pos + result.wordIndex;
                     rec.setCIGAR(result.cigar().toCIGARString());
                     reporter.handle(rec);
