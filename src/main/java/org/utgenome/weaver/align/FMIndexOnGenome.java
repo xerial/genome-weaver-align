@@ -33,9 +33,12 @@ import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandler;
+import org.xerial.util.log.Logger;
 
 public class FMIndexOnGenome
 {
+    private static Logger           _logger = Logger.getLogger(FMIndexOnGenome.class);
+
     public final FMIndex            fmIndexF;
     public final FMIndex            fmIndexR;
     private final SparseSuffixArray saF;
@@ -95,8 +98,8 @@ public class FMIndexOnGenome
     }
 
     public void toGenomeCoordinate(AlignmentSA result, ObjectHandler<AlignmentRecord> reporter) throws Exception {
-        //            if (_logger.isTraceEnabled())
-        BWAlign._logger.info(SilkLens.toSilk("alignment", result));
+        if (_logger.isTraceEnabled())
+            _logger.info(SilkLens.toSilk("alignment", result));
 
         final long querySize = result.common.query.textSize();
 

@@ -49,11 +49,11 @@ public class ReadSequenceReaderFactory
         String prefix = inputFile;
         InputStream in = new FileInputStream(inputFile);
         if (gzipped) {
-            prefix = inputFile.replace(".gz$", "");
+            prefix = inputFile.replaceAll("\\.gz$", "");
             in = new GZIPInputStream(in);
         }
         if (snapped) {
-            prefix = inputFile.replace(".snap$", "");
+            prefix = inputFile.replaceAll("\\.snap$", "");
             in = new SnappyInputStream(in);
         }
 
