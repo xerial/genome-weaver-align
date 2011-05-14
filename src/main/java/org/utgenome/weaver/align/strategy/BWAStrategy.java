@@ -102,7 +102,7 @@ public class BWAStrategy
                 SuffixInterval next = fmIndex.backwardSearch(current.strand, nextBase, current.suffixInterval);
                 if (next.isValidRange()) {
                     // Search for insertion
-                    if (current.wordIndex > 0 && current.wordIndex < seq.textSize() - 2) {
+                    if (current.wordIndex > 0 && current.wordIndex < seq.textSize() - 1) {
                         alignmentQueue.add(current.extendWithInsertion(config));
                     }
                     if ((nextBase.bitFlag & currentBase.bitFlag) != 0) {
