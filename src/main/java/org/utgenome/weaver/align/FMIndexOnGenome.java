@@ -25,7 +25,6 @@
 package org.utgenome.weaver.align;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 
 import org.utgenome.UTGBException;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
@@ -43,14 +42,16 @@ public class FMIndexOnGenome
     public final FMIndex            fmIndexR;
     private final SparseSuffixArray saF;
     private final SparseSuffixArray saR;
-    //private final WaveletArray      wvF;
-    //private final WaveletArray      wvR;
+    private WaveletArray            wvF;
+    private WaveletArray            wvR;
     private final SequenceBoundary  index;
 
     private final long              N;
     private final int               K;
 
-    public FMIndexOnGenome(String fastaFilePrefix) throws UTGBException, IOException {
+    public FMIndexOnGenome(String fastaFilePrefix, boolean useWavelet) throws UTGBException, IOException {
+
+        _logger.info("Preparing FM-indexes");
         BWTFiles forwardDB = new BWTFiles(fastaFilePrefix, Strand.FORWARD);
         BWTFiles reverseDB = new BWTFiles(fastaFilePrefix, Strand.REVERSE);
 
@@ -64,34 +65,30 @@ public class FMIndexOnGenome
         saF = SparseSuffixArray.loadFrom(forwardDB.sparseSuffixArray());
         saR = SparseSuffixArray.loadFrom(reverseDB.sparseSuffixArray());
 
-        //        {
-        //            // Load Wavelet arrays
-        //            BWAlign._logger.info("Loading a Wavelet array of the forward BWT");
-        //            wvF = WaveletArray.loadFrom(forwardDB.bwtWavelet());
-        //            BWAlign._logger.info("Loading a Wavelet array of the reverse BWT");
-        //            wvR = WaveletArray.loadFrom(reverseDB.bwtWavelet());
-        //            
-        //            // Prepare FM-indexes
-        //            fmIndexF = new FMIndexOnWaveletArray(wvF);
-        //            fmIndexR = new FMIndexOnWaveletArray(wvR);
-        //        }
-        {
+        if (useWavelet) {
+            // Load Wavelet arrays
+            BWAlign._logger.info("Loading a Wavelet array of the forward BWT");
+            wvF = WaveletArray.loadFrom(forwardDB.bwtWavelet());
+            BWAlign._logger.info("Loading a Wavelet array of the reverse BWT");
+            wvR = WaveletArray.loadFrom(reverseDB.bwtWavelet());
+
+            // Prepare FM-indexes
+            fmIndexF = new FMIndexOnWaveletArray(wvF);
+            fmIndexR = new FMIndexOnWaveletArray(wvR);
+        }
+        else {
             IUPACSequence seqF = IUPACSequence.loadFrom(forwardDB.bwt());
             IUPACSequence seqR = IUPACSequence.loadFrom(reverseDB.bwt());
             int windowSize = 32;
             fmIndexF = new FMIndexOnOccTable(seqF, windowSize);
             fmIndexR = new FMIndexOnOccTable(seqR, windowSize);
         }
-
+        _logger.info("done.");
     }
 
     public SuffixInterval backwardSearch(Strand strand, IUPAC nextBase, SuffixInterval si) {
         FMIndex fm = strand == Strand.FORWARD ? fmIndexR : fmIndexF;
         return fm.backwardSearch(nextBase, si);
-    }
-
-    public void outputSAMHeader(PrintWriter out) {
-        out.print(index.toSAMHeader());
     }
 
     public long toForwardSequenceIndex(long saIndex, Strand strand) {

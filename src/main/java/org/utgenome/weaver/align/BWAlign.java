@@ -37,6 +37,7 @@ import org.utgenome.weaver.align.record.ReadSequenceReaderFactory;
 import org.utgenome.weaver.align.strategy.BWAStrategy;
 import org.xerial.util.ObjectHandler;
 import org.xerial.util.ObjectHandlerBase;
+import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
 import org.xerial.util.opt.Option;
@@ -67,34 +68,39 @@ public class BWAlign extends GenomeWeaverCommand
     }
 
     @Argument(index = 0)
-    private String fastaFilePrefix;
+    private String  fastaFilePrefix;
 
     @Argument(index = 1)
-    private String readFile;
+    private String  readFile;
 
     @Option(symbol = "q", description = "query sequence")
-    private String query;
+    private String  query;
 
     //    @Option(longName = "sam", description = "output in SAM format")
     //    public boolean outputSAM           = false;
 
+    @Option(symbol = "w", description = "use wavelet-array")
+    private boolean useWaveletArray     = false;
+
     @Option(symbol = "N", description = "Num mismatches allowed. default=0")
-    public int     numMismachesAllowed = 0;
+    public int      numMismachesAllowed = 0;
 
     public static class SAMOutput implements ObjectHandler<AlignmentRecord>
     {
 
-        FMIndexOnGenome fmIndex;
-        PrintWriter     out;
+        FMIndexOnGenome  fmIndex;
+        PrintWriter      out;
+        SequenceBoundary boundary;
+        int              count = 0;
 
-        public SAMOutput(FMIndexOnGenome fmIndex, OutputStream out) {
-            this.fmIndex = fmIndex;
+        public SAMOutput(SequenceBoundary sequenceBoundary, OutputStream out) {
+            this.boundary = sequenceBoundary;
             this.out = new PrintWriter(new OutputStreamWriter(out));
         }
 
         @Override
         public void init() throws Exception {
-            fmIndex.outputSAMHeader(out);
+            out.print(boundary.toSAMHeader());
         }
 
         @Override
@@ -123,9 +129,10 @@ public class BWAlign extends GenomeWeaverCommand
             reader = ReadSequenceReaderFactory.createReader(readFile);
         }
 
-        FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix);
-        SAMOutput samOutput = new SAMOutput(fmIndex, new StandardOutputStream());
-        query(fmIndex, reader, samOutput);
+        BWTFiles forwardDB = new BWTFiles(fastaFilePrefix, Strand.FORWARD);
+        SequenceBoundary b = SequenceBoundary.loadSilk(forwardDB.pacIndex());
+        SAMOutput samOutput = new SAMOutput(b, new StandardOutputStream());
+        query(fastaFilePrefix, useWaveletArray, reader, samOutput);
     }
 
     private static class GenomeCoordinateConverter extends ObjectHandlerBase<AlignmentSA>
@@ -146,26 +153,34 @@ public class BWAlign extends GenomeWeaverCommand
 
     }
 
-    public static void query(final FMIndexOnGenome fmIndex, ReadSequenceReader readReader,
+    public static void query(String fastaFilePrefix, boolean useWavelet, ReadSequenceReader readReader,
             final ObjectHandler<AlignmentRecord> handler) throws Exception {
 
         handler.init();
+        final FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix, useWavelet);
         final BWAStrategy aligner = new BWAStrategy(fmIndex);
         readReader.parse(new ObjectHandlerBase<RawRead>() {
+            int       count = 0;
+            StopWatch timer = new StopWatch();
+
             @Override
             public void handle(final RawRead input) throws Exception {
                 aligner.align(input, new GenomeCoordinateConverter(fmIndex, handler));
+                count++;
+                double time = timer.getElapsedTime();
+                if (count % 10000 == 0) {
+                    _logger.info(String.format("%,d reads are processed in %.2f sec.", count, time));
+                }
             };
         });
         handler.finish();
 
     }
 
-    public static void querySingle(String fastaFilePrefix, final String query,
+    public static void querySingle(String fastaFilePrefix, boolean useWavelet, final String query,
             final ObjectHandler<AlignmentRecord> resultHandler) throws Exception {
 
-        final FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix);
-        query(fmIndex, ReadSequenceReaderFactory.singleQueryReader(query), resultHandler);
+        query(fastaFilePrefix, useWavelet, ReadSequenceReaderFactory.singleQueryReader(query), resultHandler);
     }
 
 }
