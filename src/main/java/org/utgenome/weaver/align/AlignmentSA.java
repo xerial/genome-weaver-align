@@ -114,12 +114,10 @@ public class AlignmentSA implements Comparable<AlignmentSA>
     public final SuffixInterval         suffixInterval;
     public final int                    numMismatches;
     public final int                    alignmentScore;
-    public final MismatchPosition       mismatchPosition;
     public final List<Gap>              gapPosition;
 
     private AlignmentSA(CommonInfo common, Strand strand, int wordIndex, AlignmentSA.IndelState indel,
-            SuffixInterval suffixInterval, int numMismatches, int alignmentScore, MismatchPosition mismatchPosition,
-            List<Gap> gapPosition) {
+            SuffixInterval suffixInterval, int numMismatches, int alignmentScore, List<Gap> gapPosition) {
         this.common = common;
         this.strand = strand;
         this.wordIndex = wordIndex;
@@ -127,7 +125,6 @@ public class AlignmentSA implements Comparable<AlignmentSA>
         this.suffixInterval = suffixInterval;
         this.numMismatches = numMismatches;
         this.alignmentScore = alignmentScore;
-        this.mismatchPosition = mismatchPosition;
         this.gapPosition = gapPosition;
     }
 
@@ -160,22 +157,15 @@ public class AlignmentSA implements Comparable<AlignmentSA>
 
     public AlignmentSA extendWithMatch(SuffixInterval next, AlignmentScoreConfig config) {
         return new AlignmentSA(common, strand, this.wordIndex + 1, IndelState.NORMAL, next, numMismatches,
-                alignmentScore + config.matchScore, mismatchPosition, gapPosition);
+                alignmentScore + config.matchScore, gapPosition);
     }
 
     public AlignmentSA extendWithMisMatch(SuffixInterval next, AlignmentScoreConfig config) {
-        MismatchPosition newMM;
-        if (mismatchPosition == null)
-            newMM = MismatchPosition.oneBitInstance((int) (common.query.textSize() - 1), wordIndex + 1);
-        else
-            newMM = mismatchPosition.copyAndSet(wordIndex + 1);
-
         return new AlignmentSA(common, strand, this.wordIndex + 1, IndelState.NORMAL, next, numMismatches + 1,
-                alignmentScore - config.mismatchPenalty, newMM, gapPosition);
+                alignmentScore - config.mismatchPenalty, gapPosition);
     }
 
     public AlignmentSA extendWithDeletion(AlignmentScoreConfig config) {
-
         ArrayList<Gap> newGapPosition = new ArrayList<Gap>();
 
         int newScore = alignmentScore;
@@ -194,7 +184,7 @@ public class AlignmentSA implements Comparable<AlignmentSA>
             newGapPosition.add(new Deletion(wordIndex + 1, 1));
         }
         return new AlignmentSA(common, strand, this.wordIndex, IndelState.DELETION, suffixInterval, numMismatches + 1,
-                newScore, mismatchPosition, newGapPosition);
+                newScore, newGapPosition);
     }
 
     public AlignmentSA extendWithInsertion(AlignmentScoreConfig config) {
@@ -215,12 +205,12 @@ public class AlignmentSA implements Comparable<AlignmentSA>
             newGapPosition.add(new Insertion(wordIndex + 1, 1));
         }
         return new AlignmentSA(common, strand, this.wordIndex + 1, IndelState.INSERTION, suffixInterval,
-                numMismatches + 1, alignmentScore - config.gapExtentionPenalty, mismatchPosition, newGapPosition);
+                numMismatches + 1, alignmentScore - config.gapExtentionPenalty, newGapPosition);
     }
 
     public static AlignmentSA initialState(String queryName, IUPACSequence seq, Strand strand, long textSize) {
         return new AlignmentSA(new CommonInfo(queryName, seq), strand, 0, IndelState.NORMAL, new SuffixInterval(0,
-                textSize - 1), 0, 0, null, null);
+                textSize - 1), 0, 0, null);
     }
 
     @Override

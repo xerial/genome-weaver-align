@@ -43,8 +43,8 @@ public class FMIndexOnGenome
     public final FMIndex            fmIndexR;
     private final SparseSuffixArray saF;
     private final SparseSuffixArray saR;
-    private final WaveletArray      wvF;
-    private final WaveletArray      wvR;
+    //private final WaveletArray      wvF;
+    //private final WaveletArray      wvR;
     private final SequenceBoundary  index;
 
     private final long              N;
@@ -64,15 +64,25 @@ public class FMIndexOnGenome
         saF = SparseSuffixArray.loadFrom(forwardDB.sparseSuffixArray());
         saR = SparseSuffixArray.loadFrom(reverseDB.sparseSuffixArray());
 
-        // Load Wavelet arrays
-        BWAlign._logger.info("Loading a Wavelet array of the forward BWT");
-        wvF = WaveletArray.loadFrom(forwardDB.bwtWavelet());
-        BWAlign._logger.info("Loading a Wavelet array of the reverse BWT");
-        wvR = WaveletArray.loadFrom(reverseDB.bwtWavelet());
+        //        {
+        //            // Load Wavelet arrays
+        //            BWAlign._logger.info("Loading a Wavelet array of the forward BWT");
+        //            wvF = WaveletArray.loadFrom(forwardDB.bwtWavelet());
+        //            BWAlign._logger.info("Loading a Wavelet array of the reverse BWT");
+        //            wvR = WaveletArray.loadFrom(reverseDB.bwtWavelet());
+        //            
+        //            // Prepare FM-indexes
+        //            fmIndexF = new FMIndexOnWaveletArray(wvF);
+        //            fmIndexR = new FMIndexOnWaveletArray(wvR);
+        //        }
+        {
+            IUPACSequence seqF = IUPACSequence.loadFrom(forwardDB.bwt());
+            IUPACSequence seqR = IUPACSequence.loadFrom(reverseDB.bwt());
+            int windowSize = 32;
+            fmIndexF = new FMIndexOnOccTable(seqF, windowSize);
+            fmIndexR = new FMIndexOnOccTable(seqR, windowSize);
+        }
 
-        // Prepare FM-indexes
-        fmIndexF = new FMIndex(wvF);
-        fmIndexR = new FMIndex(wvR);
     }
 
     public SuffixInterval backwardSearch(Strand strand, IUPAC nextBase, SuffixInterval si) {

@@ -42,4 +42,22 @@ public class SuffixInterval
     public String toString() {
         return String.format("[%,d, %,d]", lowerBound, upperBound);
     }
+
+    @Override
+    public int hashCode() {
+        int h = 3;
+        h += lowerBound * 17;
+        h += upperBound * 17;
+        return h % 1973;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof SuffixInterval) {
+            SuffixInterval other = SuffixInterval.class.cast(obj);
+            return lowerBound == other.lowerBound && upperBound == other.upperBound;
+        }
+        else
+            return false;
+    }
 }

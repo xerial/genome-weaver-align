@@ -41,7 +41,7 @@ public class OccurrenceCountTable
 
     private ArrayList<int[]>    occTable;
     private final IUPACSequence seq;
-    private int                 W;
+    private final int           W;
 
     /**
      * Create a character occurrence count table. This class saves the

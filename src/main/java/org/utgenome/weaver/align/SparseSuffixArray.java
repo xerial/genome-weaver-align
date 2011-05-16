@@ -56,7 +56,7 @@ public class SparseSuffixArray
     }
 
     public static SparseSuffixArray createFromWaveletBWT(WaveletArray W, int suffixInterval) {
-        FMIndex F = new FMIndex(W);
+        FMIndex F = new FMIndexOnWaveletArray(W);
 
         final long N = W.textSize();
         final long sparseSA_length = (N + suffixInterval - 1) / suffixInterval;

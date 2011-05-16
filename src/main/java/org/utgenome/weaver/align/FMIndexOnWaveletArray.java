@@ -16,8 +16,8 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// FMIndex.java
-// Since: 2011/02/12
+// FMIndexOnWaveletArray.java
+// Since: 2011/05/16
 //
 // $URL$ 
 // $Author$
@@ -26,17 +26,25 @@ package org.utgenome.weaver.align;
 
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 
-/**
- * Text-search index based on BWT string
- * 
- * @author leo
- * 
- */
-public interface FMIndex
+public class FMIndexOnWaveletArray implements FMIndex
 {
-    public SuffixInterval backwardSearch(IUPAC ch, SuffixInterval current);
+    private final WaveletArray   W;
+    private final CharacterCount C;
 
-    public CharacterCount getCharacterCount();
+    public FMIndexOnWaveletArray(WaveletArray W) {
+        this.W = W;
+        this.C = new CharacterCount(W);
+    }
+
+    public CharacterCount getCharacterCount() {
+        return C;
+    }
+
+    public SuffixInterval backwardSearch(IUPAC ch, SuffixInterval current) {
+        long lowerBound = C.getCharacterCountSmallerThan(ch) + W.rank(ch.bitFlag, current.lowerBound);
+        long upperBound = C.getCharacterCountSmallerThan(ch) + W.rank(ch.bitFlag, current.upperBound + 1) - 1;
+        return new SuffixInterval(lowerBound, upperBound);
+    }
 
     /**
      * Follow the suffix link using the equation: SA[x] - 1 = C(x) + Rank(c, x).
@@ -45,7 +53,16 @@ public interface FMIndex
      *            index x in the suffix array
      * @return index p in the suffix array that satisfies SA[p] = SA[x] - 1.
      */
-    public long suffixLink(long index);
+    public long suffixLink(long index) {
+        if (index >= W.textSize()) { // If the index reaches the sentinel 
+            return 0; // Return the smallest SA index
+        }
+        IUPAC c = IUPAC.decode((byte) W.lookup(index));
+        return C.getCharacterCountSmallerThan(c) + W.rank(c.bitFlag, index);
+    }
 
-    public long textSize();
+    public long textSize() {
+        return W.textSize();
+    }
+
 }

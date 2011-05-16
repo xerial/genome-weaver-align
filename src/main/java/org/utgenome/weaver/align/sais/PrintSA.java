@@ -29,6 +29,7 @@ import java.io.StringWriter;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.utgenome.weaver.align.BWTransform;
 import org.utgenome.weaver.align.FMIndex;
+import org.utgenome.weaver.align.FMIndexOnWaveletArray;
 import org.utgenome.weaver.align.GenomeWeaverCommand;
 import org.utgenome.weaver.align.IUPACSequence;
 import org.utgenome.weaver.align.LSeq;
@@ -82,7 +83,7 @@ public class PrintSA extends GenomeWeaverCommand
 
         WaveletArray wv = new WaveletArray(bwt, K);
         SparseSuffixArray ssa = SparseSuffixArray.buildFromSuffixArray(SA, 32);
-        FMIndex fmIndex = new FMIndex(wv);
+        FMIndex fmIndex = new FMIndexOnWaveletArray(wv);
 
         for (int i = 0; i < SA.textSize(); ++i) {
             int sa = (int) SA.lookup(i);

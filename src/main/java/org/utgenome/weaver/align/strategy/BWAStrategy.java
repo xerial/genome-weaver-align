@@ -27,7 +27,6 @@ import org.xerial.util.ObjectHandler;
 public class BWAStrategy
 {
     private final FMIndexOnGenome      fmIndex;
-
     private final int                  numMismatchesAllowed = 1;
     private final AlignmentScoreConfig config               = new AlignmentScoreConfig();
     private final ArrayList<IUPAC>     lettersInGenome      = new ArrayList<IUPAC>();
@@ -116,6 +115,11 @@ public class BWAStrategy
                 }
             }
         }
-
     }
+
+    private void addToQueue(PriorityQueue<AlignmentSA> queue, AlignmentSA newState) {
+
+        queue.add(newState);
+    }
+
 }
