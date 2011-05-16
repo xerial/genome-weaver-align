@@ -92,6 +92,23 @@ public class BWAStrategy
                 continue;
             }
 
+            // search for exact match 
+            {
+                int remainingMM = numMismatchesAllowed - current.numMismatches;
+                if (current.wordIndex == 0 || remainingMM == 0) {
+                    SuffixInterval si = alignExact(current.common.query, current.strand);
+                    if (si != null) {
+                        alignmentQueue.add(current.extendWithMatch(si,
+                                (int) (current.common.query.textSize() - current.wordIndex), config));
+                        continue;
+                    }
+                    else {
+                        if (remainingMM == 0)
+                            continue;
+                    }
+                }
+            }
+
             // Search for deletion
             alignmentQueue.add(current.extendWithDeletion(config));
 
@@ -115,6 +132,22 @@ public class BWAStrategy
                 }
             }
         }
+    }
+
+    public SuffixInterval alignExact(IUPACSequence seq, Strand strand) {
+
+        SuffixInterval si = new SuffixInterval(0, fmIndex.fmIndexF.textSize());
+
+        for (int wordIndex = 0; wordIndex < seq.textSize(); ++wordIndex) {
+            IUPAC currentBase = seq.getIUPAC(wordIndex);
+            SuffixInterval next = fmIndex.backwardSearch(strand, currentBase, si);
+            if (!next.isValidRange()) {
+                return null;
+            }
+            si = next;
+        }
+
+        return si;
     }
 
     private void addToQueue(PriorityQueue<AlignmentSA> queue, AlignmentSA newState) {

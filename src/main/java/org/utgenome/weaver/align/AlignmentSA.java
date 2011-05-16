@@ -155,6 +155,11 @@ public class AlignmentSA implements Comparable<AlignmentSA>
         return cigar;
     }
 
+    public AlignmentSA extendWithMatch(SuffixInterval next, int length, AlignmentScoreConfig config) {
+        return new AlignmentSA(common, strand, this.wordIndex + length, IndelState.NORMAL, next, numMismatches,
+                alignmentScore + (config.matchScore * length), gapPosition);
+    }
+
     public AlignmentSA extendWithMatch(SuffixInterval next, AlignmentScoreConfig config) {
         return new AlignmentSA(common, strand, this.wordIndex + 1, IndelState.NORMAL, next, numMismatches,
                 alignmentScore + config.matchScore, gapPosition);
