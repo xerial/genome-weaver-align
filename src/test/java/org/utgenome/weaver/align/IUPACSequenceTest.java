@@ -28,10 +28,13 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
+import org.xerial.util.log.Logger;
 
 public class IUPACSequenceTest
 {
-    private final String orig = "YGYYYCGCADBACGTNKRWVHT";
+    private static Logger _logger = Logger.getLogger(IUPACSequenceTest.class);
+
+    private final String  orig    = "YGYYYCGCADBACGTNKRWVHT";
 
     @Test
     public void constructor() throws Exception {
@@ -64,6 +67,18 @@ public class IUPACSequenceTest
             IUPAC cr = r.getIUPAC(i);
             assertEquals(c.complement(), cr);
         }
+    }
+
+    @Test
+    public void fastCount() throws Exception {
+        IUPACSequence s = new IUPACSequence(orig);
+        for (IUPAC c : IUPAC.values()) {
+            for (int x = 0; x < s.textSize(); x++) {
+                for (int y = x; y < s.textSize(); y++)
+                    assertEquals(String.format("code:%s, s=%d, e=%d", c, x, y), s.count(c, x, y), s.fastCount(c, x, y));
+            }
+        }
+
     }
 
 }

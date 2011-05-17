@@ -219,10 +219,78 @@ public class IUPACSequence implements LSeq
         return b.toString();
     }
 
+    public long count(IUPAC code, long start, long end) {
+        long count = 0;
+        for (long i = start; i < end; ++i) {
+            if (lookup(i) == code.bitFlag)
+                count++;
+        }
+        return count;
+    }
+
+    /**
+     * Count the number of occurrence of the code within the specified range
+     * 
+     * @param code
+     * @param start
+     * @param end
+     * @return
+     */
+    public long fastCount(IUPAC code, long start, long end) {
+        long count = 0;
+        if (start < end && start % 2 != 0) {
+            if (lookup(start) == code.bitFlag)
+                count++;
+            start++;
+        }
+
+        long cursor = start;
+        for (; cursor + 16 < end; cursor += 16) {
+            int pos = (int) (start >>> 1);
+            long v = 0;
+            for (int i = 0; i < 8; ++i) {
+                v <<= 8;
+                v |= seq[pos + i] & 0xFF;
+            }
+
+            long r = ~0L;
+            for (int k = 0; k < 4; ++k) {
+                long mask = ((code.bitFlag & (0x08 >>> k)) == 0 ? ~v : v) << k;
+                long flag = 0x8888888888888888L;
+                long hit = mask & flag;
+                r &= hit;
+            }
+            count += countOneBit(r);
+        }
+
+        for (; cursor < end; cursor++) {
+            if (lookup(cursor) == code.bitFlag)
+                count++;
+        }
+        return count;
+    }
+
+    /**
+     * Count the number of 1s in the input. See also the Hacker's Delight:
+     * http://hackers-delight.org.ua/038.htm
+     * 
+     * @param x
+     * @return the number of 1-bit in the input x
+     */
+    public static long countOneBit(long x) {
+        x = (x & 0x5555555555555555L) + ((x >>> 1) & 0x5555555555555555L);
+        x = (x & 0x3333333333333333L) + ((x >>> 2) & 0x3333333333333333L);
+        x = (x + (x >>> 4)) & 0x0F0F0F0F0F0F0F0FL;
+        x = x + (x >>> 8);
+        x = x + (x >>> 16);
+        x = x + (x >>> 32);
+        return x & 0x7FL;
+    }
+
     @Override
     public long lookup(long index) {
         int pos = (int) (index >>> 1);
-        int shift = (index % 2 == 0) ? 4 : 0;
+        int shift = 4 * (1 - (int) (index & 1));
         return ((seq[pos] >>> shift) & 0x0F);
     }
 
