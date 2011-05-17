@@ -26,6 +26,8 @@ package org.utgenome.weaver.align;
 
 import static org.junit.Assert.*;
 
+import java.util.Random;
+
 import org.junit.Test;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.xerial.util.log.Logger;
@@ -71,7 +73,13 @@ public class IUPACSequenceTest
 
     @Test
     public void fastCount() throws Exception {
-        IUPACSequence s = new IUPACSequence(orig);
+        Random r = new Random(0);
+        StringBuilder seq = new StringBuilder();
+        for (int i = 0; i < 69; ++i) {
+            seq.append(IUPAC.decode((byte) (r.nextInt(15) + 1)).toString());
+        }
+
+        IUPACSequence s = new IUPACSequence(seq.toString());
         for (IUPAC c : IUPAC.values()) {
             for (int x = 0; x < s.textSize(); x++) {
                 for (int y = x; y < s.textSize(); y++)
