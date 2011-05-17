@@ -79,7 +79,7 @@ public class FMIndexOnGenome
         else {
             IUPACSequence seqF = IUPACSequence.loadFrom(forwardDB.bwt());
             IUPACSequence seqR = IUPACSequence.loadFrom(reverseDB.bwt());
-            int windowSize = 32;
+            int windowSize = 64;
             fmIndexF = new FMIndexOnOccTable(seqF, windowSize);
             fmIndexR = new FMIndexOnOccTable(seqR, windowSize);
         }

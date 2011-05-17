@@ -238,15 +238,15 @@ public class IUPACSequence implements LSeq
      */
     public long fastCount(IUPAC code, long start, long end) {
         long count = 0;
-        if (start < end && start % 2 != 0) {
-            if (lookup(start) == code.bitFlag)
+        long cursor = start;
+        if (cursor < end && cursor % 2 != 0) {
+            if (lookup(cursor) == code.bitFlag)
                 count++;
-            start++;
+            cursor++;
         }
 
-        long cursor = start;
         for (; cursor + 16 < end; cursor += 16) {
-            int pos = (int) (start >>> 1);
+            int pos = (int) (cursor >>> 1);
             long v = 0;
             for (int i = 0; i < 8; ++i) {
                 v <<= 8;

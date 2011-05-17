@@ -98,11 +98,13 @@ public class OccurrenceCountTable
         int occ = blockPos <= 0 ? 0 : occTable.get(code.bitFlag)[(int) (blockPos - 1)];
         final long upperLimit = Math.min(index, seq.textSize() - 1);
         // TODO use bit count 
-        for (int i = (int) blockPos * W; i <= upperLimit; i++) {
-            if (seq.getIUPAC(i) == code) {
-                occ++;
-            }
-        }
+        //        for (int i = (int) blockPos * W; i <= upperLimit; i++) {
+        //            if (seq.getIUPAC(i) == code) {
+        //                occ++;
+        //            }
+        //        }
+        //occ += seq.count(code, blockPos * W, upperLimit + 1);
+        occ += seq.fastCount(code, blockPos * W, upperLimit + 1);
         return occ;
     }
 
