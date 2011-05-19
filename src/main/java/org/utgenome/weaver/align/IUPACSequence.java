@@ -248,6 +248,7 @@ public class IUPACSequence implements LSeq
         for (; cursor + 16 < end; cursor += 16) {
             int pos = (int) (cursor >>> 1);
             long v = 0;
+            // Fill a long value from the byte array [pos, ... pos+8)
             for (int i = 0; i < 8; ++i) {
                 v <<= 8;
                 v |= seq[pos + i] & 0xFF;
@@ -255,10 +256,7 @@ public class IUPACSequence implements LSeq
 
             long r = ~0L;
             for (int k = 0; k < 4; ++k) {
-                long mask = ((code.bitFlag & (0x08 >>> k)) == 0 ? ~v : v) << k;
-                long flag = 0x8888888888888888L;
-                long hit = mask & flag;
-                r &= hit;
+                r &= (((code.bitFlag & (0x08 >>> k)) == 0 ? ~v : v) << k) & 0x8888888888888888L;
             }
             count += countOneBit(r);
         }

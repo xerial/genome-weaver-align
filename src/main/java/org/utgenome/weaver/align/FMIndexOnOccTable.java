@@ -43,8 +43,8 @@ public class FMIndexOnOccTable implements FMIndex
     }
 
     public SuffixInterval backwardSearch(IUPAC ch, SuffixInterval current) {
-        long lowerBound = C.getCharacterCountSmallerThan(ch) + occ.getOcc(ch, current.lowerBound - 1);
-        long upperBound = C.getCharacterCountSmallerThan(ch) + occ.getOcc(ch, current.upperBound) - 1;
+        long lowerBound = C.getCharacterCountSmallerThan(ch) + occ.getOcc(ch, current.lowerBound);
+        long upperBound = C.getCharacterCountSmallerThan(ch) + occ.getOcc(ch, current.upperBound + 1) - 1;
         return new SuffixInterval(lowerBound, upperBound);
     }
 
@@ -60,7 +60,7 @@ public class FMIndexOnOccTable implements FMIndex
             return 0; // Return the smallest SA index
         }
         IUPAC c = IUPAC.decode((byte) seq.lookup(index));
-        return C.getCharacterCountSmallerThan(c) + occ.getOcc(c, index - 1);
+        return C.getCharacterCountSmallerThan(c) + occ.getOcc(c, index);
     }
 
     public long textSize() {

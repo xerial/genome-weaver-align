@@ -24,6 +24,12 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+/**
+ * Interface for large sequences
+ * 
+ * @author leo
+ * 
+ */
 public interface LSeq
 {
     public long lookup(long index);
