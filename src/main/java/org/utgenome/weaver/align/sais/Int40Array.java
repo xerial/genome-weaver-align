@@ -38,14 +38,14 @@ import org.utgenome.weaver.align.LSeq;
  */
 public class Int40Array implements LSeq, Iterable<Long>
 {
-    private static final int  B               = 30;                // bit length 
-    private static final int  CONTAINER_SIZE  = 1 << B;
-    private static final long OFFSET_MASK     = CONTAINER_SIZE - 1;
-    private static final int  LONG_BYTE_SIZE  = 8;
-    private static final int  INT40_BYTE_SIZE = 5;
-    private final long        size;
+    public static final long MAX_VALUE       = 0x7FFFFFFFFFL;
+    public static final long MIN_VALUE       = -0x7FFFFFFFFFL;
 
-    private long[]            rawArray;
+    private static final int LONG_BYTE_SIZE  = 8;
+    private static final int INT40_BYTE_SIZE = 5;
+    private final long       size;
+
+    private long[]           rawArray;
 
     public Int40Array(long size) {
         this.size = size;

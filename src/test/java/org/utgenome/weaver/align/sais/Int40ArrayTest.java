@@ -37,7 +37,7 @@ public class Int40ArrayTest
 
     @Test
     public void rangeCheck() throws Exception {
-        final long max = 0x7FFFFFFFFFL;
+        final long max = Int40Array.MAX_VALUE;
 
         Int40Array array = new Int40Array(1);
         for (long i = max - 10; i <= max; ++i) {
@@ -50,7 +50,7 @@ public class Int40ArrayTest
         array.set(0, -2);
         assertEquals(-2, array.lookup(0));
 
-        final long min = -0x7FFFFFFFFL;
+        final long min = Int40Array.MIN_VALUE;
         for (long i = min + 10; i >= min; --i) {
             array.set(0, i);
             assertEquals(i, array.lookup(0));
@@ -60,21 +60,16 @@ public class Int40ArrayTest
 
     @Test
     public void exhaustiveTest() throws Exception {
-        Int40Array array = new Int40Array(100);
-        for (long index = 0; index < 100; ++index) {
-            for (long i = -1000; i <= 1000; ++i) {
+        int N = 100;
+        Int40Array array = new Int40Array(N);
+        for (long index = 0; index < N; ++index) {
+            long split = (Int40Array.MAX_VALUE - Int40Array.MIN_VALUE) / 1001;
+            for (long i = Int40Array.MIN_VALUE; i <= Int40Array.MAX_VALUE; i += split) {
                 array.set(index, i);
                 assertEquals(String.format("array[%d]", index), i, array.lookup(index));
             }
         }
     }
-
-    //    @Test
-    //    public void moreThan2GBTest() {
-    //        long size = Integer.MAX_VALUE + 100L;
-    //        UInt32Array array = new UInt32Array(size);
-    //
-    //    }
 
     @Test
     public void performance() throws Exception {
