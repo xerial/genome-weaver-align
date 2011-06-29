@@ -27,7 +27,7 @@ PREFIX:=${HOME}/local
 INSTALL_DIR:=$(PREFIX)/genome-weaver
 
 TARGET:=target
-VERSION:=1.0-snapshot
+VERSION:=1.0-SNAPSHOT
 PACKAGE:=$(TARGET)/genome-weaver-$(VERSION)
 
 SRC:=$(shell find src)
