@@ -303,7 +303,7 @@ public class IUPACSequence implements LSeq
     }
 
     @Override
-    public long update(long i, long val) {
+    public long increment(long i, long val) {
         throw new UnsupportedOperationException("update");
     }
 

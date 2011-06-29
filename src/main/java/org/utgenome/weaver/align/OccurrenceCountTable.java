@@ -83,19 +83,22 @@ public class OccurrenceCountTable
     }
 
     /**
-     * Get the occurrence count of the specified character in seq[0..index)
+     * Get the occurrence count of the specified character contained in
+     * seq[0..index)
      * 
      * @param code
      * @param index
      * @return
      */
     public int getOcc(IUPAC code, long index) {
-        // TODO index / W must be smaller than Integer.MIN 
         long blockPos = index / W;
         if (blockPos > Integer.MAX_VALUE) {
+            // index / W must be smaller than Integer.MIN 
             throw new IllegalStateException("Occ table size cannot exceed 2^31-1");
         }
+        // Look up the occurrence count table
         int occ = blockPos <= 0 ? 0 : occTable.get(code.bitFlag)[(int) (blockPos - 1)];
+        // Count the characters using the original sequence
         final long upperLimit = Math.min(index, seq.textSize() - 1);
         occ += seq.fastCount(code, blockPos * W, upperLimit);
         return occ;

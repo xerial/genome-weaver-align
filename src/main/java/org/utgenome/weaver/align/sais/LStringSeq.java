@@ -53,7 +53,7 @@ public class LStringSeq implements LSeq
     }
 
     @Override
-    public long update(long index, long value) {
+    public long increment(long index, long value) {
         throw new UnsupportedOperationException("update");
     }
 

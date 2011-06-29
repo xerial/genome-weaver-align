@@ -16,51 +16,19 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// StringSeq.java
-// Since: 2011/04/07
+// Context.java
+// Since: 2011/05/25
 //
 // $URL$ 
 // $Author$
 //--------------------------------------
-package org.utgenome.weaver.align;
+package org.utgenome.weaver.parallel;
 
-/**
- * String wrapper
- * 
- * @author leo
- * 
- */
-public class StringSeq implements LSeq
+public class Context
 {
-    private String s;
-
-    public StringSeq(String s) {
-        this.s = s;
-    }
-
-    @Override
-    public String toString() {
-        return s;
-    }
-
-    @Override
-    public long lookup(long index) {
-        return s.charAt((int) index);
-    }
-
-    @Override
-    public long textSize() {
-        return s.length();
-    }
-
-    @Override
-    public void set(long index, long value) {
-        throw new UnsupportedOperationException("set");
-    }
-
-    @Override
-    public long increment(long index, long value) {
-        throw new UnsupportedOperationException("update");
-    }
 
 }
+
+
+
+

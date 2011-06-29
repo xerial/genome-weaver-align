@@ -26,6 +26,8 @@ package org.utgenome.weaver.align.record;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -72,6 +74,10 @@ public class ReadSequenceReaderFactory
 
     public static ReadSequenceReader createFASTQReader(BufferedReader input) {
         return new FASTQReadReader(input);
+    }
+
+    public static ReadSequenceReader createFASTQReader(String fastqFile) throws FileNotFoundException {
+        return new FASTQReadReader(new BufferedReader(new FileReader(fastqFile)));
     }
 
     public static ReadSequenceReader createFASTAReader(BufferedReader input) {

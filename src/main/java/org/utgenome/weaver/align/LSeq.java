@@ -38,6 +38,6 @@ public interface LSeq
 
     public void set(long index, long value);
 
-    public long update(long index, long value);
+    public long increment(long index, long value);
 
 }
