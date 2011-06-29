@@ -28,18 +28,16 @@ import java.io.StringWriter;
 
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.utgenome.weaver.align.BWTransform;
-import org.utgenome.weaver.align.FMIndex;
-import org.utgenome.weaver.align.FMIndexOnWaveletArray;
 import org.utgenome.weaver.align.GenomeWeaverCommand;
 import org.utgenome.weaver.align.IUPACSequence;
 import org.utgenome.weaver.align.LSeq;
-import org.utgenome.weaver.align.SparseSuffixArray;
-import org.utgenome.weaver.align.WaveletArray;
+import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
 import org.xerial.util.opt.Option;
 
 public class PrintSA extends GenomeWeaverCommand
 {
+    private static Logger _logger = Logger.getLogger(PrintSA.class);
 
     @Override
     public String name() {
@@ -68,41 +66,47 @@ public class PrintSA extends GenomeWeaverCommand
     @Override
     public void execute(String[] args) throws Exception {
 
-        IUPACSequence s = new IUPACSequence(seq, true);
+        IUPACSequence s = new IUPACSequence(seq);
         if (isReverse)
             s = s.reverse();
 
+        _logger.info("sequence: " + s);
+
         final int K = IUPAC.values().length;
 
-        //LSeq SA = new LSAIS.IntArray(new int[(int) s.textSize()], 0);
-        // LSAIS.suffixsort(s, SA, IUPAC.values().length);
-        LSeq SA = UInt32SAIS.SAIS(s, K);
+        LSeq SA = new LSAIS.IntArray(new int[(int) s.textSize()], 0);
+        LSAIS.suffixsort(s, SA, IUPAC.values().length);
+        //LSeq SA = UInt32SAIS.SAIS(s, K);
 
         IUPACSequence bwt = new IUPACSequence(s.textSize());
         BWTransform.bwt(s, SA, bwt);
 
-        WaveletArray wv = new WaveletArray(bwt, K);
-        SparseSuffixArray ssa = SparseSuffixArray.buildFromSuffixArray(SA, 32);
-        FMIndex fmIndex = new FMIndexOnWaveletArray(wv);
+        //        WaveletArray wv = new WaveletArray(bwt, K);
+        //        SparseSuffixArray ssa = SparseSuffixArray.buildFromSuffixArray(SA, 32);
+        //        FMIndex fmIndex = new FMIndexOnWaveletArray(wv);
 
         for (int i = 0; i < SA.textSize(); ++i) {
             int sa = (int) SA.lookup(i);
             //            int sa_wv = (int) ssa.get(i, fmIndex);
-            System.out.println(String.format("%3d %3d %s %s", i, sa, rotateLeft(s, sa), bwt.getIUPAC(i)));
+            IUPAC c = bwt.getIUPAC(i);
+            System.out.println(String.format("%3d %3d %s %s", i, sa, c == IUPAC.None ? "$" : c, rotateLeft(s, sa)));
         }
     }
 
     public static String rotateLeft(IUPACSequence s, int shift) {
         StringWriter w = new StringWriter();
-        for (int i = shift; i < shift + s.textSize(); ++i) {
-            if (i == s.textSize() - 1) {
+
+        long len = s.textSize() + 1;
+        for (int i = 0; i < len; ++i) {
+            int index = i + shift;
+            if (index == len - 1)
                 w.append("$");
-                continue;
+            else {
+                IUPAC c = s.getIUPAC(index % len);
+                w.append(c.name());
             }
-            int pos = (int) (i % s.textSize());
-            IUPAC c = s.getIUPAC(pos);
-            w.append(c == IUPAC.None ? "$" : c.name());
         }
+
         return w.toString();
     }
 
