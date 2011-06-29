@@ -56,7 +56,7 @@ public class LSAIS
             m_A[(int) (m_pos + i)] = (int) val;
         }
 
-        public long update(long i, long val) {
+        public long increment(long i, long val) {
             return m_A[(int) (m_pos + i)] += (int) val;
         }
 
@@ -98,8 +98,8 @@ public class LSAIS
             m_A.set(m_pos + i, val);
         }
 
-        public long update(long i, long val) {
-            return m_A.update(m_pos + i, val);
+        public long increment(long i, long val) {
+            return m_A.increment(m_pos + i, val);
         }
 
         @Override
@@ -134,7 +134,7 @@ public class LSAIS
         }
 
         @Override
-        public long update(long i, long val) {
+        public long increment(long i, long val) {
             return 0;
         }
     }
@@ -146,7 +146,7 @@ public class LSAIS
             C.set(i, 0);
         }
         for (i = 0; i < n; ++i) {
-            C.update(T.lookup(i), 1);
+            C.increment(T.lookup(i), 1);
         }
     }
 
@@ -386,7 +386,7 @@ public class LSAIS
                 if (0 <= b) {
                     SA.set(b, j);
                 }
-                b = B.update(c1, -1);
+                b = B.increment(c1, -1);
                 j = i;
                 ++m;
                 do {

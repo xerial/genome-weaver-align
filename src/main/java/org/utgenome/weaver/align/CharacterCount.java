@@ -50,10 +50,8 @@ public class CharacterCount
             IUPAC code = IUPAC.decode((byte) seq.lookup(i));
             count[code.bitFlag]++;
         }
-        // Decrement the character count for the sentinel since BWT based count contains one additional sentinel $.   
-        count[IUPAC.None.bitFlag]--;
 
-        long sum = 1; // add 1 for $ (end of string)
+        long sum = 0;
         for (int i = 0; i < K; ++i) {
             C[i] = sum;
             sum += count[i];
@@ -64,8 +62,6 @@ public class CharacterCount
         for (int i = 0; i < K; ++i) {
             count[i] = (int) W.rank(i, W.textSize());
         }
-        // Decrement the character count for the sentinel since BWT based count contains one additional sentinel.   
-        //count[IUPAC.None.bitFlag]--;
 
         long sum = 0;
         for (int i = 0; i < K; ++i) {

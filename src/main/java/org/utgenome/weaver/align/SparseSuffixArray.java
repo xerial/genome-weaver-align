@@ -45,9 +45,9 @@ import java.io.IOException;
  */
 public class SparseSuffixArray
 {
-    private final LIntArray sparseSA;
-    private final long      N;
-    private final int       L;
+    final LIntArray    sparseSA;
+    private final long N;
+    private final int  L;
 
     private SparseSuffixArray(LIntArray sparseSA, long N, int L) {
         this.sparseSA = sparseSA;
@@ -56,7 +56,7 @@ public class SparseSuffixArray
     }
 
     public static SparseSuffixArray createFromWaveletBWT(WaveletArray W, int suffixInterval) {
-        FMIndex F = new FMIndex(W);
+        FMIndex F = new FMIndexOnWaveletArray(W);
 
         final long N = W.textSize();
         final long sparseSA_length = (N + suffixInterval - 1) / suffixInterval;
@@ -112,7 +112,9 @@ public class SparseSuffixArray
         final long sparseSALength = d.readLong();
         LIntArray sparseSA = new LIntArray(sparseSALength);
         for (int i = 0; i < sparseSA.textSize(); ++i) {
-            sparseSA.set(i, 1L | d.readInt());
+            int val = d.readInt();
+            // Handle val as an uint32 integer
+            sparseSA.set(i, 0xFFFFFFFFL & val);
         }
         return new SparseSuffixArray(sparseSA, N, L);
     }

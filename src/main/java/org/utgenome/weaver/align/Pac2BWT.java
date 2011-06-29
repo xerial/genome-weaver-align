@@ -28,9 +28,8 @@ import org.utgenome.UTGBErrorCode;
 import org.utgenome.UTGBException;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
-import org.xerial.util.opt.Command;
 
-public class Pac2BWT implements Command
+public class Pac2BWT extends GenomeWeaverCommand
 {
     private static Logger _logger = Logger.getLogger(Pac2BWT.class);
 

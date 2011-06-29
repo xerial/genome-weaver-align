@@ -39,9 +39,8 @@ import org.xerial.lens.SilkLens;
 import org.xerial.silk.SilkWriter;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
-import org.xerial.util.opt.Command;
 
-public class Fasta2IUPAC implements Command
+public class Fasta2IUPAC extends GenomeWeaverCommand
 {
     private static Logger _logger = Logger.getLogger(Fasta2IUPAC.class);
 
@@ -105,25 +104,22 @@ public class Fasta2IUPAC implements Command
                                     base, lineCount, i + 1));
                             iupac = IUPAC.N;
                         }
-
                         encoder.append(iupac);
                     }
                 }
-
                 long pos = encoder.size();
                 long sequenceSize = pos - offset;
                 SequenceIndex index = new SequenceIndex(seqName, desc, sequenceSize, offset);
                 indexOut.leafObject("index", index);
                 _logger.debug("\n" + SilkLens.toSilk("index", index));
-
-                // This part ensure the sequence size (including sentinel $) becomes 2n, which fits in a byte array 
-                if (encoder.size() % 2 == 0)
-                    encoder.append(IUPAC.N);
-                // append a sentinel
-                encoder.append(IUPAC.None);
-
                 offset = encoder.size();
             }
+            // This part ensure the sequence size (including sentinel $) becomes 2n, which fits in a byte array 
+            if (encoder.size() % 2 == 0)
+                encoder.append(IUPAC.N);
+            // append a sentinel
+            encoder.append(IUPAC.None);
+
             encoder.close();
             totalSize = encoder.size();
             _logger.info(String.format("total num bases: %,d", totalSize));
@@ -141,7 +137,11 @@ public class Fasta2IUPAC implements Command
         IUPACSequenceWriter encoder = new IUPACSequenceWriter(new BufferedOutputStream(new FileOutputStream(
                 reverseDB.iupac())));
         // reverse IN[0..n-2] (excludes the sentinel)
-        for (long i = forwardSeq.textSize() - 2; i >= 0; --i) {
+        long i = forwardSeq.textSize() - 2;
+        //        if (forwardSeq.getIUPAC(i) == IUPAC.N) {
+        //            i--;
+        //        }
+        for (; i >= 0; --i) {
             encoder.append(forwardSeq.getIUPAC(i));
         }
         // append a sentinel.

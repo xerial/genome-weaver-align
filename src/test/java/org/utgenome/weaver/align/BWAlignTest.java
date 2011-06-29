@@ -27,13 +27,16 @@ package org.utgenome.weaver.align;
 import static org.junit.Assert.*;
 
 import java.io.File;
+import java.util.HashMap;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.utgenome.format.fasta.FASTAPullParser;
+import org.utgenome.format.fasta.FASTASequence;
 import org.utgenome.util.TestHelper;
 import org.utgenome.weaver.GenomeWeaver;
-import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
+import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandlerBase;
 import org.xerial.util.log.Logger;
@@ -76,24 +79,86 @@ public class BWAlignTest
 
     @Test
     public void align3() throws Exception {
-        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "test2.fa", new File(tmpDir, "test.fa"));
+        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "test2.fa", new File(tmpDir, "test2.fa"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
 
-        BWAlign.query(fastaArchive.getPath(), "ATACTTTA", new ObjectHandlerBase<PosOnGenome>() {
+        BWAlign.querySingle(fastaArchive.getPath(), false, "TAAAGTAT", new ObjectHandlerBase<AlignmentRecord>() {
             @Override
-            public void handle(PosOnGenome input) throws Exception {
+            public void handle(AlignmentRecord input) throws Exception {
                 _logger.info(SilkLens.toSilk(input));
-                assertEquals("seq", input.chr);
-                assertEquals(9, input.pos);
+                assertEquals("seq2", input.chr);
+                assertEquals(Strand.REVERSE, input.strand);
+                assertEquals(9, input.start);
+                assertEquals(17, input.end); // 1-origin
             }
         });
 
-        BWAlign.query(fastaArchive.getPath(), "TAAAGTAT", new ObjectHandlerBase<PosOnGenome>() {
+        BWAlign.querySingle(fastaArchive.getPath(), false, "ATACTTTA", new ObjectHandlerBase<AlignmentRecord>() {
             @Override
-            public void handle(PosOnGenome input) throws Exception {
+            public void handle(AlignmentRecord input) throws Exception {
                 _logger.info(SilkLens.toSilk(input));
-                assertEquals("seq", input.chr);
-                assertEquals(9, input.pos);
+                assertEquals("seq2", input.chr);
+                assertEquals(Strand.FORWARD, input.strand);
+                assertEquals(9, input.start); // 1-origin
+                assertEquals(17, input.end); // 1-origin
+            }
+        });
+
+    }
+
+    @Test
+    public void fastqGZ() throws Exception {
+        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "test2.fa", new File(tmpDir, "test2.fa"));
+        GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+        File fastqArchive = TestHelper.createTempFileFrom(BWTTest.class, "record/sample.fastq.gz", new File(tmpDir,
+                "sample.fastq.gz"));
+        GenomeWeaver.execute(String.format("align %s %s", fastaArchive, fastqArchive));
+    }
+
+    @Test
+    public void sample() throws Exception {
+        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "sample.fa", new File(tmpDir, "sample.fa"));
+        GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+
+        FASTAPullParser fa = new FASTAPullParser(fastaArchive);
+        final FASTASequence seq = fa.nextSequence();
+        fa.close();
+
+        BWAlign.querySingle(fastaArchive.getPath(), false, "TTTCAG", new ObjectHandlerBase<AlignmentRecord>() {
+            @Override
+            public void handle(AlignmentRecord input) throws Exception {
+                _logger.debug(SilkLens.toSilk(input));
+                String s = seq.getSequence().substring(input.start - 1, input.end - 1);
+                if (input.numMismatches == 0)
+                    assertEquals(String.format("strand:%s query:%s ref:%s", input.strand, input.querySeq, s), s,
+                            input.querySeq);
+            }
+        });
+
+    }
+
+    @Test
+    public void sample2() throws Exception {
+        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "sample2.fa", new File(tmpDir, "sample2.fa"));
+        GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+
+        FASTAPullParser fa = new FASTAPullParser(fastaArchive);
+        FASTASequence seq;
+        final HashMap<String, String> seqMap = new HashMap<String, String>();
+        while ((seq = fa.nextSequence()) != null) {
+            seqMap.put(seq.getSequenceName(), seq.getSequence());
+        }
+
+        fa.close();
+
+        BWAlign.querySingle(fastaArchive.getPath(), false, "TTTCAG", new ObjectHandlerBase<AlignmentRecord>() {
+            @Override
+            public void handle(AlignmentRecord input) throws Exception {
+                _logger.debug(SilkLens.toSilk(input));
+                String s = seqMap.get(input.chr).substring(input.start - 1, input.end - 1);
+                if (input.numMismatches == 0)
+                    assertEquals(String.format("strand:%s query:%s ref:%s", input.strand, input.querySeq, s), s,
+                            input.querySeq);
             }
         });
 

@@ -33,4 +33,5 @@ public enum Strand {
         else
             return REVERSE;
     }
+
 }

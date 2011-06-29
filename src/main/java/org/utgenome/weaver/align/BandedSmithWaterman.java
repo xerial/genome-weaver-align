@@ -24,7 +24,6 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-
 /**
  * Banded Smith-Waterman Alignment
  * 
@@ -62,9 +61,5 @@ public class BandedSmithWaterman
             this.qseq = qseq;
         }
     }
-
-    //    public Alignment align(GenomeSequence seq1, GenomeSequence seq2) {
-    //
-    //    }
 
 }

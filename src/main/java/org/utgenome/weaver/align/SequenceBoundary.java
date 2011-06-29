@@ -27,6 +27,7 @@ package org.utgenome.weaver.align;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -76,6 +77,14 @@ public class SequenceBoundary
         }
     }
 
+    public String toSAMHeader() {
+        StringWriter buf = new StringWriter();
+        for (SequenceIndex each : index) {
+            buf.append(String.format("@SQ\tSN:%s\tLN:%d\n", each.name, each.length));
+        }
+        return buf.toString();
+    }
+
     /**
      * @param textIndex
      * @return 1-origin index
@@ -96,7 +105,7 @@ public class SequenceBoundary
 
         long offset = headMap.lastKey();
         String chr = headMap.get(offset);
-        int start = (int) (textIndex - offset + 1);
+        int start = (int) (textIndex - offset);
         return new PosOnGenome(chr, start, strand);
     }
 

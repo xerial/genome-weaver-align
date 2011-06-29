@@ -170,8 +170,8 @@ public class UInt32SAIS
         }
 
         @Override
-        public long update(long index, long value) {
-            return seq.update(index + offset, value);
+        public long increment(long index, long value) {
+            return seq.increment(index + offset, value);
         }
 
         @Override
@@ -312,7 +312,7 @@ public class UInt32SAIS
 
         // Step 3: Induce SA from SA1
         // Construct P1 using T1 buffer
-        _logger.debug("prepareing induced sort from SA1: N=" + SA.textSize());
+        _logger.debug("preparing induced sort from SA1: N=" + SA.textSize());
 
         for (long i = 1, j = 0; i < N; ++i) {
             if (isLMS(i))

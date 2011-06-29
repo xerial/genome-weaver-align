@@ -24,20 +24,22 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.PriorityQueue;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 
 import org.utgenome.UTGBException;
-import org.utgenome.gwt.utgb.client.bio.IUPAC;
-import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
-import org.xerial.lens.SilkLens;
+import org.utgenome.util.StandardOutputStream;
+import org.utgenome.weaver.align.record.AlignmentRecord;
+import org.utgenome.weaver.align.record.RawRead;
+import org.utgenome.weaver.align.record.ReadSequenceReader;
+import org.utgenome.weaver.align.record.ReadSequenceReaderFactory;
+import org.utgenome.weaver.align.strategy.BWAStrategy;
 import org.xerial.util.ObjectHandler;
 import org.xerial.util.ObjectHandlerBase;
+import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
-import org.xerial.util.opt.Command;
 import org.xerial.util.opt.Option;
 
 /**
@@ -46,9 +48,9 @@ import org.xerial.util.opt.Option;
  * @author leo
  * 
  */
-public class BWAlign implements Command
+public class BWAlign extends GenomeWeaverCommand
 {
-    private static Logger _logger = Logger.getLogger(BWAlign.class);
+    static Logger _logger = Logger.getLogger(BWAlign.class);
 
     @Override
     public String name() {
@@ -66,249 +68,119 @@ public class BWAlign implements Command
     }
 
     @Argument(index = 0)
-    private String fastaFilePrefix;
+    private String  fastaFilePrefix;
+
+    @Argument(index = 1)
+    private String  readFile;
 
     @Option(symbol = "q", description = "query sequence")
-    private String query;
+    private String  query;
+
+    //    @Option(longName = "sam", description = "output in SAM format")
+    //    public boolean outputSAM           = false;
+
+    @Option(symbol = "w", description = "use wavelet-array")
+    private boolean useWaveletArray     = false;
+
+    @Option(symbol = "N", description = "Num mismatches allowed. default=0")
+    public int      numMismachesAllowed = 0;
+
+    public static class SAMOutput implements ObjectHandler<AlignmentRecord>
+    {
+
+        FMIndexOnGenome  fmIndex;
+        PrintWriter      out;
+        SequenceBoundary boundary;
+        int              count = 0;
+
+        public SAMOutput(SequenceBoundary sequenceBoundary, OutputStream out) {
+            this.boundary = sequenceBoundary;
+            this.out = new PrintWriter(new OutputStreamWriter(out));
+        }
+
+        @Override
+        public void init() throws Exception {
+            out.print(boundary.toSAMHeader());
+        }
+
+        @Override
+        public void handle(AlignmentRecord r) throws Exception {
+            out.println(r.toSAMLine());
+        }
+
+        @Override
+        public void finish() throws Exception {
+            out.close();
+        }
+    }
 
     @Override
     public void execute(String[] args) throws Exception {
 
-        if (query == null) {
+        if (query == null && readFile == null)
             throw new UTGBException("no query is given");
+
+        ReadSequenceReader reader = null;
+        if (query != null) {
+            _logger.info("query sequence: " + query);
+            reader = ReadSequenceReaderFactory.singleQueryReader(query);
         }
-        final FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix);
-
-        query(fastaFilePrefix, query, new ObjectHandlerBase<PosOnGenome>() {
-            @Override
-            public void handle(PosOnGenome input) throws Exception {
-                System.out.println(SilkLens.toSilk("alignment", input));
-            }
-        });
-    }
-
-    public static class FMIndexOnGenome
-    {
-        private final FMIndex           fmIndexF;
-        private final FMIndex           fmIndexR;
-        private final SparseSuffixArray saF;
-        private final SparseSuffixArray saR;
-        private final WaveletArray      wvF;
-        private final WaveletArray      wvR;
-        private final SequenceBoundary  index;
-
-        private final long              N;
-        private final int               K;
-
-        public FMIndexOnGenome(String fastaFilePrefix) throws UTGBException, IOException {
-            BWTFiles forwardDB = new BWTFiles(fastaFilePrefix, Strand.FORWARD);
-            BWTFiles reverseDB = new BWTFiles(fastaFilePrefix, Strand.REVERSE);
-
-            // Load the boundary information of the concatenated chr sequences 
-            index = SequenceBoundary.loadSilk(forwardDB.pacIndex());
-            N = index.totalSize;
-            K = IUPAC.values().length;
-
-            // Load sparse suffix arrays
-            _logger.info("Loading sparse suffix arrays");
-            saF = SparseSuffixArray.loadFrom(forwardDB.sparseSuffixArray());
-            saR = SparseSuffixArray.loadFrom(reverseDB.sparseSuffixArray());
-
-            // Load Wavelet arrays
-            _logger.info("Loading a Wavelet array of the forward BWT");
-            wvF = WaveletArray.loadFrom(forwardDB.bwtWavelet());
-            _logger.info("Loading a Wavelet array of the reverse BWT");
-            wvR = WaveletArray.loadFrom(reverseDB.bwtWavelet());
-
-            // Prepare FM-indexes
-            fmIndexF = new FMIndex(wvF);
-            fmIndexR = new FMIndex(wvR);
+        else if (readFile != null) {
+            reader = ReadSequenceReaderFactory.createReader(readFile);
         }
 
-        public void toGenomeCoordinate(Alignment result, ObjectHandler<PosOnGenome> reporter) throws Exception {
-            _logger.info(SilkLens.toSilk("alignment", result));
-            reporter.init();
-            for (long i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
-                long pos = -1;
-                switch (result.strand) {
-                case FORWARD:
-                    pos = saR.get(i, fmIndexR);
-                    pos = (fmIndexF.textSize() - 1 - pos) - result.common.query.textSize();
-                    break;
-                case REVERSE:
-                    pos = saF.get(i, fmIndexF);
-                    break;
-                }
-                if (pos != -1)
-                    reporter.handle(index.translate(pos, result.strand));
-            }
-            reporter.finish();
-        }
+        BWTFiles forwardDB = new BWTFiles(fastaFilePrefix, Strand.FORWARD);
+        SequenceBoundary b = SequenceBoundary.loadSilk(forwardDB.pacIndex());
+        SAMOutput samOutput = new SAMOutput(b, new StandardOutputStream());
+        query(fastaFilePrefix, useWaveletArray, reader, samOutput);
     }
 
-    public static void query(String fastaFilePrefix, String query, final ObjectHandler<PosOnGenome> resultHandler)
-            throws Exception {
-
-        final FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix);
-
-        BWAlign aligner = new BWAlign();
-        aligner.fastaFilePrefix = fastaFilePrefix;
-        aligner.query = query;
-
-        _logger.info("query sequence: " + query);
-        FMIndexAlign aln = new FMIndexAlign(fmIndex, new ObjectHandlerBase<Alignment>() {
-            @Override
-            public void handle(Alignment input) throws Exception {
-                fmIndex.toGenomeCoordinate(input, resultHandler);
-            }
-        });
-        aln.align(query);
-
-    }
-
-    public static String reverse(String query) {
-        final int N = query.length();
-        StringBuilder buf = new StringBuilder(N);
-        for (int i = N - 1; i >= 0; --i) {
-            buf.append(query.charAt(i));
-        }
-        return buf.toString();
-    }
-
-    public static interface Reporter<T>
+    private static class GenomeCoordinateConverter extends ObjectHandlerBase<AlignmentSA>
     {
-        public void emit(T result) throws Exception;
-    }
 
-    public static class AlignmentScoreConfig
-    {
-        public final int matchScore          = 1;
-        public final int mismatchPenalty     = 3;
-        public final int gapOpenPenalty      = 11;
-        public final int gapExtentionPenalty = 4;
-    }
+        private FMIndexOnGenome                fmIndex;
+        private ObjectHandler<AlignmentRecord> handler;
 
-    /**
-     * Alignment process using FM-Index
-     * 
-     * @author leo
-     * 
-     */
-    public static class FMIndexAlign
-    {
-        private final FMIndexOnGenome          fmIndex;
-        private final ObjectHandler<Alignment> out;
-
-        private final PriorityQueue<Alignment> alignmentQueue       = new PriorityQueue<Alignment>();
-        private final int                      numMismatchesAllowed = 1;
-
-        private final AlignmentScoreConfig     config               = new AlignmentScoreConfig();
-
-        private final ArrayList<IUPAC>         lettersInGenome      = new ArrayList<IUPAC>();
-
-        private int                            bestScore            = -1;
-
-        public FMIndexAlign(FMIndexOnGenome fmIndex, ObjectHandler<Alignment> out) {
+        public GenomeCoordinateConverter(FMIndexOnGenome fmIndex, ObjectHandler<AlignmentRecord> handler) {
             this.fmIndex = fmIndex;
-            this.out = out;
-
-            CharacterCount C = fmIndex.fmIndexF.getCharacterCount();
-            for (IUPAC base : IUPAC.values()) {
-                if (base == IUPAC.None)
-                    continue;
-
-                if (C.getCount(base) > 0) {
-                    lettersInGenome.add(base);
-                }
-            }
-
+            this.handler = handler;
         }
 
-        public static String complement(String seq) {
-            StringWriter rev = new StringWriter(seq.length());
-            for (int i = 0; i < seq.length(); ++i) {
-                char ch = Character.toUpperCase(seq.charAt(i));
-                switch (ch) {
-                case 'A':
-                    rev.append('T');
-                    break;
-                case 'C':
-                    rev.append('G');
-                    break;
-                case 'G':
-                    rev.append('C');
-                    break;
-                case 'T':
-                    rev.append('A');
-                    break;
-                default:
-                case 'N':
-                    rev.append('N');
-                    break;
-                // TODO IUPAC sequences
-                }
-            }
-            return rev.toString();
+        @Override
+        public void handle(AlignmentSA aln) throws Exception {
+            fmIndex.toGenomeCoordinate(aln, handler);
         }
 
-        public void align(String seq) throws Exception {
-            align(new IUPACSequence(seq));
-        }
+    }
 
-        /**
-         * 
-         * @param seq
-         * @param cursor
-         * @param numMismatchesAllowed
-         * @param si
-         * @throws Exception
-         */
-        public void align(IUPACSequence seq) throws Exception {
+    public static void query(String fastaFilePrefix, boolean useWavelet, ReadSequenceReader readReader,
+            final ObjectHandler<AlignmentRecord> handler) throws Exception {
 
-            alignmentQueue.add(Alignment.initialState(seq, Strand.FORWARD, fmIndex.fmIndexR.textSize()));
-            alignmentQueue.add(Alignment.initialState(seq.complement(), Strand.REVERSE, fmIndex.fmIndexF.textSize()));
+        handler.init();
+        final FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix, useWavelet);
+        final BWAStrategy aligner = new BWAStrategy(fmIndex);
+        readReader.parse(new ObjectHandlerBase<RawRead>() {
+            int       count = 0;
+            StopWatch timer = new StopWatch();
 
-            while (!alignmentQueue.isEmpty()) {
-
-                Alignment current = alignmentQueue.poll();
-                if (current.numMismatches > numMismatchesAllowed) {
-                    continue;
+            @Override
+            public void handle(final RawRead input) throws Exception {
+                aligner.align(input, new GenomeCoordinateConverter(fmIndex, handler));
+                count++;
+                double time = timer.getElapsedTime();
+                if (count % 10000 == 0) {
+                    _logger.info(String.format("%,d reads are processed in %.2f sec.", count, time));
                 }
+            };
+        });
+        handler.finish();
 
-                if (current.wordIndex >= seq.textSize()) {
-                    if (current.alignmentScore >= bestScore) {
-                        bestScore = current.alignmentScore;
-                        out.handle(current);
-                    }
-                    continue;
-                }
+    }
 
-                // Search for deletion
-                alignmentQueue.add(current.extendWithDeletion(config));
+    public static void querySingle(String fastaFilePrefix, boolean useWavelet, final String query,
+            final ObjectHandler<AlignmentRecord> resultHandler) throws Exception {
 
-                IUPAC currentBase = current.common.query.getIUPAC(current.wordIndex);
-                // Traverse for each A, C, G, T, ... etc.
-                for (IUPAC nextBase : lettersInGenome) {
-                    FMIndex fm = current.strand == Strand.FORWARD ? fmIndex.fmIndexR : fmIndex.fmIndexF;
-                    SuffixInterval next = fm.backwardSearch(nextBase, current.suffixInterval);
-                    if (next.isValidRange()) {
-                        // Search for insertion
-                        if (current.wordIndex > 0 && current.wordIndex < seq.textSize() - 2) {
-                            alignmentQueue.add(current.extendWithInsertion(config));
-                        }
-                        if ((nextBase.bitFlag & currentBase.bitFlag) != 0) {
-                            // match
-                            alignmentQueue.add(current.extendWithMatch(next, config));
-                        }
-                        else {
-                            // mismatch
-                            alignmentQueue.add(current.extendWithMisMatch(next, config));
-                        }
-                    }
-                }
-            }
-
-        }
+        query(fastaFilePrefix, useWavelet, ReadSequenceReaderFactory.singleQueryReader(query), resultHandler);
     }
 
 }

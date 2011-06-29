@@ -31,15 +31,14 @@ import org.utgenome.UTGBException;
 import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
-import org.xerial.util.opt.Command;
 
-public class BWT2SparseSA implements Command
+public class BWT2SparseSA extends GenomeWeaverCommand
 {
     private static Logger _logger = Logger.getLogger(BWT2SparseSA.class);
 
     @Override
     public String name() {
-        return "ssa";
+        return "bwt2sa";
     }
 
     @Override

@@ -80,7 +80,7 @@ public class LIntArray implements LSeq, Iterable<Long>
     }
 
     @Override
-    public long update(long index, long val) {
+    public long increment(long index, long val) {
         long next = lookup(index) + val;
         set(index, next);
         return next;

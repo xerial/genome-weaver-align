@@ -169,6 +169,7 @@
       </resource>
       <resource>
         <directory>src/main/resources</directory>
+        <filtering>true</filtering>
       </resource>
     </resources>
     <testResources>
@@ -220,6 +221,7 @@
         <version>2.4</version>
         <configuration>
           <encoding>UTF-8</encoding>
+          <escapeString>\</escapeString>
         </configuration>
       </plugin>
 
@@ -343,6 +345,21 @@
         <enabled>true</enabled>
       </snapshots>
     </repository>
+    
+    <!--  Message pack repository -->
+    <repository>
+      <id>msgpack.org</id>
+      <name>Message Artifact Repository</name>
+      <url>http://msgpack.org/maven2</url>
+    </repository>
+    
+
+   <!-- xerial.org repository -->
+    <repository>
+      <id>xerial</id>
+      <name>Xerial Artifact Repository</name>
+      <url>http://maven.xerial.org/repository/artifact</url>
+    </repository>
 
     <!-- UTGB Repository -->
     <repository>
@@ -421,19 +438,34 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.msgpack</groupId>
+      <artifactId>msgpack-rpc</artifactId>
+      <version>0.6.1-devel</version>
+      <exclusions>
+      	<exclusion>
+      		<artifactId>xnio-api</artifactId>
+      		<groupId>org.jboss.xnio</groupId>
+      	</exclusion>
+      	<exclusion>
+      		<artifactId>xnio-nio</artifactId>
+      		<groupId>org.jboss.xnio</groupId>
+      	</exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
       <groupId>org.utgenome</groupId>
       <artifactId>utgb-core</artifactId>
-      <version>1.5.5-SNAPSHOT</version>
+      <version>1.5.6</version>
     </dependency>
     <dependency>
       <groupId>org.xerial</groupId>
       <artifactId>xerial-lens</artifactId>
-      <version>2.0.2</version>
+      <version>2.0.6</version>
     </dependency>
     <dependency>
       <groupId>org.xerial</groupId>
       <artifactId>xerial-core</artifactId>
-      <version>2.0.2</version>
+      <version>2.0.6</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

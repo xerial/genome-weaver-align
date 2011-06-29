@@ -26,17 +26,22 @@ package org.utgenome.weaver.align;
 
 import static org.junit.Assert.*;
 
+import java.util.Random;
+
 import org.junit.Test;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
+import org.xerial.util.log.Logger;
 
 public class IUPACSequenceTest
 {
-    private final String orig = "YGYYYCGCADBACGTNKRWVHT";
+    private static Logger _logger = Logger.getLogger(IUPACSequenceTest.class);
+
+    private final String  orig    = "YGYYYCGCADBACGTNKRWVHT";
 
     @Test
     public void constructor() throws Exception {
         IUPACSequence s = new IUPACSequence(orig);
-        assertEquals(orig.length() + 1, s.textSize());
+        assertEquals(orig.length(), s.textSize());
         for (int i = 0; i < orig.length(); ++i) {
             IUPAC code = s.getIUPAC(i);
             assertEquals(IUPAC.find(String.valueOf(orig.charAt(i))), code);
@@ -47,12 +52,11 @@ public class IUPACSequenceTest
     public void reverse() throws Exception {
         IUPACSequence s = new IUPACSequence(orig);
         IUPACSequence rev = s.reverse();
-        for (int i = 0; i < s.textSize() - 1; ++i) {
+        for (int i = 0; i < s.textSize(); ++i) {
             IUPAC codeRev = rev.getIUPAC(i);
-            IUPAC code = s.getIUPAC(s.textSize() - i - 2);
+            IUPAC code = s.getIUPAC(s.textSize() - i - 1);
             assertEquals(code, codeRev);
         }
-
     }
 
     @Test
@@ -64,6 +68,23 @@ public class IUPACSequenceTest
             IUPAC c = s.getIUPAC(i);
             IUPAC cr = r.getIUPAC(i);
             assertEquals(c.complement(), cr);
+        }
+    }
+
+    @Test
+    public void fastCount() throws Exception {
+        Random r = new Random(0);
+        StringBuilder seq = new StringBuilder();
+        for (int i = 0; i < 69; ++i) {
+            seq.append(IUPAC.decode((byte) (r.nextInt(15) + 1)).toString());
+        }
+
+        IUPACSequence s = new IUPACSequence(seq.toString());
+        for (IUPAC c : IUPAC.values()) {
+            for (int x = 0; x < s.textSize(); x++) {
+                for (int y = x; y < s.textSize(); y++)
+                    assertEquals(String.format("code:%s, s=%d, e=%d", c, x, y), s.count(c, x, y), s.fastCount(c, x, y));
+            }
         }
 
     }

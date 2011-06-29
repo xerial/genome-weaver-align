@@ -38,4 +38,9 @@ public class PrintSATest
     public void reverse() throws Exception {
         GenomeWeaver.execute("sa-debug -r ACGTCCTTATACTTTATCTCATGGGATA");
     }
+
+    @Test
+    public void sample2() throws Exception {
+        GenomeWeaver.execute("sa-debug AACCTATCTATACCCCGGGGAATTATATACGTCCTTATACTTTATCTCATGGGATA");
+    }
 }

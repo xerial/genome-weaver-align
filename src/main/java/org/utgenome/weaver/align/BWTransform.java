@@ -37,7 +37,6 @@ import org.utgenome.weaver.align.sais.UInt32SAIS;
 import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
-import org.xerial.util.opt.Command;
 
 /**
  * Performs burrows-wheeler transform
@@ -45,7 +44,7 @@ import org.xerial.util.opt.Command;
  * @author leo
  * 
  */
-public class BWTransform implements Command
+public class BWTransform extends GenomeWeaverCommand
 {
     private static Logger _logger = Logger.getLogger(BWTransform.class);
 
@@ -121,8 +120,12 @@ public class BWTransform implements Command
             if (seq.textSize() < Integer.MAX_VALUE) {
                 SA = new LSAIS.IntArray(new int[(int) seq.textSize()], 0);
             }
-            else
+            else if (seq.textSize() < Math.pow(2, 32)) {
                 SA = new UInt32Array(seq.textSize());
+            }
+            else {
+                throw new UTGBException("String longer than 4GB is not supported");
+            }
 
             UInt32SAIS.SAIS(seq, SA, 16);
             //LSAIS.suffixsort(seq, SA, 16);

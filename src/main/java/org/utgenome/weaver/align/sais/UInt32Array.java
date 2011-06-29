@@ -22,7 +22,6 @@
 //--------------------------------------
 package org.utgenome.weaver.align.sais;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.utgenome.weaver.align.LSeq;
@@ -35,38 +34,17 @@ import org.utgenome.weaver.align.LSeq;
  */
 public class UInt32Array implements LSeq, Iterable<Long>
 {
-    private static final int  B           = 30;            // bit length 
-    private static final int  BLOCK_SIZE  = 1 << B;
-    private static final long OFFSET_MASK = BLOCK_SIZE - 1;
+    public final static long MAX_VALUE = 0xFFFFFFFF;
 
-    private final long        size;
+    private final long       size;
 
-    private ArrayList<int[]>  array;
+    private long[]           rawArray;
 
     public UInt32Array(long size) {
         this.size = size;
 
-        int numContainers = (int) ((size + BLOCK_SIZE - 1) / BLOCK_SIZE);
-        int numFullBlockContainers = (int) (size / BLOCK_SIZE);
-        int remainder = offset(size);
-        array = new ArrayList<int[]>(numContainers);
-        for (int i = 0; i < numFullBlockContainers; i++) {
-            array.add(new int[BLOCK_SIZE]);
-        }
-        if (remainder > 0)
-            array.add(new int[remainder]);
-    }
-
-    private int[] container(long index) {
-        int block = (int) (index >>> B);
-        //        if (block < 0)
-        //            throw new ArrayIndexOutOfBoundsException(String.format("invalid index:%d, block:%d", index, block));
-
-        return array.get(block);
-    }
-
-    private static int offset(long index) {
-        return (int) (index & OFFSET_MASK);
+        int rawArraySize = (int) ((size + 1) / 2);
+        rawArray = new long[rawArraySize];
     }
 
     public long textSize() {
@@ -74,17 +52,22 @@ public class UInt32Array implements LSeq, Iterable<Long>
     }
 
     public long lookup(long index) {
-
-        long v = container(index)[offset(index)] & 0xFFFFFFFFL;
+        int pos = (int) index >> 1;
+        int offset = (int) (index & 0x01);
+        long v = (rawArray[pos] >>> ((1 - offset) * 32)) & 0xFFFFFFFFL;
         return v;
     }
 
     public void set(long index, long value) {
-        container(index)[offset(index)] = (int) value;
+
+        int pos = (int) index >> 1;
+        int offset = (int) (index & 0x01);
+        rawArray[pos] &= 0xFFFFFFFFL << (offset * 32);
+        rawArray[pos] |= value << ((1 - offset) * 32);
     }
 
     @Override
-    public long update(long index, long val) {
+    public long increment(long index, long val) {
         long next = lookup(index) + val;
         set(index, next);
         return next;
