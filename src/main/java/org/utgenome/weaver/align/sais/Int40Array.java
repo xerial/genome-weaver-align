@@ -29,9 +29,8 @@ import java.util.Iterator;
 import org.utgenome.weaver.align.LSeq;
 
 /**
- * ArrayList for int40 values ([-(2^39-1), 2^39-1])
+ * ArrayList for int40 values. This array can hold 3.2G entries.
  * 
- * TODO implementation
  * 
  * @author leo
  * 
@@ -49,12 +48,12 @@ public class Int40Array implements LSeq, Iterable<Long>
 
     public Int40Array(long size) {
         this.size = size;
-        long byteSize = size * INT40_BYTE_SIZE;
 
+        long numBlocks = (size * 5 + 5 - 1) / 5;
         // 8 * 2GB = 16GB 
         // int40   16GB / 5 = 3.2G entries
         // uint32  16GB / 4 = 4G entries
-        long rawArraySize = (byteSize + LONG_BYTE_SIZE - 1) / LONG_BYTE_SIZE;
+        long rawArraySize = numBlocks * 5;
         if (rawArraySize > Integer.MAX_VALUE)
             throw new IllegalArgumentException(String.format(
                     "Cannot create int40 array more than %,d entries: size=%,d", Integer.MAX_VALUE, size));
@@ -62,77 +61,100 @@ public class Int40Array implements LSeq, Iterable<Long>
     }
 
     public long lookup(long index) {
-
-        final long bytePos = index * INT40_BYTE_SIZE;
-        final int pos = (int) (bytePos / LONG_BYTE_SIZE);
-        final int offset = (int) (bytePos % LONG_BYTE_SIZE);
-
-        final int maskEnd = offset + INT40_BYTE_SIZE;
-        // byte index: 01234567
-        // byte mask:  0XXXXX00
-        //   | <- offset = 1, shiftLen = 8 - offset - 5= 2 
-        //
-        // byte index: 01234567
-        // byte mask:  00000XXXXX00
-        //   | <- offset = 5, shiftLen = 8 - offset - 5 = -2
-
-        long v = rawArray[pos] & (0xFFFFFFFFFF000000L >>> (offset * 8));
-        int shiftLen = LONG_BYTE_SIZE - maskEnd;
-        if (shiftLen >= 0) {
-            v >>>= shiftLen * 8;
-        }
-        else {
-            v <<= -shiftLen * 8;
-        }
-
-        // byte index: 0123456701234567
-        // byte mask:  000000XXXXX00000
-        //                   | <- offset = 6, maskEnd = 6 + 5 = 11, nextMaskEnd = 11 % 8 = 3;
-        //                     000XXXXX   shift len = 5 
-        if (offset >= 4) {
-            int nextMaskEnd = maskEnd % LONG_BYTE_SIZE;
-            long v2 = rawArray[pos + 1] & (0xFFFFFFFFFF000000L << ((INT40_BYTE_SIZE - nextMaskEnd) * 8));
-            v2 >>>= (LONG_BYTE_SIZE - nextMaskEnd) * 8;
-            v |= v2;
-        }
-
+        int bPos = (int) index >> 2;
+        int bOffset = (int) index & 0x03;
+        long L = rawArray[bPos * 5 + bOffset + 1];
+        L >>>= (1 - (bOffset & 0x01)) * 32;
+        long H = ((rawArray[bPos * 5] >>> (bOffset * 8)) & 0xFF) << 32;
+        long v = H | L;
         if ((v & 0x8000000000L) == 0)
             return v;
         else
             return v - 0xFFFFFFFFFFL - 1;
+
+        //        
+        //        
+        //        
+        //        final long bytePos = index * INT40_BYTE_SIZE;
+        //        final int pos = (int) (bytePos / LONG_BYTE_SIZE);
+        //        final int offset = (int) (bytePos % LONG_BYTE_SIZE);
+        //
+        //        final int maskEnd = offset + INT40_BYTE_SIZE;
+        //        // byte index: 01234567
+        //        // byte mask:  0XXXXX00
+        //        //   | <- offset = 1, shiftLen = 8 - offset - 5= 2 
+        //        //
+        //        // byte index: 01234567
+        //        // byte mask:  00000XXXXX00
+        //        //   | <- offset = 5, shiftLen = 8 - offset - 5 = -2
+        //
+        //        long v = rawArray[pos] & (0xFFFFFFFFFF000000L >>> (offset * 8));
+        //        int shiftLen = LONG_BYTE_SIZE - maskEnd;
+        //        if (shiftLen >= 0) {
+        //            v >>>= shiftLen * 8;
+        //        }
+        //        else {
+        //            v <<= -shiftLen * 8;
+        //        }
+        //
+        //        // byte index: 0123456701234567
+        //        // byte mask:  000000XXXXX00000
+        //        //                   | <- offset = 6, maskEnd = 6 + 5 = 11, nextMaskEnd = 11 % 8 = 3;
+        //        //                     000XXXXX   shift len = 5 
+        //        if (offset >= 4) {
+        //            int nextMaskEnd = maskEnd % LONG_BYTE_SIZE;
+        //            long v2 = rawArray[pos + 1] & (0xFFFFFFFFFF000000L << ((INT40_BYTE_SIZE - nextMaskEnd) * 8));
+        //            v2 >>>= (LONG_BYTE_SIZE - nextMaskEnd) * 8;
+        //            v |= v2;
+        //        }
+        //
+        //        if ((v & 0x8000000000L) == 0)
+        //            return v;
+        //        else
+        //            return v - 0xFFFFFFFFFFL - 1;
     }
 
     public void set(long index, long value) {
-        final long bytePos = index * INT40_BYTE_SIZE;
-        final int pos = (int) (bytePos / LONG_BYTE_SIZE);
-        final int offset = (int) (bytePos % LONG_BYTE_SIZE);
+        int bPos = (int) index >> 2;
+        int bOffset = (int) index & 0x03;
+        long L = value & 0xFFFFFFFFL;
+        long H = value >>> 32;
+        int p = bPos * 5 + bOffset + 1;
+        rawArray[p] &= 0xFFFFFFFFL >>> ((index & 0x01) * 32);
+        rawArray[p] |= L << ((1 - index & 0x01) * 32);
+        rawArray[bPos * 5] &= ~(0xff << (bOffset * 8));
+        rawArray[bPos * 5] |= H << (bOffset * 8);
 
-        // byte index: 01234567
-        // value:      000XXXXX
+        //        final long bytePos = index * INT40_BYTE_SIZE;
+        //        final int pos = (int) (bytePos / LONG_BYTE_SIZE);
+        //        final int offset = (int) (bytePos % LONG_BYTE_SIZE);
         //
-        // offset:          | <- offset 5, shiftLen = 2
-        // shift       00000XXXXX
-        // 
-        // offset:      | <- offset 1, shiftLen = -2
-        // shift       0XXXXX00
-        long v = value & 0xFFFFFFFFFFL;
-
-        long mask = 0xFFFFFFFFFF000000L >>> (offset * 8);
-        rawArray[pos] &= ~mask;
-        int shiftLen = offset - 3;
-        rawArray[pos] |= shiftLen >= 0 ? v >>> (shiftLen * 8) : v << -shiftLen * 8;
-
-        // byte index: 0123456701234567
-        // value:      000XXXXX
+        //        // byte index: 01234567
+        //        // value:      000XXXXX
+        //        //
+        //        // offset:          | <- offset 5, shiftLen = 2
+        //        // shift       00000XXXXX
+        //        // 
+        //        // offset:      | <- offset 1, shiftLen = -2
+        //        // shift       0XXXXX00
+        //        long v = value & 0xFFFFFFFFFFL;
         //
-        // offset:          | <- offset 5 
-        // shift       00000XXX
-        // shift       XX000000
-        if (offset >= 4) {
-            int shiftLenOfSecondHalf = LONG_BYTE_SIZE - shiftLen;
-            rawArray[pos + 1] &= ~(0xFFFFFFFFFFL << (shiftLenOfSecondHalf * 8));
-            rawArray[pos + 1] |= v << (shiftLenOfSecondHalf * 8);
-        }
+        //        long mask = 0xFFFFFFFFFF000000L >>> (offset * 8);
+        //        rawArray[pos] &= ~mask;
+        //        int shiftLen = offset - 3;
+        //        rawArray[pos] |= shiftLen >= 0 ? v >>> (shiftLen * 8) : v << -shiftLen * 8;
+        //
+        //        // byte index: 0123456701234567
+        //        // value:      000XXXXX
+        //        //
+        //        // offset:          | <- offset 5 
+        //        // shift       00000XXX
+        //        // shift       XX000000
+        //        if (offset >= 4) {
+        //            int shiftLenOfSecondHalf = LONG_BYTE_SIZE - shiftLen;
+        //            rawArray[pos + 1] &= ~(0xFFFFFFFFFFL << (shiftLenOfSecondHalf * 8));
+        //            rawArray[pos + 1] |= v << (shiftLenOfSecondHalf * 8);
+        //        }
     }
 
     public long textSize() {

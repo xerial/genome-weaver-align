@@ -62,8 +62,9 @@ public class Int40ArrayTest
     public void exhaustiveTest() throws Exception {
         int N = 100;
         Int40Array array = new Int40Array(N);
+
+        long split = (Int40Array.MAX_VALUE - Int40Array.MIN_VALUE) / 1001;
         for (long index = 0; index < N; ++index) {
-            long split = (Int40Array.MAX_VALUE - Int40Array.MIN_VALUE) / 1001;
             for (long i = Int40Array.MIN_VALUE; i <= Int40Array.MAX_VALUE; i += split) {
                 array.set(index, i);
                 assertEquals(String.format("array[%d]", index), i, array.lookup(index));
@@ -80,6 +81,7 @@ public class Int40ArrayTest
         Int40Array u = new Int40Array(10);
         for (long i = 0; i < N; ++i) {
             u.set(i % 10, i);
+            u.lookup(i % 10);
         }
         _logger.info("UInt40Array: " + timer.getElapsedTime());
 
@@ -87,6 +89,7 @@ public class Int40ArrayTest
         LIntArray array = new LIntArray(10);
         for (long i = 0; i < N; ++i) {
             array.set(i % 10, i);
+            array.lookup(i % 10);
         }
         _logger.info("LIntArray: " + timer.getElapsedTime());
 
