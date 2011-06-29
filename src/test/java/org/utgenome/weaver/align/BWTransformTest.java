@@ -86,8 +86,12 @@ public class BWTransformTest
             IUPACSequence seq = IUPACSequence.loadFrom(db.iupac());
             final int origLen = orig.getSequence().length();
 
+            int offset = 0;
+            if (seq.getIUPAC(0) == IUPAC.N)
+                offset++;
+
             for (int i = 0; i < orig.getSequence().length(); ++i) {
-                IUPAC c = seq.getIUPAC(i);
+                IUPAC c = seq.getIUPAC(i + offset);
                 if (c == IUPAC.None)
                     continue;
 

@@ -51,7 +51,7 @@ public class UInt32SAISTest
         _logger.debug(SA);
 
         //long answer[] = { 13, 6, 12, 5, 7, 0, 8, 1, 9, 2, 11, 4, 10, 3 };
-        long answer[] = { 9, 3, 0, 4, 7, 1, 5, 2, 6, 8 };
+        long answer[] = { 9, 4, 0, 7, 5, 1, 6, 2, 8, 3 };
 
         assertArrayEquals(answer, SA.toArray());
 
