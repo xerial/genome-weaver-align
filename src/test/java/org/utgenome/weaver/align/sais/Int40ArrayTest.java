@@ -77,21 +77,35 @@ public class Int40ArrayTest
         StopWatch timer = new StopWatch();
         int N = 10000000;
 
-        timer.reset();
-        Int40Array u = new Int40Array(10);
-        for (long i = 0; i < N; ++i) {
-            u.set(i % 10, i);
-            u.lookup(i % 10);
+        {
+            timer.reset();
+            long[] u = new long[10];
+            for (long i = 0; i < N; ++i) {
+                u[(int) (i % 10)] = i;
+                long val = u[(int) i % 10];
+            }
+            _logger.info("long primitive array: " + timer.getElapsedTime());
         }
-        _logger.info("UInt40Array: " + timer.getElapsedTime());
 
-        timer.reset();
-        LIntArray array = new LIntArray(10);
-        for (long i = 0; i < N; ++i) {
-            array.set(i % 10, i);
-            array.lookup(i % 10);
+        {
+            timer.reset();
+            Int40Array u = new Int40Array(10);
+            for (long i = 0; i < N; ++i) {
+                u.set(i % 10, i);
+                u.lookup(i % 10);
+            }
+            _logger.info("Int40Array: " + timer.getElapsedTime());
         }
-        _logger.info("LIntArray: " + timer.getElapsedTime());
+
+        {
+            timer.reset();
+            LIntArray array = new LIntArray(10);
+            for (long i = 0; i < N; ++i) {
+                array.set(i % 10, i);
+                array.lookup(i % 10);
+            }
+            _logger.info("LIntArray: " + timer.getElapsedTime());
+        }
 
     }
 
