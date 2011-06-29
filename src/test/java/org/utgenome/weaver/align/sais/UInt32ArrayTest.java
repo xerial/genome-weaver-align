@@ -49,6 +49,19 @@ public class UInt32ArrayTest
         assertEquals(0xFFFFFFFFL, array.lookup(0));
     }
 
+    @Test
+    public void exhaustiveTest() throws Exception {
+
+        UInt32Array array = new UInt32Array(10);
+        for (int i = 0; i < array.textSize(); ++i) {
+            long step = (int) (UInt32Array.MAX_VALUE / 10001);
+            for (long x = 0; x < UInt32Array.MAX_VALUE; x += step) {
+                array.set(i, x);
+                assertEquals(x, array.lookup(i));
+            }
+        }
+    }
+
     //    @Test
     //    public void moreThan2GBTest() {
     //        long size = Integer.MAX_VALUE + 100L;

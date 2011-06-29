@@ -455,7 +455,7 @@
     <dependency>
       <groupId>org.utgenome</groupId>
       <artifactId>utgb-core</artifactId>
-      <version>1.5.6-SNAPSHOT</version>
+      <version>1.5.6</version>
     </dependency>
     <dependency>
       <groupId>org.xerial</groupId>

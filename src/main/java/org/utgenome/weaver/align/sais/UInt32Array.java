@@ -34,10 +34,11 @@ import org.utgenome.weaver.align.LSeq;
  */
 public class UInt32Array implements LSeq, Iterable<Long>
 {
+    public final static long MAX_VALUE = 0xFFFFFFFF;
 
-    private final long size;
+    private final long       size;
 
-    private long[]     rawArray;
+    private long[]           rawArray;
 
     public UInt32Array(long size) {
         this.size = size;
@@ -52,7 +53,7 @@ public class UInt32Array implements LSeq, Iterable<Long>
 
     public long lookup(long index) {
         int pos = (int) index >> 1;
-        int offset = (int) (index & 0x1);
+        int offset = (int) (index & 0x01);
         long v = (rawArray[pos] >>> ((1 - offset) * 32)) & 0xFFFFFFFFL;
         return v;
     }
@@ -60,7 +61,7 @@ public class UInt32Array implements LSeq, Iterable<Long>
     public void set(long index, long value) {
 
         int pos = (int) index >> 1;
-        int offset = (int) (index & 0x1);
+        int offset = (int) (index & 0x01);
         rawArray[pos] &= 0xFFFFFFFFL << (offset * 32);
         rawArray[pos] |= value << ((1 - offset) * 32);
     }
