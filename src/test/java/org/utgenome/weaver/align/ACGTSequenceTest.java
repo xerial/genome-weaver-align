@@ -26,6 +26,11 @@ package org.utgenome.weaver.align;
 
 import static org.junit.Assert.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+
 import org.junit.Test;
 import org.xerial.util.log.Logger;
 
@@ -33,7 +38,7 @@ public class ACGTSequenceTest
 {
     private static Logger _logger = Logger.getLogger(ACGTSequenceTest.class);
 
-    private final String  orig    = "AGCCCCGCATTNNATAGATTTAGCGCGGATTTTATAGAGAAATTAGCGGATNNATGC";
+    private final String  orig    = "AGCCCCGCATTNNATAGATTTAGCGCGGATTTTAATANNNATATATNNATATNATANNNNAACCCGCGCTTAGAGAGANNGGGGCCCCTTTTCCATAGAGAAATTAGCGGATNNATGC";
 
     @Test
     public void constructor() throws Exception {
@@ -69,6 +74,41 @@ public class ACGTSequenceTest
             ACGT c = r.getACGT(i);
             assertEquals(b.complement(), c);
         }
+    }
+
+    @Test
+    public void save() throws Exception {
+        ACGTSequence s = new ACGTSequence(orig);
+
+        ByteArrayOutputStream b = new ByteArrayOutputStream();
+        DataOutputStream out = new DataOutputStream(b);
+        s.saveTo(out);
+
+        out.close();
+        byte[] bb = b.toByteArray();
+        ACGTSequence s2 = ACGTSequence.loadFrom(new DataInputStream(new ByteArrayInputStream(bb)));
+        assertEquals(s.toString(), s2.toString());
+        _logger.info(s2.toString());
+    }
+
+    @Test
+    public void interleave() throws Exception {
+
+        int v = 0x0000FFFF;
+        _logger.info(toBinaryString(v));
+        _logger.info(toBinaryString(ACGTSequence.interleaveWith0(v)));
+
+        v = 0x00001234;
+        _logger.info(toBinaryString(v));
+        _logger.info(toBinaryString(ACGTSequence.interleaveWith0(v)));
+    }
+
+    public String toBinaryString(int v) {
+        StringBuilder b = new StringBuilder();
+        for (int i = 0x80000000; i != 0; i >>>= 1) {
+            b.append((v & i) == 0 ? "0" : "1");
+        }
+        return b.toString();
     }
 
 }

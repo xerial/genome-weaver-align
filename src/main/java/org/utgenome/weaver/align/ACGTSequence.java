@@ -67,7 +67,8 @@ public class ACGTSequence implements LSeq
     public ACGTSequence(long numBases) {
         this.numBases = numBases;
         long bitSize = numBases * 3;
-        long arraySize = (bitSize + LONG_BYTE_SIZE - 1) / LONG_BYTE_SIZE;
+        long blockBitSize = LONG_BYTE_SIZE * 3 * 8;
+        long arraySize = ((bitSize + blockBitSize - 1) / blockBitSize) * 3;
         if (arraySize > Integer.MAX_VALUE) {
             throw new IllegalArgumentException(String.format("Cannot create ACGTSequece more than %,d size: %,d",
                     MAX_SIZE, numBases));
@@ -250,6 +251,14 @@ public class ACGTSequence implements LSeq
                 count++;
         }
         return count;
+    }
+
+    static int interleaveWith0(int v) {
+        v = ((v & 0xFF00) << 8) | (v & 0x00FF);
+        v = ((v << 4) | v) & 0x0F0F0F0F;
+        v = ((v << 2) | v) & 0x33333333;
+        v = ((v << 1) | v) & 0x55555555;
+        return v;
     }
 
     /**
