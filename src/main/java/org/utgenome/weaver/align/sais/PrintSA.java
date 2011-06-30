@@ -96,15 +96,11 @@ public class PrintSA extends GenomeWeaverCommand
     public static String rotateLeft(IUPACSequence s, int shift) {
         StringWriter w = new StringWriter();
 
-        long len = s.textSize() + 1;
+        long len = s.textSize();
         for (int i = 0; i < len; ++i) {
             int index = i + shift;
-            if (index == len - 1)
-                w.append("$");
-            else {
-                IUPAC c = s.getIUPAC(index % len);
-                w.append(c.name());
-            }
+            IUPAC c = s.getIUPAC(index % len);
+            w.append(c.name());
         }
 
         return w.toString();

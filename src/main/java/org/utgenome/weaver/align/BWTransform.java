@@ -30,7 +30,6 @@ import java.io.IOException;
 
 import org.utgenome.UTGBErrorCode;
 import org.utgenome.UTGBException;
-import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.utgenome.weaver.align.sais.LSAIS;
 import org.utgenome.weaver.align.sais.UInt32Array;
 import org.utgenome.weaver.align.sais.UInt32SAIS;
@@ -149,7 +148,7 @@ public class BWTransform extends GenomeWeaverCommand
     public static void bwt(IUPACSequence seq, LSeq SA, IUPACSequenceWriter out) throws IOException {
         for (long i = 0; i < SA.textSize(); ++i) {
             if (SA.lookup(i) == 0) {
-                out.append(IUPAC.None);
+                out.append(seq.getIUPAC(seq.textSize() - 1));
             }
             else {
                 out.append(seq.getIUPAC(SA.lookup(i) - 1));
@@ -160,7 +159,7 @@ public class BWTransform extends GenomeWeaverCommand
     public static void bwt(IUPACSequence seq, LSeq SA, IUPACSequence out) throws IOException {
         for (long i = 0; i < SA.textSize(); ++i) {
             if (SA.lookup(i) == 0) {
-                out.setIUPAC(i, IUPAC.None);
+                out.setIUPAC(i, seq.getIUPAC(seq.textSize() - 1));
             }
             else {
                 out.setIUPAC(i, seq.getIUPAC(SA.lookup(i) - 1));
