@@ -88,8 +88,8 @@ public class ACGTSequence implements LSeq
     @Override
     public long lookup(long index) {
         int pos = (int) (index >> 6);
-        int offset = (int) (index & 0x03F);
-        int shift = 62 - ((int) (index & 0x1F) << 1);
+        int offset = (int) (index & 0x03FL);
+        int shift = 62 - ((int) (index & 0x1FL) << 1);
 
         int nFlag = (int) (seq[pos * 3] >>> offset) & 0x01;
         int code = (int) (seq[pos * 3 + (offset >> 5) + 1] >>> shift) & 0x03;
@@ -100,11 +100,11 @@ public class ACGTSequence implements LSeq
     public void set(long index, long val) {
         // |N64 ... N0|B0 B1 ....  B31|B32 B33 ... B63|
         int pos = (int) (index >> 6);
-        int offset = (int) (index & 0x3F);
+        int offset = (int) (index & 0x3FL);
         int shift = (offset & 0x1F) << 1;
 
-        seq[pos * 3] &= ~(0x01 << offset);
-        seq[pos * 3] |= ((val & 0x04) >>> 2) << offset;
+        seq[pos * 3] &= ~(0x01L << offset);
+        seq[pos * 3] |= ((val & 0x04L) >>> 2) << offset;
         int bPos = pos * 3 + (offset >> 5) + 1;
         seq[bPos] &= ~(0xC000000000000000L >>> shift);
         seq[bPos] |= (val & 0x03) << (62 - shift);

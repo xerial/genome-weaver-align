@@ -33,7 +33,7 @@ public class ACGTSequenceTest
 {
     private static Logger _logger = Logger.getLogger(ACGTSequenceTest.class);
 
-    private final String  orig    = "AGCCCCGCATTNNATAGATTT";
+    private final String  orig    = "AGCCCCGCATTNNATAGATTTAGCGCGGATTTTATAGAGAAATTAGCGGATNNATGC";
 
     @Test
     public void constructor() throws Exception {
