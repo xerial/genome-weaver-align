@@ -261,6 +261,15 @@ public class ACGTSequence implements LSeq
         return v;
     }
 
+    static long interleave32With0(long v) {
+        v = ((v & 0xFFFF0000L) << 16) | (v & 0x0000FFFFL);// 0000000000000000
+        v = ((v << 8) | v) & 0x00FF00FF00FF00FFL; // 0000000011111111
+        v = ((v << 4) | v) & 0x0F0F0F0F0F0F0F0FL; // 00001111
+        v = ((v << 2) | v) & 0x3333333333333333L; // 0011
+        v = ((v << 1) | v) & 0x5555555555555555L; // 0101
+        return v;
+    }
+
     /**
      * Count the number of 1s in the input. See also the Hacker's Delight:
      * http://hackers-delight.org.ua/038.htm

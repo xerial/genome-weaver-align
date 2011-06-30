@@ -95,20 +95,31 @@ public class ACGTSequenceTest
     public void interleave() throws Exception {
 
         int v = 0x0000FFFF;
-        _logger.info(toBinaryString(v));
-        _logger.info(toBinaryString(ACGTSequence.interleaveWith0(v)));
+        _logger.info(toBinaryString(v, 32));
+        _logger.info(toBinaryString(ACGTSequence.interleaveWith0(v), 32));
 
         v = 0x00001234;
-        _logger.info(toBinaryString(v));
-        _logger.info(toBinaryString(ACGTSequence.interleaveWith0(v)));
+        _logger.info(toBinaryString(v, 32));
+        _logger.info(toBinaryString(ACGTSequence.interleaveWith0(v), 32));
     }
 
-    public String toBinaryString(int v) {
+    @Test
+    public void interleave32() throws Exception {
+        long v = 0x00000000FFFFFFFFL;
+        _logger.info(toBinaryString(v, 64));
+        _logger.info(toBinaryString(ACGTSequence.interleave32With0(v), 64));
+
+        v = 0xF0F0F0F0L;
+        _logger.info(toBinaryString(v, 64));
+        _logger.info(toBinaryString(ACGTSequence.interleave32With0(v), 64));
+
+    }
+
+    public String toBinaryString(long v, int size) {
         StringBuilder b = new StringBuilder();
-        for (int i = 0x80000000; i != 0; i >>>= 1) {
-            b.append((v & i) == 0 ? "0" : "1");
+        for (long i = 1L << (size - 1); i != 0; i >>>= 1) {
+            b.append(((v & i) == 0 ? "0" : "1"));
         }
         return b.toString();
     }
-
 }
