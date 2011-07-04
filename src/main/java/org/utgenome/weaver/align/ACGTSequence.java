@@ -218,41 +218,61 @@ public class ACGTSequence implements LSeq
      * @param code
      * @param start
      * @param end
+     *            (exclusive)
      * @return
      */
     public long fastCount(ACGT base, long start, long end) {
         long count = 0;
 
-        int ePos = (int) (end >>> 6);
-        int eOffset = (int) (end & 0x3FL);
-
-        for (long cursor = start; cursor < end;) {
-
-            // |------------------|-------------------|
-            //    |<- sOffset  |<- eOffset
-            //  0                  1
-            // |<- sPos           
-
-            int sPos = (int) (cursor >>> 6);
-            int sOffset = (int) (cursor & 0x3FL);
-            int bPos = sOffset >>> 5;
-
-            long v = seq[sPos * 3 + bPos + 1];
-            long nFlag = interleave32With0(seq[sPos * 3] >>> (32 * (1 - bPos)));
-
-            long mask = ~0L >>> (sOffset * 2);
-            if (sPos == ePos) {
-                long rMask = (eOffset == 0) ? 0L : ~((1L << (32 - eOffset) * 2) - 1);
-                mask &= rMask;
+        if (base == ACGT.N) {
+            // Count N
+            int sPos = (int) (start >>> 6);
+            int sOffset = (int) (start & 0x3FL);
+            int ePos = (int) (end >>> 6);
+            for (; sPos <= ePos; ++sPos) {
+                long mask = ~0L;
+                if (sOffset != 0) {
+                    mask >>>= sOffset;
+                    sOffset = 0;
+                }
+                if (sPos == ePos) {
+                    int eOffset = (int) (end & 0x3FL);
+                    long rMask = (eOffset == 0) ? 0L : ~((1L << (64 - eOffset)) - 1);
+                    mask &= rMask;
+                }
+                count += countOneBit(seq[sPos * 3] & mask);
             }
-            long r = ~0L;
-            r &= ((base.code & 0x02) == 0 ? ~v : v) >>> 1;
-            r &= ((base.code & 0x01) == 0 ? ~v : v);
-            r &= 0x5555555555555555L;
-            r &= ~nFlag;
-            r &= mask;
-            count += countOneBit(r);
-            cursor += 32 - (sOffset % 32);
+        }
+        else {
+            // Count A, C, G, T
+            int sPos = (int) (start >>> 5);
+            int sOffset = (int) (start & 0x1FL);
+            int ePos = (int) (end >>> 5);
+
+            for (; sPos <= ePos; ++sPos) {
+
+                long mask = ~0L;
+                if (sOffset != 0) {
+                    mask >>>= sOffset * 2;
+                    sOffset = 0;
+                }
+                int bIndex = sPos / 2 * 3;
+                int block = sPos % 2;
+                long v = seq[bIndex + 1 + block];
+                long nFlag = interleave32With0(seq[bIndex] >>> (32 * (1 - block)));
+                if (sPos == ePos) {
+                    int eOffset = (int) (end & 0x1FL);
+                    long rMask = (eOffset == 0) ? 0L : ~((1L << (32 - eOffset) * 2) - 1);
+                    mask &= rMask;
+                }
+                long r = ~0L;
+                r &= ((base.code & 0x02) == 0 ? ~v : v) >>> 1;
+                r &= ((base.code & 0x01) == 0 ? ~v : v);
+                r &= 0x5555555555555555L;
+                r &= ~nFlag;
+                r &= mask;
+                count += countOneBit(r);
+            }
         }
 
         return count;

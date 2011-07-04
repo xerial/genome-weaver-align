@@ -134,10 +134,20 @@ public class ACGTSequenceTest
 
         ACGTSequence s = new ACGTSequence(seq.toString());
         _logger.info(s);
-        for (ACGT c : ACGT.values()) {
-            for (int x = 0; x < s.textSize(); x++) {
-                for (int y = x; y < s.textSize(); y++)
-                    assertEquals(String.format("code:%s, s=%d, e=%d", c, x, y), s.count(c, x, y), s.fastCount(c, x, y));
+
+        //        {
+        //            ACGT c = ACGT.N;
+        //            int x = 0, y = 2;
+        //            assertEquals(String.format("code:%s, s=%d, e=%d", c, x, y), s.count(c, x, y), s.fastCount(c, x, y));
+        //        }
+
+        {
+            for (ACGT c : ACGT.values()) {
+                for (int x = 0; x < s.textSize(); x++) {
+                    for (int y = x; y < s.textSize(); y++)
+                        assertEquals(String.format("code:%s, s=%d, e=%d", c, x, y), s.count(c, x, y),
+                                s.fastCount(c, x, y));
+                }
             }
         }
 
