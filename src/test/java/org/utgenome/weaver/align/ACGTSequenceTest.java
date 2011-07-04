@@ -30,6 +30,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.util.Random;
 
 import org.junit.Test;
 import org.xerial.util.log.Logger;
@@ -122,4 +123,24 @@ public class ACGTSequenceTest
         }
         return b.toString();
     }
+
+    @Test
+    public void fastCount() throws Exception {
+        Random r = new Random(0);
+        StringBuilder seq = new StringBuilder();
+        for (int i = 0; i < 69; ++i) {
+            seq.append(ACGT.decode((byte) (r.nextInt(4) + 1)).toString());
+        }
+
+        ACGTSequence s = new ACGTSequence(seq.toString());
+        _logger.info(s);
+        for (ACGT c : ACGT.values()) {
+            for (int x = 0; x < s.textSize(); x++) {
+                for (int y = x; y < s.textSize(); y++)
+                    assertEquals(String.format("code:%s, s=%d, e=%d", c, x, y), s.count(c, x, y), s.fastCount(c, x, y));
+            }
+        }
+
+    }
+
 }
