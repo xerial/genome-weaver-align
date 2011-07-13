@@ -28,32 +28,40 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 import org.utgenome.weaver.align.IUPACSequence;
+import org.utgenome.weaver.align.LSeq;
 import org.xerial.util.log.Logger;
 
 public class UInt32SAISTest
 {
     private static Logger _logger = Logger.getLogger(UInt32SAISTest.class);
 
+    public static long[] toLongArray(LSeq seq) {
+        long[] a = new long[(int) seq.textSize()];
+        for (int i = 0; i < seq.textSize(); ++i)
+            a[i] = seq.lookup(i);
+        return a;
+    }
+
     @Test
     public void sais() throws Exception {
         LStringSeq s = new LStringSeq("mmiissiissiippii");
-        UInt32Array SA = CyclicSAIS.SAIS(s, 255);
+        LSeq SA = CyclicSAIS.SAIS(s, 255);
 
         long[] answer = { 16, 15, 14, 10, 6, 2, 11, 7, 3, 1, 0, 13, 12, 9, 5, 8, 4 };
-        assertArrayEquals(answer, SA.toArray());
+        assertArrayEquals(answer, toLongArray(SA));
     }
 
     @Test
     public void saisSeq() {
         //IUPACSequence s = new IUPACSequence("ACGTTA ACGTTA");
         IUPACSequence s = new IUPACSequence("ACT ACTA", true);
-        UInt32Array SA = CyclicSAIS.SAIS(s, 16);
+        LSeq SA = CyclicSAIS.SAIS(s, 16);
         _logger.debug(SA);
 
         //long answer[] = { 13, 6, 12, 5, 7, 0, 8, 1, 9, 2, 11, 4, 10, 3 };
         long answer[] = { 9, 4, 0, 7, 5, 1, 6, 2, 8, 3 };
 
-        assertArrayEquals(answer, SA.toArray());
+        assertArrayEquals(answer, toLongArray(SA));
 
     }
 
@@ -64,21 +72,21 @@ public class UInt32SAISTest
         for (int i = 0; i < t.length; ++i)
             T.set(i, t[i]);
 
-        UInt32Array SA = CyclicSAIS.SAIS(T, 4);
+        LSeq SA = CyclicSAIS.SAIS(T, 4);
 
         long[] ans = { 5, 4, 1, 2, 3, 0 };
-        assertArrayEquals(ans, SA.toArray());
+        assertArrayEquals(ans, toLongArray(SA));
 
     }
 
     @Test
     public void saisTATA() {
         IUPACSequence s = new IUPACSequence("TATAATAATATAATA", true);
-        UInt32Array SA = CyclicSAIS.SAIS(s, 16);
+        LSeq SA = CyclicSAIS.SAIS(s, 16);
         _logger.debug(SA);
 
         long answer[] = { 15, 14, 11, 3, 6, 12, 9, 1, 4, 7, 13, 10, 2, 5, 8, 0 };
-        assertArrayEquals(answer, SA.toArray());
+        assertArrayEquals(answer, toLongArray(SA));
     }
 
 }

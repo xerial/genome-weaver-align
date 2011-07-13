@@ -98,7 +98,7 @@ public class OccurrenceCountTable
         // Look up the occurrence count table
         int occ = blockPos <= 0 ? 0 : occTable.get(ch.code)[(int) (blockPos - 1)];
         // Count the characters using the original sequence
-        final long upperLimit = Math.min(index, seq.textSize() - 1);
+        final long upperLimit = Math.min(index, seq.textSize());
         occ += seq.fastCount(ch, blockPos * W, upperLimit);
         return occ;
     }

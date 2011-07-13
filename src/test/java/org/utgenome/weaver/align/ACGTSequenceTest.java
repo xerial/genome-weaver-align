@@ -166,6 +166,12 @@ public class ACGTSequenceTest
     }
 
     @Test
+    public void fastCount2() throws Exception {
+        ACGTSequence s = new ACGTSequence("TTTTATTAAAAAAAA");
+        assertEquals(9, s.fastCount(ACGT.A, 0, 15));
+    }
+
+    @Test
     public void append() throws Exception {
         ACGTSequence s1 = new ACGTSequence(orig);
 

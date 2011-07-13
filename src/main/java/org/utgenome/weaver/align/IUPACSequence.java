@@ -234,6 +234,7 @@ public class IUPACSequence implements LSeq
      * @param code
      * @param start
      * @param end
+     *            (exclusive)
      * @return
      */
     public long fastCount(IUPAC code, long start, long end) {

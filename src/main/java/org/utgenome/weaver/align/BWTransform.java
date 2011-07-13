@@ -28,6 +28,7 @@ import java.io.IOException;
 
 import org.utgenome.UTGBErrorCode;
 import org.utgenome.UTGBException;
+import org.utgenome.weaver.align.sais.CyclicSAIS;
 import org.utgenome.weaver.align.sais.Int40Array;
 import org.utgenome.weaver.align.sais.LSAIS;
 import org.xerial.util.StopWatch;
@@ -127,7 +128,7 @@ public class BWTransform extends GenomeWeaverCommand
 
             //UInt32SAIS.SAIS(seq, SA, 16);
             _logger.info("Constructing suffix array of %s", db.pac());
-            LSAIS.suffixsort(seq, SA, 5);
+            CyclicSAIS.SAIS(seq, SA, 5);
             _logger.info(String.format("%.2f sec.", timer.getElapsedTime()));
 
             _logger.info("Creating sparse suffix array " + db.sparseSuffixArray());
