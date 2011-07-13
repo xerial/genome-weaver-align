@@ -78,6 +78,18 @@ public class ACGTSequenceTest
     }
 
     @Test
+    public void reverseComplement() throws Exception {
+        ACGTSequence s = new ACGTSequence(orig);
+        ACGTSequence rc = s.reverseComplement();
+
+        for (int i = 0; i < orig.length(); ++i) {
+            ACGT c = s.getACGT(orig.length() - i - 1).complement();
+            ACGT r = rc.getACGT(i);
+            assertEquals("index " + i, c, r);
+        }
+    }
+
+    @Test
     public void save() throws Exception {
         ACGTSequence s = new ACGTSequence(orig);
 

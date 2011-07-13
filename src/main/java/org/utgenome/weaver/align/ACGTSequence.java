@@ -147,6 +147,16 @@ public class ACGTSequence implements LSeq
         return c;
     }
 
+    public ACGTSequence reverseComplement() {
+        ACGTSequence rc = reverse();
+        int numBlocks = seq.length / 3;
+        for (int i = 0; i < numBlocks; ++i) {
+            rc.seq[i * 3 + 1] = ~(rc.seq[i * 3 + 1]);
+            rc.seq[i * 3 + 2] = ~(rc.seq[i * 3 + 2]);
+        }
+        return rc;
+    }
+
     public static ACGTSequence loadFrom(File f) throws IOException {
         DataInputStream d = new DataInputStream(new BufferedInputStream(new FileInputStream(f), 4 * 1024 * 1024));
         try {
@@ -286,6 +296,13 @@ public class ACGTSequence implements LSeq
         return v;
     }
 
+    /**
+     * Interleave low 32bits (in a long value) with 0s. For example, 11110011 (8
+     * bit value) becomes 0101010100000101 (16 bit value)
+     * 
+     * @param v
+     * @return
+     */
     static long interleave32With0(long v) {
         v = ((v & 0xFFFF0000L) << 16) | (v & 0x0000FFFFL);// 0000000000000000
         v = ((v << 8) | v) & 0x00FF00FF00FF00FFL; // 0000000011111111
