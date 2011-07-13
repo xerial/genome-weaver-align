@@ -33,9 +33,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.utgenome.format.fasta.FASTAPullParser;
 import org.utgenome.format.fasta.FASTASequence;
-import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.utgenome.util.TestHelper;
 import org.utgenome.weaver.GenomeWeaver;
+import org.xerial.util.FileUtil;
 
 public class BWTransformTest
 {
@@ -51,13 +51,28 @@ public class BWTransformTest
     @After
     public void tearDown() throws Exception {
         if (tmpDir != null && tmpDir.exists()) {
-            //FileUtil.rmdir(tmpDir);
+            FileUtil.rmdir(tmpDir);
         }
     }
 
     @Test
+    public void bwt1() throws Exception {
+        File fastaArchive = TestHelper
+                .createTempFileFrom(BWTransformTest.class, "test.fa", new File(tmpDir, "test.fa"));
+        GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+    }
+
+    @Test
+    public void bwt2() throws Exception {
+        File fastaArchive = TestHelper.createTempFileFrom(BWTransformTest.class, "sample-archive.fa.tar.gz", new File(
+                tmpDir, "sample.fa.tar.gz"));
+        GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+    }
+
+    @Test
     public void transform() throws Exception {
-        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "sample.fa", new File(tmpDir, "sample.fa"));
+        File fastaArchive = TestHelper.createTempFileFrom(BWTransformTest.class, "sample.fa", new File(tmpDir,
+                "sample.fa"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
 
         FASTAPullParser fa = new FASTAPullParser(fastaArchive);
@@ -66,13 +81,11 @@ public class BWTransformTest
         // Forward
         {
             BWTFiles db = new BWTFiles("target/bwa/sample.fa", Strand.FORWARD);
-            IUPACSequence seq = IUPACSequence.loadFrom(db.iupac());
+            ACGTSequence seq = ACGTSequence.loadFrom(db.pac());
 
             // forward
             for (int i = 0; i < orig.getSequence().length(); ++i) {
-                IUPAC c = seq.getIUPAC(i);
-                if (c == IUPAC.None)
-                    continue;
+                ACGT c = seq.getACGT(i);
 
                 char origBase = Character.toUpperCase(orig.getSequence().charAt(i));
                 char iupacBase = Character.toUpperCase(c.name().charAt(0));
@@ -83,17 +96,13 @@ public class BWTransformTest
         // Reverse
         {
             BWTFiles db = new BWTFiles("target/bwa/sample.fa", Strand.REVERSE);
-            IUPACSequence seq = IUPACSequence.loadFrom(db.iupac());
+            ACGTSequence seq = ACGTSequence.loadFrom(db.pac());
             final int origLen = orig.getSequence().length();
 
             int offset = 0;
-            if (seq.getIUPAC(0) == IUPAC.N)
-                offset++;
 
             for (int i = 0; i < orig.getSequence().length(); ++i) {
-                IUPAC c = seq.getIUPAC(i + offset);
-                if (c == IUPAC.None)
-                    continue;
+                ACGT c = seq.getACGT(i + offset);
 
                 char origBase = Character.toUpperCase(orig.getSequence().charAt(origLen - i - 1));
                 char iupacBase = Character.toUpperCase(c.name().charAt(0));

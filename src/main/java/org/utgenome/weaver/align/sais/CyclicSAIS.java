@@ -200,6 +200,9 @@ public class CyclicSAIS
         LSeq SA;
         if (T.textSize() < Integer.MAX_VALUE)
             SA = new LSAIS.IntArray(new int[(int) T.textSize()], 0);
+        else if (T.textSize() < Math.pow(2, 32)) {
+            SA = new UInt32Array(T.textSize());
+        }
         else if (T.textSize() < Math.pow(2, 39)) {
             SA = new Int40Array(T.textSize());
         }
@@ -221,10 +224,6 @@ public class CyclicSAIS
 
         StopWatch timer = new StopWatch();
         _logger.info("SAIS: N=" + SA.textSize());
-
-        // initialize the suffix array
-        for (long i = 0; i < N; ++i)
-            SA.set(i, N);
 
         // Determin T[N-1]'s LS-type 
         // T[i] is SType if T[i,_) < T[i+1,_)
@@ -269,6 +268,9 @@ public class CyclicSAIS
         for (int i = 1; i < bucketEnd.length; ++i) {
             bucketEnd[i] += bucketEnd[i - 1];
         }
+        // initialize the suffix array
+        for (long i = 0; i < N; ++i)
+            SA.set(i, N);
 
         // Step 1: reduce the problem by at least 1/2 
         // Sort all the S-substrings

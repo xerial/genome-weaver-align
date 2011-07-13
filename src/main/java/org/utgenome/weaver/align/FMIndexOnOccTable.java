@@ -24,7 +24,6 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-
 public class FMIndexOnOccTable implements FMIndex
 {
     private final ACGTSequence         seq;
