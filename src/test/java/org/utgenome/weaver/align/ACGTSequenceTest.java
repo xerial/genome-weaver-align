@@ -165,4 +165,17 @@ public class ACGTSequenceTest
 
     }
 
+    @Test
+    public void append() throws Exception {
+        ACGTSequence s1 = new ACGTSequence(orig);
+
+        ACGTSequence s2 = new ACGTSequence();
+        for (int i = 0; i < orig.length(); ++i) {
+            s2.append(orig.charAt(i));
+        }
+        assertEquals(s1.textSize(), s2.textSize());
+        assertEquals(s1.toString(), s2.toString());
+
+    }
+
 }

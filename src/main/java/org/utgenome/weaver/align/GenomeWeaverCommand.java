@@ -34,6 +34,11 @@ public abstract class GenomeWeaverCommand implements Command
     protected GlobalCommandOption globalOption = new GlobalCommandOption();
 
     @Override
+    public String name() {
+        return this.getClass().getSimpleName();
+    }
+
+    @Override
     public Object getOptionHolder() {
         return this;
     }

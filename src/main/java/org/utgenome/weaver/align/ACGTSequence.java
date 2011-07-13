@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.xerial.snappy.SnappyInputStream;
 import org.xerial.snappy.SnappyOutputStream;
@@ -54,6 +55,11 @@ public class ACGTSequence implements LSeq
     private long[]            seq;
     private long              numBases;
 
+    public ACGTSequence() {
+        ensureArrayCapacity(10);
+        numBases = 0;
+    }
+
     public ACGTSequence(String s) {
         this(s.length());
 
@@ -65,15 +71,30 @@ public class ACGTSequence implements LSeq
 
     public ACGTSequence(long numBases) {
         this.numBases = numBases;
-        long bitSize = numBases * 3;
+
+        ensureArrayCapacity(numBases);
+    }
+
+    private void ensureArrayCapacity(long capacity) {
+        if (seq != null && capacity * 3 < seq.length * 64) {
+            return;
+        }
+
+        long bitSize = capacity * 3;
         long blockBitSize = LONG_BYTE_SIZE * 3 * 8;
         long arraySize = ((bitSize + blockBitSize - 1) / blockBitSize) * 3;
         if (arraySize > Integer.MAX_VALUE) {
             throw new IllegalArgumentException(String.format("Cannot create ACGTSequece more than %,d size: %,d",
-                    MAX_SIZE, numBases));
+                    MAX_SIZE, capacity));
         }
 
-        seq = new long[(int) arraySize];
+        if (seq == null) {
+            seq = new long[(int) arraySize];
+        }
+        else {
+            seq = Arrays.copyOf(seq, (int) arraySize);
+        }
+
     }
 
     private ACGTSequence(long[] rawSeq, long numBases) {
@@ -108,6 +129,13 @@ public class ACGTSequence implements LSeq
         int bPos = pos * 3 + (offset >> 5) + 1;
         seq[bPos] &= ~(0xC000000000000000L >>> shift);
         seq[bPos] |= (val & 0x03) << (62 - shift);
+    }
+
+    public void append(long val) {
+        long index = this.numBases++;
+        ensureArrayCapacity(index + 1);
+        byte code = ACGT.to3bitCode((char) val);
+        set(index, code);
     }
 
     @Override

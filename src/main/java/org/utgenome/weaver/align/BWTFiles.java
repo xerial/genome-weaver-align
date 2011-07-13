@@ -63,6 +63,10 @@ public class BWTFiles
         return new File(prefixWithStrand + ".iupac");
     }
 
+    public File pac() {
+        return new File(prefixWithStrand + ".3bit");
+    }
+
     public File bwt() {
         return new File(prefixWithStrand + ".bwt");
     }
