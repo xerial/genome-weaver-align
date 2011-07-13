@@ -29,7 +29,6 @@ import static org.junit.Assert.*;
 import java.io.File;
 
 import org.junit.Test;
-import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.utgenome.util.TestHelper;
 import org.utgenome.weaver.GenomeWeaver;
 import org.xerial.util.log.Logger;
@@ -44,28 +43,28 @@ public class FMIndexOnOccTableTest
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
 
         BWTFiles db = new BWTFiles(fastaArchive.getPath(), Strand.FORWARD);
-        IUPACSequence bwt = IUPACSequence.loadFrom(db.bwt());
+        ACGTSequence bwt = ACGTSequence.loadFrom(db.bwt());
         FMIndex fmIndex = new FMIndexOnOccTable(bwt, 32);
 
-        SuffixInterval si = fmIndex.backwardSearch(IUPAC.T, new SuffixInterval(0, fmIndex.textSize() - 1));
+        SuffixInterval si = fmIndex.backwardSearch(ACGT.T, new SuffixInterval(0, fmIndex.textSize() - 1));
         _logger.info("suffix interval: " + si);
-        assertEquals(new SuffixInterval(10, 15), si);
+        assertEquals(new SuffixInterval(9, 14), si);
 
-        si = fmIndex.backwardSearch(IUPAC.A, si);
+        si = fmIndex.backwardSearch(ACGT.A, si);
         _logger.info("suffix interval: " + si);
-        assertEquals(new SuffixInterval(5, 9), si);
+        assertEquals(new SuffixInterval(4, 8), si);
 
-        si = fmIndex.backwardSearch(IUPAC.T, si);
+        si = fmIndex.backwardSearch(ACGT.T, si);
         _logger.info("suffix interval: " + si);
-        assertEquals(new SuffixInterval(14, 15), si);
+        assertEquals(new SuffixInterval(13, 14), si);
 
-        si = fmIndex.backwardSearch(IUPAC.A, si);
+        si = fmIndex.backwardSearch(ACGT.A, si);
         _logger.info("suffix interval: " + si);
-        assertEquals(new SuffixInterval(9, 9), si);
+        assertEquals(new SuffixInterval(8, 8), si);
 
-        si = fmIndex.backwardSearch(IUPAC.A, si);
+        si = fmIndex.backwardSearch(ACGT.A, si);
         _logger.info("suffix interval: " + si);
-        assertEquals(new SuffixInterval(4, 4), si);
+        assertEquals(new SuffixInterval(3, 3), si);
 
     }
 }

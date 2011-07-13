@@ -68,22 +68,16 @@ public class BWAlign extends GenomeWeaverCommand
     }
 
     @Argument(index = 0)
-    private String  fastaFilePrefix;
+    private String fastaFilePrefix;
 
     @Argument(index = 1)
-    private String  readFile;
+    private String readFile;
 
     @Option(symbol = "q", description = "query sequence")
-    private String  query;
-
-    //    @Option(longName = "sam", description = "output in SAM format")
-    //    public boolean outputSAM           = false;
-
-    @Option(symbol = "w", description = "use wavelet-array")
-    private boolean useWaveletArray     = false;
+    private String query;
 
     @Option(symbol = "N", description = "Num mismatches allowed. default=0")
-    public int      numMismachesAllowed = 0;
+    public int     numMismachesAllowed = 0;
 
     public static class SAMOutput implements ObjectHandler<AlignmentRecord>
     {
@@ -132,7 +126,7 @@ public class BWAlign extends GenomeWeaverCommand
         BWTFiles forwardDB = new BWTFiles(fastaFilePrefix, Strand.FORWARD);
         SequenceBoundary b = SequenceBoundary.loadSilk(forwardDB.pacIndex());
         SAMOutput samOutput = new SAMOutput(b, new StandardOutputStream());
-        query(fastaFilePrefix, useWaveletArray, reader, samOutput);
+        query(fastaFilePrefix, reader, samOutput);
     }
 
     private static class GenomeCoordinateConverter extends ObjectHandlerBase<AlignmentSA>
@@ -153,11 +147,11 @@ public class BWAlign extends GenomeWeaverCommand
 
     }
 
-    public static void query(String fastaFilePrefix, boolean useWavelet, ReadSequenceReader readReader,
+    public static void query(String fastaFilePrefix, ReadSequenceReader readReader,
             final ObjectHandler<AlignmentRecord> handler) throws Exception {
 
         handler.init();
-        final FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix, useWavelet);
+        final FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix);
         final BWAStrategy aligner = new BWAStrategy(fmIndex);
         readReader.parse(new ObjectHandlerBase<RawRead>() {
             int       count = 0;
@@ -177,10 +171,10 @@ public class BWAlign extends GenomeWeaverCommand
 
     }
 
-    public static void querySingle(String fastaFilePrefix, boolean useWavelet, final String query,
+    public static void querySingle(String fastaFilePrefix, final String query,
             final ObjectHandler<AlignmentRecord> resultHandler) throws Exception {
 
-        query(fastaFilePrefix, useWavelet, ReadSequenceReaderFactory.singleQueryReader(query), resultHandler);
+        query(fastaFilePrefix, ReadSequenceReaderFactory.singleQueryReader(query), resultHandler);
     }
 
 }

@@ -24,7 +24,7 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
-import org.utgenome.gwt.utgb.client.bio.IUPAC;
+import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
@@ -47,7 +47,7 @@ public class BidirectionalBWT
     public void align(ReadSequence read) {
 
         SuffixInterval I = new SuffixInterval(0, fmIndex.fmIndexF.textSize());
-        IUPAC ch = IUPAC.encode(read.seq.charAt(0));
+        ACGT ch = ACGT.encode(read.seq.charAt(0));
         fmIndex.backwardSearch(Strand.FORWARD, ch, I);
 
     }

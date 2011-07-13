@@ -3,12 +3,12 @@ package org.utgenome.weaver.align.strategy;
 import java.util.ArrayList;
 import java.util.PriorityQueue;
 
-import org.utgenome.gwt.utgb.client.bio.IUPAC;
+import org.utgenome.weaver.align.ACGT;
+import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.AlignmentSA;
 import org.utgenome.weaver.align.AlignmentScoreConfig;
 import org.utgenome.weaver.align.CharacterCount;
 import org.utgenome.weaver.align.FMIndexOnGenome;
-import org.utgenome.weaver.align.IUPACSequence;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.RawRead;
@@ -29,16 +29,13 @@ public class BWAStrategy
     private final FMIndexOnGenome      fmIndex;
     private final int                  numMismatchesAllowed = 1;
     private final AlignmentScoreConfig config               = new AlignmentScoreConfig();
-    private final ArrayList<IUPAC>     lettersInGenome      = new ArrayList<IUPAC>();
+    private final ArrayList<ACGT>      lettersInGenome      = new ArrayList<ACGT>();
 
     public BWAStrategy(FMIndexOnGenome fmIndex) {
         this.fmIndex = fmIndex;
 
         CharacterCount C = fmIndex.fmIndexF.getCharacterCount();
-        for (IUPAC base : IUPAC.values()) {
-            if (base == IUPAC.None)
-                continue;
-
+        for (ACGT base : ACGT.values()) {
             if (C.getCount(base) > 0) {
                 lettersInGenome.add(base);
             }
@@ -62,7 +59,7 @@ public class BWAStrategy
      * @throws Exception
      */
     public void align(ReadSequence read, ObjectHandler<AlignmentSA> out) throws Exception {
-        IUPACSequence seq = new IUPACSequence(read.seq);
+        ACGTSequence seq = new ACGTSequence(read.seq);
 
         int minScore = (int) (seq.textSize() - numMismatchesAllowed) * config.matchScore - config.mismatchPenalty
                 * numMismatchesAllowed;
@@ -112,16 +109,16 @@ public class BWAStrategy
             // Search for deletion
             alignmentQueue.add(current.extendWithDeletion(config));
 
-            IUPAC currentBase = current.common.query.getIUPAC(current.wordIndex);
+            ACGT currentBase = current.common.query.getACGT(current.wordIndex);
             // Traverse for each A, C, G, T, ... etc.
-            for (IUPAC nextBase : lettersInGenome) {
+            for (ACGT nextBase : lettersInGenome) {
                 SuffixInterval next = fmIndex.backwardSearch(current.strand, nextBase, current.suffixInterval);
                 if (next.isValidRange()) {
                     // Search for insertion
                     if (current.wordIndex > 0 && current.wordIndex < seq.textSize() - 1) {
                         alignmentQueue.add(current.extendWithInsertion(config));
                     }
-                    if ((nextBase.bitFlag & currentBase.bitFlag) != 0) {
+                    if ((nextBase.code & currentBase.code) != 0) {
                         // match
                         alignmentQueue.add(current.extendWithMatch(next, config));
                     }
@@ -134,12 +131,12 @@ public class BWAStrategy
         }
     }
 
-    public SuffixInterval alignExact(IUPACSequence seq, Strand strand) {
+    public SuffixInterval alignExact(ACGTSequence seq, Strand strand) {
 
         SuffixInterval si = new SuffixInterval(0, fmIndex.fmIndexF.textSize());
 
         for (int wordIndex = 0; wordIndex < seq.textSize(); ++wordIndex) {
-            IUPAC currentBase = seq.getIUPAC(wordIndex);
+            ACGT currentBase = seq.getACGT(wordIndex);
             SuffixInterval next = fmIndex.backwardSearch(strand, currentBase, si);
             if (!next.isValidRange()) {
                 return null;

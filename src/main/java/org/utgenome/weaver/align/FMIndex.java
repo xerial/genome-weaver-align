@@ -24,7 +24,6 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import org.utgenome.gwt.utgb.client.bio.IUPAC;
 
 /**
  * Text-search index based on BWT string
@@ -34,7 +33,7 @@ import org.utgenome.gwt.utgb.client.bio.IUPAC;
  */
 public interface FMIndex
 {
-    public SuffixInterval backwardSearch(IUPAC ch, SuffixInterval current);
+    public SuffixInterval backwardSearch(ACGT ch, SuffixInterval current);
 
     public CharacterCount getCharacterCount();
 

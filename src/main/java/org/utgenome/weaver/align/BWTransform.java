@@ -126,6 +126,7 @@ public class BWTransform extends GenomeWeaverCommand
             }
 
             //UInt32SAIS.SAIS(seq, SA, 16);
+            _logger.info("Constructing suffix array of %s", db.pac());
             LSAIS.suffixsort(seq, SA, 5);
             _logger.info(String.format("%.2f sec.", timer.getElapsedTime()));
 

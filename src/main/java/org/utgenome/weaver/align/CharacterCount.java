@@ -24,7 +24,6 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import org.utgenome.gwt.utgb.client.bio.IUPAC;
 
 /**
  * Character count <i>C[x]</i> is the number of characters in the input text
@@ -36,7 +35,7 @@ import org.utgenome.gwt.utgb.client.bio.IUPAC;
  */
 public class CharacterCount
 {
-    private static int K     = IUPAC.values().length;
+    private static int K     = ACGT.values().length;
     private long[]     C     = new long[K];
     private long[]     count = new long[K];
 
@@ -47,8 +46,8 @@ public class CharacterCount
         }
 
         for (long i = 0; i < seq.textSize(); ++i) {
-            IUPAC code = IUPAC.decode((byte) seq.lookup(i));
-            count[code.bitFlag]++;
+            ACGT ch = ACGT.decode((byte) seq.lookup(i));
+            count[ch.code]++;
         }
 
         long sum = 0;
@@ -70,12 +69,12 @@ public class CharacterCount
         }
     }
 
-    public long getCharacterCountSmallerThan(IUPAC code) {
-        return C[code.bitFlag];
+    public long getCharacterCountSmallerThan(ACGT ch) {
+        return C[ch.code];
     }
 
-    public long getCount(IUPAC code) {
-        return count[code.bitFlag];
+    public long getCount(ACGT code) {
+        return count[code.code];
     }
 
 }

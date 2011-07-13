@@ -24,15 +24,14 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import org.utgenome.gwt.utgb.client.bio.IUPAC;
 
 public class FMIndexOnOccTable implements FMIndex
 {
-    private final IUPACSequence        seq;
+    private final ACGTSequence         seq;
     private final OccurrenceCountTable occ;
     private final CharacterCount       C;
 
-    public FMIndexOnOccTable(IUPACSequence seq, int windowSize) {
+    public FMIndexOnOccTable(ACGTSequence seq, int windowSize) {
         this.seq = seq;
         this.occ = new OccurrenceCountTable(seq, windowSize);
         this.C = new CharacterCount(seq);
@@ -42,7 +41,7 @@ public class FMIndexOnOccTable implements FMIndex
         return C;
     }
 
-    public SuffixInterval backwardSearch(IUPAC ch, SuffixInterval current) {
+    public SuffixInterval backwardSearch(ACGT ch, SuffixInterval current) {
         long lowerBound = C.getCharacterCountSmallerThan(ch) + occ.getOcc(ch, current.lowerBound);
         long upperBound = C.getCharacterCountSmallerThan(ch) + occ.getOcc(ch, current.upperBound + 1) - 1;
         return new SuffixInterval(lowerBound, upperBound);
@@ -59,7 +58,7 @@ public class FMIndexOnOccTable implements FMIndex
         if (index >= seq.textSize()) { // If the index reaches the sentinel 
             return 0; // Return the smallest SA index
         }
-        IUPAC c = IUPAC.decode((byte) seq.lookup(index));
+        ACGT c = ACGT.decode((byte) seq.lookup(index));
         return C.getCharacterCountSmallerThan(c) + occ.getOcc(c, index);
     }
 

@@ -27,7 +27,6 @@ package org.utgenome.weaver.align;
 import java.io.IOException;
 
 import org.utgenome.UTGBException;
-import org.utgenome.gwt.utgb.client.bio.IUPAC;
 import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.xerial.lens.SilkLens;
@@ -49,7 +48,7 @@ public class FMIndexOnGenome
     private final long              N;
     private final int               K;
 
-    public FMIndexOnGenome(String fastaFilePrefix, boolean useWavelet) throws UTGBException, IOException {
+    public FMIndexOnGenome(String fastaFilePrefix) throws UTGBException, IOException {
 
         _logger.info("Preparing FM-indexes");
         BWTFiles forwardDB = new BWTFiles(fastaFilePrefix, Strand.FORWARD);
@@ -58,35 +57,22 @@ public class FMIndexOnGenome
         // Load the boundary information of the concatenated chr sequences 
         index = SequenceBoundary.loadSilk(forwardDB.pacIndex());
         N = index.totalSize;
-        K = IUPAC.values().length;
+        K = ACGT.values().length;
 
         // Load sparse suffix arrays
         BWAlign._logger.info("Loading sparse suffix arrays");
         saF = SparseSuffixArray.loadFrom(forwardDB.sparseSuffixArray());
         saR = SparseSuffixArray.loadFrom(reverseDB.sparseSuffixArray());
 
-        if (useWavelet) {
-            // Load Wavelet arrays
-            BWAlign._logger.info("Loading a Wavelet array of the forward BWT");
-            wvF = WaveletArray.loadFrom(forwardDB.bwtWavelet());
-            BWAlign._logger.info("Loading a Wavelet array of the reverse BWT");
-            wvR = WaveletArray.loadFrom(reverseDB.bwtWavelet());
-
-            // Prepare FM-indexes
-            fmIndexF = new FMIndexOnWaveletArray(wvF);
-            fmIndexR = new FMIndexOnWaveletArray(wvR);
-        }
-        else {
-            IUPACSequence seqF = IUPACSequence.loadFrom(forwardDB.bwt());
-            IUPACSequence seqR = IUPACSequence.loadFrom(reverseDB.bwt());
-            int windowSize = 64;
-            fmIndexF = new FMIndexOnOccTable(seqF, windowSize);
-            fmIndexR = new FMIndexOnOccTable(seqR, windowSize);
-        }
+        ACGTSequence seqF = ACGTSequence.loadFrom(forwardDB.bwt());
+        ACGTSequence seqR = ACGTSequence.loadFrom(reverseDB.bwt());
+        int windowSize = 64;
+        fmIndexF = new FMIndexOnOccTable(seqF, windowSize);
+        fmIndexR = new FMIndexOnOccTable(seqR, windowSize);
         _logger.info("done.");
     }
 
-    public SuffixInterval backwardSearch(Strand strand, IUPAC nextBase, SuffixInterval si) {
+    public SuffixInterval backwardSearch(Strand strand, ACGT nextBase, SuffixInterval si) {
         FMIndex fm = strand == Strand.FORWARD ? fmIndexR : fmIndexF;
         return fm.backwardSearch(nextBase, si);
     }
@@ -124,8 +110,8 @@ public class FMIndexOnGenome
                 rec.score = result.alignmentScore;
                 rec.numMismatches = result.numMismatches;
                 // workaround for Picard tools, which cannot accept base character other than ACGT 
-                rec.querySeq = result.strand == Strand.FORWARD ? result.common.query.toACGTString()
-                        : result.common.query.reverse().toACGTString();
+                rec.querySeq = result.strand == Strand.FORWARD ? result.common.query.toString() : result.common.query
+                        .reverse().toString();
                 rec.readName = result.common.queryName;
                 rec.end = p.pos + result.wordIndex;
                 rec.setCIGAR(result.cigar().toCIGARString());

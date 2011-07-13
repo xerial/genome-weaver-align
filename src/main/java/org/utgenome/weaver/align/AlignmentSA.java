@@ -43,10 +43,10 @@ public class AlignmentSA implements Comparable<AlignmentSA>
 
     public static class CommonInfo
     {
-        public final String        queryName;
-        public final IUPACSequence query;
+        public final String       queryName;
+        public final ACGTSequence query;
 
-        public CommonInfo(String queryName, IUPACSequence query) {
+        public CommonInfo(String queryName, ACGTSequence query) {
             this.queryName = queryName;
             this.query = query;
         }
@@ -213,7 +213,7 @@ public class AlignmentSA implements Comparable<AlignmentSA>
                 numMismatches + 1, alignmentScore - config.gapExtentionPenalty, newGapPosition);
     }
 
-    public static AlignmentSA initialState(String queryName, IUPACSequence seq, Strand strand, long textSize) {
+    public static AlignmentSA initialState(String queryName, ACGTSequence seq, Strand strand, long textSize) {
         return new AlignmentSA(new CommonInfo(queryName, seq), strand, 0, IndelState.NORMAL, new SuffixInterval(0,
                 textSize - 1), 0, 0, null);
     }

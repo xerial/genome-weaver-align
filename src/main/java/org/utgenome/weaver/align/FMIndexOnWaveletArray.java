@@ -24,7 +24,6 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import org.utgenome.gwt.utgb.client.bio.IUPAC;
 
 public class FMIndexOnWaveletArray implements FMIndex
 {
@@ -40,9 +39,9 @@ public class FMIndexOnWaveletArray implements FMIndex
         return C;
     }
 
-    public SuffixInterval backwardSearch(IUPAC ch, SuffixInterval current) {
-        long lowerBound = C.getCharacterCountSmallerThan(ch) + W.rank(ch.bitFlag, current.lowerBound);
-        long upperBound = C.getCharacterCountSmallerThan(ch) + W.rank(ch.bitFlag, current.upperBound + 1) - 1;
+    public SuffixInterval backwardSearch(ACGT ch, SuffixInterval current) {
+        long lowerBound = C.getCharacterCountSmallerThan(ch) + W.rank(ch.code, current.lowerBound);
+        long upperBound = C.getCharacterCountSmallerThan(ch) + W.rank(ch.code, current.upperBound + 1) - 1;
         return new SuffixInterval(lowerBound, upperBound);
     }
 
@@ -57,8 +56,8 @@ public class FMIndexOnWaveletArray implements FMIndex
         if (index >= W.textSize()) { // If the index reaches the sentinel 
             return 0; // Return the smallest SA index
         }
-        IUPAC c = IUPAC.decode((byte) W.lookup(index));
-        return C.getCharacterCountSmallerThan(c) + W.rank(c.bitFlag, index);
+        ACGT c = ACGT.decode((byte) W.lookup(index));
+        return C.getCharacterCountSmallerThan(c) + W.rank(c.code, index);
     }
 
     public long textSize() {
