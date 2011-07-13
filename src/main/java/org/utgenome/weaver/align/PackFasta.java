@@ -89,7 +89,8 @@ public class PackFasta extends GenomeWeaverCommand
                 long sequenceSize = pos - offset;
                 SequenceIndex index = new SequenceIndex(seqName, desc, sequenceSize, offset);
                 indexOut.leafObject("index", index);
-                _logger.debug("\n" + SilkLens.toSilk("index", index));
+                if (_logger.isDebugEnabled())
+                    _logger.debug("\n" + SilkLens.toSilk("index", index));
                 offset = pos;
             }
             totalSize = packed.textSize();
