@@ -37,7 +37,7 @@ import org.xerial.util.log.Logger;
  * @author leo
  * 
  */
-public class UInt32SAIS
+public class CyclicSAIS
 {
     private final LSeq           T;
     private final long           N;
@@ -188,7 +188,7 @@ public class UInt32SAIS
         }
     }
 
-    public UInt32SAIS(LSeq T, int K) {
+    public CyclicSAIS(LSeq T, int K) {
         this.T = T;
         this.N = T.textSize();
         this.K = K;
@@ -196,19 +196,26 @@ public class UInt32SAIS
         LS = new LSType(N);
     }
 
-    public static UInt32Array SAIS(LSeq T, int K) {
-        UInt32Array SA = new UInt32Array(T.textSize());
+    public static LSeq SAIS(LSeq T, int K) {
+        LSeq SA;
+        if (T.textSize() < Integer.MAX_VALUE)
+            SA = new LSAIS.IntArray(new int[(int) T.textSize()], 0);
+        else if (T.textSize() < Math.pow(2, 39)) {
+            SA = new Int40Array(T.textSize());
+        }
+        else
+            throw new IllegalArgumentException("Cannot create SA array more than 3.2GB length");
         SAIS(T, SA, K);
         return SA;
     }
 
     public static LSeq SAIS(LSeq T, LSeq SA, int K) {
-        UInt32SAIS sais = new UInt32SAIS(T, K);
+        CyclicSAIS sais = new CyclicSAIS(T, K);
         sais.SAIS(SA);
         return SA;
     }
 
-    private static Logger _logger = Logger.getLogger(UInt32SAIS.class);
+    private static Logger _logger = Logger.getLogger(CyclicSAIS.class);
 
     public void SAIS(LSeq SA) {
 
@@ -217,13 +224,30 @@ public class UInt32SAIS
 
         // initialize the suffix array
         for (long i = 0; i < N; ++i)
-            SA.set(i, 0);
+            SA.set(i, -1);
 
-        LS.set(N - 1, SType); // the sentinel 
-        LS.set(N - 2, LType);
+        // Determin T[N-1]'s LS-type 
+        // T[i] is SType if T[i,_) < T[i+1,_)
+        // T[i] is LType if T[i,_) > T[i+1,_)
+        for (long i = 0; i < N; ++i) {
+            long x = T.lookup((N + i - 1) % N);
+            long y = T.lookup((N + i) % N);
+            if (x == y)
+                continue;
+            if (x < y) {
+                LS.set(N - 1, SType);
+                break;
+            }
+            else {
+                LS.set(N - 1, LType);
+                break;
+            }
+        }
 
-        // set the type of each character
-        for (long i = N - 2; i > 0; --i) {
+        // T[i] is SType if T[i] < T[i+1] or T[i] = T[i+1] and T[i+1] is S-type
+        // T[i] is LType if T[i] > T[i+1] or T[i] = T[i+1] and T[i+1] is L-type
+        // Set the LS type of each character 
+        for (long i = N - 1; i > 0; --i) {
             long x = T.lookup(i);
             long y = T.lookup(i - 1);
             if (x < y)
@@ -251,7 +275,7 @@ public class UInt32SAIS
 
         // Find LMS characters
         long[] cursorInBucket = Arrays.copyOf(bucketEnd, bucketEnd.length);
-        for (long i = 1; i < N; ++i) {
+        for (long i = 0; i < N; ++i) {
             if (isLMS(i))
                 SA.set(--cursorInBucket[(int) T.lookup(i)], i);
         }
@@ -266,20 +290,18 @@ public class UInt32SAIS
         int numLMS = 0;
         // Compact all the sorted substrings into the first M items of SA
         // 2*M must be not larger than N 
-
-        // 
         for (long i = 0; i < N; ++i) {
             long si = SA.lookup(i);
-            if (si > 0 && isLMS(si))
+            if (si >= 0 && isLMS(si))
                 SA.set(numLMS++, si);
         }
 
         // Initialize the name array buffer
         for (long i = numLMS; i < N; ++i)
-            SA.set(i, 0);
+            SA.set(i, -1);
 
         // Find the lexicographic names of the LMS substrings
-        _logger.debug("sorting LMS substrings: N=" + SA.textSize());
+        _logger.debug("Sorting LMS substrings: N=" + SA.textSize());
         int name = 1;
         SA.set(numLMS + (SA.lookup(0) / 2), name++);
         for (long i = 1; i < numLMS; ++i) {
@@ -292,17 +314,17 @@ public class UInt32SAIS
         }
 
         for (long i = N - 1, j = N - 1; i >= numLMS; --i) {
-            if (SA.lookup(i) != 0)
+            if (SA.lookup(i) != -1)
                 SA.set(j--, SA.lookup(i) - 1);
         }
 
         // Step 2: solve the reduced problem
         // Create SA1, a view of SA[0, numLMS-1]
-        _logger.debug("solving the reduced problem: N=" + SA.textSize());
+        _logger.debug("Solving the reduced problem: N=" + SA.textSize());
         LSeq SA1 = new ArrayWrap(SA, 0, numLMS);
         LSeq T1 = new ArrayWrap(SA, N - numLMS, numLMS);
         if (name - 1 != numLMS) {
-            new UInt32SAIS(T1, name - 1).SAIS(SA1);
+            new CyclicSAIS(T1, name - 1).SAIS(SA1);
         }
         else {
             // When all LMS substrings have unique names
@@ -312,7 +334,6 @@ public class UInt32SAIS
 
         // Step 3: Induce SA from SA1
         // Construct P1 using T1 buffer
-        _logger.debug("preparing induced sort from SA1: N=" + SA.textSize());
 
         for (long i = 1, j = 0; i < N; ++i) {
             if (isLMS(i))
@@ -328,26 +349,26 @@ public class UInt32SAIS
 
         // Clear SA[N1 .. N-1]
         for (long i = numLMS; i < N; ++i) {
-            SA.set(i, 0);
+            SA.set(i, -1);
         }
         // Put SA1 contents into S-type buckets of SA 
         System.arraycopy(bucketEnd, 0, cursorInBucket, 0, bucketEnd.length);
         for (int i = numLMS - 1; i >= 0; --i) {
             long si = SA1.lookup(i);
-            SA.set(i, 0);
+            SA.set(i, -1);
             SA.set(--cursorInBucket[(int) T.lookup(si)], si);
         }
-        SA.set(0, T.textSize() - 1);
+        //SA.set(0, T.textSize() - 1);
 
         // Step 3-2, 3-3
-        _logger.info("inducing SA from SA1: N=" + SA.textSize());
+        _logger.info("Inducing SA from SA1: N=" + SA.textSize());
         induceSA(SA);
 
         _logger.info(String.format("done. %.2f sec.", timer.getElapsedTime()));
     }
 
     boolean isLMS(long pos) {
-        return LS.get(pos) == SType && LS.get(pos - 1) == LType;
+        return LS.get(pos % N) == SType && LS.get((pos - 1 + N) % N) == LType;
     }
 
     private void induceSA(LSeq SA) {
@@ -356,31 +377,35 @@ public class UInt32SAIS
         // induce left
         for (long i = 0; i < N; ++i) {
             long si = SA.lookup(i);
-            if (si == 0)
+            if (si < 0)
                 continue;
-            if (LS.get(si - 1) == LType)
-                SA.set(cursorInBucket[(int) T.lookup(si - 1) - 1]++, si - 1);
+            si = (si - 1 + N) % N;
+            if (LS.get(si) == LType)
+                SA.set(cursorInBucket[(int) T.lookup(si) - 1]++, si);
         }
 
         // induce right
         System.arraycopy(bucketEnd, 0, cursorInBucket, 0, bucketEnd.length);
         for (long i = N - 1; i >= 0; --i) {
             long si = SA.lookup(i);
-            if (si == 0)
+            if (si < 0)
                 continue;
-
-            if (LS.get(si - 1) == SType)
-                SA.set(--cursorInBucket[(int) T.lookup(si - 1)], si - 1);
+            si = (si - 1 + N) % N;
+            if (LS.get(si) == SType)
+                SA.set(--cursorInBucket[(int) T.lookup(si)], si);
         }
     }
 
     boolean isEqualLMSSubstring(long pos1, long pos2) {
         boolean prevLS = SType;
-        for (; pos1 < N && pos2 < N; ++pos1, ++pos2) {
-            if (T.lookup(pos1) == T.lookup(pos2) && LS.get(pos1) == LS.get(pos2)) {
-                if (prevLS == LType && LS.get(pos1) == SType)
+        long offset = 0;
+        for (; offset < N; ++pos1, ++pos2) {
+            long p1 = pos1 % N;
+            long p2 = pos2 % N;
+            if (T.lookup(p1) == T.lookup(p2) && LS.get(p1) == LS.get(p2)) {
+                if (prevLS == LType && LS.get(p1) == SType)
                     return true; // equal LMS substring
-                prevLS = LS.get(pos1);
+                prevLS = LS.get(p1);
                 continue;
             }
             else

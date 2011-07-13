@@ -71,7 +71,7 @@ public class PrintSA extends GenomeWeaverCommand
         final int K = IUPAC.values().length;
 
         LSeq SA = new LSAIS.IntArray(new int[(int) s.textSize()], 0);
-        LSAIS.suffixsort(s, SA, ACGT.values().length);
+        CyclicSAIS.SAIS(s, SA, ACGT.values().length);
         //LSeq SA = UInt32SAIS.SAIS(s, K);
 
         ACGTSequence bwt = BWTransform.bwt(s, SA);
