@@ -81,7 +81,7 @@ public class FMIndexOnGenome
         long pos = -1;
         switch (strand) {
         case FORWARD:
-            pos = fmIndexR.textSize() - 1 - saR.get(saIndex, fmIndexR);
+            pos = fmIndexR.textSize() - saR.get(saIndex, fmIndexR);
             break;
         case REVERSE:
             pos = saF.get(saIndex, fmIndexF);
@@ -98,8 +98,9 @@ public class FMIndexOnGenome
 
         for (long i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
             long pos = toForwardSequenceIndex(i, result.strand);
-            if (result.strand == Strand.FORWARD)
-                pos -= querySize;
+            if (result.strand == Strand.FORWARD) {
+                pos -= querySize - 1;
+            }
             pos += 1;
             if (pos != -1) {
                 PosOnGenome p = index.translate(pos, result.strand);
