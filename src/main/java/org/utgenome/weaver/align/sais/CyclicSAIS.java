@@ -224,7 +224,7 @@ public class CyclicSAIS
 
         // initialize the suffix array
         for (long i = 0; i < N; ++i)
-            SA.set(i, -1);
+            SA.set(i, N);
 
         // Determin T[N-1]'s LS-type 
         // T[i] is SType if T[i,_) < T[i+1,_)
@@ -291,13 +291,13 @@ public class CyclicSAIS
         // 2*M must be not larger than N 
         for (long i = 0; i < N; ++i) {
             long si = SA.lookup(i);
-            if (si >= 0 && isLMS(si))
+            if (si != N && isLMS(si))
                 SA.set(numLMS++, si);
         }
 
         // Initialize the name array buffer
         for (long i = numLMS; i < N; ++i)
-            SA.set(i, -1);
+            SA.set(i, N);
 
         // Find the lexicographic names of the LMS substrings
         _logger.debug("Sorting LMS substrings: N=" + SA.textSize());
@@ -313,7 +313,7 @@ public class CyclicSAIS
         }
 
         for (long i = N - 1, j = N - 1; i >= numLMS; --i) {
-            if (SA.lookup(i) != -1)
+            if (SA.lookup(i) != N)
                 SA.set(j--, SA.lookup(i) - 1);
         }
 
@@ -333,7 +333,6 @@ public class CyclicSAIS
 
         // Step 3: Induce SA from SA1
         // Construct P1 using T1 buffer
-
         for (long i = 0, j = 0; i < N; ++i) {
             if (isLMS(i))
                 T1.set(j++, i); // 
@@ -348,13 +347,13 @@ public class CyclicSAIS
 
         // Clear SA[N1 .. N-1]
         for (long i = numLMS; i < N; ++i) {
-            SA.set(i, -1);
+            SA.set(i, N);
         }
         // Put SA1 contents into S-type buckets of SA 
         System.arraycopy(bucketEnd, 0, cursorInBucket, 0, bucketEnd.length);
         for (int i = numLMS - 1; i >= 0; --i) {
             long si = SA1.lookup(i);
-            SA.set(i, -1);
+            SA.set(i, N);
             long index = --cursorInBucket[(int) T.lookup(si)];
             SA.set(index, si);
         }
@@ -377,7 +376,7 @@ public class CyclicSAIS
         // induce left
         for (long i = 0; i < N; ++i) {
             long si = SA.lookup(i);
-            if (si < 0)
+            if (si == N)
                 continue;
             si = (si - 1 + N) % N;
             if (LS.get(si) == LType)
@@ -388,7 +387,7 @@ public class CyclicSAIS
         System.arraycopy(bucketEnd, 0, cursorInBucket, 0, bucketEnd.length);
         for (long i = N - 1; i >= 0; --i) {
             long si = SA.lookup(i);
-            if (si < 0)
+            if (si == N)
                 continue;
             si = (si - 1 + N) % N;
             if (LS.get(si) == SType)

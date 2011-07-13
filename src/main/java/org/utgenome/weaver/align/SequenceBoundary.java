@@ -99,7 +99,7 @@ public class SequenceBoundary
             }
         }
 
-        SortedMap<Long, String> headMap = indexToChrTable.headMap(textIndex + 1);
+        SortedMap<Long, String> headMap = indexToChrTable.headMap(textIndex);
         if (headMap == null || headMap.isEmpty())
             throw new UTGBException(UTGBErrorCode.INVALID_INPUT, "invalid index: " + textIndex);
 

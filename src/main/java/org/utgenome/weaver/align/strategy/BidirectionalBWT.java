@@ -46,7 +46,7 @@ public class BidirectionalBWT
 
     public void align(ReadSequence read) {
 
-        SuffixInterval I = new SuffixInterval(0, fmIndex.fmIndexF.textSize());
+        SuffixInterval I = new SuffixInterval(0, fmIndex.forwardIndex.textSize());
         ACGT ch = ACGT.encode(read.seq.charAt(0));
         fmIndex.backwardSearch(Strand.FORWARD, ch, I);
 

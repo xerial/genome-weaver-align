@@ -31,9 +31,9 @@ import org.utgenome.weaver.align.IUPACSequence;
 import org.utgenome.weaver.align.LSeq;
 import org.xerial.util.log.Logger;
 
-public class UInt32SAISTest
+public class CyclicSAISTest
 {
-    private static Logger _logger = Logger.getLogger(UInt32SAISTest.class);
+    private static Logger _logger = Logger.getLogger(CyclicSAISTest.class);
 
     public static long[] toLongArray(LSeq seq) {
         long[] a = new long[(int) seq.textSize()];

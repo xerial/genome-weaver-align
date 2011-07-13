@@ -37,12 +37,10 @@ public class FMIndexOnGenome
 {
     private static Logger           _logger = Logger.getLogger(FMIndexOnGenome.class);
 
-    public final FMIndex            fmIndexF;
-    public final FMIndex            fmIndexR;
-    private final SparseSuffixArray saF;
-    private final SparseSuffixArray saR;
-    private WaveletArray            wvF;
-    private WaveletArray            wvR;
+    public final FMIndex            forwardIndex;
+    public final FMIndex            backwardIndex;
+    private final SparseSuffixArray forwardSA;
+    private final SparseSuffixArray backwardSA;
     private final SequenceBoundary  index;
 
     private final long              N;
@@ -52,7 +50,7 @@ public class FMIndexOnGenome
 
         _logger.info("Preparing FM-indexes");
         BWTFiles forwardDB = new BWTFiles(fastaFilePrefix, Strand.FORWARD);
-        BWTFiles reverseDB = new BWTFiles(fastaFilePrefix, Strand.REVERSE);
+        BWTFiles backwardDB = new BWTFiles(fastaFilePrefix, Strand.REVERSE);
 
         // Load the boundary information of the concatenated chr sequences 
         index = SequenceBoundary.loadSilk(forwardDB.pacIndex());
@@ -61,19 +59,19 @@ public class FMIndexOnGenome
 
         // Load sparse suffix arrays
         BWAlign._logger.info("Loading sparse suffix arrays");
-        saF = SparseSuffixArray.loadFrom(forwardDB.sparseSuffixArray());
-        saR = SparseSuffixArray.loadFrom(reverseDB.sparseSuffixArray());
+        forwardSA = SparseSuffixArray.loadFrom(forwardDB.sparseSuffixArray());
+        backwardSA = SparseSuffixArray.loadFrom(backwardDB.sparseSuffixArray());
 
         ACGTSequence seqF = ACGTSequence.loadFrom(forwardDB.bwt());
-        ACGTSequence seqR = ACGTSequence.loadFrom(reverseDB.bwt());
+        ACGTSequence seqR = ACGTSequence.loadFrom(backwardDB.bwt());
         int windowSize = 64;
-        fmIndexF = new FMIndexOnOccTable(seqF, windowSize);
-        fmIndexR = new FMIndexOnOccTable(seqR, windowSize);
+        forwardIndex = new FMIndexOnOccTable(seqF, windowSize);
+        backwardIndex = new FMIndexOnOccTable(seqR, windowSize);
         _logger.info("done.");
     }
 
     public SuffixInterval backwardSearch(Strand strand, ACGT nextBase, SuffixInterval si) {
-        FMIndex fm = strand == Strand.FORWARD ? fmIndexR : fmIndexF;
+        FMIndex fm = strand == Strand.FORWARD ? backwardIndex : forwardIndex;
         return fm.backwardSearch(nextBase, si);
     }
 
@@ -81,10 +79,11 @@ public class FMIndexOnGenome
         long pos = -1;
         switch (strand) {
         case FORWARD:
-            pos = fmIndexR.textSize() - saR.get(saIndex, fmIndexR);
+            long sa = backwardSA.get(saIndex, backwardIndex) - 1;
+            pos = backwardIndex.textSize() - sa;
             break;
         case REVERSE:
-            pos = saF.get(saIndex, fmIndexF);
+            pos = forwardSA.get(saIndex, forwardIndex);
             break;
         }
         return pos;
@@ -99,7 +98,7 @@ public class FMIndexOnGenome
         for (long i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
             long pos = toForwardSequenceIndex(i, result.strand);
             if (result.strand == Strand.FORWARD) {
-                pos -= querySize - 1;
+                pos -= querySize;
             }
             pos += 1;
             if (pos != -1) {

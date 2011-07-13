@@ -34,7 +34,7 @@ public class BWAStrategy
     public BWAStrategy(FMIndexOnGenome fmIndex) {
         this.fmIndex = fmIndex;
 
-        CharacterCount C = fmIndex.fmIndexF.getCharacterCount();
+        CharacterCount C = fmIndex.forwardIndex.getCharacterCount();
         for (ACGT base : ACGT.values()) {
             if (C.getCount(base) > 0) {
                 lettersInGenome.add(base);
@@ -69,7 +69,7 @@ public class BWAStrategy
         PriorityQueue<AlignmentSA> alignmentQueue = new PriorityQueue<AlignmentSA>();
         int bestScore = -1;
 
-        long N = fmIndex.fmIndexF.textSize();
+        long N = fmIndex.forwardIndex.textSize();
         alignmentQueue.add(AlignmentSA.initialState(read.name, seq, Strand.FORWARD, N));
         alignmentQueue.add(AlignmentSA.initialState(read.name, seq.complement(), Strand.REVERSE, N));
 
@@ -133,7 +133,7 @@ public class BWAStrategy
 
     public SuffixInterval alignExact(ACGTSequence seq, Strand strand) {
 
-        SuffixInterval si = new SuffixInterval(0, fmIndex.fmIndexF.textSize());
+        SuffixInterval si = new SuffixInterval(0, fmIndex.forwardIndex.textSize());
 
         for (int wordIndex = 0; wordIndex < seq.textSize(); ++wordIndex) {
             ACGT currentBase = seq.getACGT(wordIndex);
