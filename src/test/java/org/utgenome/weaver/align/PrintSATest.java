@@ -31,27 +31,27 @@ public class PrintSATest
 {
     @Test
     public void print() throws Exception {
-        GenomeWeaver.execute("sa-debug ACGTCCTTATACTTTATCTCATGGGATA");
+        GenomeWeaver.execute("PrintSA ACGTCCTTATACTTTATCTCATGGGATA");
     }
 
     @Test
     public void reverse() throws Exception {
-        GenomeWeaver.execute("sa-debug -r ACGTCCTTATACTTTATCTCATGGGATA");
+        GenomeWeaver.execute("PrintSA -r ACGTCCTTATACTTTATCTCATGGGATA");
     }
 
     @Test
     public void sample2() throws Exception {
-        GenomeWeaver.execute("sa-debug AACCTATCTATACCCCGGGGAATTATATACGTCCTTATACTTTATCTCATGGGATA");
+        GenomeWeaver.execute("PrintSA AACCTATCTATACCCCGGGGAATTATATACGTCCTTATACTTTATCTCATGGGATA");
     }
 
     @Test
     public void sample3() throws Exception {
-        GenomeWeaver.execute("sa-debug AGGAGC");
+        GenomeWeaver.execute("PrintSA AGGAGC");
     }
 
     @Test
     public void sample4() throws Exception {
-        GenomeWeaver.execute("sa-debug AGGAGC -r");
+        GenomeWeaver.execute("PrintSA AGGAGC -r");
     }
 
 }

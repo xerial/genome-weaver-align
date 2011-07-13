@@ -28,6 +28,7 @@ package org.utgenome.weaver.align.sais;
 
 import org.utgenome.weaver.align.LIntArray;
 import org.utgenome.weaver.align.LSeq;
+import org.xerial.util.log.Logger;
 
 /**
  * Suffix-array construction algorithm based on induced-sorting. This
@@ -320,6 +321,8 @@ public class LSAIS
             }
         }
     }
+
+    private static Logger _logger = Logger.getLogger(LSAIS.class);
 
     /* find the suffix array SA of T[0..n-1] in {0..k-1}^n
        use a working space (excluding T and SA) of at most 2n+O(1) for a constant alphabet */

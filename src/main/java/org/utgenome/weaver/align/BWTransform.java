@@ -24,15 +24,12 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 import org.utgenome.UTGBErrorCode;
 import org.utgenome.UTGBException;
+import org.utgenome.weaver.align.sais.Int40Array;
 import org.utgenome.weaver.align.sais.LSAIS;
-import org.utgenome.weaver.align.sais.UInt32Array;
-import org.utgenome.weaver.align.sais.UInt32SAIS;
 import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
@@ -77,7 +74,7 @@ public class BWTransform extends GenomeWeaverCommand
         StopWatch timer = new StopWatch();
 
         // Create IUPAC sequences (forward/reverse) from the given FASTA file
-        Fasta2IUPAC.encode(fastaFile);
+        PackFasta.encode(fastaFile);
 
         BWTFiles forwardDB = new BWTFiles(fastaFile, Strand.FORWARD);
         BWTFiles reverseDB = new BWTFiles(fastaFile, Strand.REVERSE);
@@ -94,17 +91,17 @@ public class BWTransform extends GenomeWeaverCommand
         // Create BWT string
         pac2bwt(db);
 
-        // Create a Wavelet array 
-        {
-            StopWatch timer = new StopWatch();
-            _logger.info("Creating wavelet array " + db.bwtWavelet());
-            IUPACSequence bwt = IUPACSequence.loadFrom(db.bwt());
-            WaveletArray wv = new WaveletArray(bwt, 16);
-            wv.saveTo(db.bwtWavelet());
-            _logger.info(String.format("done. %.2f sec.", timer.getElapsedTime()));
-        }
-
-        //BWT2SparseSA.bwt2sparseSA(db);
+        //        // Create a Wavelet array 
+        //        {
+        //            StopWatch timer = new StopWatch();
+        //            _logger.info("Creating wavelet array " + db.bwtWavelet());
+        //            IUPACSequence bwt = IUPACSequence.loadFrom(db.bwt());
+        //            WaveletArray wv = new WaveletArray(bwt, 16);
+        //            wv.saveTo(db.bwtWavelet());
+        //            _logger.info(String.format("done. %.2f sec.", timer.getElapsedTime()));
+        //        }
+        //
+        //        //BWT2SparseSA.bwt2sparseSA(db);
 
     }
 
@@ -112,22 +109,24 @@ public class BWTransform extends GenomeWeaverCommand
 
         StopWatch timer = new StopWatch();
         {
-            IUPACSequence seq = IUPACSequence.loadFrom(db.iupac());
+            ACGTSequence seq = ACGTSequence.loadFrom(db.pac());
             timer.reset();
-            _logger.info("Creating a suffix array of " + db.iupac());
+            _logger.info("Creating a suffix array of " + db.pac());
             LSeq SA = null;
             if (seq.textSize() < Integer.MAX_VALUE) {
+                _logger.info("Using int array");
                 SA = new LSAIS.IntArray(new int[(int) seq.textSize()], 0);
             }
-            else if (seq.textSize() < Math.pow(2, 32)) {
-                SA = new UInt32Array(seq.textSize());
+            else if (seq.textSize() < Math.pow(2, 39)) {
+                _logger.info("Using Int40Array");
+                SA = new Int40Array(seq.textSize());
             }
             else {
-                throw new UTGBException("String longer than 4GB is not supported");
+                throw new UTGBException("String longer than 42GB is not supported");
             }
 
-            UInt32SAIS.SAIS(seq, SA, 16);
-            //LSAIS.suffixsort(seq, SA, 16);
+            //UInt32SAIS.SAIS(seq, SA, 16);
+            LSAIS.suffixsort(seq, SA, 5);
             _logger.info(String.format("%.2f sec.", timer.getElapsedTime()));
 
             _logger.info("Creating sparse suffix array " + db.sparseSuffixArray());
@@ -136,35 +135,24 @@ public class BWTransform extends GenomeWeaverCommand
 
             _logger.info("Creating a BWT string: " + db.bwt());
             timer.reset();
-            IUPACSequenceWriter writer = new IUPACSequenceWriter(new BufferedOutputStream(
-                    new FileOutputStream(db.bwt())));
-            bwt(seq, SA, writer);
-            writer.close();
+            ACGTSequence bwt = bwt(seq, SA);
+            bwt.saveTo(db.bwt());
             _logger.info(String.format("%.2f sec.", timer.getElapsedTime()));
         }
 
     }
 
-    public static void bwt(IUPACSequence seq, LSeq SA, IUPACSequenceWriter out) throws IOException {
+    public static ACGTSequence bwt(ACGTSequence seq, LSeq SA) throws IOException {
+        ACGTSequence bwt = new ACGTSequence();
         for (long i = 0; i < SA.textSize(); ++i) {
             if (SA.lookup(i) == 0) {
-                out.append(seq.getIUPAC(seq.textSize() - 1));
+                bwt.append(seq.getACGT(seq.textSize() - 1));
             }
             else {
-                out.append(seq.getIUPAC(SA.lookup(i) - 1));
+                bwt.append(seq.getACGT(SA.lookup(i) - 1));
             }
         }
-    }
-
-    public static void bwt(IUPACSequence seq, LSeq SA, IUPACSequence out) throws IOException {
-        for (long i = 0; i < SA.textSize(); ++i) {
-            if (SA.lookup(i) == 0) {
-                out.setIUPAC(i, seq.getIUPAC(seq.textSize() - 1));
-            }
-            else {
-                out.setIUPAC(i, seq.getIUPAC(SA.lookup(i) - 1));
-            }
-        }
+        return bwt;
     }
 
 }

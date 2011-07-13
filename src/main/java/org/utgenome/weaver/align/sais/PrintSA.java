@@ -27,9 +27,10 @@ package org.utgenome.weaver.align.sais;
 import java.io.StringWriter;
 
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
+import org.utgenome.weaver.align.ACGT;
+import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.BWTransform;
 import org.utgenome.weaver.align.GenomeWeaverCommand;
-import org.utgenome.weaver.align.IUPACSequence;
 import org.utgenome.weaver.align.LSeq;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
@@ -38,11 +39,6 @@ import org.xerial.util.opt.Option;
 public class PrintSA extends GenomeWeaverCommand
 {
     private static Logger _logger = Logger.getLogger(PrintSA.class);
-
-    @Override
-    public String name() {
-        return "sa-debug";
-    }
 
     @Override
     public String getOneLineDescription() {
@@ -66,7 +62,7 @@ public class PrintSA extends GenomeWeaverCommand
     @Override
     public void execute(String[] args) throws Exception {
 
-        IUPACSequence s = new IUPACSequence(seq);
+        ACGTSequence s = new ACGTSequence(seq);
         if (isReverse)
             s = s.reverse();
 
@@ -75,11 +71,10 @@ public class PrintSA extends GenomeWeaverCommand
         final int K = IUPAC.values().length;
 
         LSeq SA = new LSAIS.IntArray(new int[(int) s.textSize()], 0);
-        LSAIS.suffixsort(s, SA, IUPAC.values().length);
+        LSAIS.suffixsort(s, SA, ACGT.values().length);
         //LSeq SA = UInt32SAIS.SAIS(s, K);
 
-        IUPACSequence bwt = new IUPACSequence(s.textSize());
-        BWTransform.bwt(s, SA, bwt);
+        ACGTSequence bwt = BWTransform.bwt(s, SA);
 
         //        WaveletArray wv = new WaveletArray(bwt, K);
         //        SparseSuffixArray ssa = SparseSuffixArray.buildFromSuffixArray(SA, 32);
@@ -88,18 +83,18 @@ public class PrintSA extends GenomeWeaverCommand
         for (int i = 0; i < SA.textSize(); ++i) {
             int sa = (int) SA.lookup(i);
             //            int sa_wv = (int) ssa.get(i, fmIndex);
-            IUPAC c = bwt.getIUPAC(i);
-            System.out.println(String.format("%3d %3d %s %s", i, sa, c == IUPAC.None ? "$" : c, rotateLeft(s, sa)));
+            ACGT c = bwt.getACGT(i);
+            System.out.println(String.format("%3d %3d %s %s", i, sa, c, rotateLeft(s, sa)));
         }
     }
 
-    public static String rotateLeft(IUPACSequence s, int shift) {
+    public static String rotateLeft(ACGTSequence s, int shift) {
         StringWriter w = new StringWriter();
 
         long len = s.textSize();
         for (int i = 0; i < len; ++i) {
             int index = i + shift;
-            IUPAC c = s.getIUPAC(index % len);
+            ACGT c = s.getACGT(index % len);
             w.append(c.name());
         }
 

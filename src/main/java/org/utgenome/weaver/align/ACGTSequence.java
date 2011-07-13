@@ -76,18 +76,22 @@ public class ACGTSequence implements LSeq
         ensureArrayCapacity(numBases);
     }
 
-    private void ensureArrayCapacity(long newCapacity) {
-        if (seq != null && newCapacity < (seq.length * 64 / 3)) {
-            return;
-        }
-
-        long bitSize = newCapacity * 3;
+    private static int minArraySize(long numBases) {
+        long bitSize = numBases * 3;
         long blockBitSize = LONG_BYTE_SIZE * 3 * 8;
         long arraySize = ((bitSize + blockBitSize - 1) / blockBitSize) * 3;
         if (arraySize > Integer.MAX_VALUE) {
             throw new IllegalArgumentException(String.format("Cannot create ACGTSequece more than %,d size: %,d",
-                    MAX_SIZE, newCapacity));
+                    MAX_SIZE, numBases));
         }
+        return (int) arraySize;
+    }
+
+    private void ensureArrayCapacity(long newCapacity) {
+        if (seq != null && newCapacity < (seq.length * 64 / 3)) {
+            return;
+        }
+        long arraySize = minArraySize(newCapacity);
 
         if (seq == null) {
             seq = new long[(int) arraySize];
@@ -132,13 +136,22 @@ public class ACGTSequence implements LSeq
         seq[bPos] |= (val & 0x03) << (62 - shift);
     }
 
-    public void append(long val) {
+    public void append(ACGT base) {
         long index = this.numBases++;
         if (index >= this.capacity) {
             long newCapacity = (index * 3 / 2) + 64;
             ensureArrayCapacity(newCapacity);
         }
-        byte code = ACGT.to3bitCode((char) val);
+        set(index, base.code);
+    }
+
+    public void append(long ch) {
+        long index = this.numBases++;
+        if (index >= this.capacity) {
+            long newCapacity = (index * 3 / 2) + 64;
+            ensureArrayCapacity(newCapacity);
+        }
+        byte code = ACGT.to3bitCode((char) ch);
         set(index, code);
     }
 
@@ -203,7 +216,7 @@ public class ACGTSequence implements LSeq
         // The num bases must be always 2
 
         long numBases = in.readLong();
-        int longArraySize = (int) ((numBases * 3 + LONG_BYTE_SIZE - 1) / LONG_BYTE_SIZE);
+        int longArraySize = minArraySize(numBases);
         long[] seq = new long[longArraySize];
         SnappyInputStream sin = new SnappyInputStream(in);
         int readBytes = sin.read(seq);
@@ -213,7 +226,8 @@ public class ACGTSequence implements LSeq
     public void saveTo(DataOutputStream out) throws IOException {
         out.writeLong(this.numBases);
         SnappyOutputStream sout = new SnappyOutputStream(out);
-        sout.write(seq);
+        int longArraySize = minArraySize(this.numBases);
+        sout.write(seq, 0, longArraySize);
         sout.flush();
     }
 
