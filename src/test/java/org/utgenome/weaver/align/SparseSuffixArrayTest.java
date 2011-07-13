@@ -34,7 +34,6 @@ import java.io.DataOutputStream;
 import org.junit.Test;
 import org.utgenome.format.fasta.FASTAPullParser;
 import org.utgenome.format.fasta.FASTASequence;
-import org.utgenome.weaver.align.sais.UInt32Array;
 import org.utgenome.weaver.align.sais.CyclicSAIS;
 import org.xerial.util.FileResource;
 
@@ -44,7 +43,7 @@ public class SparseSuffixArrayTest
     @Test
     public void shortSeq() throws Exception {
         IUPACSequence seq = new IUPACSequence("AACCTATCTATACCCCGGGGAATTATATACGTCCTTATACTTTATCTCATGGGATA", true);
-        UInt32Array SA = CyclicSAIS.SAIS(seq, 16);
+        LSeq SA = CyclicSAIS.SAIS(seq, 16);
         SparseSuffixArray ssa = SparseSuffixArray.buildFromSuffixArray(SA, 32);
 
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
@@ -67,7 +66,7 @@ public class SparseSuffixArrayTest
         FASTASequence fa1 = fa.nextSequence();
         fa.close();
         IUPACSequence seq = new IUPACSequence(fa1.getSequence(), true);
-        UInt32Array SA = CyclicSAIS.SAIS(seq, 16);
+        LSeq SA = CyclicSAIS.SAIS(seq, 16);
 
         final int L = 16;
         SparseSuffixArray ssa = SparseSuffixArray.buildFromSuffixArray(SA, L);

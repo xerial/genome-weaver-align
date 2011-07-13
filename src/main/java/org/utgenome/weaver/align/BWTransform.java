@@ -146,13 +146,9 @@ public class BWTransform extends GenomeWeaverCommand
 
     public static ACGTSequence bwt(ACGTSequence seq, LSeq SA) throws IOException {
         ACGTSequence bwt = new ACGTSequence();
+        final long N = seq.textSize();
         for (long i = 0; i < SA.textSize(); ++i) {
-            if (SA.lookup(i) == 0) {
-                bwt.append(seq.getACGT(seq.textSize() - 1));
-            }
-            else {
-                bwt.append(seq.getACGT(SA.lookup(i) - 1));
-            }
+            bwt.append(seq.getACGT((SA.lookup(i) - 1 + N) % N));
         }
         return bwt;
     }

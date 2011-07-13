@@ -282,9 +282,8 @@ public class CyclicSAIS
 
         // Induced sorting LMS prefixes
         {
-            StopWatch t2 = new StopWatch();
+            _logger.info(String.format("[N=%,d] induceSA", SA.textSize()));
             induceSA(SA);
-            _logger.info(String.format("[N=%,d] induced sorting %.2f sec.", SA.textSize(), t2.getElapsedTime()));
         }
 
         int numLMS = 0;
@@ -335,7 +334,7 @@ public class CyclicSAIS
         // Step 3: Induce SA from SA1
         // Construct P1 using T1 buffer
 
-        for (long i = 1, j = 0; i < N; ++i) {
+        for (long i = 0, j = 0; i < N; ++i) {
             if (isLMS(i))
                 T1.set(j++, i); // 
         }
@@ -356,7 +355,8 @@ public class CyclicSAIS
         for (int i = numLMS - 1; i >= 0; --i) {
             long si = SA1.lookup(i);
             SA.set(i, -1);
-            SA.set(--cursorInBucket[(int) T.lookup(si)], si);
+            long index = --cursorInBucket[(int) T.lookup(si)];
+            SA.set(index, si);
         }
         //SA.set(0, T.textSize() - 1);
 
@@ -399,9 +399,9 @@ public class CyclicSAIS
     boolean isEqualLMSSubstring(long pos1, long pos2) {
         boolean prevLS = SType;
         long offset = 0;
-        for (; offset < N; ++pos1, ++pos2) {
-            long p1 = pos1 % N;
-            long p2 = pos2 % N;
+        for (; offset < N; ++offset) {
+            long p1 = (pos1 + offset) % N;
+            long p2 = (pos2 + offset) % N;
             if (T.lookup(p1) == T.lookup(p2) && LS.get(p1) == LS.get(p2)) {
                 if (prevLS == LType && LS.get(p1) == SType)
                     return true; // equal LMS substring
