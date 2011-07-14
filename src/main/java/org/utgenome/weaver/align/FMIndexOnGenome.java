@@ -79,7 +79,7 @@ public class FMIndexOnGenome
         long pos = -1;
         switch (strand) {
         case FORWARD:
-            long sa = backwardSA.get(saIndex, backwardIndex) - 1;
+            long sa = backwardSA.get(saIndex, backwardIndex);
             pos = backwardIndex.textSize() - sa;
             break;
         case REVERSE:

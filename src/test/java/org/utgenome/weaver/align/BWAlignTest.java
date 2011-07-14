@@ -93,6 +93,14 @@ public class BWAlignTest
             }
         });
 
+    }
+
+    @Test
+    public void forwardMatch() throws Exception {
+
+        File fastaArchive = TestHelper.createTempFileFrom(BWAlignTest.class, "test2.fa", new File(tmpDir, "test2.fa"));
+        GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+
         BWAlign.querySingle(fastaArchive.getPath(), "ATACTTTA", new ObjectHandlerBase<AlignmentRecord>() {
             @Override
             public void handle(AlignmentRecord input) throws Exception {
@@ -103,7 +111,6 @@ public class BWAlignTest
                 assertEquals(17, input.end); // 1-origin
             }
         });
-
     }
 
     @Test
