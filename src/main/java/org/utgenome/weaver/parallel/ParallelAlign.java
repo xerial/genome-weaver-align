@@ -50,7 +50,7 @@ public class ParallelAlign
 
     public static void execute(String fastaFilePrefix, String fastqFile) throws Exception {
 
-        FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix, false);
+        FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix);
         AlignmentScoreConfig config = new AlignmentScoreConfig();
 
         ParallelAlign cmd = new ParallelAlign(fmIndex, config);

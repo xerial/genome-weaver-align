@@ -139,7 +139,7 @@ public class ACGTSequence implements LSeq
     public void append(ACGT base) {
         long index = this.numBases++;
         if (index >= this.capacity) {
-            long newCapacity = (index * 3 / 2) + 64;
+            long newCapacity = (index * 3L / 2L) + 64L;
             ensureArrayCapacity(newCapacity);
         }
         set(index, base.code);
