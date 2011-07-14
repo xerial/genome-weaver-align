@@ -31,6 +31,7 @@ import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
+import org.utgenome.weaver.align.record.RawRead;
 import org.utgenome.weaver.align.record.ReadSequence;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.util.BitVector;
@@ -127,7 +128,7 @@ public class BidirectionalBWT
             ACGT ch = query.getACGT(i);
             si = fmIndex.backwardSearch(direction, ch, si);
             if (!si.isValidRange()) {
-                si = new SuffixInterval(0, N - 1);
+                si = new SuffixInterval(0, N -	 1);
                 mismatchPosition.set(i, true);
                 numMismatches++;
             }
@@ -135,16 +136,16 @@ public class BidirectionalBWT
         return new QuickScanResult(si, mismatchPosition, numMismatches);
     }
 
-    public void align(ReadSequence read, Reporter reporter) {
-
-        int qLen = read.seq.length();
-
+    public void align(RawRead r, Reporter reporter) {
+    	
+    	ReadSequence read = (ReadSequence) r;
+    	
         ACGTSequence qF = new ACGTSequence(read.seq);
 
         // Find potential mismatch location for forward direction
         QuickScanResult scanF = quickScan(qF, Strand.FORWARD);
         if (scanF.numMismatches == 0) {
-            // Found a exact match
+            // Found an exact match
             reporter.emit(new SARange(scanF.si, Strand.FORWARD));
             return;
         }
@@ -153,7 +154,7 @@ public class BidirectionalBWT
         ACGTSequence qC = qF.complement();
         QuickScanResult scanR = quickScan(qC, Strand.REVERSE);
         if (scanR.numMismatches == 0) {
-            // Found a exact match
+            // Found an exact match
             reporter.emit(new SARange(scanR.si, Strand.REVERSE));
             return;
         }
