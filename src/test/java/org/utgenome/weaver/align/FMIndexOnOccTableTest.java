@@ -39,7 +39,8 @@ public class FMIndexOnOccTableTest
 
     @Test
     public void backwardSearch() throws Exception {
-        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "test.fa", new File("target", "test.fa"));
+        File fastaArchive = TestHelper.createTempFileFrom(BWTransformTest.class, "test.fa", new File("target",
+                "test.fa"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
 
         BWTFiles db = new BWTFiles(fastaArchive.getPath(), Strand.FORWARD);

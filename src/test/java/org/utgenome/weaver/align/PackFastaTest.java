@@ -69,8 +69,8 @@ public class PackFastaTest
     @Test
     public void packTarGZ() throws Exception {
 
-        File fastaArchive = TestHelper.createTempFileFrom(BWTTest.class, "sample-archive.fa.tar.gz", new File(tmpDir,
-                "sample.fa.tar.gz"));
+        File fastaArchive = TestHelper.createTempFileFrom(BWTransformTest.class, "sample-archive.fa.tar.gz", new File(
+                tmpDir, "sample.fa.tar.gz"));
         GenomeWeaver.execute(String.format("PackFasta %s", fastaArchive));
 
         BWTFiles fdb = new BWTFiles(fastaArchive.getPath(), Strand.FORWARD);
