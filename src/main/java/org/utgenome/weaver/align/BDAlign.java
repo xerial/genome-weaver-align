@@ -81,7 +81,7 @@ public class BDAlign extends GenomeWeaverCommand {
         query(fastaFilePrefix, reader, new Reporter(){
 			@Override
 			public void emit(Object result) {
-				_logger.info(SilkLens.toSilk("result", result));
+				_logger.debug(SilkLens.toSilk("result", result));
 			}});
 		 				
 	}
