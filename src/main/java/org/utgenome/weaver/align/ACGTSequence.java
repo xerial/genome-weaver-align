@@ -77,9 +77,9 @@ public class ACGTSequence implements LSeq
     }
 
     private static int minArraySize(long numBases) {
-        long bitSize = numBases * 3;
-        long blockBitSize = LONG_BYTE_SIZE * 3 * 8;
-        long arraySize = ((bitSize + blockBitSize - 1) / blockBitSize) * 3;
+        long bitSize = numBases * 3L;
+        long blockBitSize = LONG_BYTE_SIZE * 3L * 8L;
+        long arraySize = ((bitSize + blockBitSize - 1L) / blockBitSize) * 3L;
         if (arraySize > Integer.MAX_VALUE) {
             throw new IllegalArgumentException(String.format("Cannot create ACGTSequece more than %,d size: %,d",
                     MAX_SIZE, numBases));
@@ -88,7 +88,7 @@ public class ACGTSequence implements LSeq
     }
 
     private void ensureArrayCapacity(long newCapacity) {
-        if (seq != null && newCapacity < (seq.length * 64 / 3)) {
+        if (seq != null && newCapacity < (seq.length * 64L / 3L)) {
             return;
         }
         long arraySize = minArraySize(newCapacity);
@@ -99,7 +99,7 @@ public class ACGTSequence implements LSeq
         else {
             seq = Arrays.copyOf(seq, (int) arraySize);
         }
-        this.capacity = (seq.length / 3) * 64;
+        this.capacity = (seq.length / 3L) * 64L;
     }
 
     private ACGTSequence(long[] rawSeq, long numBases) {
