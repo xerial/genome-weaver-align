@@ -33,6 +33,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import org.utgenome.weaver.align.sais.Int40Array;
+
 /**
  * 
  * 
@@ -45,11 +47,11 @@ import java.io.IOException;
  */
 public class SparseSuffixArray
 {
-    final LIntArray    sparseSA;
+    final Int40Array   sparseSA;
     private final long N;
     private final int  L;
 
-    private SparseSuffixArray(LIntArray sparseSA, long N, int L) {
+    private SparseSuffixArray(Int40Array sparseSA, long N, int L) {
         this.sparseSA = sparseSA;
         this.N = N;
         this.L = L;
@@ -60,7 +62,7 @@ public class SparseSuffixArray
 
         final long N = W.textSize();
         final long sparseSA_length = (N + suffixInterval - 1) / suffixInterval;
-        LIntArray sparseSA = new LIntArray(sparseSA_length);
+        Int40Array sparseSA = new Int40Array(sparseSA_length);
 
         long sa = N;
         long saIndex = 0;
@@ -110,7 +112,7 @@ public class SparseSuffixArray
         final long N = d.readLong();
         final int L = d.readInt();
         final long sparseSALength = d.readLong();
-        LIntArray sparseSA = new LIntArray(sparseSALength);
+        Int40Array sparseSA = new Int40Array(sparseSALength);
         for (int i = 0; i < sparseSA.textSize(); ++i) {
             int val = d.readInt();
             // Handle val as an uint32 integer
@@ -121,7 +123,7 @@ public class SparseSuffixArray
 
     public static SparseSuffixArray buildFromSuffixArray(LSeq SA, int L) {
         long sparseSA_length = (SA.textSize() + L - 1) / L;
-        LIntArray sparseSA = new LIntArray(sparseSA_length);
+        Int40Array sparseSA = new Int40Array(sparseSA_length);
         for (long i = 0; i < sparseSA_length; ++i) {
             sparseSA.set(i, SA.lookup(i * L));
         }
