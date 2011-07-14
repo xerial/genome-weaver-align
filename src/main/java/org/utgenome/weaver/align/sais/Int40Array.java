@@ -40,6 +40,8 @@ public class Int40Array implements LSeq, Iterable<Long>
     public static final long MAX_VALUE       = 0x7FFFFFFFFFL;
     public static final long MIN_VALUE       = -0x7FFFFFFFFFL;
 
+    public static final long MAX_INDEX       = 16L * 1024L * 1024L * 1024L / 5L;
+
     private static final int LONG_BYTE_SIZE  = 8;
     private static final int INT40_BYTE_SIZE = 5;
     private final long       size;
@@ -54,9 +56,9 @@ public class Int40Array implements LSeq, Iterable<Long>
         // int40   16GB / 5 = 3.2G entries
         // uint32  16GB / 4 = 4G entries
         long rawArraySize = numBlocks * 5;
-        if (rawArraySize > Integer.MAX_VALUE)
+        if (rawArraySize > MAX_INDEX)
             throw new IllegalArgumentException(String.format(
-                    "Cannot create int40 array more than %,d entries: size=%,d", Integer.MAX_VALUE, size));
+                    "Cannot create int40 array more than %,d entries: size=%,d", MAX_INDEX, size));
         rawArray = new long[(int) rawArraySize];
     }
 

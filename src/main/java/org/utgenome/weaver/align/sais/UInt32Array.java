@@ -34,7 +34,8 @@ import org.utgenome.weaver.align.LSeq;
  */
 public class UInt32Array implements LSeq, Iterable<Long>
 {
-    public final static long MAX_VALUE = 0xFFFFFFFF;
+    public final static long MAX_VALUE = 0xFFFFFFFFL;
+    public final static long MAX_INDEX = 4 * 1024 * 1024 * 1024;
 
     private final long       size;
 

@@ -31,6 +31,7 @@ import org.utgenome.UTGBException;
 import org.utgenome.weaver.align.sais.CyclicSAIS;
 import org.utgenome.weaver.align.sais.Int40Array;
 import org.utgenome.weaver.align.sais.LSAIS;
+import org.utgenome.weaver.align.sais.UInt32Array;
 import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
@@ -118,7 +119,10 @@ public class BWTransform extends GenomeWeaverCommand
                 _logger.info("Using int array");
                 SA = new LSAIS.IntArray(new int[(int) seq.textSize()], 0);
             }
-            else if (seq.textSize() < Math.pow(2, 39)) {
+            else if (seq.textSize() < UInt32Array.MAX_VALUE) {
+                SA = new UInt32Array(seq.textSize());
+            }
+            else if (seq.textSize() < Int40Array.MAX_VALUE) {
                 _logger.info("Using Int40Array");
                 SA = new Int40Array(seq.textSize());
             }
