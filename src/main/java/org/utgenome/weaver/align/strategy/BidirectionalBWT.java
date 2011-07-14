@@ -32,6 +32,7 @@ import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.ReadSequence;
+import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.util.BitVector;
 
 /**
@@ -43,16 +44,17 @@ import org.xerial.util.BitVector;
 public class BidirectionalBWT
 {
     private final FMIndexOnGenome    fmIndex;
+    private final long               N;
 
     private PriorityQueue<Alignment> alignmentQueue = new PriorityQueue<Alignment>();
 
     public BidirectionalBWT(FMIndexOnGenome fmIndex) {
         this.fmIndex = fmIndex;
+        this.N = fmIndex.textSize();
     }
 
     public static class Alignment
     {
-
         public ACGTSequence   read;
 
         public SuffixInterval forward;
@@ -86,30 +88,74 @@ public class BidirectionalBWT
             final int N = (int) read.textSize();
             return new Alignment(read, new SuffixInterval(0, N - 1), new SuffixInterval(0, N - 1), N - 1, N - 1, strand);
         }
+    }
 
+    public static class SARange
+    {
+        public final SuffixInterval si;
+        public final Strand         strand;
+
+        public SARange(SuffixInterval si, Strand strand) {
+            this.si = si;
+            this.strand = strand;
+        }
+    }
+
+    public static class QuickScanResult
+    {
+        public final SuffixInterval si;
+        public final BitVector      mismatchPosition;
+        public final int            numMismatches;
+
+        public QuickScanResult(SuffixInterval si, BitVector mismatchPosition, int numMismatches) {
+            this.si = si;
+            this.mismatchPosition = mismatchPosition;
+            this.numMismatches = numMismatches;
+        }
     }
 
     void addQueue(Alignment alignment) {
 
     }
 
-    public void align(ReadSequence read) {
-
-        long N = fmIndex.textSize();
-        int qLen = read.seq.length();
-        ACGTSequence qF = new ACGTSequence(read.seq);
-        ACGTSequence qC = qF.complement();
-
-        // Find potential mismatch location
+    public QuickScanResult quickScan(ACGTSequence query, Strand direction) {
+        int qLen = (int) query.textSize();
+        int numMismatches = 0;
         BitVector mismatchPosition = new BitVector(qLen);
         SuffixInterval si = new SuffixInterval(0, N - 1);
         for (int i = 0; i < qLen; ++i) {
-            ACGT ch = ACGT.encode(read.seq.charAt(i));
-            si = fmIndex.forwardSearch(ch, si);
+            ACGT ch = query.getACGT(i);
+            si = fmIndex.backwardSearch(direction, ch, si);
             if (!si.isValidRange()) {
                 si = new SuffixInterval(0, N - 1);
                 mismatchPosition.set(i, true);
+                numMismatches++;
             }
+        }
+        return new QuickScanResult(si, mismatchPosition, numMismatches);
+    }
+
+    public void align(ReadSequence read, Reporter reporter) {
+
+        int qLen = read.seq.length();
+
+        ACGTSequence qF = new ACGTSequence(read.seq);
+
+        // Find potential mismatch location for forward direction
+        QuickScanResult scanF = quickScan(qF, Strand.FORWARD);
+        if (scanF.numMismatches == 0) {
+            // Found a exact match
+            reporter.emit(new SARange(scanF.si, Strand.FORWARD));
+            return;
+        }
+
+        // Find potential mismatch location for reverse direction
+        ACGTSequence qC = qF.complement();
+        QuickScanResult scanR = quickScan(qC, Strand.REVERSE);
+        if (scanR.numMismatches == 0) {
+            // Found a exact match
+            reporter.emit(new SARange(scanR.si, Strand.REVERSE));
+            return;
         }
 
     }
