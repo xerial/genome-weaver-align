@@ -53,7 +53,7 @@ public class UInt32Array implements LSeq, Iterable<Long>
     }
 
     public long lookup(long index) {
-        int pos = (int) index >> 1;
+        int pos = (int) ((index >>> 1) & 0xFFFFFFFFL);
         int offset = (int) (index & 0x01);
         long v = (rawArray[pos] >>> ((1 - offset) * 32)) & 0xFFFFFFFFL;
         return v;
@@ -61,7 +61,7 @@ public class UInt32Array implements LSeq, Iterable<Long>
 
     public void set(long index, long value) {
 
-        int pos = (int) index >> 1;
+        int pos = (int) ((index >>> 1) & 0xFFFFFFFFL);
         int offset = (int) (index & 0x01);
         rawArray[pos] &= 0xFFFFFFFFL << (offset * 32);
         rawArray[pos] |= value << ((1 - offset) * 32);
