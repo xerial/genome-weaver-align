@@ -259,15 +259,20 @@ public class CyclicSAIS
 
         // Initialize the buckets. 
         // A bucket is a container of the suffixes sharing the same first character
-        Arrays.fill(bucketEnd, 0);
-        // Compute the size of each bucket
-        for (long i = 0; i < N; ++i) {
-            ++bucketEnd[(int) T.lookup(i)];
+        {
+            _logger.debug("Initialize the buckets");
+            Arrays.fill(bucketEnd, 0);
+            // Compute the size of each bucket
+            for (long i = 0; i < N; ++i) {
+                ++bucketEnd[(int) T.lookup(i)];
+            }
+            // Accumulate the character counts. The bucketStart holds the pointers to beginning of the buckets in SA
+            for (int i = 1; i < bucketEnd.length; ++i) {
+                bucketEnd[i] += bucketEnd[i - 1];
+            }
+            _logger.debug("Done.");
         }
-        // Accumulate the character counts. The bucketStart holds the pointers to beginning of the buckets in SA
-        for (int i = 1; i < bucketEnd.length; ++i) {
-            bucketEnd[i] += bucketEnd[i - 1];
-        }
+
         // initialize the suffix array
         for (long i = 0; i < N; ++i)
             SA.set(i, N);
@@ -286,6 +291,7 @@ public class CyclicSAIS
         {
             _logger.info(String.format("[N=%,d] induceSA", SA.textSize()));
             induceSA(SA);
+            _logger.info("Done.");
         }
 
         int numLMS = 0;
