@@ -81,7 +81,6 @@ public class BWAlign extends GenomeWeaverCommand
 
     public static class SAMOutput implements ObjectHandler<AlignmentRecord>
     {
-
         FMIndexOnGenome  fmIndex;
         PrintWriter      out;
         SequenceBoundary boundary;

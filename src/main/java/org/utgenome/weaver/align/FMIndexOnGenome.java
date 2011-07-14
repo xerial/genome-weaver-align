@@ -70,9 +70,21 @@ public class FMIndexOnGenome
         _logger.info("done.");
     }
 
+    public long textSize() {
+        return N;
+    }
+
     public SuffixInterval backwardSearch(Strand strand, ACGT nextBase, SuffixInterval si) {
         FMIndex fm = strand == Strand.FORWARD ? backwardIndex : forwardIndex;
         return fm.backwardSearch(nextBase, si);
+    }
+
+    public SuffixInterval forwardSearch(ACGT nextBase, SuffixInterval si) {
+        return backwardIndex.backwardSearch(nextBase, si);
+    }
+
+    public SuffixInterval backwardSearch(ACGT nextBase, SuffixInterval si) {
+        return forwardIndex.backwardSearch(nextBase, si);
     }
 
     public long toForwardSequenceIndex(long saIndex, Strand strand) {

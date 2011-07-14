@@ -85,7 +85,7 @@ public class BWAlignTest
         BWAlign.querySingle(fastaArchive.getPath(), "TAAAGTAT", new ObjectHandlerBase<AlignmentRecord>() {
             @Override
             public void handle(AlignmentRecord input) throws Exception {
-                _logger.info(SilkLens.toSilk(input));
+                _logger.debug(SilkLens.toSilk(input));
                 assertEquals("seq2", input.chr);
                 assertEquals(Strand.REVERSE, input.strand);
                 assertEquals(9, input.start);
@@ -104,7 +104,7 @@ public class BWAlignTest
         BWAlign.querySingle(fastaArchive.getPath(), "ATACTTTA", new ObjectHandlerBase<AlignmentRecord>() {
             @Override
             public void handle(AlignmentRecord input) throws Exception {
-                _logger.info(SilkLens.toSilk(input));
+                _logger.debug(SilkLens.toSilk(input));
                 assertEquals("seq2", input.chr);
                 assertEquals(Strand.FORWARD, input.strand);
                 assertEquals(9, input.start); // 1-origin

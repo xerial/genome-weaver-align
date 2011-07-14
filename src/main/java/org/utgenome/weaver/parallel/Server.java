@@ -24,6 +24,11 @@
 //--------------------------------------
 package org.utgenome.weaver.parallel;
 
+import java.lang.management.ManagementFactory;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+
 import org.utgenome.weaver.align.GenomeWeaverCommand;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Option;
@@ -47,7 +52,13 @@ public class Server extends GenomeWeaverCommand
 
     @Override
     public void execute(String[] args) throws Exception {
+        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+        ObjectName mxbeanName = new ObjectName("org.utgenome.weaver.parallel:type=ServerTask");
+        ServerTask mBean = new ServerTask();
+        mbs.registerMBean(mBean, mxbeanName);
 
+        _logger.info("Waiting...");
+        Thread.sleep(500);
     }
 
 }

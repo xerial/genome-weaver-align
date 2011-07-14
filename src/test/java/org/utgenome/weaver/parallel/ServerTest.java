@@ -16,29 +16,21 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// Strand.java
-// Since: 2011/02/16
+// ServerTest.java
+// Since: 2011/07/14
 //
 // $URL$ 
 // $Author$
 //--------------------------------------
-package org.utgenome.weaver.align;
+package org.utgenome.weaver.parallel;
 
-public enum Strand {
-    FORWARD, REVERSE;
+import org.junit.Test;
+import org.utgenome.weaver.GenomeWeaver;
 
-    public static Strand toStrand(char plusOrMinus) {
-        if (plusOrMinus == '+')
-            return FORWARD;
-        else
-            return REVERSE;
+public class ServerTest
+{
+    @Test
+    public void server() throws Exception {
+        GenomeWeaver.execute("server");
     }
-
-    public Strand opposite() {
-        if (this == FORWARD)
-            return REVERSE;
-        else
-            return FORWARD;
-    }
-
 }
