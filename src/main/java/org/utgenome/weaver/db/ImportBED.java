@@ -120,6 +120,9 @@ public class ImportBED extends GenomeWeaverCommand
         _logger.info("Save to %s", out);
         chromatinAnnotation.saveTo(out);
 
+        // You can load the binary data as follows: 
+        // BlockArrayTable loadedData = BlockArrayTable.loadFrom(new File(".bed.bin"));
+
         // Query chromatin state data
         for (String chr : chromatinAnnotation.keySet()) {
             _logger.info(chr);
