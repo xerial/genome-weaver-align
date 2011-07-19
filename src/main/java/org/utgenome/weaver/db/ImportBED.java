@@ -75,7 +75,7 @@ public class ImportBED extends GenomeWeaverCommand
                         Block ba = new Block(input.range);
                         for (BEDAnnotation each : input.data()) {
                             for (int x = each.getStart(); x < each.getEnd(); ++x)
-                                ba.set(x, each.score);
+                                ba.set(x - 1, each.score); // Use 0-origin
                         }
                         // Put the block to the table
                         chromatinAnnotation.getBlockArray(input.chr).add(ba);
@@ -83,7 +83,7 @@ public class ImportBED extends GenomeWeaverCommand
                 });
 
         // Load BED file and create priority search trees for each chromosome
-        //  BED -> Silk -> BEDAnnotation object stream 
+        //  BED (0-origin) -> Silk (1-origin) -> BEDAnnotation object stream 
         Reader bedIn = new BED2SilkReader(new BufferedReader(new FileReader(bedFile)));
         try {
             SilkLens.findFromSilk(bedIn, "gene", BEDAnnotation.class, new ObjectHandler<BEDAnnotation>() {
@@ -115,10 +115,20 @@ public class ImportBED extends GenomeWeaverCommand
             bedIn.close();
         }
 
-        // Save block array table to a file
+        // Save the block array table to a file
         File out = new File(bedFile + ".bin");
         _logger.info("Save to %s", out);
         chromatinAnnotation.saveTo(out);
+
+        // Query chromatin state data
+        for (String chr : chromatinAnnotation.keySet()) {
+            _logger.info(chr);
+            BlockArray ba = chromatinAnnotation.getBlockArray(chr);
+            int max = ba.getMaxLength();
+            for (int x = 0; x < max; ++x) {
+                _logger.info(ba.get(x));
+            }
+        }
 
     }
 }

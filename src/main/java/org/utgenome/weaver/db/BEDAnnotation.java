@@ -37,7 +37,7 @@ public class BEDAnnotation extends ChrInterval
     private static final long serialVersionUID = 1L;
 
     public String             name;
-    public int                score            = 0;
+    public float              score            = 0;
     public String             strand;
 
     @Override
