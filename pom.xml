@@ -360,6 +360,15 @@
       <name>Xerial Artifact Repository</name>
       <url>http://maven.xerial.org/repository/artifact</url>
     </repository>
+   <!-- xerial.org snapshot repository -->
+    <repository>
+      <id>xerial-snapshot</id>
+      <name>Xerial Snapshot Repository</name>
+      <url>http://maven.xerial.org/repository/snapshot</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
 
     <!-- UTGB Repository -->
     <repository>
