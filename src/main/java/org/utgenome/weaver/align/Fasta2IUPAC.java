@@ -34,6 +34,7 @@ import java.io.IOException;
 import org.utgenome.format.fasta.CompactFASTA;
 import org.utgenome.format.fasta.FASTAPullParser;
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
+import org.utgenome.weaver.GenomeWeaverCommand;
 import org.utgenome.weaver.align.SequenceBoundary.SequenceIndex;
 import org.xerial.lens.SilkLens;
 import org.xerial.silk.SilkWriter;

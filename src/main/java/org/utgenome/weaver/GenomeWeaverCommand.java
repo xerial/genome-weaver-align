@@ -16,32 +16,26 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// IUPAC2BWT.java
-// Since: 2011/02/16
+// GenomeWeaverCommand.java
+// Since: 2011/04/25
 //
 // $URL$ 
 // $Author$
 //--------------------------------------
-package org.utgenome.weaver.align;
+package org.utgenome.weaver;
 
-import org.utgenome.UTGBErrorCode;
-import org.utgenome.UTGBException;
-import org.utgenome.weaver.GenomeWeaverCommand;
-import org.xerial.util.log.Logger;
-import org.xerial.util.opt.Argument;
+import java.net.URL;
 
-public class Pac2BWT extends GenomeWeaverCommand
+import org.xerial.util.opt.Command;
+import org.xerial.util.opt.GlobalCommandOption;
+
+public abstract class GenomeWeaverCommand implements Command
 {
-    private static Logger _logger = Logger.getLogger(Pac2BWT.class);
+    protected GlobalCommandOption globalOption = new GlobalCommandOption();
 
     @Override
     public String name() {
-        return "pac2bwt";
-    }
-
-    @Override
-    public String getOneLineDescription() {
-        return "create BWT from an IUPAC file";
+        return this.getClass().getSimpleName();
     }
 
     @Override
@@ -49,19 +43,15 @@ public class Pac2BWT extends GenomeWeaverCommand
         return this;
     }
 
-    @Argument(index = 0)
-    private String fastaFile;
+    @Override
+    public URL getHelpMessageResource() {
+        return null;
+    }
 
     @Override
-    public void execute(String[] args) throws Exception {
-        if (fastaFile == null)
-            throw new UTGBException(UTGBErrorCode.MISSING_FILES, "no input fasta file");
-
-        BWTFiles forwardDB = new BWTFiles(fastaFile, Strand.FORWARD);
-        BWTFiles reverseDB = new BWTFiles(fastaFile, Strand.REVERSE);
-
-        BWTransform.pac2bwt(forwardDB);
-        BWTransform.pac2bwt(reverseDB);
+    public void execute(GlobalCommandOption globalOption, String[] args) throws Exception {
+        this.globalOption = globalOption;
+        execute(args);
     }
 
 }

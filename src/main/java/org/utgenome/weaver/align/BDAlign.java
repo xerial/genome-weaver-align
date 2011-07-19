@@ -25,6 +25,7 @@
 package org.utgenome.weaver.align;
 
 import org.utgenome.UTGBException;
+import org.utgenome.weaver.GenomeWeaverCommand;
 import org.utgenome.weaver.align.record.RawRead;
 import org.utgenome.weaver.align.record.ReadSequenceReader;
 import org.utgenome.weaver.align.record.ReadSequenceReaderFactory;

@@ -29,7 +29,7 @@ import java.lang.management.ManagementFactory;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import org.utgenome.weaver.align.GenomeWeaverCommand;
+import org.utgenome.weaver.GenomeWeaverCommand;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Option;
 

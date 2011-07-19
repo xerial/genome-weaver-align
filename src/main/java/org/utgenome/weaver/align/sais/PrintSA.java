@@ -27,10 +27,10 @@ package org.utgenome.weaver.align.sais;
 import java.io.StringWriter;
 
 import org.utgenome.gwt.utgb.client.bio.IUPAC;
+import org.utgenome.weaver.GenomeWeaverCommand;
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.BWTransform;
-import org.utgenome.weaver.align.GenomeWeaverCommand;
 import org.utgenome.weaver.align.LSeq;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;

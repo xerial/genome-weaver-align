@@ -28,6 +28,7 @@ import java.io.IOException;
 
 import org.utgenome.UTGBErrorCode;
 import org.utgenome.UTGBException;
+import org.utgenome.weaver.GenomeWeaverCommand;
 import org.utgenome.weaver.align.sais.CyclicSAIS;
 import org.utgenome.weaver.align.sais.Int40Array;
 import org.utgenome.weaver.align.sais.LSAIS;

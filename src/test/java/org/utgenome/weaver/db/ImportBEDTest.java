@@ -16,42 +16,27 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// GenomeWeaverCommand.java
-// Since: 2011/04/25
+// ImportBEDTest.java
+// Since: 2011/07/19
 //
 // $URL$ 
 // $Author$
 //--------------------------------------
-package org.utgenome.weaver.align;
+package org.utgenome.weaver.db;
 
-import java.net.URL;
+import java.io.File;
 
-import org.xerial.util.opt.Command;
-import org.xerial.util.opt.GlobalCommandOption;
+import org.junit.Test;
+import org.utgenome.util.TestHelper;
+import org.utgenome.weaver.GenomeWeaver;
 
-public abstract class GenomeWeaverCommand implements Command
+public class ImportBEDTest
 {
-    protected GlobalCommandOption globalOption = new GlobalCommandOption();
+    @Test
+    public void loadSampleBED() throws Exception {
 
-    @Override
-    public String name() {
-        return this.getClass().getSimpleName();
+        File bed = TestHelper.createTempFileFrom(ImportBEDTest.class, "sample.bed");
+        GenomeWeaver.execute(String.format("ImportBED %s", bed));
+
     }
-
-    @Override
-    public Object getOptionHolder() {
-        return this;
-    }
-
-    @Override
-    public URL getHelpMessageResource() {
-        return null;
-    }
-
-    @Override
-    public void execute(GlobalCommandOption globalOption, String[] args) throws Exception {
-        this.globalOption = globalOption;
-        execute(args);
-    }
-
 }

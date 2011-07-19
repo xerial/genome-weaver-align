@@ -24,7 +24,7 @@
 //--------------------------------------
 package org.utgenome.weaver.parallel;
 
-import org.utgenome.weaver.align.GenomeWeaverCommand;
+import org.utgenome.weaver.GenomeWeaverCommand;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
 import org.xerial.util.opt.Option;

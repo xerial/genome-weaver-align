@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------
- *  Copyright 2011 utgenome.org
+ *  Copyright 2008 utgenome.org
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,31 +14,42 @@
  *  limitations under the License.
  *--------------------------------------------------------------------------*/
 //--------------------------------------
-// genome-weaver Project
+// tss-toolkit Project
 //
-// ReferenceAssembly.java
-// Since: 2011/01/31
+// Strand.java
+// Since: 2011/04/21
 //
 // $URL$ 
 // $Author$
 //--------------------------------------
-package org.utgenome.weaver;
+package org.utgenome.weaver.db;
 
-import org.utgenome.gwt.utgb.client.bio.ChrLoc;
-import org.utgenome.gwt.utgb.client.bio.SAMRead;
+public enum Strand {
+	PLUS('+'), MINUS('-');
 
-/**
- * @author leo
- * 
- */
-public class ReferenceAssembly
-{
-    public void input(ChrLoc ref, String refSeq, Iterable<SAMRead> readSet) {
+	public final char symbol;
 
-        for (SAMRead read : readSet) {
+	private Strand(char symbol) {
+		this.symbol = symbol;
+	}
 
-        }
+	@Override
+	public String toString() {
+		return Character.toString(symbol);
+	}
 
-    }
+	public static Strand toStrand(char plusOrMinus) {
+		if (plusOrMinus == '+')
+			return Strand.PLUS;
+		else
+			return Strand.MINUS;
+	}
+
+	public static Strand toStrand(String plusOrMinus) {
+		if (plusOrMinus.equals("+"))
+			return Strand.PLUS;
+		else
+			return Strand.MINUS;
+	}
 
 }

@@ -30,6 +30,7 @@ import java.io.PrintWriter;
 
 import org.utgenome.UTGBException;
 import org.utgenome.util.StandardOutputStream;
+import org.utgenome.weaver.GenomeWeaverCommand;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.RawRead;
 import org.utgenome.weaver.align.record.ReadSequenceReader;
