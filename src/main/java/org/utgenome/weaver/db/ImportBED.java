@@ -71,7 +71,7 @@ public class ImportBED extends GenomeWeaverCommand
                         // Handle bins
                         _logger.info("Processing bin %s", input);
 
-                        // Block data for scores
+                        // Create block data for scores
                         Block ba = new Block(input.range);
                         for (BEDAnnotation each : input.data()) {
                             for (int x = each.getStart(); x < each.getEnd(); ++x)
@@ -82,7 +82,7 @@ public class ImportBED extends GenomeWeaverCommand
                     }
                 });
 
-        // Load BED file and create priority search trees for each chromosome
+        // Load BED file and create BEDAnnotation object strem 
         //  BED (0-origin) -> Silk (1-origin) -> BEDAnnotation object stream 
         Reader bedIn = new BED2SilkReader(new BufferedReader(new FileReader(bedFile)));
         try {
