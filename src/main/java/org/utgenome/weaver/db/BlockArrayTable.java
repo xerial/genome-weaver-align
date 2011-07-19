@@ -65,6 +65,10 @@ public class BlockArrayTable
         return table.get(chr);
     }
 
+    public float get(String chr, int index) {
+        return getBlockArray(chr).get(index);
+    }
+
     public Set<String> keySet() {
         return table.keySet();
     }
