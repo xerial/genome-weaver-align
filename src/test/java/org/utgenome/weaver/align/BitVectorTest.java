@@ -124,4 +124,23 @@ public class BitVectorTest
 
     }
 
+    @Test
+    public void countOneBit() throws Exception {
+        String orig = "00101101000100000111111001010101000000000001101010100010101010011100001010100010100111";
+        BitVector v = BitVector.parseString(orig);
+        for (int s = 0; s < v.size(); ++s) {
+            for (int e = s; e < v.size(); ++e) {
+                assertEquals(String.format("range:(%d, %d)", s, e), countOne(orig, s, e), v.countOneBits(s, e));
+            }
+        }
+    }
+
+    private static int countOne(String s, int start, int end) {
+        int count = 0;
+        for (int i = start; i < end; ++i) {
+            if (s.charAt(i) == '1')
+                count++;
+        }
+        return count;
+    }
 }

@@ -27,6 +27,7 @@ package org.utgenome.weaver.align;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Bit vector of 0/1 binary string
@@ -61,8 +62,7 @@ public class BitVector
     }
 
     public void clear() {
-        for (int i = 0; i < block.length; ++i)
-            block[i] = 0L;
+        Arrays.fill(block, 0L);
     }
 
     public boolean get(long index) {
@@ -71,7 +71,7 @@ public class BitVector
             return false;
 
         long offset = index % B;
-        long mask = 1L << offset;
+        long mask = 0x8000000000000000L >>> offset;
         return (block[(int) blockPos] & mask) != 0;
     }
 
@@ -81,11 +81,11 @@ public class BitVector
             return 0;
 
         long offset = index % B;
-        long mask = 1L << offset;
+        long mask = 0x8000000000000000L >>> offset;
         return (int) ((block[(int) blockPos] & mask) & 0x1L);
     }
 
-    public void setBit(boolean c, long index) {
+    public void set(long index, boolean c) {
         if (c)
             set(index);
         else
@@ -102,14 +102,41 @@ public class BitVector
     public void set(long index) {
         long blockPos = index / B;
         long offset = index % B;
-        block[(int) blockPos] |= 1L << offset;
+        block[(int) blockPos] |= 0x8000000000000000L >>> offset;
     }
 
     public void reset(long index) {
         long blockPos = index / B;
         long offset = index % B;
-        long mask = 1L << offset;
+        long mask = 0x8000000000000000L >>> offset;
         block[(int) blockPos] &= ~mask;
+    }
+
+    public int countOneBits(long start, long end) {
+        int count = 0;
+        int eIndex = (int) (end / B);
+        int eOffset = (int) (end % B);
+        for (long i = start; i < end;) {
+            int index = (int) (i / B);
+            int sOffset = (int) (i % B);
+
+            // 00011111
+            // 01234567
+            long mask = ~0L >>> sOffset;
+            long v = block[index] & mask;
+            if (index == eIndex) {
+                // tail mask
+                // 11111110
+                // 01234567
+                long tMask = eOffset == 0 ? 0L : (~0L) << (B - eOffset);
+                v &= tMask;
+            }
+            count += popCount(v);
+
+            i = (index + 1) * B;
+        }
+
+        return count;
     }
 
     /**
@@ -127,6 +154,14 @@ public class BitVector
         x = x + (x >>> 16);
         x = x + (x >>> 32);
         return x & 0x7FL;
+    }
+
+    public static BitVector parseString(String binaryString) {
+        BitVector v = new BitVector(binaryString.length());
+        for (int i = 0; i < binaryString.length(); ++i) {
+            v.set(i, binaryString.charAt(i) == '1');
+        }
+        return v;
     }
 
     @Override
