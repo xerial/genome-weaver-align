@@ -169,10 +169,6 @@ public class BidirectionalBWT
         searchStrategyTable.put(Integer.parseInt("011", 2), SearchStart.FRONT);
     }
 
-    public void align(ACGTSequence query, Strand direction, SearchStart searchStart) {
-
-    }
-
     public void align(RawRead r) throws Exception {
 
         ReadSequence read = (ReadSequence) r;
@@ -237,8 +233,21 @@ public class BidirectionalBWT
             }
 
             align(qF, Strand.FORWARD, searchStart);
-
         }
 
     }
+
+    public void align(ACGTSequence query, Strand direction, SearchStart searchStart) {
+
+        switch (searchStart) {
+        case FRONT:
+            break;
+        case MIDDLE:
+            break;
+        case TAIL:
+            break;
+        }
+
+    }
+
 }
