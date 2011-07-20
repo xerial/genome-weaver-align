@@ -28,13 +28,17 @@ import java.util.PriorityQueue;
 
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
+import org.utgenome.weaver.align.AlignmentSA;
+import org.utgenome.weaver.align.AlignmentScoreConfig;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
+import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.RawRead;
 import org.utgenome.weaver.align.record.ReadSequence;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.util.BitVector;
+import org.xerial.util.ObjectHandlerBase;
 
 /**
  * Alignment algorithm using Bi-directional BWT
@@ -44,14 +48,18 @@ import org.xerial.util.BitVector;
  */
 public class BidirectionalBWT
 {
-    private final FMIndexOnGenome    fmIndex;
-    private final long               N;
+    private final FMIndexOnGenome      fmIndex;
+    private final Reporter             reporter;
+    private final long                 N;
+    private final AlignmentScoreConfig config;
 
-    private PriorityQueue<Alignment> alignmentQueue = new PriorityQueue<Alignment>();
+    private PriorityQueue<Alignment>   alignmentQueue = new PriorityQueue<Alignment>();
 
-    public BidirectionalBWT(FMIndexOnGenome fmIndex) {
+    public BidirectionalBWT(FMIndexOnGenome fmIndex, Reporter reporter) {
         this.fmIndex = fmIndex;
+        this.reporter = reporter;
         this.N = fmIndex.textSize();
+        this.config = new AlignmentScoreConfig();
     }
 
     public static class Alignment
@@ -115,10 +123,6 @@ public class BidirectionalBWT
         }
     }
 
-    void addQueue(Alignment alignment) {
-
-    }
-
     public QuickScanResult quickScan(ACGTSequence query, Strand direction) {
         int qLen = (int) query.textSize();
         int numMismatches = 0;
@@ -128,7 +132,7 @@ public class BidirectionalBWT
             ACGT ch = query.getACGT(i);
             si = fmIndex.backwardSearch(direction, ch, si);
             if (!si.isValidRange()) {
-                si = new SuffixInterval(0, N -	 1);
+                si = new SuffixInterval(0, N - 1);
                 mismatchPosition.set(i, true);
                 numMismatches++;
             }
@@ -136,27 +140,50 @@ public class BidirectionalBWT
         return new QuickScanResult(si, mismatchPosition, numMismatches);
     }
 
-    public void align(RawRead r, Reporter reporter) {
-    	
-    	ReadSequence read = (ReadSequence) r;
-    	
+    void addQueue(Alignment alignment) {
+
+    }
+
+    void report(AlignmentSA result) throws Exception {
+        fmIndex.toGenomeCoordinate(result, new ObjectHandlerBase<AlignmentRecord>() {
+            @Override
+            public void handle(AlignmentRecord r) throws Exception {
+                reporter.emit(r);
+            }
+        });
+    }
+
+    public void align(RawRead r) throws Exception {
+
+        ReadSequence read = (ReadSequence) r;
+
         ACGTSequence qF = new ACGTSequence(read.seq);
 
-        // Find potential mismatch location for forward direction
+        // Find potential mismatch positions for forward direction
         QuickScanResult scanF = quickScan(qF, Strand.FORWARD);
         if (scanF.numMismatches == 0) {
             // Found an exact match
-            reporter.emit(new SARange(scanF.si, Strand.FORWARD));
+            AlignmentSA result = AlignmentSA.exactMatch(config, r.name(), qF, scanF.si, Strand.FORWARD);
+            report(result);
             return;
         }
 
-        // Find potential mismatch location for reverse direction
+        // Find potential mismatch positions for reverse direction
         ACGTSequence qC = qF.complement();
         QuickScanResult scanR = quickScan(qC, Strand.REVERSE);
         if (scanR.numMismatches == 0) {
             // Found an exact match
-            reporter.emit(new SARange(scanR.si, Strand.REVERSE));
+            AlignmentSA result = AlignmentSA.exactMatch(config, r.name(), qC, scanR.si, Strand.REVERSE);
+            report(result);
             return;
+        }
+
+        if (scanF.numMismatches < scanR.numMismatches) {
+            // Search 
+
+        }
+        else {
+
         }
 
     }

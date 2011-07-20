@@ -218,6 +218,12 @@ public class AlignmentSA implements Comparable<AlignmentSA>
                 textSize - 1), 0, 0, null);
     }
 
+    public static AlignmentSA exactMatch(AlignmentScoreConfig config, String queryName, ACGTSequence seq,
+            SuffixInterval si, Strand strand) {
+        return new AlignmentSA(new CommonInfo(queryName, seq), strand, (int) seq.textSize(), IndelState.NORMAL, si, 0,
+                config.matchScore * (int) seq.textSize(), null);
+    }
+
     @Override
     public int compareTo(AlignmentSA o) {
         // Ascending order of the score

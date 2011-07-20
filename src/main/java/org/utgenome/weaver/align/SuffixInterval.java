@@ -34,6 +34,10 @@ public class SuffixInterval
         this.upperBound = upperBound;
     }
 
+    public long range() {
+        return upperBound - lowerBound + 1;
+    }
+
     public boolean isValidRange() {
         return lowerBound <= upperBound;
     }
