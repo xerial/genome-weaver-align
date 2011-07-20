@@ -24,12 +24,14 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
+import java.util.HashMap;
 import java.util.PriorityQueue;
 
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.AlignmentSA;
 import org.utgenome.weaver.align.AlignmentScoreConfig;
+import org.utgenome.weaver.align.BitVector;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
@@ -37,7 +39,6 @@ import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.RawRead;
 import org.utgenome.weaver.align.record.ReadSequence;
 import org.utgenome.weaver.parallel.Reporter;
-import org.xerial.util.BitVector;
 import org.xerial.util.ObjectHandlerBase;
 
 /**
@@ -113,12 +114,12 @@ public class BidirectionalBWT
     public static class QuickScanResult
     {
         public final SuffixInterval si;
-        public final BitVector      mismatchPosition;
+        public final BitVector      breakPoint;
         public final int            numMismatches;
 
-        public QuickScanResult(SuffixInterval si, BitVector mismatchPosition, int numMismatches) {
+        public QuickScanResult(SuffixInterval si, BitVector breakPoint, int numMismatches) {
             this.si = si;
-            this.mismatchPosition = mismatchPosition;
+            this.breakPoint = breakPoint;
             this.numMismatches = numMismatches;
         }
     }
@@ -126,18 +127,18 @@ public class BidirectionalBWT
     public QuickScanResult quickScan(ACGTSequence query, Strand direction) {
         int qLen = (int) query.textSize();
         int numMismatches = 0;
-        BitVector mismatchPosition = new BitVector(qLen);
+        BitVector breakPoint = new BitVector(qLen);
         SuffixInterval si = new SuffixInterval(0, N - 1);
         for (int i = 0; i < qLen; ++i) {
             ACGT ch = query.getACGT(i);
             si = fmIndex.backwardSearch(direction, ch, si);
             if (!si.isValidRange()) {
                 si = new SuffixInterval(0, N - 1);
-                mismatchPosition.set(i, true);
+                breakPoint.set(i, true);
                 numMismatches++;
             }
         }
-        return new QuickScanResult(si, mismatchPosition, numMismatches);
+        return new QuickScanResult(si, breakPoint, numMismatches);
     }
 
     void addQueue(Alignment alignment) {
@@ -153,6 +154,25 @@ public class BidirectionalBWT
         });
     }
 
+    private static enum SearchStart {
+        FRONT, MIDDLE, TAIL
+    }
+
+    private static HashMap<Integer, SearchStart> searchStrategyTable = new HashMap<Integer, SearchStart>();
+
+    static {
+        searchStrategyTable.put(Integer.parseInt("001", 2), SearchStart.FRONT);
+        searchStrategyTable.put(Integer.parseInt("010", 2), SearchStart.FRONT);
+        searchStrategyTable.put(Integer.parseInt("100", 2), SearchStart.TAIL);
+        searchStrategyTable.put(Integer.parseInt("101", 2), SearchStart.MIDDLE);
+        searchStrategyTable.put(Integer.parseInt("110", 2), SearchStart.TAIL);
+        searchStrategyTable.put(Integer.parseInt("011", 2), SearchStart.FRONT);
+    }
+
+    public void align(ACGTSequence query, Strand direction, SearchStart searchStart) {
+
+    }
+
     public void align(RawRead r) throws Exception {
 
         ReadSequence read = (ReadSequence) r;
@@ -163,8 +183,7 @@ public class BidirectionalBWT
         QuickScanResult scanF = quickScan(qF, Strand.FORWARD);
         if (scanF.numMismatches == 0) {
             // Found an exact match
-            AlignmentSA result = AlignmentSA.exactMatch(config, r.name(), qF, scanF.si, Strand.FORWARD);
-            report(result);
+            report(AlignmentSA.exactMatch(config, r.name(), qF, scanF.si, Strand.FORWARD));
             return;
         }
 
@@ -173,19 +192,53 @@ public class BidirectionalBWT
         QuickScanResult scanR = quickScan(qC, Strand.REVERSE);
         if (scanR.numMismatches == 0) {
             // Found an exact match
-            AlignmentSA result = AlignmentSA.exactMatch(config, r.name(), qC, scanR.si, Strand.REVERSE);
-            report(result);
+            report(AlignmentSA.exactMatch(config, r.name(), qC, scanR.si, Strand.REVERSE));
             return;
         }
 
-        if (scanF.numMismatches < scanR.numMismatches) {
-            // Search 
+        {
+            // Break the read sequence into three parts 
+            int s1 = (int) qF.textSize() / 3;
+            int s2 = (int) qF.textSize() / 3 * 2;
 
-        }
-        else {
+            int[] m = new int[3];
+            m[0] = scanF.breakPoint.countOneBits(0L, s1);
+            m[1] = scanF.breakPoint.countOneBits(s1, s2);
+            m[2] = scanF.breakPoint.countOneBits(s2, qF.textSize());
+
+            int mismatchBlockFlag = 0;
+            int flag = 4;
+            for (int i = 0; i < 3; ++i) {
+                if (m[i] > 0)
+                    mismatchBlockFlag += flag;
+                flag >>>= 1;
+            }
+
+            // Get the search start location according to the mismatch positions
+            SearchStart searchStart = searchStrategyTable.get(mismatchBlockFlag);
+            if (searchStart == null) {
+                // Start the search from the smallest mismatch block
+                int minBlock = 0;
+                for (int i = 1; i < 3; ++i) {
+                    if (m[i - 1] < m[i])
+                        minBlock = i;
+                }
+                switch (minBlock) {
+                case 0:
+                    searchStart = SearchStart.FRONT;
+                    break;
+                case 1:
+                    searchStart = SearchStart.MIDDLE;
+                    break;
+                case 2:
+                    searchStart = SearchStart.TAIL;
+                    break;
+                }
+            }
+
+            align(qF, Strand.FORWARD, searchStart);
 
         }
 
     }
-
 }

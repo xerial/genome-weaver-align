@@ -53,7 +53,7 @@ public class OccurrenceCountTable
         this.seq = seq;
         this.W = windowSize;
 
-        _logger.info("preparing occurrence count table...");
+        _logger.debug("preparing occurrence count table...");
         final int K = ACGT.values().length;
         final int tableSize = (int) ((seq.textSize() + W) / W);
 
@@ -78,7 +78,7 @@ public class OccurrenceCountTable
             }
             occTable.get(codeIndex)[blockIndex]++;
         }
-        _logger.info("done.");
+        _logger.debug("done.");
     }
 
     /**
