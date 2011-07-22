@@ -38,7 +38,7 @@ public class FMIndexOnGenome
     private static Logger           _logger = Logger.getLogger(FMIndexOnGenome.class);
 
     public final FMIndex            forwardIndex;
-    public final FMIndex            backwardIndex;
+    public final FMIndex            reverseIndex;
     private final SparseSuffixArray forwardSA;
     private final SparseSuffixArray backwardSA;
     private final SequenceBoundary  index;
@@ -66,7 +66,7 @@ public class FMIndexOnGenome
         ACGTSequence seqR = ACGTSequence.loadFrom(backwardDB.bwt());
         int windowSize = 64;
         forwardIndex = new FMIndexOnOccTable(seqF, windowSize);
-        backwardIndex = new FMIndexOnOccTable(seqR, windowSize);
+        reverseIndex = new FMIndexOnOccTable(seqR, windowSize);
         _logger.info("done.");
     }
 
@@ -74,13 +74,14 @@ public class FMIndexOnGenome
         return N;
     }
 
-    public SuffixInterval backwardSearch(Strand strand, ACGT nextBase, SuffixInterval si) {
-        FMIndex fm = strand == Strand.FORWARD ? backwardIndex : forwardIndex;
+    public SuffixInterval forwardSearch(Strand strand, ACGT nextBase, SuffixInterval si) {
+        FMIndex fm = strand == Strand.FORWARD ? reverseIndex : forwardIndex;
         return fm.backwardSearch(nextBase, si);
     }
 
-    public SuffixInterval forwardSearch(ACGT nextBase, SuffixInterval si) {
-        return backwardIndex.backwardSearch(nextBase, si);
+    public SuffixInterval backwardSearch(Strand strand, ACGT nextBase, SuffixInterval si) {
+        FMIndex fm = strand == Strand.FORWARD ? forwardIndex : reverseIndex;
+        return fm.backwardSearch(nextBase, si);
     }
 
     public SuffixInterval backwardSearch(ACGT nextBase, SuffixInterval si) {
@@ -91,8 +92,8 @@ public class FMIndexOnGenome
         long pos = -1;
         switch (strand) {
         case FORWARD:
-            long sa = backwardSA.get(saIndex, backwardIndex);
-            pos = backwardIndex.textSize() - sa;
+            long sa = backwardSA.get(saIndex, reverseIndex);
+            pos = reverseIndex.textSize() - sa;
             break;
         case REVERSE:
             pos = forwardSA.get(saIndex, forwardIndex);

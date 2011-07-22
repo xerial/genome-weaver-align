@@ -112,7 +112,7 @@ public class BWAStrategy
             ACGT currentBase = current.common.query.getACGT(current.wordIndex);
             // Traverse for each A, C, G, T, ... etc.
             for (ACGT nextBase : lettersInGenome) {
-                SuffixInterval next = fmIndex.backwardSearch(current.strand, nextBase, current.suffixInterval);
+                SuffixInterval next = fmIndex.forwardSearch(current.strand, nextBase, current.suffixInterval);
                 if (next.isValidRange()) {
                     // Search for insertion
                     if (current.wordIndex > 0 && current.wordIndex < seq.textSize() - 1) {
@@ -137,7 +137,7 @@ public class BWAStrategy
 
         for (int wordIndex = 0; wordIndex < seq.textSize(); ++wordIndex) {
             ACGT currentBase = seq.getACGT(wordIndex);
-            SuffixInterval next = fmIndex.backwardSearch(strand, currentBase, si);
+            SuffixInterval next = fmIndex.forwardSearch(strand, currentBase, si);
             if (!next.isValidRange()) {
                 return null;
             }
