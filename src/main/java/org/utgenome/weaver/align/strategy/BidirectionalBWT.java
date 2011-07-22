@@ -55,20 +55,11 @@ public class BidirectionalBWT
     private final long                 N;
     private final AlignmentScoreConfig config;
 
-    private PriorityQueue<Alignment>   alignmentQueue;
-
     public BidirectionalBWT(FMIndexOnGenome fmIndex, Reporter reporter) {
         this.fmIndex = fmIndex;
         this.reporter = reporter;
         this.N = fmIndex.textSize();
         this.config = new AlignmentScoreConfig();
-        this.alignmentQueue = new PriorityQueue<Alignment>(11, new Comparator<Alignment>() {
-            @Override
-            public int compare(Alignment o1, Alignment o2) {
-                // If the upper bound of the score is larger than the other, search it first
-                return o2.getUpperBoundOfScore(config) - o1.getUpperBoundOfScore(config);
-            }
-        });
     }
 
     public static class SARange
@@ -112,10 +103,6 @@ public class BidirectionalBWT
         return new QuickScanResult(si, breakPoint, numMismatches);
     }
 
-    void addQueue(Alignment alignment) {
-
-    }
-
     void report(AlignmentSA result) throws Exception {
         fmIndex.toGenomeCoordinate(result, new ObjectHandlerBase<AlignmentRecord>() {
             @Override
@@ -144,6 +131,64 @@ public class BidirectionalBWT
         searchStrategyTable.put(Integer.parseInt("011", 2), SearchStart.FRONT);
     }
 
+    public Alignment findInitialAlignment(ACGTSequence q, QuickScanResult scan, Strand strand) {
+        // Break the read sequence into three parts 
+        int s1 = (int) q.textSize() / 3;
+        int s2 = (int) q.textSize() / 3 * 2;
+
+        int[] m = new int[3];
+        m[0] = scan.breakPoint.countOneBits(0L, s1);
+        m[1] = scan.breakPoint.countOneBits(s1, s2);
+        m[2] = scan.breakPoint.countOneBits(s2, q.textSize());
+
+        int mismatchBlockFlag = 0;
+        int flag = 4;
+        for (int i = 0; i < 3; ++i) {
+            if (m[i] > 0)
+                mismatchBlockFlag += flag;
+            flag >>>= 1;
+        }
+
+        // Get the search start location according to the mismatch positions
+        SearchStart searchStart = searchStrategyTable.get(mismatchBlockFlag);
+        if (searchStart == null) {
+            // Start the search from the smallest mismatch block
+            int minBlock = 0;
+            for (int i = 1; i < 3; ++i) {
+                if (m[i - 1] > m[i])
+                    minBlock = i;
+            }
+            switch (minBlock) {
+            case 0:
+                searchStart = SearchStart.FRONT;
+                break;
+            case 1:
+                searchStart = SearchStart.MIDDLE;
+                break;
+            case 2:
+                searchStart = SearchStart.TAIL;
+                break;
+            }
+        }
+
+        switch (searchStart) {
+        case FRONT:
+            return Alignment.startFromLeft(q, strand);
+        case MIDDLE:
+            return Alignment.startFromMiddle(q, strand);
+        case TAIL:
+            return Alignment.startFromRight(q, strand);
+        }
+        return null;
+    }
+
+    public void addToQueue(PriorityQueue<Alignment> queue, Alignment aln) {
+        if (aln == null)
+            return;
+
+        queue.add(aln);
+    }
+
     public void align(RawRead r) throws Exception {
 
         ReadSequence read = (ReadSequence) r;
@@ -167,75 +212,45 @@ public class BidirectionalBWT
             return;
         }
 
-        {
-            // Break the read sequence into three parts 
-            int s1 = (int) qF.textSize() / 3;
-            int s2 = (int) qF.textSize() / 3 * 2;
-
-            int[] m = new int[3];
-            m[0] = scanF.breakPoint.countOneBits(0L, s1);
-            m[1] = scanF.breakPoint.countOneBits(s1, s2);
-            m[2] = scanF.breakPoint.countOneBits(s2, qF.textSize());
-
-            int mismatchBlockFlag = 0;
-            int flag = 4;
-            for (int i = 0; i < 3; ++i) {
-                if (m[i] > 0)
-                    mismatchBlockFlag += flag;
-                flag >>>= 1;
+        PriorityQueue<Alignment> alignmentQueue = new PriorityQueue<Alignment>(11, new Comparator<Alignment>() {
+            @Override
+            public int compare(Alignment o1, Alignment o2) {
+                // If the upper bound of the score is larger than the other, search it first
+                return o2.getUpperBoundOfScore(config) - o1.getUpperBoundOfScore(config);
             }
+        });
 
-            // Get the search start location according to the mismatch positions
-            SearchStart searchStart = searchStrategyTable.get(mismatchBlockFlag);
-            if (searchStart == null) {
-                // Start the search from the smallest mismatch block
-                int minBlock = 0;
-                for (int i = 1; i < 3; ++i) {
-                    if (m[i - 1] > m[i])
-                        minBlock = i;
-                }
-                switch (minBlock) {
-                case 0:
-                    searchStart = SearchStart.FRONT;
-                    break;
-                case 1:
-                    searchStart = SearchStart.MIDDLE;
-                    break;
-                case 2:
-                    searchStart = SearchStart.TAIL;
-                    break;
-                }
-            }
+        // Set the initial search location
+        addToQueue(alignmentQueue, findInitialAlignment(qF, scanF, Strand.FORWARD));
+        addToQueue(alignmentQueue, findInitialAlignment(qC, scanR, Strand.REVERSE));
 
-            align(qF, Strand.FORWARD, searchStart);
-        }
-
-        {
-            // TODO split reverse query
-
-        }
-
-    }
-
-    public void align(ACGTSequence query, Strand orientation, SearchStart searchStart) {
-
-        switch (searchStart) {
-        case FRONT:
-            alignmentQueue.add(Alignment.startFromLeft(query, orientation));
-            break;
-        case MIDDLE:
-            alignmentQueue.add(Alignment.startFromMiddle(query, orientation));
-            break;
-        case TAIL:
-            alignmentQueue.add(Alignment.startFromRight(query, orientation));
-            break;
-        }
-
+        // Search iteration
         while (!alignmentQueue.isEmpty()) {
             Alignment current = alignmentQueue.poll();
 
             if (current.isFinished()) {
                 report(current);
+            }
+
+            // extend the match
+            switch (current.mode) {
+            case Forward:
+                int cursor = current.forwardCursor;
+                SuffixInterval si = current.forwardSi;
+                while (cursor < current.read.textSize() && si.isValidRange()) {
+                    ACGT nextBase = current.read.getACGT(cursor);
+                    SuffixInterval nextSi = fmIndex.forwardSearch(nextBase, si);
+
+                    cursor++;
+                }
+
+                break;
+            case Backward:
+                break;
+            case BidirectionalBackward:
+                break;
+            case BidirectionalForward:
+                break;
             }
 
         }
@@ -251,8 +266,8 @@ public class BidirectionalBWT
         public Mode           mode;
         public ACGTSequence   read;
 
-        public SuffixInterval forward;
-        public SuffixInterval backward;
+        public SuffixInterval forwardSi;
+        public SuffixInterval backwardSi;
 
         public int            forwardCursor;
         public int            backwardCursor;
@@ -265,8 +280,8 @@ public class BidirectionalBWT
                 int cursorRight, Strand direction) {
             this.mode = mode;
             this.read = read;
-            this.forward = forward;
-            this.backward = backward;
+            this.forwardSi = forward;
+            this.backwardSi = backward;
             this.forwardCursor = cursorLeft;
             this.backwardCursor = cursorRight;
             this.strand = direction;
