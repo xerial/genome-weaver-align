@@ -131,7 +131,7 @@ public class BidirectionalBWT
         searchStrategyTable.put(Integer.parseInt("011", 2), SearchStart.FRONT);
     }
 
-    public Alignment findInitialAlignment(ACGTSequence q, QuickScanResult scan, Strand strand) {
+    public Alignment prepareInitialAlignmentState(ACGTSequence q, QuickScanResult scan, Strand strand) {
         // Break the read sequence into three parts 
         int s1 = (int) q.textSize() / 3;
         int s2 = (int) q.textSize() / 3 * 2;
@@ -182,11 +182,44 @@ public class BidirectionalBWT
         return null;
     }
 
-    public void addToQueue(PriorityQueue<Alignment> queue, Alignment aln) {
-        if (aln == null)
-            return;
+    public static class AlignmentQueue
+    {
+        private final PriorityQueue<Alignment> queue;
+        private final AlignmentScoreConfig     config;
+        private int                            scoreLowerBound;
 
-        queue.add(aln);
+        public AlignmentQueue(AlignmentScoreConfig config) {
+            this.config = config;
+            this.queue = new PriorityQueue<Alignment>(11, new Comparator<Alignment>() {
+                @Override
+                public int compare(Alignment o1, Alignment o2) {
+                    // If the upper bound of the score is larger than the other, search it first
+                    return o2.getUpperBoundOfScore(AlignmentQueue.this.config)
+                            - o1.getUpperBoundOfScore(AlignmentQueue.this.config);
+                }
+            });
+        }
+
+        public Alignment poll() {
+            return queue.poll();
+        }
+
+        public boolean isEmpty() {
+            return queue.isEmpty();
+        }
+
+        public boolean add(Alignment e) {
+            if (e.score > scoreLowerBound)
+                scoreLowerBound = e.score;
+
+            if (e.getUpperBoundOfScore(config) < scoreLowerBound) {
+                // Discard the alignment whose score cannot exceed the lower bound
+                return false;
+            }
+
+            return queue.add(e);
+        }
+
     }
 
     public void align(RawRead r) throws Exception {
@@ -212,17 +245,10 @@ public class BidirectionalBWT
             return;
         }
 
-        PriorityQueue<Alignment> alignmentQueue = new PriorityQueue<Alignment>(11, new Comparator<Alignment>() {
-            @Override
-            public int compare(Alignment o1, Alignment o2) {
-                // If the upper bound of the score is larger than the other, search it first
-                return o2.getUpperBoundOfScore(config) - o1.getUpperBoundOfScore(config);
-            }
-        });
-
-        // Set the initial search location
-        addToQueue(alignmentQueue, findInitialAlignment(qF, scanF, Strand.FORWARD));
-        addToQueue(alignmentQueue, findInitialAlignment(qC, scanR, Strand.REVERSE));
+        AlignmentQueue alignmentQueue = new AlignmentQueue(config);
+        // Set the initial search states
+        alignmentQueue.add(prepareInitialAlignmentState(qF, scanF, Strand.FORWARD));
+        alignmentQueue.add(prepareInitialAlignmentState(qC, scanR, Strand.REVERSE));
 
         // Search iteration
         while (!alignmentQueue.isEmpty()) {
