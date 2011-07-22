@@ -24,6 +24,7 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.PriorityQueue;
 
@@ -54,50 +55,20 @@ public class BidirectionalBWT
     private final long                 N;
     private final AlignmentScoreConfig config;
 
-    private PriorityQueue<Alignment>   alignmentQueue = new PriorityQueue<Alignment>();
+    private PriorityQueue<Alignment>   alignmentQueue;
 
     public BidirectionalBWT(FMIndexOnGenome fmIndex, Reporter reporter) {
         this.fmIndex = fmIndex;
         this.reporter = reporter;
         this.N = fmIndex.textSize();
         this.config = new AlignmentScoreConfig();
-    }
-
-    public static class Alignment
-    {
-        public ACGTSequence   read;
-
-        public SuffixInterval forward;
-        public SuffixInterval backward;
-
-        public int            cursorLeft;
-        public int            cursorRight;
-        public Strand         strand;
-
-        public Alignment(ACGTSequence read, SuffixInterval forward, SuffixInterval backward, int cursorLeft,
-                int cursorRight, Strand direction) {
-            this.read = read;
-            this.forward = forward;
-            this.backward = backward;
-            this.cursorLeft = cursorLeft;
-            this.cursorRight = cursorRight;
-            this.strand = direction;
-        }
-
-        public static Alignment startFromLeft(ACGTSequence read, Strand strand) {
-            final int N = (int) read.textSize();
-            return new Alignment(read, new SuffixInterval(0, N - 1), new SuffixInterval(0, N - 1), 0, 0, strand);
-        }
-
-        public static Alignment startFromMiddle(ACGTSequence read, Strand strand) {
-            final int N = (int) read.textSize();
-            return new Alignment(read, new SuffixInterval(0, N - 1), new SuffixInterval(0, N - 1), N / 2, N / 2, strand);
-        }
-
-        public static Alignment startFromRight(ACGTSequence read, Strand strand) {
-            final int N = (int) read.textSize();
-            return new Alignment(read, new SuffixInterval(0, N - 1), new SuffixInterval(0, N - 1), N - 1, N - 1, strand);
-        }
+        this.alignmentQueue = new PriorityQueue<Alignment>(11, new Comparator<Alignment>() {
+            @Override
+            public int compare(Alignment o1, Alignment o2) {
+                // If the upper bound of the score is larger than the other, search it first
+                return o2.getUpperBoundOfScore(config) - o1.getUpperBoundOfScore(config);
+            }
+        });
     }
 
     public static class SARange
@@ -152,6 +123,10 @@ public class BidirectionalBWT
                 reporter.emit(r);
             }
         });
+    }
+
+    void report(Alignment result) {
+
     }
 
     private static enum SearchStart {
@@ -216,7 +191,7 @@ public class BidirectionalBWT
                 // Start the search from the smallest mismatch block
                 int minBlock = 0;
                 for (int i = 1; i < 3; ++i) {
-                    if (m[i - 1] < m[i])
+                    if (m[i - 1] > m[i])
                         minBlock = i;
                 }
                 switch (minBlock) {
@@ -235,17 +210,103 @@ public class BidirectionalBWT
             align(qF, Strand.FORWARD, searchStart);
         }
 
+        {
+            // TODO split reverse query
+
+        }
+
     }
 
-    public void align(ACGTSequence query, Strand direction, SearchStart searchStart) {
+    public void align(ACGTSequence query, Strand orientation, SearchStart searchStart) {
 
         switch (searchStart) {
         case FRONT:
+            alignmentQueue.add(Alignment.startFromLeft(query, orientation));
             break;
         case MIDDLE:
+            alignmentQueue.add(Alignment.startFromMiddle(query, orientation));
             break;
         case TAIL:
+            alignmentQueue.add(Alignment.startFromRight(query, orientation));
             break;
+        }
+
+        while (!alignmentQueue.isEmpty()) {
+            Alignment current = alignmentQueue.poll();
+
+            if (current.isFinished()) {
+                report(current);
+            }
+
+        }
+
+    }
+
+    public static class Alignment
+    {
+        public static enum Mode {
+            Forward, Backward, BidirectionalForward, BidirectionalBackward
+        }
+
+        public Mode           mode;
+        public ACGTSequence   read;
+
+        public SuffixInterval forward;
+        public SuffixInterval backward;
+
+        public int            forwardCursor;
+        public int            backwardCursor;
+        public Strand         strand;
+
+        public int            score            = 0;
+        public int            numSearchedBases = 0;
+
+        public Alignment(Mode mode, ACGTSequence read, SuffixInterval forward, SuffixInterval backward, int cursorLeft,
+                int cursorRight, Strand direction) {
+            this.mode = mode;
+            this.read = read;
+            this.forward = forward;
+            this.backward = backward;
+            this.forwardCursor = cursorLeft;
+            this.backwardCursor = cursorRight;
+            this.strand = direction;
+        }
+
+        public int getUpperBoundOfScore(AlignmentScoreConfig config) {
+            int remainingBases = (int) read.textSize() - numSearchedBases;
+            return score + config.matchScore * remainingBases;
+        }
+
+        public boolean isFinished() {
+            switch (mode) {
+            case Backward:
+                return backwardCursor < 0;
+            case BidirectionalBackward:
+            case BidirectionalForward:
+                return false;
+            case Forward:
+                return forwardCursor >= read.textSize();
+            default:
+                throw new IllegalStateException("cannot reach here");
+            }
+        }
+
+        public static Alignment startFromLeft(ACGTSequence read, Strand strand) {
+            final int N = (int) read.textSize();
+            return new Alignment(Mode.Forward, read, new SuffixInterval(0, N - 1), null, 0, 0, strand);
+        }
+
+        public static Alignment startFromMiddle(ACGTSequence read, Strand strand) {
+            final int N = (int) read.textSize();
+            int s2 = N / 3 * 2;
+
+            return new Alignment(Mode.BidirectionalForward, read, new SuffixInterval(0, N - 1), new SuffixInterval(0,
+                    N - 1), s2, s2, strand);
+        }
+
+        public static Alignment startFromRight(ACGTSequence read, Strand strand) {
+            final int N = (int) read.textSize();
+            return new Alignment(Mode.Backward, read, null, new SuffixInterval(0, N - 1), N - 1, N - 1, strand);
         }
 
     }

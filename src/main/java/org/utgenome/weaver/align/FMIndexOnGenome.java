@@ -101,6 +101,19 @@ public class FMIndexOnGenome
         return pos;
     }
 
+    public PosOnGenome toGenomeCoordinate(long saIndex, long querySize, Strand strand) throws UTGBException {
+        long pos = toForwardSequenceIndex(saIndex, strand);
+        if (strand == Strand.FORWARD) {
+            pos -= querySize;
+        }
+        pos += 1;
+        if (pos != -1) {
+            PosOnGenome p = index.translate(pos, strand);
+            return p;
+        }
+        return null;
+    }
+
     public void toGenomeCoordinate(AlignmentSA result, ObjectHandler<AlignmentRecord> reporter) throws Exception {
         if (_logger.isTraceEnabled())
             _logger.info(SilkLens.toSilk("alignment", result));
@@ -108,13 +121,8 @@ public class FMIndexOnGenome
         final long querySize = result.common.query.textSize();
 
         for (long i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
-            long pos = toForwardSequenceIndex(i, result.strand);
-            if (result.strand == Strand.FORWARD) {
-                pos -= querySize;
-            }
-            pos += 1;
-            if (pos != -1) {
-                PosOnGenome p = index.translate(pos, result.strand);
+            PosOnGenome p = toGenomeCoordinate(i, querySize, result.strand);
+            if (p != null) {
                 AlignmentRecord rec = new AlignmentRecord();
                 rec.chr = p.chr;
                 rec.start = p.pos;

@@ -33,10 +33,10 @@ import org.utgenome.util.TestHelper;
 import org.utgenome.weaver.GenomeWeaver;
 import org.xerial.util.log.Logger;
 
-
-public class BDAlignTest {
-	private static Logger _logger = Logger.getLogger(BDAlignTest.class);
-	File                  tmpDir;
+public class BDAlignTest
+{
+    private static Logger _logger = Logger.getLogger(BDAlignTest.class);
+    File                  tmpDir;
 
     @Before
     public void setUp() throws Exception {
@@ -51,16 +51,24 @@ public class BDAlignTest {
             //FileUtil.rmdir(tmpDir);
         }
     }
-	
+
     @Test
-	public void align() throws Exception {
-		File fastaArchive = TestHelper.createTempFileFrom(BWAlignTest.class, "test2.fa", new File(tmpDir, "test2.fa"));
+    public void align() throws Exception {
+        File fastaArchive = TestHelper.createTempFileFrom(BWAlignTest.class, "test2.fa", new File(tmpDir, "test2.fa"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
         String query = "ATCTCATGGGA";
-		GenomeWeaver.execute(String.format("BDAlign %s -q %s", fastaArchive, query));
-	}
+        GenomeWeaver.execute(String.format("BDAlign %s -q %s", fastaArchive, query));
+
+        String q2 = "ACCTCATGGTA";
+        GenomeWeaver.execute(String.format("BDAlign %s -q %s", fastaArchive, query));
+    }
+
+    @Test
+    public void bidirectional() throws Exception {
+        File fastaArchive = TestHelper.createTempFileFrom(BWAlignTest.class, "test2.fa", new File(tmpDir, "test2.fa"));
+        GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+
+        String q = "TACTTATACTTTATCTCCT";
+        GenomeWeaver.execute(String.format("BDAlign %s -q %s", fastaArchive, q));
+    }
 }
-
-
-
-

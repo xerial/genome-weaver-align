@@ -1,0 +1,9 @@
+track name="H3K4me3" description="open chromatin"
+chrI	0	10	b1	1.0	+	
+chrI	10	20	b2	0.5	+
+chrII	0	10	b1	0.7	+	
+chrII	10	20	b2	0.8	+
+track name="H3K27me3" description="closed chromatin"
+chrI	0	10	b1	1.0	+	
+chrIII	0	10	c1	1.0	+	
+
