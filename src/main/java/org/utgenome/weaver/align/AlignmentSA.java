@@ -215,7 +215,7 @@ public class AlignmentSA implements Comparable<AlignmentSA>
 
     public static AlignmentSA initialState(String queryName, ACGTSequence seq, Strand strand, long textSize) {
         return new AlignmentSA(new CommonInfo(queryName, seq), strand, 0, IndelState.NORMAL, new SuffixInterval(0,
-                textSize - 1), 0, 0, null);
+                textSize), 0, 0, null);
     }
 
     public static AlignmentSA exactMatch(AlignmentScoreConfig config, String queryName, ACGTSequence seq,

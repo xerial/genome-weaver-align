@@ -24,6 +24,12 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+/**
+ * Range in suffix array [lowerBound, upperBound)
+ * 
+ * @author leo
+ * 
+ */
 public class SuffixInterval
 {
     public final long lowerBound;
@@ -39,12 +45,12 @@ public class SuffixInterval
     }
 
     public boolean isValidRange() {
-        return lowerBound <= upperBound;
+        return lowerBound < upperBound;
     }
 
     @Override
     public String toString() {
-        return String.format("[%,d, %,d]", lowerBound, upperBound);
+        return String.format("[%,d, %,d)", lowerBound, upperBound);
     }
 
     @Override

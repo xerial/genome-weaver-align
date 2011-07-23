@@ -88,6 +88,20 @@ public class FMIndexOnGenome
         return forwardIndex.backwardSearch(nextBase, si);
     }
 
+    public void bidirectionalSearch(Strand strand, ACGT nextBase, SuffixInterval forwardSi, SuffixInterval backwardSi) {
+        FMIndex fm = strand == Strand.FORWARD ? reverseIndex : forwardIndex;
+        SuffixInterval f = fm.backwardSearch(nextBase, forwardSi);
+        long x = 0;
+        for (ACGT ch : ACGT.values()) {
+            if (ch.code < nextBase.code) {
+                x += fm.count(ch, forwardSi.lowerBound, forwardSi.upperBound + 1);
+            }
+        }
+        long y = fm.count(nextBase, forwardSi.lowerBound, forwardSi.upperBound + 1);
+        SuffixInterval b = new SuffixInterval(backwardSi.lowerBound + x, backwardSi.lowerBound + x + y);
+
+    }
+
     public long toForwardSequenceIndex(long saIndex, Strand strand) {
         long pos = -1;
         switch (strand) {
@@ -121,7 +135,7 @@ public class FMIndexOnGenome
 
         final long querySize = result.common.query.textSize();
 
-        for (long i = result.suffixInterval.lowerBound; i <= result.suffixInterval.upperBound; ++i) {
+        for (long i = result.suffixInterval.lowerBound; i < result.suffixInterval.upperBound; ++i) {
             PosOnGenome p = toGenomeCoordinate(i, querySize, result.strand);
             if (p != null) {
                 AlignmentRecord rec = new AlignmentRecord();

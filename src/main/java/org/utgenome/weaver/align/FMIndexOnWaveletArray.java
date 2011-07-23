@@ -24,7 +24,6 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-
 public class FMIndexOnWaveletArray implements FMIndex
 {
     private final WaveletArray   W;
@@ -62,6 +61,11 @@ public class FMIndexOnWaveletArray implements FMIndex
 
     public long textSize() {
         return W.textSize();
+    }
+
+    @Override
+    public long count(ACGT ch, long start, long end) {
+        throw new UnsupportedOperationException();
     }
 
 }

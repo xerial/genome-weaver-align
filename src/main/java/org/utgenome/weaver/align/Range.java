@@ -16,46 +16,30 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// FMIndex.java
-// Since: 2011/02/12
+// Range.java
+// Since: 2011/07/22
 //
 // $URL$ 
 // $Author$
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-/**
- * Text-search index based on BWT string
- * 
- * @author leo
- * 
- */
-public interface FMIndex
+public class Range
 {
-    public SuffixInterval backwardSearch(ACGT ch, SuffixInterval current);
+    public final int start;
+    public final int end;
 
-    public CharacterCount getCharacterCount();
+    public Range(int start, int end) {
+        this.start = start;
+        this.end = end;
+    }
 
-    /**
-     * Follow the suffix link using the equation: SA[x] - 1 = C(x) + Rank(c, x).
-     * 
-     * @param index
-     *            index x in the suffix array
-     * @return index p in the suffix array that satisfies SA[p] = SA[x] - 1.
-     */
-    public long suffixLink(long index);
+    @Override
+    public String toString() {
+        return String.format("[%d, %d)", start, end);
+    }
 
-    public long textSize();
-
-    /**
-     * Count the number of the specified characters within [start, end) range of
-     * BWT string
-     * 
-     * @param ch
-     * @param start
-     * @param end
-     * @return
-     */
-    public long count(ACGT ch, long start, long end);
-
+    public int length() {
+        return end - start;
+    }
 }

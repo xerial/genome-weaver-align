@@ -80,11 +80,13 @@ public class BidirectionalBWT
         public final SuffixInterval si;
         public final BitVector      breakPoint;
         public final int            numMismatches;
+        public final Range          longestMatch;
 
-        public QuickScanResult(SuffixInterval si, BitVector breakPoint, int numMismatches) {
+        public QuickScanResult(SuffixInterval si, BitVector breakPoint, int numMismatches, Range longestMatch) {
             this.si = si;
             this.breakPoint = breakPoint;
             this.numMismatches = numMismatches;
+            this.longestMatch = longestMatch;
         }
     }
 
@@ -96,7 +98,8 @@ public class BidirectionalBWT
         int longestMatchLength = 0;
         int mark = 0;
         Range longestMatch = null;
-        for (int i = 0; i < qLen; ++i) {
+        int i = 0;
+        for (; i < qLen; ++i) {
             ACGT ch = query.getACGT(i);
             si = fmIndex.forwardSearch(strand, ch, si);
             if (!si.isValidRange()) {
@@ -109,7 +112,11 @@ public class BidirectionalBWT
                 mark = i + 1;
             }
         }
-        return new QuickScanResult(si, breakPoint, numMismatches);
+        if (longestMatch == null || longestMatch.length() < (i - mark)) {
+            longestMatch = new Range(mark, i);
+        }
+
+        return new QuickScanResult(si, breakPoint, numMismatches, longestMatch);
     }
 
     void report(AlignmentSA result) throws Exception {
@@ -233,6 +240,7 @@ public class BidirectionalBWT
 
     public void align(RawRead r) throws Exception {
 
+        // TODO PE mapping
         ReadSequence read = (ReadSequence) r;
 
         ACGTSequence qF = new ACGTSequence(read.seq);
@@ -361,20 +369,20 @@ public class BidirectionalBWT
 
         public static Alignment startFromLeft(ACGTSequence read, Strand strand) {
             final int N = (int) read.textSize();
-            return new Alignment(Orientation.Forward, read, new SuffixInterval(0, N - 1), null, 0, 0, strand);
+            return new Alignment(Orientation.Forward, read, new SuffixInterval(0, N), null, 0, 0, strand);
         }
 
         public static Alignment startFromMiddle(ACGTSequence read, Strand strand) {
             final int N = (int) read.textSize();
             int s2 = N / 3 * 2;
 
-            return new Alignment(Orientation.BidirectionalBackward, read, new SuffixInterval(0, N - 1),
-                    new SuffixInterval(0, N - 1), s2, s2, strand);
+            return new Alignment(Orientation.BidirectionalBackward, read, new SuffixInterval(0, N), new SuffixInterval(
+                    0, N), s2, s2, strand);
         }
 
         public static Alignment startFromRight(ACGTSequence read, Strand strand) {
             final int N = (int) read.textSize();
-            return new Alignment(Orientation.Backward, read, null, new SuffixInterval(0, N - 1), N - 1, N - 1, strand);
+            return new Alignment(Orientation.Backward, read, null, new SuffixInterval(0, N), N - 1, N - 1, strand);
         }
 
     }

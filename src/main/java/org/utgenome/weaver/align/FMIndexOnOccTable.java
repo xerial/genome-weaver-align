@@ -42,7 +42,7 @@ public class FMIndexOnOccTable implements FMIndex
 
     public SuffixInterval backwardSearch(ACGT ch, SuffixInterval current) {
         long lowerBound = C.getCharacterCountSmallerThan(ch) + occ.getOcc(ch, current.lowerBound);
-        long upperBound = C.getCharacterCountSmallerThan(ch) + occ.getOcc(ch, current.upperBound + 1) - 1;
+        long upperBound = C.getCharacterCountSmallerThan(ch) + occ.getOcc(ch, current.upperBound);
         return new SuffixInterval(lowerBound, upperBound);
     }
 
@@ -63,6 +63,11 @@ public class FMIndexOnOccTable implements FMIndex
 
     public long textSize() {
         return seq.textSize();
+    }
+
+    @Override
+    public long count(ACGT ch, long start, long end) {
+        return seq.fastCount(ch, start, end);
     }
 
 }

@@ -228,18 +228,25 @@ public class CyclicSAIS
         // Determin T[N-1]'s LS-type 
         // T[i] is SType if T[i,_) < T[i+1,_)
         // T[i] is LType if T[i,_) > T[i+1,_)
-        for (long i = 0; i < N; ++i) {
-            long x = T.lookup((N + i - 1) % N);
-            long y = T.lookup((N + i) % N);
-            if (x == y)
-                continue;
-            if (x < y) {
-                LS.set(N - 1, SType);
-                break;
+        {
+            long i = 0;
+            for (; i < N; ++i) {
+                long x = T.lookup((N + i - 1) % N);
+                long y = T.lookup((N + i) % N);
+                if (x == y)
+                    continue;
+                if (x < y) {
+                    LS.set(N - 1, SType);
+                    break;
+                }
+                else {
+                    LS.set(N - 1, LType);
+                    break;
+                }
             }
-            else {
+            if (i == N) {
+                // When T = AAAA... , etc.
                 LS.set(N - 1, LType);
-                break;
             }
         }
 
