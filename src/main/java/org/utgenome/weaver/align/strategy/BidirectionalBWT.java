@@ -189,11 +189,11 @@ public class BidirectionalBWT
 
         switch (searchStart) {
         case FRONT:
-            return Alignment.startFromLeft(q, strand);
+            return ForwardAlignment.newInstance(q, strand, N);
         case MIDDLE:
-            return Alignment.startFromMiddle(q, strand);
+            return BidirectionalForwardAlignment.newInstance(q, strand, N);
         case TAIL:
-            return Alignment.startFromRight(q, strand);
+            return BackwardAlignment.newInstance(q, strand, N);
         }
         return null;
     }
@@ -287,7 +287,14 @@ public class BidirectionalBWT
                         si = nextSi;
                     }
                     else {
-
+                        // Search for the other bases
+                        for(ACGT ch : ACGT.values()) {
+                            if(ch != nextBase)  {
+                                SuffixInterval next = fmIndex.forwardSearch(current.strand, ch, si);
+                                if(next.is)
+                            }
+                        }
+                        
                     }
                     cursor++;
                 }
@@ -297,7 +304,7 @@ public class BidirectionalBWT
                 break;
             case BidirectionalBackward: {
                 int cursor = current.backwardCursor;
-                SuffixInterval si = current.backwardSi;
+                SuffixInterval si = current.reverseSi;
                 while (cursor >= 0 && si.isValidRange()) {
                     ACGT nextBase = current.read.getACGT(cursor);
                     SuffixInterval nextSi = fmIndex.backwardSearch(current.strand, nextBase, si);
@@ -314,34 +321,25 @@ public class BidirectionalBWT
 
     }
 
-    public static class Alignment
+    public static abstract class Alignment
     {
-        public static enum Orientation {
-            Forward, Backward, BidirectionalBackward
-        }
+        public final ACGTSequence read;
+        public final Strand       strand;
+        public final int          cursor;
+        public final int          score;
+        public final int          numMismatches;
+        public final int          numGapOpens;
+        public final int          numGapExtend;
 
-        public Orientation    orientation;
-        public ACGTSequence   read;
-
-        public SuffixInterval forwardSi;
-        public SuffixInterval backwardSi;
-
-        public int            forwardCursor;
-        public int            backwardCursor;
-        public Strand         strand;
-
-        public int            score            = 0;
-        public int            numSearchedBases = 0;
-
-        public Alignment(Orientation mode, ACGTSequence read, SuffixInterval forward, SuffixInterval backward,
-                int cursorLeft, int cursorRight, Strand direction) {
-            this.orientation = mode;
+        protected Alignment(ACGTSequence read, Strand strand, int cursor, int score, int numMismatches,
+                int numGapOpens, int numGapExtend) {
             this.read = read;
-            this.forwardSi = forward;
-            this.backwardSi = backward;
-            this.forwardCursor = cursorLeft;
-            this.backwardCursor = cursorRight;
-            this.strand = direction;
+            this.strand = strand;
+            this.cursor = cursor;
+            this.score = score;
+            this.numMismatches = numMismatches;
+            this.numGapOpens = numGapOpens;
+            this.numGapExtend = numGapExtend;
         }
 
         @Override
@@ -349,42 +347,124 @@ public class BidirectionalBWT
             return JSONLens.toJSON(this);
         }
 
+        public abstract int getUpperBoundOfScore(AlignmentScoreConfig config);
+
+        public abstract boolean isFinished();
+
+        public abstract void accept(AlignmentVisitor visitor);
+
+    }
+
+    public static interface AlignmentVisitor
+    {
+        public void forwardAlignment(ForwardAlignment forward);
+
+        public void bidirectionalForwardAlignment(BidirectionalForwardAlignment biForward);
+
+        public void backwardAlignment(BackwardAlignment forward);
+    }
+
+    public static class ForwardAlignment extends Alignment
+    {
+        public final SuffixInterval reverseSi;
+
+        public static ForwardAlignment newInstance(ACGTSequence read, Strand strand, long N) {
+            return new ForwardAlignment(read, strand, 0, 0, 0, 0, 0, new SuffixInterval(0, N));
+        }
+
+        protected ForwardAlignment(ACGTSequence read, Strand strand, int cursor, int score, int numMismatches,
+                int numGapOpens, int numGapExtend, SuffixInterval reverseSi) {
+            super(read, strand, cursor, score, numMismatches, numGapOpens, numGapExtend);
+            this.reverseSi = reverseSi;
+        }
+
+        @Override
         public int getUpperBoundOfScore(AlignmentScoreConfig config) {
-            int remainingBases = (int) read.textSize() - numSearchedBases;
+            int remainingBases = Math.max(0, (int) read.textSize() - cursor);
             return score + config.matchScore * remainingBases;
         }
 
+        @Override
         public boolean isFinished() {
-            switch (orientation) {
-            case Backward:
-                return backwardCursor < 0;
-            case BidirectionalBackward:
-                return false;
-            case Forward:
-                return forwardCursor >= read.textSize();
-            default:
-                throw new IllegalStateException("cannot reach here");
-            }
+            return cursor >= read.textSize();
         }
 
-        public static Alignment startFromLeft(ACGTSequence read, Strand strand) {
-            final int N = (int) read.textSize();
-            return new Alignment(Orientation.Forward, read, new SuffixInterval(0, N), null, 0, 0, strand);
+        @Override
+        public void accept(AlignmentVisitor visitor) {
+            visitor.forwardAlignment(this);
+        }
+    }
+
+    public static class BackwardAlignment extends Alignment
+    {
+        public final SuffixInterval forwardSi;
+
+        public static BackwardAlignment newInstance(ACGTSequence read, Strand strand, long N) {
+            return new BackwardAlignment(read, strand, (int) read.textSize() - 1, 0, 0, 0, 0, new SuffixInterval(0, N));
         }
 
-        public static Alignment startFromMiddle(ACGTSequence read, Strand strand) {
-            final int N = (int) read.textSize();
-            int s2 = N / 3 * 2;
-
-            return new Alignment(Orientation.BidirectionalBackward, read, new SuffixInterval(0, N), new SuffixInterval(
-                    0, N), s2, s2, strand);
+        public BackwardAlignment(ACGTSequence read, Strand strand, int cursor, int score, int numMismatches,
+                int numGapOpens, int numGapExtend, SuffixInterval forwardSi) {
+            super(read, strand, cursor, score, numMismatches, numGapOpens, numGapExtend);
+            this.forwardSi = forwardSi;
         }
 
-        public static Alignment startFromRight(ACGTSequence read, Strand strand) {
-            final int N = (int) read.textSize();
-            return new Alignment(Orientation.Backward, read, null, new SuffixInterval(0, N), N - 1, N - 1, strand);
+        @Override
+        public int getUpperBoundOfScore(AlignmentScoreConfig config) {
+            int remainingBases = Math.max(0, cursor + 1);
+            return score + config.matchScore * remainingBases;
         }
 
+        @Override
+        public boolean isFinished() {
+            return cursor < 0;
+        }
+
+        @Override
+        public void accept(AlignmentVisitor visitor) {
+            visitor.backwardAlignment(this);
+        }
+    }
+
+    public static class BidirectionalForwardAlignment extends Alignment
+    {
+        public final SuffixInterval forwardSi;
+        public final SuffixInterval backwardSi;
+        public final int            reverseCursor;
+
+        public static BidirectionalForwardAlignment newInstance(ACGTSequence read, Strand strand, long N) {
+            final int K = (int) read.textSize();
+            int s2 = K / 3;
+            return new BidirectionalForwardAlignment(read, strand, s2, 0, 0, 0, 0, new SuffixInterval(0, N),
+                    new SuffixInterval(0, N), s2);
+        }
+
+        protected BidirectionalForwardAlignment(ACGTSequence read, Strand strand, int cursor, int score,
+                int numMismatches, int numGapOpens, int numGapExtend, SuffixInterval forwardSi,
+                SuffixInterval backwardSi, int reverseCursor) {
+            super(read, strand, cursor, score, numMismatches, numGapOpens, numGapExtend);
+            this.forwardSi = forwardSi;
+            this.backwardSi = backwardSi;
+            this.reverseCursor = reverseCursor;
+        }
+
+        @Override
+        public int getUpperBoundOfScore(AlignmentScoreConfig config) {
+            int remainingLeft = (int) read.textSize() / 3;
+            int remainingRight = (int) read.textSize() - cursor;
+            int remainingBases = remainingLeft + remainingRight;
+            return score + config.matchScore * remainingBases;
+        }
+
+        @Override
+        public boolean isFinished() {
+            return false;
+        }
+
+        @Override
+        public void accept(AlignmentVisitor visitor) {
+            visitor.bidirectionalForwardAlignment(this);
+        }
     }
 
 }
