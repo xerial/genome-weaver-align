@@ -40,5 +40,6 @@ public class AlignmentScoreConfig
     public final int gapExtentionPenalty  = 4;
 
     public final int numGapOpenAllowed    = 1;
+    public final int numSplitAlowed       = 1;
 
 }
