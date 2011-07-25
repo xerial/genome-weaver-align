@@ -40,7 +40,6 @@ import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.RawRead;
 import org.utgenome.weaver.align.record.ReadSequence;
-import org.utgenome.weaver.align.strategy.BidirectionalBWT.Alignment.ExtensionType;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.util.ObjectHandlerBase;
 
@@ -239,8 +238,8 @@ public class BidirectionalBWT
             if (e.getUpperBoundOfScore(config) < bestScore)
                 return false;
 
-            if (e.score > bestScore)
-                bestScore = e.score;
+            if (e.score.score > bestScore)
+                bestScore = e.score.score;
 
             return queue.add(e);
         }
@@ -315,10 +314,10 @@ public class BidirectionalBWT
 
         public void exactMatch(Alignment c) {
             int cursor = c.cursor;
-            int score = c.score;
+            int score = c.score.score;
             SuffixInterval si = c.suffixInterval();
             while (cursor < c.read.textSize()) {
-                si = c.nextSi(fmIndex, c.strand, c.getACGT(cursor), si);
+                si = c.nextSi(fmIndex, c.getACGT(cursor), si);
                 if (!si.isValidRange())
                     return;
                 cursor++;
@@ -338,7 +337,7 @@ public class BidirectionalBWT
             if (c.getUpperBoundOfScore(config) < queue.bestScore)
                 return; // no need to proceed
 
-            if (c.numMismatches >= config.numMismatchesAllowed) {
+            if (!c.mismatchIsAllowed(config)) {
                 // exact match
                 exactMatch(c);
                 return;
@@ -349,23 +348,20 @@ public class BidirectionalBWT
             {
                 int i = 0;
                 for (ACGT ch : ACGT.values()) {
-                    next[i++] = c.nextSi(fmIndex, c.strand, ch, si);
+                    next[i++] = c.nextSi(fmIndex, ch, si);
                 }
             }
 
             // Search for indels
             switch (c.extensionType) {
             case MATCH: { // gap open
-                if (c.numGapOpens < config.numGapOpenAllowed) {
+                if (c.gapIsAllowed(config)) {
                     // insertion to reference
-                    queue.add(new ForwardAlignment(c.read, c.strand, ExtensionType.INSERTION, c.cursor + 1, c.score
-                            - config.gapOpenPenalty, c.numMismatches, c.numGapOpens + 1, c.numGapExtend, si));
+                    queue.add(c.startInsertion(config));
                     // deletion from reference
                     for (ACGT ch : ACGT.exceptN) {
                         if (next[ch.code].isValidRange())
-                            queue.add(new ForwardAlignment(c.read, c.strand, ExtensionType.DELETION, c.cursor, c.score
-                                    - config.gapOpenPenalty, c.numMismatches, c.numGapOpens + 1, c.numGapExtend,
-                                    next[ch.code]));
+                            queue.add(c.startDeletion(config, next[ch.code]));
                     }
                     break;
                 }
@@ -373,15 +369,12 @@ public class BidirectionalBWT
             case DELETION: { // gap extension
                 for (ACGT ch : ACGT.exceptN) {
                     if (next[ch.code].isValidRange())
-                        queue.add(new ForwardAlignment(c.read, c.strand, ExtensionType.DELETION, c.cursor, c.score
-                                - config.gapExtentionPenalty, c.numMismatches, c.numGapOpens, c.numGapExtend + 1,
-                                next[ch.code]));
+                        queue.add(c.extendDeletion(config, next[ch.code]));
                 }
                 break;
             }
             case INSERTION: { // gap extension
-                queue.add(new ForwardAlignment(c.read, c.strand, ExtensionType.INSERTION, c.cursor + 1, c.score
-                        - config.gapExtentionPenalty, c.numMismatches, c.numGapOpens, c.numGapExtend + 1, si));
+                queue.add(c.extendInsertion(config));
                 break;
             }
             }
@@ -394,13 +387,11 @@ public class BidirectionalBWT
 
                 if (ch == c.nextACGT()) {
                     // match
-                    queue.add(new ForwardAlignment(c.read, c.strand, ExtensionType.MATCH, c.cursor + 1, c.score
-                            + config.matchScore, c.numMismatches, c.numGapOpens, c.numGapExtend, nextSi));
+                    queue.add(c.extendWithMatch(config, nextSi));
                 }
                 else {
                     // mismatch
-                    queue.add(new ForwardAlignment(c.read, c.strand, ExtensionType.MATCH, c.cursor + 1, c.score
-                            - config.mismatchPenalty, c.numMismatches + 1, c.numGapOpens, c.numGapExtend, nextSi));
+                    queue.add(c.extendWithMisMatch(config, nextSi));
                 }
             }
 
@@ -426,49 +417,107 @@ public class BidirectionalBWT
 
     public static abstract class Alignment
     {
+        public static class Score
+        {
+            public final int score;
+            public final int numMismatches;
+            public final int numGapOpens;
+            public final int numGapExtend;
+
+            public Score(int score, int numMismatches, int numGapOpens, int numGapExtend) {
+                this.score = score;
+                this.numMismatches = numMismatches;
+                this.numGapOpens = numGapOpens;
+                this.numGapExtend = numGapExtend;
+            }
+
+            @Override
+            public String toString() {
+                return String.format("%d:%d/%d/%d", score, numMismatches, numGapOpens, numGapExtend);
+            }
+
+            public static Score initial() {
+                return new Score(0, 0, 0, 0);
+            }
+
+            public Score update(int newScore) {
+                return new Score(newScore, numMismatches, numGapOpens, numGapExtend);
+            }
+
+            public Score extendWithMatch(AlignmentScoreConfig config) {
+                return new Score(score + config.matchScore, numMismatches, numGapOpens, numGapExtend);
+            }
+
+            public Score extendWithMismatch(AlignmentScoreConfig config) {
+                return new Score(score - config.mismatchPenalty, numMismatches + 1, numGapOpens, numGapExtend);
+            }
+
+            public Score extendWithGapOpen(AlignmentScoreConfig config) {
+                return new Score(score - config.gapOpenPenalty, numMismatches, numGapOpens + 1, numGapExtend);
+            }
+
+            public Score extendWithGapExtend(AlignmentScoreConfig config) {
+                return new Score(score - config.gapExtentionPenalty, numMismatches, numGapOpens, numGapExtend + 1);
+            }
+
+        }
+
         public static enum ExtensionType {
             MATCH, INSERTION, DELETION
         };
 
+        public static enum Orientation {
+            Forward("F"), Backward("B"), BidirectionalForward("BF"), BidirectionalBackward("BB");
+
+            public final String symbol;
+
+            private Orientation(String symbol) {
+                this.symbol = symbol;
+            }
+        }
+
         public final ACGTSequence   read;
+
         public final Strand         strand;
+        public final Orientation    orientation;
         public final ExtensionType  extensionType;
         public final int            cursor;
-        public final int            score;
-        public final int            numMismatches;
-        public final int            numGapOpens;
-        public final int            numGapExtend;
+        public final Score          score;
         public final SuffixInterval si;
 
-        protected Alignment(ACGTSequence read, Strand strand, ExtensionType extensionType, int cursor, int score,
-                int numMismatches, int numGapOpens, int numGapExtend, SuffixInterval si) {
+        protected Alignment(ACGTSequence read, Strand strand, Orientation orientation, ExtensionType extensionType,
+                int cursor, Score score, SuffixInterval si) {
             this.read = read;
             this.strand = strand;
+            this.orientation = orientation;
             this.extensionType = extensionType;
             this.cursor = cursor;
             this.score = score;
-            this.numMismatches = numMismatches;
-            this.numGapOpens = numGapOpens;
-            this.numGapExtend = numGapExtend;
             this.si = si;
         }
 
         protected Alignment(Alignment other) {
             this.read = other.read;
             this.strand = other.strand;
+            this.orientation = other.orientation;
             this.extensionType = other.extensionType;
             this.cursor = other.cursor;
             this.score = other.score;
-            this.numMismatches = other.numMismatches;
-            this.numGapOpens = other.numGapOpens;
-            this.numGapExtend = other.numGapExtend;
             this.si = other.si;
+        }
+
+        public boolean gapIsAllowed(AlignmentScoreConfig config) {
+            return score.numGapOpens < config.numGapOpenAllowed;
+        }
+
+        public boolean mismatchIsAllowed(AlignmentScoreConfig config) {
+            return score.numMismatches < config.numMismatchesAllowed;
         }
 
         @Override
         public String toString() {
-            return String.format("strand:%s, score:%d, cursor:%d, state:%s, mm:%d, go:%d, ge:%d", strand.symbol, score,
-                    cursor, extensionType, numMismatches, numGapOpens, numGapExtend);
+            return String.format("%s-%s%d:%d %s/%s", orientation.symbol, extensionType.name().charAt(0), cursor, score,
+                    strand.symbol);
         }
 
         public ACGT nextACGT() {
@@ -487,12 +536,51 @@ public class BidirectionalBWT
             return si;
         }
 
-        public abstract SuffixInterval nextSi(FMIndexOnGenome fmIndex, Strand strand, ACGT ch, SuffixInterval si);
-
-        public abstract int getUpperBoundOfScore(AlignmentScoreConfig config);
+        public int getUpperBoundOfScore(AlignmentScoreConfig config) {
+            return score.score + config.matchScore * getRemainingBases();
+        }
 
         public boolean isFinished() {
             return cursor >= read.textSize();
+        }
+
+        public SuffixInterval nextSi(FMIndexOnGenome fmIndex, ACGT ch, SuffixInterval si) {
+            switch (orientation) {
+            case Forward:
+            case BidirectionalForward:
+                return fmIndex.forwardSearch(strand, ch, si);
+            case Backward:
+            case BidirectionalBackward:
+                return fmIndex.backwardSearch(strand, ch, si);
+            default:
+                throw new IllegalStateException("cannot reach here");
+            }
+        }
+
+        public abstract Alignment extend(ExtensionType type, int newCursor, Score newScore, SuffixInterval newSi);
+
+        public Alignment extendWithMatch(AlignmentScoreConfig config, SuffixInterval newSi) {
+            return extend(ExtensionType.MATCH, cursor + 1, score.extendWithMatch(config), newSi);
+        }
+
+        public Alignment extendWithMisMatch(AlignmentScoreConfig config, SuffixInterval newSi) {
+            return extend(ExtensionType.MATCH, cursor + 1, score.extendWithMismatch(config), newSi);
+        }
+
+        public Alignment startInsertion(AlignmentScoreConfig config) {
+            return extend(ExtensionType.INSERTION, cursor + 1, score.extendWithGapOpen(config), si);
+        }
+
+        public Alignment startDeletion(AlignmentScoreConfig config, SuffixInterval newSi) {
+            return extend(ExtensionType.DELETION, cursor, score.extendWithGapOpen(config), newSi);
+        }
+
+        public Alignment extendInsertion(AlignmentScoreConfig config) {
+            return extend(ExtensionType.INSERTION, cursor + 1, score.extendWithGapExtend(config), si);
+        }
+
+        public Alignment extendDeletion(AlignmentScoreConfig config, SuffixInterval newSi) {
+            return extend(ExtensionType.DELETION, cursor, score.extendWithGapExtend(config), newSi);
         }
 
         public abstract Alignment newInstance(int newScore, int newCursor, SuffixInterval newSi);
@@ -504,23 +592,13 @@ public class BidirectionalBWT
     public static class ForwardAlignment extends Alignment
     {
         public static ForwardAlignment newInstance(ACGTSequence read, Strand strand, long N) {
-            return new ForwardAlignment(read, strand, ExtensionType.MATCH, 0, 0, 0, 0, 0, new SuffixInterval(0, N));
+            return new ForwardAlignment(read, strand, Orientation.Forward, ExtensionType.MATCH, 0, Score.initial(),
+                    new SuffixInterval(0, N));
         }
 
-        public ForwardAlignment(ACGTSequence read, Strand strand, ExtensionType extensionType, int cursor, int score,
-                int numMismatches, int numGapOpens, int numGapExtend, SuffixInterval reverseSi) {
-            super(read, strand, extensionType, cursor, score, numMismatches, numGapOpens, numGapExtend, reverseSi);
-        }
-
-        @Override
-        public String toString() {
-            return String.format("%s%d:%d %d/%d/%d/%s", extensionType.name().charAt(0), cursor, score, numMismatches,
-                    numGapOpens, numGapExtend, strand.symbol);
-        }
-
-        @Override
-        public int getUpperBoundOfScore(AlignmentScoreConfig config) {
-            return score + config.matchScore * getRemainingBases();
+        public ForwardAlignment(ACGTSequence read, Strand strand, Orientation orientation, ExtensionType extensionType,
+                int cursor, Score score, SuffixInterval reverseSi) {
+            super(read, strand, orientation, extensionType, cursor, score, reverseSi);
         }
 
         @Override
@@ -529,14 +607,19 @@ public class BidirectionalBWT
         }
 
         @Override
-        public SuffixInterval nextSi(FMIndexOnGenome fmIndex, Strand strand, ACGT ch, SuffixInterval si) {
+        public SuffixInterval nextSi(FMIndexOnGenome fmIndex, ACGT ch, SuffixInterval si) {
             return fmIndex.forwardSearch(strand, ch, si);
         }
 
         @Override
+        public Alignment extend(ExtensionType type, int newCursor, Score newScore, SuffixInterval newSi) {
+            return new ForwardAlignment(read, strand, orientation, type, newCursor, newScore, newSi);
+        }
+
+        @Override
         public Alignment newInstance(int newScore, int newCursor, SuffixInterval newSi) {
-            return new ForwardAlignment(read, strand, extensionType, newCursor, newScore, numMismatches, numGapOpens,
-                    numGapExtend, newSi);
+            return new ForwardAlignment(read, strand, orientation, extensionType, newCursor, score.update(newScore),
+                    newSi);
         }
 
     }
@@ -544,17 +627,13 @@ public class BidirectionalBWT
     public static class BackwardAlignment extends Alignment
     {
         public static BackwardAlignment newInstance(ACGTSequence read, Strand strand, long N) {
-            return new BackwardAlignment(read, strand, ExtensionType.MATCH, 0, 0, 0, 0, 0, new SuffixInterval(0, N));
+            return new BackwardAlignment(read, strand, Orientation.Backward, ExtensionType.MATCH, 0, Score.initial(),
+                    new SuffixInterval(0, N));
         }
 
-        public BackwardAlignment(ACGTSequence read, Strand strand, ExtensionType extensionType, int cursor, int score,
-                int numMismatches, int numGapOpens, int numGapExtend, SuffixInterval forwardSi) {
-            super(read, strand, extensionType, cursor, score, numMismatches, numGapOpens, numGapExtend, forwardSi);
-        }
-
-        @Override
-        public int getUpperBoundOfScore(AlignmentScoreConfig config) {
-            return score + config.matchScore * getRemainingBases();
+        public BackwardAlignment(ACGTSequence read, Strand strand, Orientation orientation,
+                ExtensionType extensionType, int cursor, Score score, SuffixInterval forwardSi) {
+            super(read, strand, orientation, extensionType, cursor, score, forwardSi);
         }
 
         @Override
@@ -573,14 +652,19 @@ public class BidirectionalBWT
         }
 
         @Override
-        public SuffixInterval nextSi(FMIndexOnGenome fmIndex, Strand strand, ACGT ch, SuffixInterval si) {
+        public SuffixInterval nextSi(FMIndexOnGenome fmIndex, ACGT ch, SuffixInterval si) {
             return fmIndex.backwardSearch(strand, ch, si);
         }
 
         @Override
+        public Alignment extend(ExtensionType type, int newCursor, Score newScore, SuffixInterval newSi) {
+            return new BackwardAlignment(read, strand, orientation, type, newCursor, newScore, newSi);
+        }
+
+        @Override
         public Alignment newInstance(int newScore, int newCursor, SuffixInterval newSi) {
-            return new BackwardAlignment(read, strand, extensionType, newCursor, newScore, numMismatches, numGapOpens,
-                    numGapExtend, newSi);
+            return new BackwardAlignment(read, strand, orientation, extensionType, newCursor, score.update(newScore),
+                    newSi);
         }
 
     }
@@ -593,14 +677,14 @@ public class BidirectionalBWT
         public static BidirectionalForwardAlignment newInstance(ACGTSequence read, Strand strand, long N) {
             final int K = (int) read.textSize();
             int s2 = K / 3;
-            return new BidirectionalForwardAlignment(read, strand, ExtensionType.MATCH, s2, 0, 0, 0, 0,
-                    new SuffixInterval(0, N), new SuffixInterval(0, N), s2);
+            return new BidirectionalForwardAlignment(read, strand, Orientation.BidirectionalForward,
+                    ExtensionType.MATCH, s2, Score.initial(), new SuffixInterval(0, N), new SuffixInterval(0, N), s2);
         }
 
-        protected BidirectionalForwardAlignment(ACGTSequence read, Strand strand, ExtensionType extensionType,
-                int cursor, int score, int numMismatches, int numGapOpens, int numGapExtend, SuffixInterval forwardSi,
+        protected BidirectionalForwardAlignment(ACGTSequence read, Strand strand, Orientation orientation,
+                ExtensionType extensionType, int cursor, Score score, SuffixInterval forwardSi,
                 SuffixInterval backwardSi, int reverseCursor) {
-            super(read, strand, extensionType, cursor, score, numMismatches, numGapOpens, numGapExtend, forwardSi);
+            super(read, strand, orientation, extensionType, cursor, score, forwardSi);
             this.backwardSi = backwardSi;
             this.reverseCursor = reverseCursor;
         }
@@ -614,11 +698,6 @@ public class BidirectionalBWT
         }
 
         @Override
-        public int getUpperBoundOfScore(AlignmentScoreConfig config) {
-            return score + config.matchScore * getRemainingBases();
-        }
-
-        @Override
         public boolean isFinished() {
             return false;
         }
@@ -629,15 +708,24 @@ public class BidirectionalBWT
         }
 
         @Override
-        public SuffixInterval nextSi(FMIndexOnGenome fmIndex, Strand strand, ACGT ch, SuffixInterval si) {
-            // TODO Auto-generated method stub
-            return null;
+        public Alignment newInstance(int newScore, int newCursor, SuffixInterval newSi) {
+            return new BidirectionalForwardAlignment(read, strand, orientation, extensionType, newCursor,
+                    score.update(newScore), newSi, backwardSi, reverseCursor);
         }
 
         @Override
-        public Alignment newInstance(int newScore, int newCursor, SuffixInterval newSi) {
-            // TODO
-            return null;
+        public Alignment extend(ExtensionType type, int newCursor, Score newScore, SuffixInterval newSi) {
+            // TODO fix reverse SI
+            return new BidirectionalForwardAlignment(read, strand, orientation, type, newCursor, newScore, newSi,
+                    backwardSi, newCursor);
+        }
+
+        @Override
+        public SuffixInterval nextSi(FMIndexOnGenome fmIndex, ACGT ch, SuffixInterval si) {
+            // TODO fix reverse Si
+            SuffixInterval nextSi = fmIndex.forwardSearch(strand, ch, si);
+
+            return nextSi;
         }
     }
 
