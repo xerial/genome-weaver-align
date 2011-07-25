@@ -71,4 +71,15 @@ public class BDAlignTest
         String q = "TACTTATACTTTATCTCCT";
         GenomeWeaver.execute(String.format("BDAlign %s -q %s", fastaArchive, q));
     }
+
+    @Test
+    public void forwardSearch() throws Exception {
+        File fastaArchive = TestHelper.createTempFileFrom(BWAlignTest.class, "test2.fa", new File(tmpDir, "test2.fa"));
+        GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+
+        String q = "TCTATACCCCGGTGAA";
+        GenomeWeaver.execute(String.format("BDAlign %s -q %s", fastaArchive, q));
+
+    }
+
 }

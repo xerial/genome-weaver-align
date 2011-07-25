@@ -38,4 +38,7 @@ public class AlignmentScoreConfig
     public final int mismatchPenalty      = 3;
     public final int gapOpenPenalty       = 11;
     public final int gapExtentionPenalty  = 4;
+
+    public final int numGapOpenAllowed    = 1;
+
 }
