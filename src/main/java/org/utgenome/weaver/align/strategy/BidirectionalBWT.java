@@ -354,7 +354,9 @@ public class BidirectionalBWT
                 return;
             }
 
-            if (c.getUpperBoundOfScore(config) < queue.bestScore)
+            int upperBound = c.getUpperBoundOfScore(config);
+
+            if (upperBound < queue.bestScore)
                 return; // no need to proceed
 
             int remainingDist = config.maximumEditDistances
@@ -383,7 +385,7 @@ public class BidirectionalBWT
             // Search for indels
             switch (c.extensionType) {
             case MATCH: { // gap open
-                if (c.gapIsAllowed(config)) {
+                if (c.gapOpenIsAllowed(config) && upperBound - config.gapOpenPenalty > queue.bestScore) {
                     // insertion to reference
                     queue.add(c.startInsertion(config));
                     // deletion from reference
@@ -395,14 +397,18 @@ public class BidirectionalBWT
                 }
             }
             case DELETION: { // gap extension
-                for (ACGT ch : ACGT.exceptN) {
-                    if (next[ch.code].isValidRange())
-                        queue.add(c.extendDeletion(config, next[ch.code]));
+                if (c.gapExtensionIsAllowed(config) && upperBound - config.gapExtentionPenalty > queue.bestScore) {
+                    for (ACGT ch : ACGT.exceptN) {
+                        if (next[ch.code].isValidRange())
+                            queue.add(c.extendDeletion(config, next[ch.code]));
+                    }
                 }
                 break;
             }
             case INSERTION: { // gap extension
-                queue.add(c.extendInsertion(config));
+                if (c.gapExtensionIsAllowed(config) && upperBound - config.gapExtentionPenalty > queue.bestScore) {
+                    queue.add(c.extendInsertion(config));
+                }
                 break;
             }
             }
@@ -442,52 +448,59 @@ public class BidirectionalBWT
 
     }
 
+    public static class Score
+    {
+        public final int score;
+        public final int numMismatches;
+        public final int numGapOpens;
+        public final int numGapExtend;
+
+        public Score(int score, int numMismatches, int numGapOpens, int numGapExtend) {
+            this.score = score;
+            this.numMismatches = numMismatches;
+            this.numGapOpens = numGapOpens;
+            this.numGapExtend = numGapExtend;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%3d:%d/%d/%d", score, numMismatches, numGapOpens, numGapExtend);
+        }
+
+        public static Score initial() {
+            return new Score(0, 0, 0, 0);
+        }
+
+        public Score update(int newScore) {
+            return new Score(newScore, numMismatches, numGapOpens, numGapExtend);
+        }
+
+        public Score extendWithMatch(AlignmentScoreConfig config) {
+            return new Score(score + config.matchScore, numMismatches, numGapOpens, numGapExtend);
+        }
+
+        public Score extendWithMismatch(AlignmentScoreConfig config) {
+            return new Score(score - config.mismatchPenalty, numMismatches + 1, numGapOpens, numGapExtend);
+        }
+
+        public Score extendWithGapOpen(AlignmentScoreConfig config) {
+            return new Score(score - config.gapOpenPenalty, numMismatches, numGapOpens + 1, numGapExtend);
+        }
+
+        public Score extendWithGapExtend(AlignmentScoreConfig config) {
+            return new Score(score - config.gapExtentionPenalty, numMismatches, numGapOpens, numGapExtend + 1);
+        }
+
+    }
+
+    /**
+     * Represents an alignment state
+     * 
+     * @author leo
+     * 
+     */
     public static abstract class Alignment
     {
-        public static class Score
-        {
-            public final int score;
-            public final int numMismatches;
-            public final int numGapOpens;
-            public final int numGapExtend;
-
-            public Score(int score, int numMismatches, int numGapOpens, int numGapExtend) {
-                this.score = score;
-                this.numMismatches = numMismatches;
-                this.numGapOpens = numGapOpens;
-                this.numGapExtend = numGapExtend;
-            }
-
-            @Override
-            public String toString() {
-                return String.format("%3d:%d/%d/%d", score, numMismatches, numGapOpens, numGapExtend);
-            }
-
-            public static Score initial() {
-                return new Score(0, 0, 0, 0);
-            }
-
-            public Score update(int newScore) {
-                return new Score(newScore, numMismatches, numGapOpens, numGapExtend);
-            }
-
-            public Score extendWithMatch(AlignmentScoreConfig config) {
-                return new Score(score + config.matchScore, numMismatches, numGapOpens, numGapExtend);
-            }
-
-            public Score extendWithMismatch(AlignmentScoreConfig config) {
-                return new Score(score - config.mismatchPenalty, numMismatches + 1, numGapOpens, numGapExtend);
-            }
-
-            public Score extendWithGapOpen(AlignmentScoreConfig config) {
-                return new Score(score - config.gapOpenPenalty, numMismatches, numGapOpens + 1, numGapExtend);
-            }
-
-            public Score extendWithGapExtend(AlignmentScoreConfig config) {
-                return new Score(score - config.gapExtentionPenalty, numMismatches, numGapOpens, numGapExtend + 1);
-            }
-
-        }
 
         public static enum ExtensionType {
             MATCH, INSERTION, DELETION
@@ -504,9 +517,8 @@ public class BidirectionalBWT
         }
 
         public final ACGTSequence   read;
-
-        public final Strand         strand;
-        public final Orientation    orientation;
+        public final Strand         strand;       // forward or reverse (complement of the query sequence)
+        public final Orientation    orientation;  // alignment direction
         public final ExtensionType  extensionType;
         public final int            cursor;
         public final Score          score;
@@ -533,8 +545,12 @@ public class BidirectionalBWT
             this.si = other.si;
         }
 
-        public boolean gapIsAllowed(AlignmentScoreConfig config) {
+        public boolean gapOpenIsAllowed(AlignmentScoreConfig config) {
             return score.numGapOpens < config.numGapOpenAllowed;
+        }
+
+        public boolean gapExtensionIsAllowed(AlignmentScoreConfig config) {
+            return score.numMismatches + score.numGapExtend < config.maximumEditDistances;
         }
 
         public boolean mismatchIsAllowed(AlignmentScoreConfig config) {
@@ -543,8 +559,8 @@ public class BidirectionalBWT
 
         @Override
         public String toString() {
-            return String.format("%s-%s(%d):%s/%s", orientation.symbol, extensionType.name().charAt(0), cursor,
-                    score.toString(), strand.symbol);
+            return String.format("%s%s%s(%d):%s", orientation.symbol, strand.symbol, extensionType.name().charAt(0),
+                    cursor, score.toString());
         }
 
         public ACGT nextACGT() {
