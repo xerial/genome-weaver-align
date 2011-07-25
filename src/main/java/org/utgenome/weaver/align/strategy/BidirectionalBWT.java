@@ -433,7 +433,7 @@ public class BidirectionalBWT
 
             @Override
             public String toString() {
-                return String.format("%d:%d/%d/%d", score, numMismatches, numGapOpens, numGapExtend);
+                return String.format("%3d:%d/%d/%d", score, numMismatches, numGapOpens, numGapExtend);
             }
 
             public static Score initial() {
@@ -516,8 +516,8 @@ public class BidirectionalBWT
 
         @Override
         public String toString() {
-            return String.format("%s-%s%d:%d %s/%s", orientation.symbol, extensionType.name().charAt(0), cursor, score,
-                    strand.symbol);
+            return String.format("%s-%s(%d):%s/%s", orientation.symbol, extensionType.name().charAt(0), cursor,
+                    score.toString(), strand.symbol);
         }
 
         public ACGT nextACGT() {
