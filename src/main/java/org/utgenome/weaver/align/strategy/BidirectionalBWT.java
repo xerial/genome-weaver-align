@@ -238,7 +238,7 @@ public class BidirectionalBWT
             if (e.getUpperBoundOfScore(config) < bestScore)
                 return false;
 
-            if (e.score.score > bestScore)
+            if (e.isFinished() && e.score.score > bestScore)
                 bestScore = e.score.score;
 
             return queue.add(e);
@@ -281,8 +281,10 @@ public class BidirectionalBWT
         while (!alignmentQueue.isEmpty()) {
             Alignment current = alignmentQueue.poll();
 
-            if (current.isFinished()) {
+            if (current.isFinished() && current.score.score >= alignmentQueue.bestScore) {
                 report(current);
+                alignmentQueue.bestScore = current.score.score;
+                continue;
             }
 
             // extend the match
