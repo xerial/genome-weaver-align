@@ -90,7 +90,8 @@ public class BDAlign extends GenomeWeaverCommand
         query(fastaFilePrefix, reader, config, new Reporter() {
             @Override
             public void emit(Object result) {
-                _logger.debug(SilkLens.toSilk("result", result));
+                if (_logger.isDebugEnabled())
+                    _logger.debug(SilkLens.toSilk("result", result));
             }
         });
 
@@ -112,7 +113,7 @@ public class BDAlign extends GenomeWeaverCommand
                 count++;
                 double time = timer.getElapsedTime();
                 if (count % 10000 == 0) {
-                    _logger.info("%,d reads are processed in %.2f sec. %,d reads/sec.", count, time, count / time);
+                    _logger.info("%,d reads are processed in %.2f sec. %,.0f reads/sec.", count, time, count / time);
                 }
             }
         });
