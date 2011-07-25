@@ -44,6 +44,7 @@ public enum ACGT {
 
     private final static ACGT[] codeTable           = { A, C, G, T, N, N, N, N, N };
     public final byte           code;
+    public final static ACGT[]  exceptN             = { A, C, G, T };
 
     private ACGT(int code) {
         this.code = (byte) code;

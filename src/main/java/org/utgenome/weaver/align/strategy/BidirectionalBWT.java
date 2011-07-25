@@ -40,6 +40,7 @@ import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.RawRead;
 import org.utgenome.weaver.align.record.ReadSequence;
+import org.utgenome.weaver.align.strategy.BidirectionalBWT.Alignment.ExtensionType;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.JSONLens;
 import org.xerial.util.ObjectHandlerBase;
@@ -90,7 +91,7 @@ public class BidirectionalBWT
         }
     }
 
-    public QuickScanResult quickScan(ACGTSequence query, Strand strand) {
+    public QuickScanResult scanMismatchLocations(ACGTSequence query, Strand strand) {
         int qLen = (int) query.textSize();
         int numMismatches = 0;
         BitVector breakPoint = new BitVector(qLen);
@@ -246,7 +247,7 @@ public class BidirectionalBWT
         ACGTSequence qF = new ACGTSequence(read.seq);
 
         // Find potential mismatch positions for forward direction
-        QuickScanResult scanF = quickScan(qF, Strand.FORWARD);
+        QuickScanResult scanF = scanMismatchLocations(qF, Strand.FORWARD);
         if (scanF.numMismatches == 0) {
             // Found an exact match
             report(AlignmentSA.exactMatch(config, r.name(), qF, scanF.si, Strand.FORWARD));
@@ -255,7 +256,7 @@ public class BidirectionalBWT
 
         // Find potential mismatch positions for reverse direction
         ACGTSequence qC = qF.complement();
-        QuickScanResult scanR = quickScan(qC, Strand.REVERSE);
+        QuickScanResult scanR = scanMismatchLocations(qC, Strand.REVERSE);
         if (scanR.numMismatches == 0) {
             // Found an exact match
             report(AlignmentSA.exactMatch(config, r.name(), qC, scanR.si, Strand.REVERSE));
@@ -267,6 +268,8 @@ public class BidirectionalBWT
         alignmentQueue.add(prepareInitialAlignmentState(qF, scanF, Strand.FORWARD));
         alignmentQueue.add(prepareInitialAlignmentState(qC, scanR, Strand.REVERSE));
 
+        AlignmentVisitor visitor = null;
+
         // Search iteration
         while (!alignmentQueue.isEmpty()) {
             Alignment current = alignmentQueue.poll();
@@ -276,70 +279,47 @@ public class BidirectionalBWT
             }
 
             // extend the match
-            switch (current.orientation) {
-            case Forward: {
-                int cursor = current.forwardCursor;
-                SuffixInterval si = current.forwardSi;
-                while (cursor < current.read.textSize() && si.isValidRange()) {
-                    ACGT nextBase = current.read.getACGT(cursor);
-                    SuffixInterval nextSi = fmIndex.forwardSearch(current.strand, nextBase, si);
-                    if (nextSi.isValidRange()) {
-                        si = nextSi;
-                    }
-                    else {
-                        // Search for the other bases
-                        for(ACGT ch : ACGT.values()) {
-                            if(ch != nextBase)  {
-                                SuffixInterval next = fmIndex.forwardSearch(current.strand, ch, si);
-                                if(next.is)
-                            }
-                        }
-                        
-                    }
-                    cursor++;
-                }
-                break;
-            }
-            case Backward:
-                break;
-            case BidirectionalBackward: {
-                int cursor = current.backwardCursor;
-                SuffixInterval si = current.reverseSi;
-                while (cursor >= 0 && si.isValidRange()) {
-                    ACGT nextBase = current.read.getACGT(cursor);
-                    SuffixInterval nextSi = fmIndex.backwardSearch(current.strand, nextBase, si);
-                    if (nextSi.isValidRange()) {
-                        si = nextSi;
-                    }
-                    cursor--;
-                }
-            }
-                break;
-            }
-
+            current.accept(visitor);
         }
 
     }
 
     public static abstract class Alignment
     {
-        public final ACGTSequence read;
-        public final Strand       strand;
-        public final int          cursor;
-        public final int          score;
-        public final int          numMismatches;
-        public final int          numGapOpens;
-        public final int          numGapExtend;
+        public static enum ExtensionType {
+            MATCH, INSERTION, DELETION
+        };
 
-        protected Alignment(ACGTSequence read, Strand strand, int cursor, int score, int numMismatches,
-                int numGapOpens, int numGapExtend) {
+        public final ACGTSequence  read;
+        public final Strand        strand;
+        public final ExtensionType extensionType;
+        public final int           cursor;
+        public final int           score;
+        public final int           numMismatches;
+        public final int           numGapOpens;
+        public final int           numGapExtend;
+
+        protected Alignment(ACGTSequence read, Strand strand, ExtensionType extensionType, int cursor, int score,
+                int numMismatches, int numGapOpens, int numGapExtend) {
             this.read = read;
             this.strand = strand;
+            this.extensionType = extensionType;
             this.cursor = cursor;
             this.score = score;
             this.numMismatches = numMismatches;
             this.numGapOpens = numGapOpens;
             this.numGapExtend = numGapExtend;
+        }
+
+        protected Alignment(Alignment other) {
+            this.read = other.read;
+            this.strand = other.strand;
+            this.extensionType = other.extensionType;
+            this.cursor = other.cursor;
+            this.score = other.score;
+            this.numMismatches = other.numMismatches;
+            this.numGapOpens = other.numGapOpens;
+            this.numGapExtend = other.numGapExtend;
         }
 
         @Override
@@ -364,17 +344,118 @@ public class BidirectionalBWT
         public void backwardAlignment(BackwardAlignment forward);
     }
 
+    public static class AlignmentProcessor implements AlignmentVisitor
+    {
+        private final FMIndexOnGenome      fmIndex;
+        private final AlignmentQueue       queue;
+        private final AlignmentScoreConfig config;
+
+        public AlignmentProcessor(FMIndexOnGenome fmIndex, AlignmentQueue queue, AlignmentScoreConfig config) {
+            this.fmIndex = fmIndex;
+            this.queue = queue;
+            this.config = config;
+        }
+
+        @Override
+        public void forwardAlignment(ForwardAlignment c) {
+            int cursor = c.cursor;
+
+            SuffixInterval si = c.reverseSi;
+            if (cursor < c.read.textSize()) {
+
+                // Compute the next SA ranges for A, C, G, T, N
+                SuffixInterval[] next = new SuffixInterval[ACGT.values().length]; // for A, C, G, T, N
+                {
+                    int i = 0;
+                    for (ACGT ch : ACGT.values()) {
+                        next[i++] = fmIndex.forwardSearch(c.strand, ch, si);
+                    }
+                }
+
+                // Search for indels
+                switch (c.extensionType) {
+                case MATCH: { // gap open
+                    // insertion to reference
+                    queue.add(new ForwardAlignment(c.read, c.strand, ExtensionType.INSERTION, c.cursor + 1, c.score
+                            + config.gapOpenPenalty, c.numMismatches, c.numGapOpens, c.numGapExtend, c.reverseSi));
+                    // deletion from reference
+                    for (ACGT ch : ACGT.exceptN) {
+                        if (next[ch.code].isValidRange())
+                            queue.add(new ForwardAlignment(c.read, c.strand, ExtensionType.DELETION, c.cursor, c.score
+                                    + config.gapOpenPenalty, c.numMismatches, c.numGapOpens + 1, c.numGapExtend,
+                                    next[ch.code]));
+                    }
+                    break;
+                }
+                case DELETION: { // gap extension
+                    for (ACGT ch : ACGT.exceptN) {
+                        if (next[ch.code].isValidRange())
+                            queue.add(new ForwardAlignment(c.read, c.strand, ExtensionType.DELETION, c.cursor, c.score
+                                    + config.gapExtentionPenalty, c.numMismatches, c.numGapOpens, c.numGapExtend + 1,
+                                    next[ch.code]));
+                    }
+                    break;
+                }
+                case INSERTION: { // gap extension
+                    queue.add(new ForwardAlignment(c.read, c.strand, ExtensionType.INSERTION, c.cursor + 1, c.score
+                            + config.gapExtentionPenalty, c.numMismatches, c.numGapOpens, c.numGapExtend + 1,
+                            c.reverseSi));
+                    break;
+                }
+                }
+
+                // Search for mismatches
+                for (ACGT ch : ACGT.exceptN) {
+                    SuffixInterval nextSi = next[ch.code];
+                    if (!nextSi.isValidRange())
+                        continue;
+
+                    if (ch == c.read.getACGT(c.cursor)) {
+                        // match
+                        queue.add(new ForwardAlignment(c.read, c.strand, ExtensionType.MATCH, c.cursor + 1, c.score
+                                + config.matchScore, c.numMismatches, c.numGapOpens, c.numGapExtend, nextSi));
+                    }
+                    else {
+                        // mismatch
+                        queue.add(new ForwardAlignment(c.read, c.strand, ExtensionType.MATCH, c.cursor + 1, c.score
+                                + config.mismatchPenalty, c.numMismatches + 1, c.numGapOpens, c.numGapExtend, nextSi));
+                    }
+                }
+
+            }
+
+        }
+
+        @Override
+        public void bidirectionalForwardAlignment(BidirectionalForwardAlignment biForward) {
+            // TODO Auto-generated method stub
+
+        }
+
+        @Override
+        public void backwardAlignment(BackwardAlignment forward) {
+            // TODO Auto-generated method stub
+
+        }
+
+    }
+
     public static class ForwardAlignment extends Alignment
     {
         public final SuffixInterval reverseSi;
 
         public static ForwardAlignment newInstance(ACGTSequence read, Strand strand, long N) {
-            return new ForwardAlignment(read, strand, 0, 0, 0, 0, 0, new SuffixInterval(0, N));
+            return new ForwardAlignment(read, strand, ExtensionType.MATCH, 0, 0, 0, 0, 0, new SuffixInterval(0, N));
         }
 
-        protected ForwardAlignment(ACGTSequence read, Strand strand, int cursor, int score, int numMismatches,
-                int numGapOpens, int numGapExtend, SuffixInterval reverseSi) {
-            super(read, strand, cursor, score, numMismatches, numGapOpens, numGapExtend);
+        public ForwardAlignment(ACGTSequence read, Strand strand, ExtensionType extensionType, int cursor, int score,
+                int numMismatches, int numGapOpens, int numGapExtend, SuffixInterval reverseSi) {
+            super(read, strand, extensionType, cursor, score, numMismatches, numGapOpens, numGapExtend);
+            this.reverseSi = reverseSi;
+        }
+
+        public ForwardAlignment(Alignment base, SuffixInterval reverseSi) {
+            super(base);
             this.reverseSi = reverseSi;
         }
 
@@ -393,6 +474,7 @@ public class BidirectionalBWT
         public void accept(AlignmentVisitor visitor) {
             visitor.forwardAlignment(this);
         }
+
     }
 
     public static class BackwardAlignment extends Alignment
@@ -400,12 +482,13 @@ public class BidirectionalBWT
         public final SuffixInterval forwardSi;
 
         public static BackwardAlignment newInstance(ACGTSequence read, Strand strand, long N) {
-            return new BackwardAlignment(read, strand, (int) read.textSize() - 1, 0, 0, 0, 0, new SuffixInterval(0, N));
+            return new BackwardAlignment(read, strand, ExtensionType.MATCH, (int) read.textSize() - 1, 0, 0, 0, 0,
+                    new SuffixInterval(0, N));
         }
 
-        public BackwardAlignment(ACGTSequence read, Strand strand, int cursor, int score, int numMismatches,
-                int numGapOpens, int numGapExtend, SuffixInterval forwardSi) {
-            super(read, strand, cursor, score, numMismatches, numGapOpens, numGapExtend);
+        public BackwardAlignment(ACGTSequence read, Strand strand, ExtensionType extensionType, int cursor, int score,
+                int numMismatches, int numGapOpens, int numGapExtend, SuffixInterval forwardSi) {
+            super(read, strand, extensionType, cursor, score, numMismatches, numGapOpens, numGapExtend);
             this.forwardSi = forwardSi;
         }
 
@@ -424,6 +507,7 @@ public class BidirectionalBWT
         public void accept(AlignmentVisitor visitor) {
             visitor.backwardAlignment(this);
         }
+
     }
 
     public static class BidirectionalForwardAlignment extends Alignment
@@ -435,14 +519,14 @@ public class BidirectionalBWT
         public static BidirectionalForwardAlignment newInstance(ACGTSequence read, Strand strand, long N) {
             final int K = (int) read.textSize();
             int s2 = K / 3;
-            return new BidirectionalForwardAlignment(read, strand, s2, 0, 0, 0, 0, new SuffixInterval(0, N),
-                    new SuffixInterval(0, N), s2);
+            return new BidirectionalForwardAlignment(read, strand, ExtensionType.MATCH, s2, 0, 0, 0, 0,
+                    new SuffixInterval(0, N), new SuffixInterval(0, N), s2);
         }
 
-        protected BidirectionalForwardAlignment(ACGTSequence read, Strand strand, int cursor, int score,
-                int numMismatches, int numGapOpens, int numGapExtend, SuffixInterval forwardSi,
+        protected BidirectionalForwardAlignment(ACGTSequence read, Strand strand, ExtensionType extensionType,
+                int cursor, int score, int numMismatches, int numGapOpens, int numGapExtend, SuffixInterval forwardSi,
                 SuffixInterval backwardSi, int reverseCursor) {
-            super(read, strand, cursor, score, numMismatches, numGapOpens, numGapExtend);
+            super(read, strand, extensionType, cursor, score, numMismatches, numGapOpens, numGapExtend);
             this.forwardSi = forwardSi;
             this.backwardSi = backwardSi;
             this.reverseCursor = reverseCursor;
