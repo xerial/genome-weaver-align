@@ -32,14 +32,14 @@ package org.utgenome.weaver.align;
  */
 public class AlignmentScoreConfig
 {
-    public final int numMismatchesAllowed = 2;
+    public int maximumEditDistances = 2;
 
-    public final int matchScore           = 1;
-    public final int mismatchPenalty      = 3;
-    public final int gapOpenPenalty       = 11;
-    public final int gapExtentionPenalty  = 4;
+    public int matchScore           = 1;
+    public int mismatchPenalty      = 3;
+    public int gapOpenPenalty       = 11;
+    public int gapExtentionPenalty  = 4;
 
-    public final int numGapOpenAllowed    = 1;
-    public final int numSplitAlowed       = 1;
+    public int numGapOpenAllowed    = 1;
+    public int numSplitAlowed       = 1;
 
 }

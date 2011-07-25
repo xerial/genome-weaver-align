@@ -63,6 +63,9 @@ public class BDAlign extends GenomeWeaverCommand
     @Option(symbol = "q", description = "query sequence")
     private String query;
 
+    @Option(symbol = "n", description = "maximum edit distances")
+    private int    maximumEditDistances = 2;
+
     @Override
     public void execute(String[] args) throws Exception {
 
@@ -81,7 +84,10 @@ public class BDAlign extends GenomeWeaverCommand
         BWTFiles forwardDB = new BWTFiles(fastaFilePrefix, Strand.FORWARD);
         SequenceBoundary b = SequenceBoundary.loadSilk(forwardDB.pacIndex());
 
-        query(fastaFilePrefix, reader, new Reporter() {
+        AlignmentScoreConfig config = new AlignmentScoreConfig();
+        config.maximumEditDistances = maximumEditDistances;
+
+        query(fastaFilePrefix, reader, config, new Reporter() {
             @Override
             public void emit(Object result) {
                 _logger.debug(SilkLens.toSilk("result", result));
@@ -90,10 +96,11 @@ public class BDAlign extends GenomeWeaverCommand
 
     }
 
-    public static void query(String fastaFilePrefix, ReadSequenceReader readReader, final Reporter reporter)
-            throws Exception {
+    public static void query(String fastaFilePrefix, ReadSequenceReader readReader, AlignmentScoreConfig config,
+            final Reporter reporter) throws Exception {
         final FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix);
         final BidirectionalBWT aligner = new BidirectionalBWT(fmIndex, reporter);
+        aligner.setAlignmentScoreConfig(config);
 
         readReader.parse(new ObjectHandlerBase<RawRead>() {
             int       count = 0;
@@ -105,7 +112,7 @@ public class BDAlign extends GenomeWeaverCommand
                 count++;
                 double time = timer.getElapsedTime();
                 if (count % 10000 == 0) {
-                    _logger.info(String.format("%,d reads are processed in %.2f sec.", count, time));
+                    _logger.info("%,d reads are processed in %.2f sec. %,d reads/sec.", count, time, count / time);
                 }
             }
         });

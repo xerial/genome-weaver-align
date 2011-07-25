@@ -90,4 +90,11 @@ public class BDAlignTest
         GenomeWeaver.execute(String.format("BDAlign %s -q %s", fastaArchive, q));
     }
 
+    @Test
+    public void invalidRead() throws Exception {
+        File fastaArchive = TestHelper.createTempFileFrom(BWAlignTest.class, "test4.fa", new File(tmpDir, "test3.fa"));
+        GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+        String q = "GGTTTAATTACCCAAGTTTGAGGTAAAAATGTCGACATTCGACCTGACTCTGCGTAGTTCGCCTTTTCTCGAT..T";
+        GenomeWeaver.execute(String.format("BDAlign %s -q %s", fastaArchive, q));
+    }
 }

@@ -54,7 +54,7 @@ public class BWAStrategy
      * 
      * @param seq
      * @param cursor
-     * @param numMismatchesAllowed
+     * @param maximumEditDistances
      * @param si
      * @throws Exception
      */

@@ -78,7 +78,7 @@ public class OccurrenceCountTable
             }
             occTable.get(codeIndex)[blockIndex]++;
         }
-        _logger.debug("done.");
+        _logger.trace("done.");
     }
 
     /**

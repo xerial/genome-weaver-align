@@ -40,8 +40,10 @@ import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.RawRead;
 import org.utgenome.weaver.align.record.ReadSequence;
+import org.utgenome.weaver.align.strategy.BidirectionalBWT.Alignment.ExtensionType;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.util.ObjectHandlerBase;
+import org.xerial.util.log.Logger;
 
 /**
  * Alignment algorithm using Bi-directional BWT
@@ -51,16 +53,22 @@ import org.xerial.util.ObjectHandlerBase;
  */
 public class BidirectionalBWT
 {
-    private final FMIndexOnGenome      fmIndex;
-    private final Reporter             reporter;
-    private final long                 N;
-    private final AlignmentScoreConfig config;
+    private static Logger         _logger = Logger.getLogger(BidirectionalBWT.class);
+
+    private final FMIndexOnGenome fmIndex;
+    private final Reporter        reporter;
+    private final long            N;
+    private AlignmentScoreConfig  config;
 
     public BidirectionalBWT(FMIndexOnGenome fmIndex, Reporter reporter) {
         this.fmIndex = fmIndex;
         this.reporter = reporter;
         this.N = fmIndex.textSize();
         this.config = new AlignmentScoreConfig();
+    }
+
+    public void setAlignmentScoreConfig(AlignmentScoreConfig config) {
+        this.config = config;
     }
 
     public static class SARange
@@ -204,6 +212,7 @@ public class BidirectionalBWT
         private final PriorityQueue<Alignment> queue;
         private final AlignmentScoreConfig     config;
         private int                            bestScore;
+        private int                            pushCount = 0;
 
         public AlignmentQueue(AlignmentScoreConfig config) {
             this.config = config;
@@ -241,6 +250,7 @@ public class BidirectionalBWT
             if (e.isFinished() && e.score.score > bestScore)
                 bestScore = e.score.score;
 
+            pushCount++;
             return queue.add(e);
         }
 
@@ -250,8 +260,14 @@ public class BidirectionalBWT
 
         // TODO PE mapping
         ReadSequence read = (ReadSequence) r;
+        _logger.debug("query: " + read.seq);
 
         ACGTSequence qF = new ACGTSequence(read.seq);
+
+        if (qF.fastCount(ACGT.N, 0, qF.textSize()) > config.maximumEditDistances) {
+            // too many Ns in the query sequence
+            return;
+        }
 
         // Find potential mismatch positions for forward direction
         QuickScanResult scanF = scanMismatchLocations(qF, Strand.FORWARD);
@@ -290,6 +306,8 @@ public class BidirectionalBWT
             // extend the match
             current.accept(visitor);
         }
+        if (_logger.isDebugEnabled())
+            _logger.debug("push count: %,d", alignmentQueue.pushCount);
 
     }
 
@@ -339,7 +357,15 @@ public class BidirectionalBWT
             if (c.getUpperBoundOfScore(config) < queue.bestScore)
                 return; // no need to proceed
 
-            if (!c.mismatchIsAllowed(config)) {
+            int remainingDist = config.maximumEditDistances
+                    - (c.score.numMismatches + c.score.numGapOpens + c.score.numGapExtend);
+            if (remainingDist < 0)
+                return;
+
+            if (_logger.isDebugEnabled())
+                _logger.debug("SI:%s %s", c.suffixInterval(), c);
+
+            if (remainingDist == 0 && (c.extensionType == ExtensionType.MATCH)) {
                 // exact match
                 exactMatch(c);
                 return;
@@ -411,8 +437,7 @@ public class BidirectionalBWT
 
         @Override
         public void bidirectionalForwardAlignment(BidirectionalForwardAlignment biForward) {
-            // TODO Auto-generated method stub
-
+            //_logger.debug("bidirectional");
         }
 
     }
@@ -513,7 +538,7 @@ public class BidirectionalBWT
         }
 
         public boolean mismatchIsAllowed(AlignmentScoreConfig config) {
-            return score.numMismatches < config.numMismatchesAllowed;
+            return score.numMismatches < config.maximumEditDistances;
         }
 
         @Override
