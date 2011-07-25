@@ -445,29 +445,21 @@ public class BidirectionalBWT
             }
 
             // Search for mismatches
-            if (c.numMismatches < config.numMismatchesAllowed) {
-                for (ACGT ch : ACGT.exceptN) {
-                    SuffixInterval nextSi = next[ch.code];
-                    if (!nextSi.isValidRange())
-                        continue;
+            for (ACGT ch : ACGT.exceptN) {
+                SuffixInterval nextSi = next[ch.code];
+                if (!nextSi.isValidRange())
+                    continue;
 
-                    if (ch == c.read.getACGT(c.cursor)) {
-                        // match
-                        queue.add(new ForwardAlignment(c.read, c.strand, ExtensionType.MATCH, c.cursor + 1, c.score
-                                + config.matchScore, c.numMismatches, c.numGapOpens, c.numGapExtend, nextSi));
-                    }
-                    else {
-                        // mismatch
-                        queue.add(new ForwardAlignment(c.read, c.strand, ExtensionType.MATCH, c.cursor + 1, c.score
-                                - config.mismatchPenalty, c.numMismatches + 1, c.numGapOpens, c.numGapExtend, nextSi));
-                    }
+                if (ch == c.read.getACGT(c.cursor)) {
+                    // match
+                    queue.add(new ForwardAlignment(c.read, c.strand, ExtensionType.MATCH, c.cursor + 1, c.score
+                            + config.matchScore, c.numMismatches, c.numGapOpens, c.numGapExtend, nextSi));
                 }
-            }
-            else {
-                // exact match only
-                queue.add(new ForwardAlignment(c.read, c.strand, ExtensionType.MATCH, c.cursor + 1, c.score
-                        + config.matchScore, c.numMismatches, c.numGapOpens, c.numGapExtend, next[c.read
-                        .getACGT(c.cursor).code]));
+                else {
+                    // mismatch
+                    queue.add(new ForwardAlignment(c.read, c.strand, ExtensionType.MATCH, c.cursor + 1, c.score
+                            - config.mismatchPenalty, c.numMismatches + 1, c.numGapOpens, c.numGapExtend, nextSi));
+                }
             }
 
         }
