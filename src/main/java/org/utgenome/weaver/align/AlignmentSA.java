@@ -176,7 +176,7 @@ public class AlignmentSA implements Comparable<AlignmentSA>
         int newScore = alignmentScore;
         if (indel == IndelState.DELETION) {
             assert (gapPosition != null);
-            newScore -= config.gapExtentionPenalty;
+            newScore -= config.gapExtensionPenalty;
             int i = 0;
             for (; i < gapPosition.size() - 1; ++i) {
                 newGapPosition.add(gapPosition.get(i));
@@ -197,7 +197,7 @@ public class AlignmentSA implements Comparable<AlignmentSA>
 
         int newScore = alignmentScore;
         if (indel == IndelState.INSERTION) {
-            newScore -= config.gapExtentionPenalty;
+            newScore -= config.gapExtensionPenalty;
 
             int i = 0;
             for (; i < gapPosition.size() - 1; ++i) {
@@ -210,7 +210,7 @@ public class AlignmentSA implements Comparable<AlignmentSA>
             newGapPosition.add(new Insertion(wordIndex + 1, 1));
         }
         return new AlignmentSA(common, strand, this.wordIndex + 1, IndelState.INSERTION, suffixInterval,
-                numMismatches + 1, alignmentScore - config.gapExtentionPenalty, newGapPosition);
+                numMismatches + 1, alignmentScore - config.gapExtensionPenalty, newGapPosition);
     }
 
     public static AlignmentSA initialState(String queryName, ACGTSequence seq, Strand strand, long textSize) {
