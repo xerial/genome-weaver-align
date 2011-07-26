@@ -158,14 +158,15 @@ public class BidirectionalBWT
     }
 
     public Alignment prepareInitialAlignmentState(ACGTSequence q, QuickScanResult scan, Strand strand) {
-        // Break the read sequence into three parts 
-        int s1 = (int) q.textSize() / 3;
-        int s2 = (int) q.textSize() / 3 * 2;
+        // Break the read sequence into three parts
+        int M = (int) q.textSize();
+        int s1 = M / 3;
+        int s2 = M / 3 * 2;
 
         int[] m = new int[3];
         m[0] = scan.breakPoint.countOneBits(0L, s1);
         m[1] = scan.breakPoint.countOneBits(s1, s2);
-        m[2] = scan.breakPoint.countOneBits(s2, q.textSize());
+        m[2] = scan.breakPoint.countOneBits(s2, M);
 
         int mismatchBlockFlag = 0;
         int flag = 4;
@@ -199,13 +200,14 @@ public class BidirectionalBWT
 
         switch (searchStart) {
         case FRONT:
-            return new Alignment(q, strand, Orientation.Forward, ExtensionType.MATCH, 0, Score.initial(),
+            return new Alignment(q, strand, Orientation.Forward, ExtensionType.MATCH, 0, -1, Score.initial(),
                     new SuffixInterval(0, N));
-        case MIDDLE:
-            return new Alignment(q, strand, Orientation.BidirectionalForward, ExtensionType.MATCH, 0, Score.initial(),
-                    new SuffixInterval(0, N));
+        case MIDDLE: {
+            return new Alignment(q, strand, Orientation.BidirectionalForward, ExtensionType.MATCH, s1, s1,
+                    Score.initial(), new SuffixInterval(0, N));
+        }
         case TAIL:
-            return new Alignment(q, strand, Orientation.Backward, ExtensionType.MATCH, 0, Score.initial(),
+            return new Alignment(q, strand, Orientation.Backward, ExtensionType.MATCH, M, M, Score.initial(),
                     new SuffixInterval(0, N));
         }
         return null;
@@ -304,8 +306,6 @@ public class BidirectionalBWT
                 queue.bestScore = c.score.score;
                 continue;
             }
-
-            int cursor = c.cursor;
 
             SuffixInterval si = c.suffixInterval();
             if (c.isFinished()) {
@@ -470,17 +470,19 @@ public class BidirectionalBWT
         public final Strand         strand;       // forward or reverse (complement of the query sequence)
         public final Orientation    orientation;  // alignment direction
         public final ExtensionType  extensionType;
-        public final int            cursor;
+        public final int            cursorF;
+        public final int            cursorB;
         public final Score          score;
         public final SuffixInterval si;
 
         protected Alignment(ACGTSequence read, Strand strand, Orientation orientation, ExtensionType extensionType,
-                int cursor, Score score, SuffixInterval si) {
+                int cursorF, int cursorB, Score score, SuffixInterval si) {
             this.read = read;
             this.strand = strand;
             this.orientation = orientation;
             this.extensionType = extensionType;
-            this.cursor = cursor;
+            this.cursorF = cursorF;
+            this.cursorB = cursorB;
             this.score = score;
             this.si = si;
         }
@@ -490,7 +492,8 @@ public class BidirectionalBWT
             this.strand = other.strand;
             this.orientation = other.orientation;
             this.extensionType = other.extensionType;
-            this.cursor = other.cursor;
+            this.cursorF = other.cursorF;
+            this.cursorB = other.cursorB;
             this.score = other.score;
             this.si = other.si;
         }
@@ -509,36 +512,31 @@ public class BidirectionalBWT
 
         @Override
         public String toString() {
-            return String.format("%s%s%s(%2d):%s", strand.symbol, orientation.symbol, extensionType.name().charAt(0),
-                    cursor, score.toString());
+            return String.format("%s%s%s(%2d-%2d):%s", strand.symbol, orientation.symbol, extensionType.name()
+                    .charAt(0), cursorF, cursorB, score.toString());
         }
 
         public ACGT nextACGT() {
-            return getACGT(cursor);
-        }
-
-        public ACGT getACGT(int cursor) {
-            int x = cursor;
+            int cursor = 0;
             switch (orientation) {
+            case Forward:
+            case BidirectionalForward:
+                cursor = cursorF;
+                break;
             case Backward:
             case BidirectionalBackward:
-                x = (int) read.textSize() - 1 - x;
+                cursor = cursorB - 1;
                 break;
+            default:
+                throw new IllegalStateException("cannot reach here");
             }
-            return read.getACGT(x);
+
+            return read.getACGT(cursor);
         }
 
         public int getRemainingBases() {
-            int remainingBases = Math.max(0, (int) read.textSize() - cursor);
-            switch (orientation) {
-            case BidirectionalForward:
-            case BidirectionalBackward: {
-                int remainingLeft = (int) read.textSize() / 3;
-                remainingBases = remainingLeft;
-                return remainingBases;
-            }
-            }
-            return remainingBases;
+            int M = (int) read.textSize();
+            return (M - cursorF) + cursorB;
         }
 
         public SuffixInterval suffixInterval() {
@@ -550,7 +548,7 @@ public class BidirectionalBWT
         }
 
         public boolean isFinished() {
-            return cursor >= read.textSize();
+            return getRemainingBases() <= 0;
         }
 
         public SuffixInterval nextSi(FMIndexOnGenome fmIndex, ACGT ch, SuffixInterval si) {
