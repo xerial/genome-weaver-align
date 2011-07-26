@@ -262,6 +262,16 @@ public class BidirectionalBWT
 
     }
 
+    public Alignment exactMatch(Alignment aln) {
+        while (!aln.isFinished()) {
+            SuffixInterval nextSi = aln.nextSi(fmIndex, aln.nextACGT(), aln.si);
+            if (!nextSi.isValidRange())
+                return null;
+            aln = aln.extendWithMatch(config, nextSi);
+        }
+        return aln;
+    }
+
     public void align(RawRead r) throws Exception {
 
         // TODO PE mapping
@@ -328,7 +338,7 @@ public class BidirectionalBWT
             if (remainingDist == 0) {
                 if (c.extensionType == ExtensionType.MATCH) {
                     // exact match
-                    Alignment a = c.exactMatch(fmIndex, config);
+                    Alignment a = exactMatch(c);
                     if (a != null)
                         queue.add(a);
                 }
@@ -457,15 +467,20 @@ public class BidirectionalBWT
         };
 
         public static enum Orientation {
-            Forward("F"), Backward("B"), BidirectionalForward("BF"), BidirectionalBackward("BB");
+            Forward("F", true), Backward("B", false), BidirectionalForward("BF", true), BidirectionalBackward("BB",
+                                                                                                              false);
 
-            public final String symbol;
+            public final String  symbol;
+            public final boolean isForward;
 
-            private Orientation(String symbol) {
+            private Orientation(String symbol, boolean isForward) {
                 this.symbol = symbol;
+                this.isForward = isForward;
             }
+
         }
 
+        // minimum bit length for this state: 1,1,2,2,16,16,32+8+8+8,64+64 = 222 bit < 28 bytes
         public final ACGTSequence   read;
         public final Strand         strand;       // forward or reverse (complement of the query sequence)
         public final Orientation    orientation;  // alignment direction
@@ -517,20 +532,7 @@ public class BidirectionalBWT
         }
 
         public ACGT nextACGT() {
-            int cursor = 0;
-            switch (orientation) {
-            case Forward:
-            case BidirectionalForward:
-                cursor = cursorF;
-                break;
-            case Backward:
-            case BidirectionalBackward:
-                cursor = cursorB - 1;
-                break;
-            default:
-                throw new IllegalStateException("cannot reach here");
-            }
-
+            int cursor = orientation.isForward ? cursorF : cursorB - 1;
             return read.getACGT(cursor);
         }
 
@@ -552,58 +554,67 @@ public class BidirectionalBWT
         }
 
         public SuffixInterval nextSi(FMIndexOnGenome fmIndex, ACGT ch, SuffixInterval si) {
+            if (orientation.isForward)
+                return fmIndex.forwardSearch(strand, ch, si);
+            else
+                return fmIndex.backwardSearch(strand, ch, si);
+        }
+
+        public Alignment extend(ExtensionType type, int extensionLength, Score newScore, SuffixInterval newSi) {
+            int M = (int) read.textSize();
+            int nextF = cursorF;
+            int nextB = cursorB;
+            if (orientation.isForward)
+                nextF += extensionLength;
+            else
+                nextB -= extensionLength;
+
+            Alignment next = null;
             switch (orientation) {
             case Forward:
-            case BidirectionalForward:
-                return fmIndex.forwardSearch(strand, ch, si);
             case Backward:
+                next = new Alignment(read, strand, orientation, type, nextF, nextB, newScore, newSi);
+                break;
+            case BidirectionalForward:
+                if (nextF >= M) {
+                    // switch to backward search
+
+                }
+                break;
             case BidirectionalBackward:
-                return fmIndex.backwardSearch(strand, ch, si);
+                if (nextB <= 0) {
+                    // switch to forward search
+                }
+                break;
             default:
                 throw new IllegalStateException("cannot reach here");
             }
-        }
 
-        public Alignment exactMatch(FMIndexOnGenome fmIndex, AlignmentScoreConfig config) {
-            int c = this.cursor;
-            int s = this.score.score;
-            SuffixInterval newSi = this.suffixInterval();
-            while (c < read.textSize()) {
-                newSi = this.nextSi(fmIndex, this.getACGT(c), newSi);
-                if (!newSi.isValidRange())
-                    return null;
-                c++;
-                s += config.matchScore;
-            }
-            return new Alignment(read, strand, orientation, extensionType, c, score.update(s), newSi);
-        }
-
-        public Alignment extend(ExtensionType type, int newCursor, Score newScore, SuffixInterval newSi) {
-            return new Alignment(read, strand, orientation, type, newCursor, newScore, newSi);
+            return next;
         }
 
         public Alignment extendWithMatch(AlignmentScoreConfig config, SuffixInterval newSi) {
-            return extend(ExtensionType.MATCH, cursor + 1, score.extendWithMatch(config), newSi);
+            return extend(ExtensionType.MATCH, 1, score.extendWithMatch(config), newSi);
         }
 
         public Alignment extendWithMisMatch(AlignmentScoreConfig config, SuffixInterval newSi) {
-            return extend(ExtensionType.MATCH, cursor + 1, score.extendWithMismatch(config), newSi);
+            return extend(ExtensionType.MATCH, 1, score.extendWithMismatch(config), newSi);
         }
 
         public Alignment startInsertion(AlignmentScoreConfig config) {
-            return extend(ExtensionType.INSERTION, cursor + 1, score.extendWithGapOpen(config), si);
+            return extend(ExtensionType.INSERTION, 1, score.extendWithGapOpen(config), si);
         }
 
         public Alignment startDeletion(AlignmentScoreConfig config, SuffixInterval newSi) {
-            return extend(ExtensionType.DELETION, cursor, score.extendWithGapOpen(config), newSi);
+            return extend(ExtensionType.DELETION, 0, score.extendWithGapOpen(config), newSi);
         }
 
         public Alignment extendInsertion(AlignmentScoreConfig config) {
-            return extend(ExtensionType.INSERTION, cursor + 1, score.extendWithGapExtend(config), si);
+            return extend(ExtensionType.INSERTION, 1, score.extendWithGapExtend(config), si);
         }
 
         public Alignment extendDeletion(AlignmentScoreConfig config, SuffixInterval newSi) {
-            return extend(ExtensionType.DELETION, cursor, score.extendWithGapExtend(config), newSi);
+            return extend(ExtensionType.DELETION, 0, score.extendWithGapExtend(config), newSi);
         }
 
     }
