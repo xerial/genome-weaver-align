@@ -24,6 +24,8 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
+import java.util.Arrays;
+
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.FMIndexOnGenome;
@@ -63,11 +65,11 @@ public class SuffixFilter
         this.strand = strand;
 
         this.m = (int) query.textSize();
-        int lastChunk = (m - k >= 6) ? m * 2 / (k + 2) : m - k;
+        int lastChunkSize = (m - k >= 6) ? m * 2 / (k + 2) : m - k;
 
         // prefix length of each chunk
         chunkStart = new byte[k + 2];
-        byte rest = (byte) (m - lastChunk);
+        byte rest = (byte) (m - lastChunkSize);
         if (k == 0)
             chunkStart[0] = rest;
         else {
@@ -120,6 +122,21 @@ public class SuffixFilter
         if (si.isEmpty()) {
             return;
         }
+
+        int[] allowedDiff = new int[m + 1];
+        Arrays.fill(allowedDiff, 0);
+        int nextChunk = chunkPos + 1;
+        int e = 0;
+        for (int i = chunkStart[chunkPos]; i <= m; ++i) {
+            allowedDiff[i] = e;
+            if (i == chunkStart[nextChunk]) {
+                ++e;
+                ++nextChunk;
+            }
+        }
+
+        int height = stairLevel + 1;
+        int maxPrefixLen = m - chunkStart[chunkPos + 1] + stairLevel;
 
     }
 }
