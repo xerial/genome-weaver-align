@@ -166,8 +166,12 @@ public class SuffixFilter
         byte q = chunkStart[chunkPos + 1];
         automata[0].set(q);
         for (int i = 1; i < height; ++i) {
-            q += 1;
-            automata[i].set(q);
+            if (stairMask[i].get(q + 1)) {
+                q++;
+                automata[i].set(q);
+            }
+            else
+                break;
         }
 
         dfsSuffix(0, si, out);
