@@ -28,6 +28,7 @@ import java.util.Arrays;
 
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
+import org.utgenome.weaver.align.BitVector;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
@@ -44,6 +45,11 @@ public class SuffixFilter
     private byte[]                chunkStart;
     private byte[]                chunkLen;
     private int                   rewind;
+
+    // automaton
+    private BitVector[]           patternMask;
+    private BitVector[]           automata;
+    private BitVector[]           stairMask;
 
     public static class Candidate
     {
@@ -84,6 +90,15 @@ public class SuffixFilter
             chunkLen[i] = (byte) (chunkStart[i + 1] - chunkStart[i]);
         }
 
+        patternMask = new BitVector[6];
+        for (int i = 0; i < patternMask.length; ++i)
+            patternMask[i] = new BitVector(m);
+
+        for (int i = 0; i < m; ++i) {
+            ACGT ch = query.getACGT(i);
+            patternMask[ch.code].set(i);
+        }
+
     }
 
     public SuffixInterval exactMatch(int start, int end) {
@@ -116,7 +131,7 @@ public class SuffixFilter
 
     }
 
-    private void dfs0(int stairLevel, ObjectHandler<Candidate> out) {
+    private void dfs0(int stairLevel, ObjectHandler<Candidate> out) throws Exception {
         int chunkPos = k - stairLevel;
         SuffixInterval si = exactMatch(chunkStart[chunkPos], chunkStart[chunkPos + 1]);
         if (si.isEmpty()) {
@@ -137,6 +152,71 @@ public class SuffixFilter
 
         int height = stairLevel + 1;
         int maxPrefixLen = m - chunkStart[chunkPos + 1] + stairLevel;
+        automata = new BitVector[(maxPrefixLen + 1) * height];
+        for (int i = 0; i < automata.length; ++i)
+            automata[i] = new BitVector(m);
+
+        stairMask = new BitVector[height];
+        for (int i = 0; i < stairMask.length; ++i)
+            stairMask[i] = new BitVector(m);
+
+        byte q = chunkStart[chunkPos + 1];
+        automata[0].set(q);
+        for (int i = 1; i < height; ++i) {
+            q += 1;
+            automata[i].set(q);
+        }
+
+        dfsSuffix(0, si, out);
 
     }
+
+    private void dfsSuffix(int step, SuffixInterval si, ObjectHandler<Candidate> out) throws Exception {
+        for (ACGT ch : ACGT.exceptN) {
+            SuffixInterval nextSi = fmIndex.forwardSearch(strand, ch, si);
+            if (nextSi.isEmpty())
+                continue;
+
+            ++rewind;
+            DFSState state = activate(step, ch);
+            switch (state.type) {
+            case Finished:
+                out.handle(new Candidate(nextSi, state.rc, rewind));
+                break;
+            case NoMatch:
+                break;
+            case Match:
+                if (nextSi.range() == 1 && (m - step) < 8) {
+                    // unique hit
+                    out.handle(new Candidate(nextSi, 0, rewind));
+                }
+                else {
+                    dfsSuffix(step + 1, nextSi, out);
+                }
+                break;
+            }
+            --rewind;
+        }
+    }
+
+    private enum State {
+        Finished, NoMatch, Match
+    }
+
+    private static class DFSState
+    {
+        public final State type;
+        public final int   rc;
+
+        public DFSState(State state, int rc) {
+            this.type = state;
+            this.rc = rc;
+        }
+    }
+
+    private DFSState activate(int step, ACGT ch) {
+
+        return null;
+    }
+
 }

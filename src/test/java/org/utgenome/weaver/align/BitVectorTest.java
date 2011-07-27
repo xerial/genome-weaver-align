@@ -143,4 +143,21 @@ public class BitVectorTest
         }
         return count;
     }
+
+    @Test
+    public void lshift() throws Exception {
+        String orig = "00101101000100000111111001010101000000000001101010100010101010011100001010100010100111";
+        String shift5 = orig.substring(5) + "00000";
+
+        for (int i = 0; i < orig.length(); ++i) {
+            BitVector v = BitVector.parseString(orig);
+            StringBuilder s = new StringBuilder();
+            s.append(orig.substring(i));
+            for (int k = 0; k < i; ++k)
+                s.append("0");
+
+            BitVector ans = BitVector.parseString(s.toString());
+            assertEquals(ans.toString(), v.lshift(i).toString());
+        }
+    }
 }
