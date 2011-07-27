@@ -43,6 +43,7 @@ import org.utgenome.weaver.align.record.ReadSequence;
 import org.utgenome.weaver.align.strategy.BidirectionalBWT.Alignment.ExtensionType;
 import org.utgenome.weaver.align.strategy.BidirectionalBWT.Alignment.Orientation;
 import org.utgenome.weaver.parallel.Reporter;
+import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandlerBase;
 import org.xerial.util.log.Logger;
 
@@ -89,12 +90,15 @@ public class BidirectionalBWT
         public final BitVector      breakPoint;
         public final int            numMismatches;
         public final Range          longestMatch;
+        public final SuffixInterval longestMatchSi;
 
-        public QuickScanResult(SuffixInterval si, BitVector breakPoint, int numMismatches, Range longestMatch) {
+        public QuickScanResult(SuffixInterval si, BitVector breakPoint, int numMismatches, Range longestMatch,
+                SuffixInterval longestMatchSi) {
             this.si = si;
             this.breakPoint = breakPoint;
             this.numMismatches = numMismatches;
             this.longestMatch = longestMatch;
+            this.longestMatchSi = longestMatchSi;
         }
     }
 
@@ -106,17 +110,19 @@ public class BidirectionalBWT
         int longestMatchLength = 0;
         int mark = 0;
         Range longestMatch = null;
+        SuffixInterval longestMatchSi = null;
         int i = 0;
         for (; i < qLen; ++i) {
             ACGT ch = query.getACGT(i);
             si = fmIndex.forwardSearch(strand, ch, si);
             if (!si.isValidRange()) {
-                si = new SuffixInterval(0, N - 1);
                 breakPoint.set(i, true);
                 numMismatches++;
                 if (longestMatch == null || longestMatch.length() < (i - mark)) {
                     longestMatch = new Range(mark, i);
+                    longestMatchSi = si;
                 }
+                si = fmIndex.wholeSARange();
                 mark = i + 1;
             }
         }
@@ -124,7 +130,7 @@ public class BidirectionalBWT
             longestMatch = new Range(mark, i);
         }
 
-        return new QuickScanResult(si, breakPoint, numMismatches, longestMatch);
+        return new QuickScanResult(si, breakPoint, numMismatches, longestMatch, longestMatchSi);
     }
 
     void report(AlignmentSA result) throws Exception {
@@ -201,14 +207,14 @@ public class BidirectionalBWT
         switch (searchStart) {
         case FRONT:
             return new Alignment(q, strand, Orientation.Forward, ExtensionType.MATCH, 0, -1, Score.initial(),
-                    new SuffixInterval(0, N));
+                    fmIndex.wholeSARange());
         case MIDDLE: {
             return new Alignment(q, strand, Orientation.BidirectionalForward, ExtensionType.MATCH, s1, s1,
-                    Score.initial(), new SuffixInterval(0, N));
+                    Score.initial(), fmIndex.wholeSARange());
         }
         case TAIL:
             return new Alignment(q, strand, Orientation.Backward, ExtensionType.MATCH, M, M, Score.initial(),
-                    new SuffixInterval(0, N));
+                    fmIndex.wholeSARange());
         }
         return null;
     }
@@ -300,6 +306,11 @@ public class BidirectionalBWT
             // Found an exact match
             report(AlignmentSA.exactMatch(config, r.name(), qC, scanR.si, Strand.REVERSE));
             return;
+        }
+
+        if (_logger.isDebugEnabled()) {
+            _logger.debug(SilkLens.toSilk("scanF", scanF));
+            _logger.debug(SilkLens.toSilk("scanR", scanR));
         }
 
         AlignmentQueue queue = new AlignmentQueue(config);
@@ -527,7 +538,7 @@ public class BidirectionalBWT
 
         @Override
         public String toString() {
-            return String.format("%s%s%s(%2d-%2d):%s", strand.symbol, orientation.symbol, extensionType.name()
+            return String.format("%s%s%s(%2d,%2d):%s", strand.symbol, orientation.symbol, extensionType.name()
                     .charAt(0), cursorF, cursorB, score.toString());
         }
 

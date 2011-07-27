@@ -28,6 +28,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -125,6 +126,14 @@ public class SequenceBoundary
             throw UTGBException.convert(e);
         }
 
+    }
+
+    public static SequenceBoundary createFromSingleSeq(String name, ACGTSequence seq) {
+        SequenceBoundary s = new SequenceBoundary();
+        s.totalSize = seq.textSize();
+        s.index = new ArrayList<SequenceBoundary.SequenceIndex>();
+        s.index.add(new SequenceIndex(name, name, seq.textSize(), 0));
+        return s;
     }
 
 }

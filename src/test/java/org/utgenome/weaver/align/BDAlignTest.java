@@ -59,7 +59,7 @@ public class BDAlignTest
         String query = "ATCTCATGGGA";
         GenomeWeaver.execute(String.format("BDAlign %s -q %s", fastaArchive, query));
 
-        String q2 = "ACCTCATGGTA";
+        String q2 = new ACGTSequence(query).reverseComplement().toString();
         GenomeWeaver.execute(String.format("BDAlign %s -q %s", fastaArchive, q2));
     }
 
@@ -87,6 +87,15 @@ public class BDAlignTest
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
 
         String q = "CCGATCTATACCCCGGGGAA";
+        GenomeWeaver.execute(String.format("BDAlign %s -q %s", fastaArchive, q));
+    }
+
+    @Test
+    public void clip() throws Exception {
+        File fastaArchive = TestHelper.createTempFileFrom(BWAlignTest.class, "test3.fa", new File(tmpDir, "test3.fa"));
+        GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+
+        String q = "GGCTTGCGTATACCCCGGGGAAT";
         GenomeWeaver.execute(String.format("BDAlign %s -q %s", fastaArchive, q));
     }
 

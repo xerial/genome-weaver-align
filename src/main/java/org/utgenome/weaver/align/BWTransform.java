@@ -149,7 +149,26 @@ public class BWTransform extends GenomeWeaverCommand
 
     }
 
-    public static ACGTSequence bwt(ACGTSequence seq, LSeq SA) throws IOException {
+    public static class BWT
+    {
+        public final ACGTSequence      bwt;
+        public final SparseSuffixArray ssa;
+
+        public BWT(ACGTSequence bwt, SparseSuffixArray ssa) {
+            this.bwt = bwt;
+            this.ssa = ssa;
+        }
+    }
+
+    public static BWT bwt(ACGTSequence seq) {
+        LSeq SA = new UInt32Array(seq.textSize());
+        CyclicSAIS.SAIS(seq, SA, 5);
+        SparseSuffixArray ssa = SparseSuffixArray.buildFromSuffixArray(SA, 32);
+        ACGTSequence bwt = bwt(seq, SA);
+        return new BWT(bwt, ssa);
+    }
+
+    public static ACGTSequence bwt(ACGTSequence seq, LSeq SA) {
         ACGTSequence bwt = new ACGTSequence();
         final long N = seq.textSize();
         for (long i = 0; i < SA.textSize(); ++i) {

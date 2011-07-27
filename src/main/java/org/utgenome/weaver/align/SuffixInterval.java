@@ -48,6 +48,10 @@ public class SuffixInterval
         return lowerBound < upperBound;
     }
 
+    public boolean isEmpty() {
+        return lowerBound >= upperBound;
+    }
+
     @Override
     public String toString() {
         return String.format("[%,d, %,d)", lowerBound, upperBound);

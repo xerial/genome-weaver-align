@@ -27,6 +27,7 @@ package org.utgenome.weaver.align;
 import java.io.IOException;
 
 import org.utgenome.UTGBException;
+import org.utgenome.weaver.align.BWTransform.BWT;
 import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.xerial.lens.SilkLens;
@@ -35,7 +36,9 @@ import org.xerial.util.log.Logger;
 
 public class FMIndexOnGenome
 {
-    private static Logger           _logger = Logger.getLogger(FMIndexOnGenome.class);
+    private static Logger           _logger    = Logger.getLogger(FMIndexOnGenome.class);
+
+    private static final int        windowSize = 64;                                     // Occ table window size 
 
     public final FMIndex            forwardIndex;
     public final FMIndex            reverseIndex;
@@ -64,10 +67,38 @@ public class FMIndexOnGenome
 
         ACGTSequence seqF = ACGTSequence.loadFrom(forwardDB.bwt());
         ACGTSequence seqR = ACGTSequence.loadFrom(backwardDB.bwt());
-        int windowSize = 64;
+
         forwardIndex = new FMIndexOnOccTable(seqF, windowSize);
         reverseIndex = new FMIndexOnOccTable(seqR, windowSize);
         _logger.info("done.");
+    }
+
+    private FMIndexOnGenome(FMIndex forwardIndex, FMIndex reverseIndex, SparseSuffixArray forwardSA,
+            SparseSuffixArray backwardSA, SequenceBoundary index, long n, int k) {
+        this.forwardIndex = forwardIndex;
+        this.reverseIndex = reverseIndex;
+        this.forwardSA = forwardSA;
+        this.backwardSA = backwardSA;
+        this.index = index;
+        N = n;
+        K = k;
+    }
+
+    public static FMIndexOnGenome buildFromSequence(String name, String seq) {
+        ACGTSequence refF = new ACGTSequence(seq);
+        ACGTSequence refR = refF.reverse();
+        BWT bwtF = BWTransform.bwt(refF);
+        BWT bwtR = BWTransform.bwt(refR);
+
+        SequenceBoundary sequenceBoundary = SequenceBoundary.createFromSingleSeq(name, refF);
+        FMIndex forwardIndex = new FMIndexOnOccTable(bwtF.bwt, windowSize);
+        FMIndex reverseIndex = new FMIndexOnOccTable(bwtR.bwt, windowSize);
+        return new FMIndexOnGenome(forwardIndex, reverseIndex, bwtF.ssa, bwtR.ssa, sequenceBoundary, refF.textSize(),
+                ACGT.values().length);
+    }
+
+    public SuffixInterval wholeSARange() {
+        return new SuffixInterval(0, N);
     }
 
     public long textSize() {
