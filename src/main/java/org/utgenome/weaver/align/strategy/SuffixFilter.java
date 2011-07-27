@@ -90,7 +90,7 @@ public class SuffixFilter
             chunkLen[i] = (byte) (chunkStart[i + 1] - chunkStart[i]);
         }
 
-        patternMask = new BitVector[6];
+        patternMask = new BitVector[ACGT.values().length];
         for (int i = 0; i < patternMask.length; ++i)
             patternMask[i] = new BitVector(m);
 
@@ -157,8 +157,11 @@ public class SuffixFilter
             automata[i] = new BitVector(m);
 
         stairMask = new BitVector[height];
-        for (int i = 0; i < stairMask.length; ++i)
-            stairMask[i] = new BitVector(m);
+        stairMask[0] = new BitVector(m).not();
+        stairMask[0].rshift(chunkStart[chunkPos + 1]);
+        for (int i = 1; i < stairMask.length; ++i) {
+            stairMask[i] = new BitVector(stairMask[i - 1]).rshift(chunkLen[chunkPos + i - 1]);
+        }
 
         byte q = chunkStart[chunkPos + 1];
         automata[0].set(q);

@@ -57,6 +57,11 @@ public class BitVector
         this.block = block;
     }
 
+    public BitVector(BitVector other) {
+        this.size = other.size;
+        this.block = other.block.clone();
+    }
+
     public long size() {
         return size;
     }
@@ -139,6 +144,15 @@ public class BitVector
                 block[i] |= (block[bi - 1] & mask) << (B - offset);
             }
         }
+        return this;
+    }
+
+    public BitVector not() {
+        for (int i = 0; i < block.length - 1; ++i) {
+            block[i] = ~block[i];
+        }
+        int offset = (int) size % B;
+        block[block.length - 1] = (~block[block.length - 1]) & ((~0L) << (B - offset));
         return this;
     }
 

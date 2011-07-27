@@ -161,6 +161,13 @@ public class BitVectorTest
     }
 
     @Test
+    public void lshift7() throws Exception {
+        BitVector v = new BitVector(28).not();
+        v.lshift(7);
+        assertEquals("1111111111111111111110000000", v.toString());
+    }
+
+    @Test
     public void rshift() throws Exception {
         String orig = "001011010001000001111110011110000000001101010100010101010011100001010100010100111";
 
