@@ -127,6 +127,21 @@ public class BitVector
         return this;
     }
 
+    public BitVector rshift(int len) {
+        int blockOffset = len / B;
+        long offset = len % B;
+        long mask = ~((~0L) << offset);
+
+        for (int i = block.length - 1; i >= 0; --i) {
+            int bi = i - blockOffset;
+            block[i] = bi >= 0 ? block[bi] >>> offset : 0L;
+            if (bi - 1 >= 0) {
+                block[i] |= (block[bi - 1] & mask) << (B - offset);
+            }
+        }
+        return this;
+    }
+
     public int countOneBits(long start, long end) {
         int count = 0;
         int eIndex = (int) (end / B);

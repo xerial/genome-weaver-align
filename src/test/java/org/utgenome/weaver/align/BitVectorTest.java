@@ -146,8 +146,7 @@ public class BitVectorTest
 
     @Test
     public void lshift() throws Exception {
-        String orig = "00101101000100000111111001010101000000000001101010100010101010011100001010100010100111";
-        String shift5 = orig.substring(5) + "00000";
+        String orig = "001011010001000001111110010101010011101111110001010101001111110000000001101010100010101010011100001010100010100111";
 
         for (int i = 0; i < orig.length(); ++i) {
             BitVector v = BitVector.parseString(orig);
@@ -160,4 +159,21 @@ public class BitVectorTest
             assertEquals(ans.toString(), v.lshift(i).toString());
         }
     }
+
+    @Test
+    public void rshift() throws Exception {
+        String orig = "001011010001000001111110011110000000001101010100010101010011100001010100010100111";
+
+        for (int i = 0; i < orig.length(); ++i) {
+            BitVector v = BitVector.parseString(orig);
+            StringBuilder s = new StringBuilder();
+            for (int k = 0; k < i; ++k)
+                s.append("0");
+            s.append(orig.substring(0, orig.length() - i));
+
+            BitVector ans = BitVector.parseString(s.toString());
+            assertEquals("rshift:" + i, ans.toString(), v.rshift(i).toString());
+        }
+    }
+
 }
