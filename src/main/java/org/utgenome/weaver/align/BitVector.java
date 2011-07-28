@@ -41,6 +41,8 @@ public class BitVector
     private final long[]     block;
     private final long       size;
 
+    private int              hash;  // default to 0
+
     public BitVector(long size) {
         this.size = size;
         long blockSize = (size + B - 1) / B;
@@ -132,6 +134,20 @@ public class BitVector
         return this;
     }
 
+    public static BitVector or(BitVector a, BitVector b) {
+        BitVector v = new BitVector(a);
+        v.or(b);
+        return v;
+    }
+
+    public BitVector or(BitVector other) {
+        int l = Math.min(this.block.length, other.block.length);
+        for (int i = 0; i < l; ++i) {
+            this.block[i] |= other.block[i];
+        }
+        return this;
+    }
+
     public BitVector rshift(int len) {
         int blockOffset = len / B;
         long offset = len % B;
@@ -153,6 +169,39 @@ public class BitVector
         }
         int offset = (int) size % B;
         block[block.length - 1] = (~block[block.length - 1]) & ((~0L) << (B - offset));
+        return this;
+    }
+
+    public BitVector and(BitVector other) {
+        for (int i = 0; i < block.length; ++i) {
+            block[i] &= other.block[i];
+        }
+        return this;
+    }
+
+    public BitVector xor(BitVector other) {
+        for (int i = 0; i < block.length; ++i) {
+            block[i] ^= other.block[i];
+        }
+        return this;
+    }
+
+    /**
+     * 
+     * Reference: Hacker's delight. Chapter 2
+     * 
+     * @param other
+     * @return
+     */
+    public BitVector add(BitVector other) {
+        long c = 0; // carry (borrow in from lower bits)
+        for (int i = block.length - 1; i >= 0; --i) {
+            long x = block[i];
+            long y = other.block[i];
+            long v = x + y + c;
+            block[i] = v;
+            c = ((v ^ x) & (v ^ y)) >>> 63;
+        }
         return this;
     }
 
@@ -206,6 +255,32 @@ public class BitVector
             v.set(i, binaryString.charAt(i) == '1');
         }
         return v;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof BitVector))
+            return false;
+
+        BitVector other = BitVector.class.cast(obj);
+        if (this.size != other.size)
+            return false;
+
+        int numFilledBlocks = (int) (this.size / B);
+        int i = 0;
+        for (; i < numFilledBlocks; ++i) {
+            if (this.block[i] != other.block[i])
+                return false;
+        }
+        // Apply mask for flanking bits
+        if (i < this.block.length) {
+            long offset = this.size % B;
+            long mask = ~(~0L >>> offset);
+            if ((this.block[i] & mask) != (other.block[i] & mask))
+                return false;
+        }
+
+        return true;
     }
 
     @Override

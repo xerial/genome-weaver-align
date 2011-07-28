@@ -183,4 +183,18 @@ public class BitVectorTest
         }
     }
 
+    @Test
+    public void add() throws Exception {
+
+        BitVector v = new BitVector(128);
+        v.set(64);
+        BitVector v2 = new BitVector(128);
+        v2.set(64);
+        v.add(v2);
+        BitVector ans = new BitVector(128);
+        ans.set(63);
+        assertEquals(ans, v);
+
+    }
+
 }

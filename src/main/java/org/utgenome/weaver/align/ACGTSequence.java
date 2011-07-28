@@ -227,7 +227,7 @@ public class ACGTSequence implements LSeq
     }
 
     /**
-     * Extract and clone a subsequence of the specified range [start, end)
+     * Extract and create a clone of the subsequence of the range [start, end)
      * 
      * @param start
      * @param end
