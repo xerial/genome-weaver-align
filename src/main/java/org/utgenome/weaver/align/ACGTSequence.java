@@ -263,8 +263,8 @@ public class ACGTSequence implements LSeq
                 n >>>= shiftLen;
                 // Copy ACGT blocks
                 if (shiftLen < 32) {
-                    h >>= shiftLen * 2;
                     l = (h << (64 - shiftLen * 2)) | (l >>> shiftLen * 2);
+                    h >>>= shiftLen * 2;
                 }
                 else {
                     l = h >>> (shiftLen - 32) * 2;
