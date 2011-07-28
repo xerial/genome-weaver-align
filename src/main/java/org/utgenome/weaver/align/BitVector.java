@@ -198,9 +198,16 @@ public class BitVector
         for (int i = block.length - 1; i >= 0; --i) {
             long x = block[i];
             long y = other.block[i];
-            long v = x + y + c;
+            long u = x + y;	// check overflow
+            long v = u + c;
             block[i] = v;
-            c = ((v ^ x) & (v ^ y)) >>> 63;
+            // x y  x+y carry  x+y+1 carry'  
+            // 0 0   0    0      1     0
+            // 0 1   1    0      0     1
+            // 1 0   1    0      0     1
+            // 1 1   0    1      1     1
+            // Detect overflows in u=x+y, v=u+c
+            c = (((u ^ x) & (u ^ y)) | ((v ^ u) & (v ^ c))) >>> 63;
         }
         return this;
     }

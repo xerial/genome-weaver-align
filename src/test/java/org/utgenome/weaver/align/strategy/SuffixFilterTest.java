@@ -36,7 +36,7 @@ import org.xerial.util.log.Logger;
 public class SuffixFilterTest
 {
     private static Logger _logger = Logger.getLogger(SuffixFilterTest.class);
-
+    
     @Test
     public void constructor() throws Exception {
         FMIndexOnGenome fmIndex = FMIndexOnGenome.buildFromSequence("seq", "TAGCCTATAGAGCGAAAGGAGATATATAGCCCGAGTAT");
