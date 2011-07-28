@@ -39,7 +39,13 @@ import org.xerial.snappy.SnappyOutputStream;
 import org.xerial.util.log.Logger;
 
 /**
- * ACGT genome sequence with N, using 3-bit encoding
+ * ACGT genome sequence with N, using 3-bit encoding. This class uses 3 long
+ * values to represent 64 ACGTN characters.
+ * 
+ * <pre>
+ *   (64-bit)    (64-bit)        (64-bit)
+ * |N0 ... N63|B0 B1 ....  B31|B32 B33 ... B63|
+ * </pre>
  * 
  * @author leo
  * 
@@ -56,12 +62,22 @@ public class ACGTSequence implements LSeq
     private long              numBases;
     private long              capacity;
 
+    private int               hash;                                                 // default to 0
+
+    /**
+     * Create an emptry sequence
+     */
     public ACGTSequence() {
         ensureArrayCapacity(10);
         numBases = 0;
     }
 
-    public ACGTSequence(String s) {
+    /**
+     * Create ACGTSequence from the input ACGT(N) sequence
+     * 
+     * @param s
+     */
+    public ACGTSequence(CharSequence s) {
         this(s.length());
 
         for (int i = 0; i < s.length(); ++i) {
@@ -70,6 +86,11 @@ public class ACGTSequence implements LSeq
         }
     }
 
+    /**
+     * Create a sequence that can hold the given number of bases
+     * 
+     * @param numBases
+     */
     public ACGTSequence(long numBases) {
         this.numBases = numBases;
 
@@ -153,6 +174,127 @@ public class ACGTSequence implements LSeq
         }
         byte code = ACGT.to3bitCode((char) ch);
         set(index, code);
+    }
+
+    @Override
+    public int hashCode() {
+        if (hash != 0)
+            return hash;
+        int numFilledBlocks = (int) (numBases / 64L * 3L);
+        long h = numBases * 31L;
+        int pos = 0;
+        for (; pos < numFilledBlocks; ++pos) {
+            h += seq[pos] * 31L;
+        }
+        int offset = (int) (numBases % 64L);
+        if (offset > 0) {
+            h += (seq[pos] & (~0L << 64 - offset)) * 31L;
+            h += (seq[pos + 1] & (offset < 32 ? ~0L << (32 - offset) * 2 : ~0L)) * 31L;
+            h += (seq[pos + 2] & (offset < 32 ? 0L : ~0L << (64 - offset) * 2)) * 31L;
+        }
+        hash = (int) h;
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof ACGTSequence))
+            return false;
+
+        ACGTSequence other = ACGTSequence.class.cast(obj);
+        if (this.numBases != other.numBases)
+            return false;
+
+        int numFilledBlocks = (int) (numBases / 64L * 3L);
+        int pos = 0;
+        for (; pos < numFilledBlocks; ++pos) {
+            if (this.seq[pos] != other.seq[pos])
+                return false;
+        }
+        int offset = (int) (numBases % 64L);
+        if (offset > 0) {
+            long mask[] = new long[3];
+            mask[0] = ~0L << 64 - offset;
+            mask[1] = offset < 32 ? ~0L << (32 - offset) * 2 : ~0L;
+            mask[2] = offset <= 32 ? 0L : ~0L << (64 - offset) * 2;
+            for (int i = 0; i < mask.length; ++i) {
+                if ((seq[pos + i] & mask[i]) != (other.seq[pos + i] & mask[i]))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Extract and clone a subsequence of the specified range [start, end)
+     * 
+     * @param start
+     * @param end
+     * @return
+     */
+    public ACGTSequence subSequence(long start, long end) {
+        if (start > end)
+            throw new IllegalArgumentException(String.format("invalid range [%d, %d)", start, end));
+        final long len = end - start;
+        int minArraySize = minArraySize(len);
+        ACGTSequence ss = new ACGTSequence(len);
+        long[] dest = ss.seq;
+        Arrays.fill(dest, 0L);
+
+        for (long i = 0; i < len;) {
+            int sPos = (int) ((start + i) >> 6);
+            int sOffset = (int) ((start + i) & 0x3FL);
+            int dPos = (int) (i >> 6);
+            int dOffset = (int) (i & 0x3FL);
+
+            int copyLen = 0;
+            long n = seq[sPos * 3];
+            long h = seq[sPos * 3 + 1];
+            long l = seq[sPos * 3 + 2];
+            if (sOffset == dOffset) {
+                copyLen = 64;
+            }
+            else if (sOffset < dOffset) {
+                // right shift
+                int shiftLen = dOffset - sOffset;
+                copyLen = 64 - dOffset;
+                // Copy Ns
+                n >>>= shiftLen;
+                // Copy ACGT blocks
+                if (shiftLen < 32) {
+                    h >>= shiftLen * 2;
+                    l = (h << (32 - shiftLen * 2)) | (l >>> shiftLen * 2);
+                }
+                else {
+                    l = h >>> (shiftLen - 32) * 2;
+                    h = 0L;
+                }
+            }
+            else {
+                // left shift
+                int shiftLen = sOffset - dOffset;
+                copyLen = 64 - sOffset;
+                // Copy Ns
+                n <<= shiftLen;
+                // Copy ACGT blocks
+                if (shiftLen < 32) {
+                    h = (h << shiftLen * 2) | (l >>> (32 - shiftLen * 2));
+                    l <<= shiftLen * 2;
+                }
+                else {
+                    h = l << (shiftLen - 32) * 2;
+                    l = 0L;
+                }
+            }
+            dest[dPos * 3] |= n;
+            dest[dPos * 3 + 1] |= h;
+            dest[dPos * 3 + 2] |= l;
+
+            i += copyLen;
+        }
+
+        return ss;
     }
 
     @Override

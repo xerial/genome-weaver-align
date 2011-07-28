@@ -184,4 +184,23 @@ public class ACGTSequenceTest
 
     }
 
+    @Test
+    public void subSequence() throws Exception {
+        ACGTSequence seq = new ACGTSequence(orig);
+        assertEquals(new ACGTSequence(orig.subSequence(1, 65)), seq.subSequence(1, 65));
+
+        for (int s = 0; s < seq.textSize(); ++s) {
+            for (int e = s; e < seq.textSize(); ++e) {
+                ACGTSequence ss = seq.subSequence(s, e);
+                assertEquals(String.format("[%d, %d)", s, e), new ACGTSequence(orig.subSequence(s, e)), ss);
+            }
+        }
+
+    }
+
+    @Test
+    public void testEquals() {
+
+    }
+
 }

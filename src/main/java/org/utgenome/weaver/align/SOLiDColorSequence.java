@@ -52,6 +52,7 @@ public class SOLiDColorSequence implements LSeq
         this(s.length());
 
         for (int i = 0; i < s.length(); ++i) {
+            // TODO fix me for color-spaced sequence
             byte code = ACGT.to3bitCode(s.charAt(i));
             set(i, code);
         }
