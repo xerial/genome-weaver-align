@@ -64,6 +64,10 @@ public class BitVector
         this.block = other.block.clone();
     }
 
+    public BitVector copy() {
+        return new BitVector(size, this.block.clone());
+    }
+
     public long size() {
         return size;
     }
@@ -117,6 +121,11 @@ public class BitVector
         long offset = index % B;
         long mask = 0x8000000000000000L >>> offset;
         block[(int) blockPos] &= ~mask;
+    }
+
+    public BitVector set(BitVector other) {
+        System.arraycopy(other.block, 0, this.block, 0, block.length);
+        return this;
     }
 
     public BitVector lshift(int len) {
@@ -198,16 +207,17 @@ public class BitVector
         for (int i = block.length - 1; i >= 0; --i) {
             long x = block[i];
             long y = other.block[i];
-            long u = x + y;	// check overflow
-            long v = u + c;
+            long v = x + y + c; // 0 <= c <= 1
             block[i] = v;
-            // x y  x+y carry  x+y+1 carry'  
-            // 0 0   0    0      1     0
-            // 0 1   1    0      0     1
-            // 1 0   1    0      0     1
-            // 1 1   0    1      1     1
-            // Detect overflows in u=x+y, v=u+c
-            c = (((u ^ x) & (u ^ y)) | ((v ^ u) & (v ^ c))) >>> 63;
+            // 
+            // x y  x+y carry  
+            // 0 0   0    0    
+            // 0 1   1    0    
+            // 1 0   1    0    
+            // 1 1   0    1     
+
+            // Detect overflows in v=x+y+c. Adding c (0 or 1) does not affect this expression 
+            c = ((v ^ x) & (v ^ y)) >>> 63;
         }
         return this;
     }
