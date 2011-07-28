@@ -44,7 +44,7 @@ public class ACGTSequenceTest
     @Test
     public void constructor() throws Exception {
 
-        _logger.info(orig);
+        _logger.debug(orig);
         ACGTSequence s = new ACGTSequence(orig);
 
         assertEquals(orig.length(), s.textSize());
@@ -101,30 +101,30 @@ public class ACGTSequenceTest
         byte[] bb = b.toByteArray();
         ACGTSequence s2 = ACGTSequence.loadFrom(new DataInputStream(new ByteArrayInputStream(bb)));
         assertEquals(s.toString(), s2.toString());
-        _logger.info(s2.toString());
+        _logger.debug(s2.toString());
     }
 
     @Test
     public void interleave() throws Exception {
 
         int v = 0x0000FFFF;
-        _logger.info(toBinaryString(v, 32));
-        _logger.info(toBinaryString(ACGTSequence.interleaveWith0(v), 32));
+        _logger.debug(toBinaryString(v, 32));
+        _logger.debug(toBinaryString(ACGTSequence.interleaveWith0(v), 32));
 
         v = 0x00001234;
-        _logger.info(toBinaryString(v, 32));
-        _logger.info(toBinaryString(ACGTSequence.interleaveWith0(v), 32));
+        _logger.debug(toBinaryString(v, 32));
+        _logger.debug(toBinaryString(ACGTSequence.interleaveWith0(v), 32));
     }
 
     @Test
     public void interleave32() throws Exception {
         long v = 0x00000000FFFFFFFFL;
-        _logger.info(toBinaryString(v, 64));
-        _logger.info(toBinaryString(ACGTSequence.interleave32With0(v), 64));
+        _logger.debug(toBinaryString(v, 64));
+        _logger.debug(toBinaryString(ACGTSequence.interleave32With0(v), 64));
 
         v = 0xF0F0F0F0L;
-        _logger.info(toBinaryString(v, 64));
-        _logger.info(toBinaryString(ACGTSequence.interleave32With0(v), 64));
+        _logger.debug(toBinaryString(v, 64));
+        _logger.debug(toBinaryString(ACGTSequence.interleave32With0(v), 64));
 
     }
 
@@ -145,7 +145,7 @@ public class ACGTSequenceTest
         }
 
         ACGTSequence s = new ACGTSequence(seq.toString());
-        _logger.info(s);
+        _logger.debug(s);
 
         //        {
         //            ACGT c = ACGT.N;
@@ -201,6 +201,14 @@ public class ACGTSequenceTest
 
     @Test
     public void testEquals() {
+        ACGTSequence seq = new ACGTSequence(orig);
+
+        for (int s = 0; s < seq.textSize(); ++s) {
+            for (int e = s; e < seq.textSize(); ++e) {
+                ACGTSequence ss = seq.subSequence(s, e);
+                assertEquals(String.format("[%d, %d)", s, e), new ACGTSequence(orig.subSequence(s, e)), ss);
+            }
+        }
 
     }
 
