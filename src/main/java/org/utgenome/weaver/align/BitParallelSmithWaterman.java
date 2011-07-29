@@ -24,6 +24,8 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import org.xerial.util.log.Logger;
+
 /**
  * Bit-parallel algorithm for Smith-Waterman alignment
  * 
@@ -36,8 +38,43 @@ package org.utgenome.weaver.align;
  */
 public class BitParallelSmithWaterman
 {
+    private static Logger _logger = Logger.getLogger(BitParallelSmithWaterman.class);
 
-    public void align(ACGTSequence ref, ACGTSequence query) {
+    public static void align64(ACGTSequence ref, ACGTSequence query) {
+        // Preprocessing
+        long[] b = new long[ACGT.values().length];
+        for (ACGT ch : ACGT.values()) {
+            b[ch.code] = 0L;
+        }
+
+        int m = Math.min(64, (int) query.textSize());
+        for (int i = 0; i < m; ++i) {
+            b[query.getACGT(m - i - 1).code] |= 1L << i;
+        }
+        long vp = ~0L;
+        long vn = 0L;
+        int diff = m;
+
+        // Searching
+        for (int j = (int) ref.textSize() - 1; j >= 0; --j) {
+            long x = b[ref.getACGT(j).code] | vn;
+            long d0 = ((vp + (x & vp)) ^ vp) | x;
+            long hn = (vp & d0) << 1;
+            long hp = (vn | ~(vp | d0)) << 1;
+            vn = x & d0;
+            vp = hn | ~(hp | d0);
+            diff += (int) ((hp >>> m) & 1L);
+            diff -= (int) ((hn >>> m) & 1L);
+            if (_logger.isDebugEnabled())
+                _logger.debug("j:%d, diff:%d", j, diff);
+            if (diff <= 2) {
+                _logger.debug("occurrence at %d", j);
+            }
+        }
+
+    }
+
+    public static void align(ACGTSequence ref, ACGTSequence query) {
         final int N = (int) ref.textSize();
         final int M = (int) query.textSize();
         BitVector Pv = new BitVector(M).not();
@@ -70,6 +107,8 @@ public class BitParallelSmithWaterman
 
             Ph.lshift(1);
             Mh.lshift(1);
+
+            // 
 
             // Pv = Mh | ~(Xv | Ph)
             // Mv = Ph & Xv
