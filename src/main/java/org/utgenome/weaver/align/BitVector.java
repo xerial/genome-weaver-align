@@ -209,13 +209,11 @@ public class BitVector
             long y = other.block[i];
             long v = x + y + c; // 0 <= c <= 1
             block[i] = v;
-            // 
             // x y  x+y carry  
             // 0 0   0    0    
             // 0 1   1    0    
             // 1 0   1    0    
             // 1 1   0    1     
-
             // Detect overflows in v=x+y+c. Adding c (0 or 1) does not affect this expression 
             c = ((v ^ x) & (v ^ y)) >>> 63;
         }
