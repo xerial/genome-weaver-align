@@ -49,20 +49,21 @@ public class BitParallelSmithWaterman
 
         int m = Math.min(64, (int) query.textSize());
         for (int i = 0; i < m; ++i) {
-            b[query.getACGT(m - i - 1).code] |= 1L << i;
+            b[query.getACGT(i).code] |= 1L << i;
         }
         long vp = ~0L;
         long vn = 0L;
         int diff = m;
 
         // Searching
-        for (int j = (int) ref.textSize() - 1; j >= 0; --j) {
+        for (int j = 0; j < ref.textSize(); ++j) {
             long x = b[ref.getACGT(j).code] | vn;
             long d0 = ((vp + (x & vp)) ^ vp) | x;
-            long hn = (vp & d0) << 1;
-            long hp = (vn | ~(vp | d0)) << 1;
+            long hn = vp & d0;
+            long hp = (vn | ~(vp | d0));
+            x = hp << 1;
             vn = x & d0;
-            vp = hn | ~(hp | d0);
+            vp = (hn << 1) | ~(x | d0);
             diff += (int) ((hp >>> m) & 1L);
             diff -= (int) ((hn >>> m) & 1L);
             if (_logger.isDebugEnabled())
