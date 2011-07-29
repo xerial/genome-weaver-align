@@ -61,7 +61,7 @@ public class BitParallelSmithWaterman
             long d0 = ((vp + (x & vp)) ^ vp) | x;
             long hn = vp & d0;
             long hp = (vn | ~(vp | d0));
-            x = hp << 1;
+            x = hp << 1 | 1L;
             vn = x & d0;
             vp = (hn << 1) | ~(x | d0);
             diff += (int) ((hp >>> m) & 1L);
