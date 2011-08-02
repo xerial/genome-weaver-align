@@ -33,10 +33,18 @@ public class BitParallelSmithWatermanTest
 
         String ref = "ACGTGGTCTT";
         //BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("ACGTGGTCTT"));
-        BitParallelSmithWaterman.align64(new ACGTSequence("AAATTT"), new ACGTSequence("AATACTTT"));
-        BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("ACGTGGT"));
-        BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("CGTGGTC"));
 
+        //BitParallelSmithWaterman.align64(new ACGTSequence("AAATTT"), new ACGTSequence("AATACTTT"));
+        BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("ACGTGGT"), 2);
+        BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("TGGTCTT"), 2);
+        //BitParallelSmithWaterman.align64(new ACGTSequence("TATAATAATA"), new ACGTSequence("TAATA"));
+
+    }
+
+    @Test
+    public void clip() throws Exception {
+        String ref = "ACGTGGTCTT";
+        BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("ACGTGNNNNNGTCTT"), 5);
     }
 
 }

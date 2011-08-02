@@ -29,9 +29,15 @@ import org.xerial.util.log.Logger;
 /**
  * Bit-parallel algorithm for Smith-Waterman alignment
  * 
- * <h3>Reference</h3> Myers, G. (1999). A fast bit-vector algorithm for
- * approximate string matching based on dynamic programming. Journal of the ACM
- * (JACM).
+ * <h3>References</h3>
+ * 
+ * <ul>
+ * <li>Myers, G. (1999). A fast bit-vector algorithm for approximate string
+ * matching based on dynamic programming. Journal of the ACM (JACM).</li>
+ * <li>H. Hyyr&ouml; and G. Navarro. Faster Bit-parallel Approximate String
+ * Matching In Proc. 13th Combinatorial Pattern Matching (CPM'2002), LNCS 2373
+ * http://sunsite.dcc.uchile.cl/ftp/users/gnavarro/hn02.ps.gz</li>
+ * </ul>
  * 
  * @author leo
  * 
@@ -40,16 +46,12 @@ public class BitParallelSmithWaterman
 {
     private static Logger _logger = Logger.getLogger(BitParallelSmithWaterman.class);
 
-    public static void align64(ACGTSequence ref, ACGTSequence query) {
+    public static void align64(ACGTSequence ref, ACGTSequence query, int numAllowedDiff) {
         // Preprocessing
-        long[] b = new long[ACGT.values().length];
-        for (ACGT ch : ACGT.values()) {
-            b[ch.code] = 0L;
-        }
-
+        long[] pm = new long[ACGT.values().length];
         int m = Math.min(64, (int) query.textSize());
         for (int i = 0; i < m; ++i) {
-            b[query.getACGT(i).code] |= 1L << i;
+            pm[query.getACGT(i).code] |= 1L << i;
         }
         long vp = ~0L;
         long vn = 0L;
@@ -57,22 +59,84 @@ public class BitParallelSmithWaterman
 
         // Searching
         for (int j = 0; j < ref.textSize(); ++j) {
-            long x = b[ref.getACGT(j).code] | vn;
-            long d0 = ((vp + (x & vp)) ^ vp) | x;
+            long x = pm[ref.getACGT(j).code];
+            long d0 = ((vp + (x & vp)) ^ vp) | x | vn;
             long hn = vp & d0;
             long hp = (vn | ~(vp | d0));
-            x = hp << 1 | 1L;
+            x = (hp << 1);
             vn = x & d0;
             vp = (hn << 1) | ~(x | d0);
             diff += (int) ((hp >>> m) & 1L);
             diff -= (int) ((hn >>> m) & 1L);
-            if (_logger.isDebugEnabled())
-                _logger.debug("j:%d, diff:%d", j, diff);
-            if (diff <= 2) {
-                _logger.debug("occurrence at %d", j);
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("j:%2d, diff:%2d %1s hp:%s, hn:%s, vp:%s, vn:%s, d0:%s", j, diff,
+                        diff <= numAllowedDiff ? "*" : "", toBinary(hp, m), toBinary(hn, m), toBinary(vp, m),
+                        toBinary(vn, m), toBinary(d0, m));
             }
         }
+    }
 
+    public static String toBinary(long v, int m) {
+        StringBuilder s = new StringBuilder();
+        for (int i = 0; i <= m; ++i) {
+            s.append((v & (1L << i)) == 1L ? "1" : "0");
+        }
+        return s.toString();
+    }
+
+    public static void align64blocks(ACGTSequence ref, ACGTSequence query, int k) {
+        final int m = (int) query.textSize();
+        final int w = 64; // word size
+        final int numBlocks = (int) Math.ceil((double) m / w);
+
+        final int S = ACGT.values().length;
+        // Peq bit-vector holds flags of the character occurrence positions in the query
+        long[][] peq = new long[numBlocks][S];
+        for (int i = 0; i < m; ++i) {
+            peq[i / w][query.getACGT(i).code] |= 1L << (i % w);
+        }
+        // Fill the flanking region with 1s
+        {
+            int f = m % w;
+            long mask = ~0L >>> f << f;
+            for (int i = 0; i < S; ++i)
+                peq[numBlocks - 1][i] |= mask;
+        }
+
+        long vp[] = new long[numBlocks];
+        long vn[] = new long[numBlocks];
+
+        final int b = (int) Math.ceil((double) k / w);
+        for (int r = 0; r < b; ++r) {
+            vp[r] = ~0L;
+            vn[r] = 0L;
+            //dt[rw * w][0] = rw; 
+        }
+
+        final int N = (int) ref.textSize();
+        for (int j = 0; j < N; ++j) {
+            ACGT ch = ref.getACGT(j);
+            for (int r = 0; r < b; ++r) {
+                int hout = alignBlock(ch, peq[r], vp[r], vn[r], w);
+            }
+
+        }
+
+    }
+
+    private static int alignBlock(ACGT ch, long[] peq, long vp, long vn, int w) {
+        long x = peq[ch.code];
+        long d0 = ((vp + (x & vp)) ^ vp) | x | vn;
+        long hn = vp & d0;
+        long hp = (vn | ~(vp | d0));
+        x = (hp << 1);
+        vn = x & d0;
+        vp = (hn << 1) | ~(x | d0);
+
+        int hout = 0;
+        hout += (int) ((hp >>> w) & 1L);
+        hout -= (int) ((hn >>> w) & 1L);
+        return hout;
     }
 
     public static void align(ACGTSequence ref, ACGTSequence query) {
