@@ -25,9 +25,12 @@
 package org.utgenome.weaver.align;
 
 import org.junit.Test;
+import org.xerial.util.log.Logger;
 
 public class BitParallelSmithWatermanTest
 {
+    private static Logger _logger = Logger.getLogger(BitParallelSmithWatermanTest.class);
+
     @Test
     public void align64() throws Exception {
 
@@ -38,6 +41,16 @@ public class BitParallelSmithWatermanTest
         BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("ACGTGGT"), 2);
         BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("CTT"), 2);
         //BitParallelSmithWaterman.align64(new ACGTSequence("TATAATAATA"), new ACGTSequence("TAATA"));
+
+    }
+
+    @Test
+    public void alignBlock() throws Exception {
+        ACGTSequence ref = new ACGTSequence("ACGTGGTCTT");
+        BitParallelSmithWaterman.alignBlock(ref, new ACGTSequence("ACGTGGT"), 2);
+
+        _logger.debug("align64");
+        BitParallelSmithWaterman.align64(ref, new ACGTSequence("ACGTGGT"), 2);
 
     }
 
