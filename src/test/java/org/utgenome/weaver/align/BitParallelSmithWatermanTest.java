@@ -25,18 +25,43 @@
 package org.utgenome.weaver.align;
 
 import org.junit.Test;
+import org.xerial.util.log.Logger;
 
 public class BitParallelSmithWatermanTest
 {
+    private static Logger _logger = Logger.getLogger(BitParallelSmithWatermanTest.class);
+
     @Test
     public void align64() throws Exception {
 
         String ref = "ACGTGGTCTT";
         //BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("ACGTGGTCTT"));
-        BitParallelSmithWaterman.align64(new ACGTSequence("AAATTT"), new ACGTSequence("AATACTTT"));
-        BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("ACGTGGT"));
-        BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("CGTGGTC"));
 
+        //BitParallelSmithWaterman.align64(new ACGTSequence("AAATTT"), new ACGTSequence("AATACTTT"));
+        BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("ACGTGGT"), 2);
+        BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("CTT"), 2);
+        //BitParallelSmithWaterman.align64(new ACGTSequence("TATAATAATA"), new ACGTSequence("TAATA"));
+
+    }
+
+    @Test
+    public void alignBlock() throws Exception {
+        ACGTSequence ref = new ACGTSequence("ACGTGGTCTT");
+        BitParallelSmithWaterman.alignBlock(ref, new ACGTSequence("ACGTGGT"), 2);
+    }
+
+    @Test
+    public void alignBlockOver64() throws Exception {
+        ACGTSequence ref = new ACGTSequence(
+                "ACGTGGTCTTACGTTATATAGGGCGCGGGGATATCTGCTATAAAATTAAGCGCAGATGGCGAGGCGTTTTAGAGAGCCGAAGAGACGCGCGCTTCGCGAGAAAGCGGAGCGCAGAGAGGGGCGCCATATATATAGAGCGCGAAGAGAGAT");
+        BitParallelSmithWaterman.alignBlock(ref, ref, 2);
+
+    }
+
+    @Test
+    public void clip() throws Exception {
+        String ref = "ACGTGGTCTT";
+        BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("ACGTGNNNNNGTCTT"), 5);
     }
 
 }
