@@ -105,7 +105,7 @@ public class BitParallelSmithWaterman
     {
 
         private static final int w = 63;                  // word size
-        private static final int S = ACGT.values().length; // alphabet size
+        private static final int Z = ACGT.values().length; // alphabet size
 
         private final int        k;
         private final int        m;
@@ -121,7 +121,7 @@ public class BitParallelSmithWaterman
             bMax = (int) Math.ceil((double) m / w);
             vp = new long[bMax];
             vn = new long[bMax];
-            peq = new long[bMax][S];
+            peq = new long[bMax][Z];
             D = new int[bMax];
         }
 
@@ -129,7 +129,7 @@ public class BitParallelSmithWaterman
             Arrays.fill(vp, 0L);
             Arrays.fill(vn, 0L);
             for (int i = 0; i < bMax; ++i)
-                for (int j = 0; j < S; ++j)
+                for (int j = 0; j < Z; ++j)
                     peq[i][j] = 0L;
         }
 
@@ -142,7 +142,7 @@ public class BitParallelSmithWaterman
             {
                 int f = m % w;
                 long mask = ~0L >>> f << f;
-                for (int i = 0; i < S; ++i)
+                for (int i = 0; i < Z; ++i)
                     peq[bMax - 1][i] |= mask;
             }
             if (_logger.isDebugEnabled()) {
