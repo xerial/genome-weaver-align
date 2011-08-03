@@ -104,7 +104,7 @@ public class BitParallelSmithWaterman
     public static class AlignBlocks
     {
 
-        private static final int w = 64;                  // word size
+        private static final int w = 63;                  // word size
         private static final int S = ACGT.values().length; // alphabet size
 
         private final int        k;
@@ -171,11 +171,10 @@ public class BitParallelSmithWaterman
                     D[b - 1] = D[b - 2] + w - carry + alignBlock(ch, b - 1, carry);
                 }
                 else {
-                    while (D[b - 1] >= k + w) {
+                    while (b > 1 && D[b - 1] >= k + w) {
                         --b;
                     }
                 }
-
             }
 
         }
