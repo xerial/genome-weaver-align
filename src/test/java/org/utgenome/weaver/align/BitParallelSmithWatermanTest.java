@@ -36,7 +36,7 @@ public class BitParallelSmithWatermanTest
 
         //BitParallelSmithWaterman.align64(new ACGTSequence("AAATTT"), new ACGTSequence("AATACTTT"));
         BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("ACGTGGT"), 2);
-        BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("TGGTCTT"), 2);
+        BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("CTT"), 2);
         //BitParallelSmithWaterman.align64(new ACGTSequence("TATAATAATA"), new ACGTSequence("TAATA"));
 
     }

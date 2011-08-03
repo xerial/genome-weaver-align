@@ -24,6 +24,8 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import java.util.Arrays;
+
 import org.xerial.util.log.Logger;
 
 /**
@@ -52,139 +54,158 @@ public class BitParallelSmithWaterman
         int m = Math.min(64, (int) query.textSize());
         for (int i = 0; i < m; ++i) {
             pm[query.getACGT(i).code] |= 1L << i;
+
         }
         long vp = ~0L;
         long vn = 0L;
         int diff = m;
 
+        if (_logger.isDebugEnabled()) {
+            for (ACGT ch : ACGT.exceptN) {
+                _logger.debug("peq[%s]:%s", ch, toBinary(pm[ch.code], m));
+            }
+        }
         // Searching
         for (int j = 0; j < ref.textSize(); ++j) {
             long x = pm[ref.getACGT(j).code];
             long d0 = ((vp + (x & vp)) ^ vp) | x | vn;
-            long hn = vp & d0;
             long hp = (vn | ~(vp | d0));
+            long hn = vp & d0;
             x = (hp << 1);
             vn = x & d0;
             vp = (hn << 1) | ~(x | d0);
+            // diff represents the last row (C[m, j]) of the DP matrix
             diff += (int) ((hp >>> m) & 1L);
             diff -= (int) ((hn >>> m) & 1L);
             if (_logger.isDebugEnabled()) {
-                _logger.debug("j:%2d, diff:%2d %1s hp:%s, hn:%s, vp:%s, vn:%s, d0:%s", j, diff,
+                _logger.debug("[%s] j:%2d, diff:%2d %1s hp:%s, hn:%s, vp:%s, vn:%s, d0:%s", ref.getACGT(j), j, diff,
                         diff <= numAllowedDiff ? "*" : "", toBinary(hp, m), toBinary(hn, m), toBinary(vp, m),
                         toBinary(vn, m), toBinary(d0, m));
             }
+
         }
     }
 
     public static String toBinary(long v, int m) {
         StringBuilder s = new StringBuilder();
         for (int i = 0; i <= m; ++i) {
-            s.append((v & (1L << i)) == 1L ? "1" : "0");
+            s.append((v & (1L << i)) > 0 ? "1" : "0");
         }
         return s.toString();
     }
 
-    public static void align64blocks(ACGTSequence ref, ACGTSequence query, int k) {
-        final int m = (int) query.textSize();
-        final int w = 64; // word size
-        final int numBlocks = (int) Math.ceil((double) m / w);
+    public static class AlignBlocks
+    {
 
-        final int S = ACGT.values().length;
-        // Peq bit-vector holds flags of the character occurrence positions in the query
-        long[][] peq = new long[numBlocks][S];
-        for (int i = 0; i < m; ++i) {
-            peq[i / w][query.getACGT(i).code] |= 1L << (i % w);
+        private static final int w = 64;                  // word size
+        private static final int S = ACGT.values().length; // alphabet size
+
+        private final int        k;
+        private final int        m;
+        private final int        bMax;
+        private long[]           vp_in;
+        private long[]           vp;
+        private long[]           vn;
+        private long[][]         peq;                     // [# of block][A, C, G, T]
+        private int[]            D;                       // D[block]
+
+        public AlignBlocks(ACGTSequence query, int k) {
+            this.m = (int) query.textSize();
+            this.k = k;
+            bMax = (int) Math.ceil((double) m / w);
+            vp = new long[bMax];
+            vn = new long[bMax];
+            vp_in = new long[bMax];
+            peq = new long[bMax][S];
+
+            // Peq bit-vector holds flags of the character occurrence positions in the query
+            for (int i = 0; i < m; ++i) {
+                peq[i / w][query.getACGT(i).code] |= 1L << (i % w);
+            }
+            // Fill the flanking region with 1s
+            {
+                int f = m % w;
+                long mask = ~0L >>> f << f;
+                for (int i = 0; i < S; ++i)
+                    peq[bMax - 1][i] |= mask;
+            }
         }
-        // Fill the flanking region with 1s
-        {
-            int f = m % w;
-            long mask = ~0L >>> f << f;
-            for (int i = 0; i < S; ++i)
-                peq[numBlocks - 1][i] |= mask;
+
+        public void clear() {
+            Arrays.fill(vp, 0L);
+            Arrays.fill(vn, 0L);
+            Arrays.fill(vp_in, 0L);
+            for (int i = 0; i < bMax; ++i)
+                for (int j = 0; j < S; ++j)
+                    peq[i][j] = 0L;
         }
 
-        long vp[] = new long[numBlocks];
-        long vn[] = new long[numBlocks];
-
-        final int b = (int) Math.ceil((double) k / w);
-        for (int r = 0; r < b; ++r) {
-            vp[r] = ~0L;
-            vn[r] = 0L;
-            //dt[rw * w][0] = rw; 
-        }
-
-        final int N = (int) ref.textSize();
-        for (int j = 0; j < N; ++j) {
-            ACGT ch = ref.getACGT(j);
+        public void align(ACGTSequence ref, ACGTSequence query) {
+            int b = (int) Math.ceil((double) k / w);
             for (int r = 0; r < b; ++r) {
-                int hout = alignBlock(ch, peq[r], vp[r], vn[r], w);
+                vp[r] = ~0L; // all 1s
+                vn[r] = 0L; // all 0s
+                D[r] = b * w;
+            }
+
+            final int N = (int) ref.textSize();
+            for (int j = 0; j < N; ++j) {
+                ACGT ch = ref.getACGT(j);
+                int carry = 0;
+                for (int r = 0; r < b; ++r) {
+                    D[b] += (carry = alignBlock(ch, r, carry));
+                }
+
+                if (D[b] - carry <= k && b < bMax && (((peq[b + 1][ch.code] & 1L) != 0) | carry < 0)) {
+                    b++;
+                    vp[b] = vp_in[b];
+                    vn[b] = 0L;
+
+                    D[b] = D[b - 1] + w - carry + alignBlock(ch, b, carry);
+                }
+                else {
+                    while (D[b] >= k + w) {
+                        --b;
+                    }
+                }
+
             }
 
         }
 
-    }
+        private int alignBlock(ACGT ch, int r, int hin) {
+            long vp = this.vp[r];
+            long vn = this.vn[r];
+            long x = this.peq[r][ch.code];
+            if (hin < 0)
+                x |= 1L;
+            long d0 = ((vp + (x & vp)) ^ vp) | x | vn;
+            long hn = vp & d0;
+            long hp = (vn | ~(vp | d0));
 
-    private static int alignBlock(ACGT ch, long[] peq, long vp, long vn, int w) {
-        long x = peq[ch.code];
-        long d0 = ((vp + (x & vp)) ^ vp) | x | vn;
-        long hn = vp & d0;
-        long hp = (vn | ~(vp | d0));
-        x = (hp << 1);
-        vn = x & d0;
-        vp = (hn << 1) | ~(x | d0);
+            int hout = 0;
+            hout += (int) ((hp >>> w) & 1L);
+            hout -= (int) ((hn >>> w) & 1L);
 
-        int hout = 0;
-        hout += (int) ((hp >>> w) & 1L);
-        hout -= (int) ((hn >>> w) & 1L);
-        return hout;
-    }
+            long ph = (hp << 1);
+            long mh = (hn << 1);
+            if (hin < 0)
+                mh |= 1;
+            else if (hin > 0)
+                ph |= 1;
 
-    public static void align(ACGTSequence ref, ACGTSequence query) {
-        final int N = (int) ref.textSize();
-        final int M = (int) query.textSize();
-        BitVector Pv = new BitVector(M).not();
-        BitVector Mv = new BitVector(M);
-        int score = M;
+            this.vp[r] = (mh << 1) | ~(ph | d0);
+            this.vn[r] = ph & d0;
 
-        int k = 2; // allowed mismatches
-
-        // Precompute the alphabet table of query
-        BitVector[] Peq = new BitVector[ACGT.values().length];
-        for (int i = 0; i < Peq.length; ++i) {
-            Peq[i] = new BitVector(M);
-        }
-        for (int m = 0; m < M; ++m) {
-            Peq[query.getACGT(m).code].set(m);
-        }
-
-        for (int j = 0; j < N; ++j) {
-            BitVector Eq = Peq[ref.getACGT(j).code];
-
-            // Xv = Eq | Mv
-            BitVector Xv = Eq.copy().or(Mv);
-            // Xh = (((Eq & Pv) + Pv) ^ Pv) | Eq
-            BitVector Xh = Eq.copy().and(Pv).add(Pv).xor(Pv).or(Eq);
-
-            // Ph = Mv | ~(Xv | Ph)
-            // Mh = Pv & Xh
-            BitVector Ph = Mv.copy().or(Xv.copy().or(Pv).not());
-            BitVector Mh = Pv.copy().and(Xh);
-
-            Ph.lshift(1);
-            Mh.lshift(1);
-
-            // 
-
-            // Pv = Mh | ~(Xv | Ph)
-            // Mv = Ph & Xv
-            Pv.set(Mh.copy().or(Xv.copy().or(Ph).not()));
-            Mv.set(Ph.copy().and(Xv));
-
-            // 
-            if (score <= k) {
-                // match at j 
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("block:%d, hin:%2d, hout:%2d %1s hp:%s, hn:%s, vp:%s, vn:%s, d0:%s", r, hin, hout,
+                        hout <= k ? "*" : "", toBinary(hp, m), toBinary(hn, m), toBinary(vp, m), toBinary(vn, m),
+                        toBinary(d0, m));
             }
+
+            return hout;
         }
 
     }
+
 }
