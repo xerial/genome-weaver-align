@@ -213,6 +213,17 @@ public class BitVector
         return this;
     }
 
+    public boolean isZero() {
+        for (int i = 0; i < block.length - 1; ++i) {
+            if (block[i] != 0L)
+                return false;
+        }
+        if ((block[block.length - 1] & (~0L << (B - size % B))) != 0L)
+            return false;
+
+        return true;
+    }
+
     /**
      * 
      * Reference: Hacker's delight. Chapter 2

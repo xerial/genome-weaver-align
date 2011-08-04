@@ -44,7 +44,6 @@ public class SuffixFilter
 
     private byte[]                chunkStart;
     private byte[]                chunkLen;
-    private int                   rewind;
 
     // automaton
     private BitVector[]           patternMask;
@@ -144,7 +143,7 @@ public class SuffixFilter
                 out.handle(new Candidate(si, k, chunkStart[row + 1]));
             }
             else {
-                rewind = chunkStart[row] + k;
+                //rewind = chunkStart[row] + k;
                 simulateNFA(row, out);
             }
         }
@@ -219,25 +218,48 @@ public class SuffixFilter
     private DFSState activateNext(int pos, ACGT ch) {
 
         final int height = automaton.length;
-        BitVector[] nextState = new BitVector[height];
 
+        // Preserve the current state
+        BitVector[] prevState = new BitVector[height];
         for (int i = 0; i < height; ++i) {
-            // R'_0 = (R_0 << 1) | P[ch]
-            nextState[i] = new BitVector(automaton[i])._rshift(1)._and(patternMask[ch.code]);
+            prevState[i] = new BitVector(automaton[i]);
         }
-        if (nextState[0].get(m)) {
+
+        int numMismatches = 0;
+
+        // R'_0 = (R_0 << 1) | P[ch]
+        automaton[0] = prevState[0].rshift(1)._and(patternMask[ch.code]);
+        if (automaton[0].get(m)) {
             // Found a full match
             return new DFSState(State.Finished, 0);
         }
+        if (automaton[0].isZero())
+            ++numMismatches;
 
         for (int i = 1; i < height; ++i) {
             // R'_{i+1} = ((R_{i+1} << 1) &  P[ch]) | R_i | (R_i << 1) | (R'_i << 1)   
-            nextState[i]._or(automaton[i - 1])._or(automaton[i - 1].rshift(1))._or(nextState[i].rshift(1))
-                    .and(stairMask[i]);
+            automaton[i] = prevState[i].rshift(1)._and(patternMask[ch.code]);
+            automaton[i]._or(prevState[i - 1]);
+            automaton[i]._or(prevState[i - 1].rshift(1));
+            automaton[i]._or(automaton[i].rshift(1));
+            // Apply a suffix filter (staircase mask)
+            automaton[i]._and(stairMask[i]);
+
+            // Found a match
+            if (automaton[i].get(m))
+                return new DFSState(State.Finished, i);
+
+            if (numMismatches == i && automaton[i].isZero())
+                ++numMismatches;
 
         }
+        if (numMismatches >= height) {
+            return new DFSState(State.NoMatch, -1);
+        }
+        else {
+            return new DFSState(State.Match, -1);
+        }
 
-        return null;
     }
 
     private static class Cursor implements Comparable<Cursor>
