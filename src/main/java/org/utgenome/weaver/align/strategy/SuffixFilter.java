@@ -24,8 +24,6 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
-import java.util.Arrays;
-
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.BitVector;
@@ -48,7 +46,7 @@ public class SuffixFilter
 
     // automaton
     private BitVector[]           patternMask;
-    private BitVector[]           automata;
+    private BitVector[]           automaton;
     private BitVector[]           stairMask;
 
     public static class Candidate
@@ -73,7 +71,7 @@ public class SuffixFilter
         this.m = (int) query.textSize();
         int lastChunkSize = (m - k >= 6) ? m * 2 / (k + 2) : m - k;
 
-        // prefix length of each chunk
+        // prefix length of each chunk of the filter
         chunkStart = new byte[k + 2];
         byte rest = (byte) (m - lastChunkSize);
         if (k == 0)
@@ -94,6 +92,10 @@ public class SuffixFilter
         for (int i = 0; i < patternMask.length; ++i)
             patternMask[i] = new BitVector(m);
 
+        // Set bit flag where the character appears.
+        for (BitVector each : patternMask) {
+            each.clear();
+        }
         for (int i = 0; i < m; ++i) {
             ACGT ch = query.getACGT(i);
             patternMask[ch.code].set(i);
@@ -112,63 +114,70 @@ public class SuffixFilter
         return si;
     }
 
+    /**
+     * <pre>
+     *   *---*---*---*
+     *   | \ | \ | \ |
+     *   *---*---*---*
+     *   | \ | \ | \ |
+     *   *---*---*---*
+     * 
+     * </pre>
+     * 
+     * 
+     * 
+     * @param strand
+     * @param out
+     * @throws Exception
+     */
     public void match(ObjectHandler<Candidate> out) throws Exception {
 
-        for (int i = 0; i < k + 1; ++i) {
-            int allowedDiff = k - i;
-            if (allowedDiff == 0) {
-                // Find strong match
-                SuffixInterval si = exactMatch(chunkStart[i], chunkStart[i + 1]);
+        // row-wise simulation of NFA 
+        for (int row = 0; row <= k; ++row) {
+            if (row == k) {
+                // No more difference is allowed, so try to find a strong match
+                SuffixInterval si = exactMatch(chunkStart[row], chunkStart[row + 1]);
                 if (!si.isValidRange())
                     continue;
                 out.handle(new Candidate(si, k, 2 * k + m));
             }
             else {
-                rewind = chunkStart[i] + k;
-                dfs0(allowedDiff, out);
+                rewind = chunkStart[row] + k;
+                simulateNFA0(row, out);
             }
         }
 
     }
 
-    private void dfs0(int stairLevel, ObjectHandler<Candidate> out) throws Exception {
-        int chunkPos = k - stairLevel;
-        SuffixInterval si = exactMatch(chunkStart[chunkPos], chunkStart[chunkPos + 1]);
+    private void simulateNFA0(int row, ObjectHandler<Candidate> out) throws Exception {
+
+        // Starts with the chunk position  
+        final int startChunk = row;
+        // First chunk must have an exact match  
+        SuffixInterval si = exactMatch(chunkStart[startChunk], chunkStart[startChunk + 1]);
         if (si.isEmpty()) {
             return;
         }
 
-        int[] allowedDiff = new int[m + 1];
-        Arrays.fill(allowedDiff, 0);
-        int nextChunk = chunkPos + 1;
-        int e = 0;
-        for (int i = chunkStart[chunkPos]; i <= m; ++i) {
-            allowedDiff[i] = e;
-            if (i == chunkStart[nextChunk]) {
-                ++e;
-                ++nextChunk;
-            }
-        }
+        // Init the automaton
+        int height = k - row + 1; // when k=2 and row=0, the automaton height is 3
+        automaton = new BitVector[height];
+        for (int i = 0; i < automaton.length; ++i)
+            automaton[i] = new BitVector(m);
 
-        int height = stairLevel + 1;
-        int maxPrefixLen = m - chunkStart[chunkPos + 1] + stairLevel;
-        automata = new BitVector[(maxPrefixLen + 1) * height];
-        for (int i = 0; i < automata.length; ++i)
-            automata[i] = new BitVector(m);
-
+        // Prepare staircase filter
         stairMask = new BitVector[height];
-        stairMask[0] = new BitVector(m).not();
-        stairMask[0].rshift(chunkStart[chunkPos + 1]);
-        for (int i = 1; i < stairMask.length; ++i) {
-            stairMask[i] = new BitVector(stairMask[i - 1]).rshift(chunkLen[chunkPos + i - 1]);
+        for (int i = 0; i < stairMask.length; ++i) {
+            stairMask[i] = new BitVector(m).not().rshift(chunkStart[startChunk + i]);
         }
 
-        byte q = chunkStart[chunkPos + 1];
-        automata[0].set(q);
+        // Init the diagonal of the automaton
+        byte q = chunkStart[startChunk + 1];
+        automaton[0].set(q);
         for (int i = 1; i < height; ++i) {
             if (stairMask[i].get(q + 1)) {
                 q++;
-                automata[i].set(q);
+                automaton[i].set(q);
             }
             else
                 break;
