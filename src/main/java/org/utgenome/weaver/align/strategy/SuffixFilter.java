@@ -24,13 +24,14 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
+import java.util.PriorityQueue;
+
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.BitVector;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
-import org.xerial.util.ArrayDeque;
 import org.xerial.util.ObjectHandler;
 
 public class SuffixFilter
@@ -140,7 +141,7 @@ public class SuffixFilter
                 SuffixInterval si = exactMatch(chunkStart[row], chunkStart[row + 1]);
                 if (!si.isValidRange())
                     continue;
-                out.handle(new Candidate(si, k, 2 * k + m));
+                out.handle(new Candidate(si, k, chunkStart[row + 1]));
             }
             else {
                 rewind = chunkStart[row] + k;
@@ -169,7 +170,7 @@ public class SuffixFilter
         // Prepare staircase filter
         stairMask = new BitVector[height];
         for (int i = 0; i < stairMask.length; ++i) {
-            stairMask[i] = new BitVector(m).not().rshift(chunkStart[startChunk + i]);
+            stairMask[i] = new BitVector(m)._not()._rshift(chunkStart[startChunk + i]);
         }
 
         // Init the diagonal of the automaton
@@ -184,18 +185,17 @@ public class SuffixFilter
                 break;
         }
 
-        ArrayDeque<Cursor> searchQueue = new ArrayDeque<Cursor>();
+        // Continue the search 
+        PriorityQueue<Cursor> searchQueue = new PriorityQueue<Cursor>();
         searchQueue.add(new Cursor(chunkStart[startChunk + 1], si));
-
         while (!searchQueue.isEmpty()) {
-            // Search in FIFO order
-            Cursor current = searchQueue.pollFirst();
+            Cursor current = searchQueue.poll();
             for (ACGT ch : ACGT.exceptN) {
                 SuffixInterval nextSi = fmIndex.forwardSearch(strand, ch, current.si);
                 if (nextSi.isEmpty())
                     continue;
 
-                DFSState state = activate(current.pos, ch);
+                DFSState state = activateNext(current.pos, ch);
                 switch (state.type) {
                 case Finished:
                     out.handle(new Candidate(nextSi, state.rc, current.pos + 1));
@@ -212,17 +212,35 @@ public class SuffixFilter
                     }
                     break;
                 }
-
             }
         }
     }
 
-    private DFSState activate(int pos, ACGT ch) {
+    private DFSState activateNext(int pos, ACGT ch) {
+
+        final int height = automaton.length;
+        BitVector[] nextState = new BitVector[height];
+
+        for (int i = 0; i < height; ++i) {
+            // R'_0 = (R_0 << 1) | P[ch]
+            nextState[i] = new BitVector(automaton[i])._rshift(1)._and(patternMask[ch.code]);
+        }
+        if (nextState[0].get(m)) {
+            // Found a full match
+            return new DFSState(State.Finished, 0);
+        }
+
+        for (int i = 1; i < height; ++i) {
+            // R'_{i+1} = ((R_{i+1} << 1) &  P[ch]) | R_i | (R_i << 1) | (R'_i << 1)   
+            nextState[i]._or(automaton[i - 1])._or(automaton[i - 1].rshift(1))._or(nextState[i].rshift(1))
+                    .and(stairMask[i]);
+
+        }
 
         return null;
     }
 
-    private static class Cursor
+    private static class Cursor implements Comparable<Cursor>
     {
         public final int            pos;
         public final SuffixInterval si;
@@ -230,6 +248,22 @@ public class SuffixFilter
         public Cursor(int pos, SuffixInterval si) {
             this.pos = pos;
             this.si = si;
+        }
+
+        @Override
+        public int compareTo(Cursor o) {
+            int diff = this.pos - o.pos;
+            if (diff != 0)
+                return diff;
+
+            long rDiff = this.si.range() - o.si.range();
+            if (rDiff < 0L)
+                return -1;
+            else if (rDiff == 0L)
+                return 0;
+            else
+                return 1;
+
         }
     }
 
