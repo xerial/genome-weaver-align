@@ -27,6 +27,7 @@ package org.utgenome.weaver.align.strategy;
 import org.junit.Test;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.FMIndexOnGenome;
+import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.strategy.SuffixFilter.Candidate;
 import org.xerial.lens.SilkLens;
@@ -36,18 +37,21 @@ import org.xerial.util.log.Logger;
 public class SuffixFilterTest
 {
     private static Logger _logger = Logger.getLogger(SuffixFilterTest.class);
-    
+
     @Test
     public void constructor() throws Exception {
-        FMIndexOnGenome fmIndex = FMIndexOnGenome.buildFromSequence("seq", "TAGCCTATAGAGCGAAAGGAGATATATAGCCCGAGTAT");
+        final FMIndexOnGenome fmIndex = FMIndexOnGenome.buildFromSequence("seq",
+                "TAGCCTATAGAGCGAAAGGAGATATATAGCCCGAGTAT");
 
-        ACGTSequence q = new ACGTSequence("TATAGAGCGAAAGGAGATATATAGCCC");
+        final ACGTSequence q = new ACGTSequence("GCCTATA");
         SuffixFilter f = new SuffixFilter(2, fmIndex, q, Strand.FORWARD);
         f.match(new ObjectHandlerBase<SuffixFilter.Candidate>() {
 
             @Override
             public void handle(Candidate input) throws Exception {
-                _logger.debug(SilkLens.toSilk(input));
+                _logger.debug(SilkLens.toSilk("match", input));
+                PosOnGenome gc = fmIndex.toGenomeCoordinate(input.si.lowerBound, input.offset, Strand.FORWARD);
+                _logger.debug(SilkLens.toSilk("loc", gc));
             }
 
         });

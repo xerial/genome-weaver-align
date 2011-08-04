@@ -138,7 +138,7 @@ public class SuffixFilter
             if (row == k) {
                 // No more difference is allowed, so try to find a strong match
                 SuffixInterval si = exactMatch(chunkStart[row], chunkStart[row + 1]);
-                if (!si.isValidRange())
+                if (si.isEmpty())
                     continue;
                 out.handle(new Candidate(si, k, chunkStart[row + 1]));
             }
@@ -197,14 +197,14 @@ public class SuffixFilter
                 DFSState state = activateNext(current.pos, ch);
                 switch (state.type) {
                 case Finished:
-                    out.handle(new Candidate(nextSi, state.rc, current.pos + 1));
+                    out.handle(new Candidate(nextSi, row + state.matchRow, current.pos + 1));
                     break;
                 case NoMatch:
                     break;
                 case Match:
                     if (nextSi.range() == 1 && (m - current.pos) < 8) {
                         // unique hit
-                        out.handle(new Candidate(nextSi, 0, current.pos + 1));
+                        out.handle(new Candidate(nextSi, row + state.matchRow, current.pos + 1));
                     }
                     else {
                         searchQueue.add(new Cursor(current.pos + 1, nextSi));
@@ -228,7 +228,7 @@ public class SuffixFilter
         int numMismatches = 0;
 
         // R'_0 = (R_0 << 1) | P[ch]
-        automaton[0] = prevState[0].rshift(1)._and(patternMask[ch.code]);
+        automaton[0] = prevState[0].lshift(1)._and(patternMask[ch.code]);
         if (automaton[0].get(m)) {
             // Found a full match
             return new DFSState(State.Finished, 0);
@@ -238,10 +238,10 @@ public class SuffixFilter
 
         for (int i = 1; i < height; ++i) {
             // R'_{i+1} = ((R_{i+1} << 1) &  P[ch]) | R_i | (R_i << 1) | (R'_i << 1)   
-            automaton[i] = prevState[i].rshift(1)._and(patternMask[ch.code]);
+            automaton[i] = prevState[i].lshift(1)._and(patternMask[ch.code]);
             automaton[i]._or(prevState[i - 1]);
-            automaton[i]._or(prevState[i - 1].rshift(1));
-            automaton[i]._or(automaton[i].rshift(1));
+            automaton[i]._or(prevState[i - 1].lshift(1));
+            automaton[i]._or(automaton[i].lshift(1));
             // Apply a suffix filter (staircase mask)
             automaton[i]._and(stairMask[i]);
 
@@ -296,11 +296,11 @@ public class SuffixFilter
     private static class DFSState
     {
         public final State type;
-        public final int   rc;
+        public final int   matchRow;
 
-        public DFSState(State state, int rc) {
+        public DFSState(State state, int matchRow) {
             this.type = state;
-            this.rc = rc;
+            this.matchRow = matchRow;
         }
     }
 
