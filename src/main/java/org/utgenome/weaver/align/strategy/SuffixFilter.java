@@ -30,6 +30,7 @@ import org.utgenome.weaver.align.BitVector;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
+import org.xerial.util.ArrayDeque;
 import org.xerial.util.ObjectHandler;
 
 public class SuffixFilter
@@ -143,13 +144,13 @@ public class SuffixFilter
             }
             else {
                 rewind = chunkStart[row] + k;
-                simulateNFA0(row, out);
+                simulateNFA(row, out);
             }
         }
 
     }
 
-    private void simulateNFA0(int row, ObjectHandler<Candidate> out) throws Exception {
+    private void simulateNFA(int row, ObjectHandler<Candidate> out) throws Exception {
 
         // Starts with the chunk position  
         final int startChunk = row;
@@ -183,35 +184,52 @@ public class SuffixFilter
                 break;
         }
 
-        dfsSuffix(0, si, out);
+        ArrayDeque<Cursor> searchQueue = new ArrayDeque<Cursor>();
+        searchQueue.add(new Cursor(chunkStart[startChunk + 1], si));
 
+        while (!searchQueue.isEmpty()) {
+            // Search in FIFO order
+            Cursor current = searchQueue.pollFirst();
+            for (ACGT ch : ACGT.exceptN) {
+                SuffixInterval nextSi = fmIndex.forwardSearch(strand, ch, current.si);
+                if (nextSi.isEmpty())
+                    continue;
+
+                DFSState state = activate(current.pos, ch);
+                switch (state.type) {
+                case Finished:
+                    out.handle(new Candidate(nextSi, state.rc, current.pos + 1));
+                    break;
+                case NoMatch:
+                    break;
+                case Match:
+                    if (nextSi.range() == 1 && (m - current.pos) < 8) {
+                        // unique hit
+                        out.handle(new Candidate(nextSi, 0, current.pos + 1));
+                    }
+                    else {
+                        searchQueue.add(new Cursor(current.pos + 1, nextSi));
+                    }
+                    break;
+                }
+
+            }
+        }
     }
 
-    private void dfsSuffix(int step, SuffixInterval si, ObjectHandler<Candidate> out) throws Exception {
-        for (ACGT ch : ACGT.exceptN) {
-            SuffixInterval nextSi = fmIndex.forwardSearch(strand, ch, si);
-            if (nextSi.isEmpty())
-                continue;
+    private DFSState activate(int pos, ACGT ch) {
 
-            ++rewind;
-            DFSState state = activate(step, ch);
-            switch (state.type) {
-            case Finished:
-                out.handle(new Candidate(nextSi, state.rc, rewind));
-                break;
-            case NoMatch:
-                break;
-            case Match:
-                if (nextSi.range() == 1 && (m - step) < 8) {
-                    // unique hit
-                    out.handle(new Candidate(nextSi, 0, rewind));
-                }
-                else {
-                    dfsSuffix(step + 1, nextSi, out);
-                }
-                break;
-            }
-            --rewind;
+        return null;
+    }
+
+    private static class Cursor
+    {
+        public final int            pos;
+        public final SuffixInterval si;
+
+        public Cursor(int pos, SuffixInterval si) {
+            this.pos = pos;
+            this.si = si;
         }
     }
 
@@ -228,11 +246,6 @@ public class SuffixFilter
             this.type = state;
             this.rc = rc;
         }
-    }
-
-    private DFSState activate(int step, ACGT ch) {
-
-        return null;
     }
 
 }
