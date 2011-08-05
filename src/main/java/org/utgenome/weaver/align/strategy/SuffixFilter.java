@@ -47,7 +47,7 @@ public class SuffixFilter
 
     // automaton
     private BitVector[]           patternMask;
-    private BitVector[]           automaton;
+    private BitVector[][]         automaton;
     private BitVector[]           stairMask;
 
     public static class Candidate
@@ -161,10 +161,12 @@ public class SuffixFilter
         }
 
         // Init the automaton
+        int maxStep = m - chunkStart[startChunk + 1] + 1;
         int height = k - row + 1; // when k=2 and row=0, the automaton height is 3
-        automaton = new BitVector[height];
-        for (int i = 0; i < automaton.length; ++i)
-            automaton[i] = new BitVector(m);
+        automaton = new BitVector[maxStep][height];
+        for (int step = 0; step < maxStep; ++step)
+            for (int i = 0; i < height; ++i)
+                automaton[step][i] = new BitVector(m);
 
         // Prepare staircase filter
         stairMask = new BitVector[height];
@@ -174,17 +176,18 @@ public class SuffixFilter
 
         // Init the diagonal of the automaton
         byte q = chunkStart[startChunk + 1];
-        automaton[0].set(q);
+        automaton[0][0].set(q);
         for (int i = 1; i < height; ++i) {
             if (stairMask[i].get(q + 1)) {
                 q++;
-                automaton[i].set(q);
+                automaton[0][i].set(q);
             }
             else
                 break;
         }
 
         // Continue the search 
+        final int stepOffset = chunkStart[startChunk + 1];
         PriorityQueue<Cursor> searchQueue = new PriorityQueue<Cursor>();
         searchQueue.add(new Cursor(chunkStart[startChunk + 1], si));
         while (!searchQueue.isEmpty()) {
@@ -194,7 +197,7 @@ public class SuffixFilter
                 if (nextSi.isEmpty())
                     continue;
 
-                DFSState state = activateNext(current.pos, ch);
+                DFSState state = activateNext(current.pos - stepOffset, ch);
                 switch (state.type) {
                 case Finished:
                     out.handle(new Candidate(nextSi, row + state.matchRow, current.pos + 1));
@@ -215,45 +218,46 @@ public class SuffixFilter
         }
     }
 
-    private DFSState activateNext(int pos, ACGT ch) {
+    private DFSState activateNext(int step, ACGT ch) {
 
-        final int height = automaton.length;
+        final int height = automaton[0].length;
 
-        // Preserve the current state
-        BitVector[] prevState = new BitVector[height];
-        for (int i = 0; i < height; ++i) {
-            prevState[i] = new BitVector(automaton[i]);
-        }
+        final BitVector[] prev = automaton[step];
+        final BitVector[] next = automaton[step + 1];
 
-        int numMismatches = 0;
+        int nm = 0;
 
         // R'_0 = (R_0 << 1) | P[ch]
-        automaton[0] = prevState[0].lshift(1)._and(patternMask[ch.code]);
-        if (automaton[0].get(m)) {
+        BitVector next0 = prev[nm].rshift(1)._and(patternMask[ch.code]);
+        if (next0.get(m)) {
             // Found a full match
             return new DFSState(State.Finished, 0);
         }
-        if (automaton[0].isZero())
-            ++numMismatches;
+        if (next0.isZero())
+            ++nm;
+        next[nm]._or(next0);
 
         for (int i = 1; i < height; ++i) {
+            BitVector next_i;
             // R'_{i+1} = ((R_{i+1} << 1) &  P[ch]) | R_i | (R_i << 1) | (R'_i << 1)   
-            automaton[i] = prevState[i].lshift(1)._and(patternMask[ch.code]);
-            automaton[i]._or(prevState[i - 1]);
-            automaton[i]._or(prevState[i - 1].lshift(1));
-            automaton[i]._or(automaton[i].lshift(1));
+            next_i = prev[i].rshift(1)._and(patternMask[ch.code]);
+            next_i._or(prev[i - 1]);
+            next_i._or(prev[i - 1].rshift(1));
+            next_i._or(next[i - 1].rshift(1));
             // Apply a suffix filter (staircase mask)
-            automaton[i]._and(stairMask[i]);
+            next_i._and(stairMask[i]);
 
             // Found a match
-            if (automaton[i].get(m))
+            if (next_i.get(m))
                 return new DFSState(State.Finished, i);
 
-            if (numMismatches == i && automaton[i].isZero())
-                ++numMismatches;
+            next[i]._or(next_i);
 
+            if (nm == i && next_i.isZero())
+                ++nm;
         }
-        if (numMismatches >= height) {
+
+        if (nm >= height) {
             return new DFSState(State.NoMatch, -1);
         }
         else {
@@ -286,6 +290,11 @@ public class SuffixFilter
             else
                 return 1;
 
+        }
+
+        @Override
+        public String toString() {
+            return String.format("pos:%d, si:%s", pos, si);
         }
     }
 

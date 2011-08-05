@@ -44,7 +44,7 @@ public class SuffixFilterTest
                 "TAGCCTATAGAGCGAAAGGAGATATATAGCCCGAGTAT");
 
         final ACGTSequence q = new ACGTSequence("GCCTATA");
-        SuffixFilter f = new SuffixFilter(2, fmIndex, q, Strand.FORWARD);
+        SuffixFilter f = new SuffixFilter(1, fmIndex, q, Strand.FORWARD);
         f.match(new ObjectHandlerBase<SuffixFilter.Candidate>() {
 
             @Override
