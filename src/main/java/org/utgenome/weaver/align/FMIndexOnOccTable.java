@@ -67,7 +67,7 @@ public class FMIndexOnOccTable implements FMIndex
 
     @Override
     public long count(ACGT ch, long start, long end) {
-        return seq.fastCount(ch, start, end);
+    	return occ.getOcc(ch, end) - occ.getOcc(ch, start);
     }
-
+    
 }
