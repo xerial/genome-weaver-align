@@ -135,17 +135,8 @@ public class SuffixFilter
 
         // row-wise simulation of NFA 
         for (int row = 0; row <= k; ++row) {
-            if (row == k) {
-                // No more difference is allowed, so try to find a strong match
-                SuffixInterval si = exactMatch(chunkStart[row], chunkStart[row + 1]);
-                if (si.isEmpty())
-                    continue;
-                out.handle(new Candidate(si, k, chunkStart[row + 1]));
-            }
-            else {
-                //rewind = chunkStart[row] + k;
-                simulateNFA(row, out);
-            }
+            //rewind = chunkStart[row] + k;
+            simulateNFA(row, out);
         }
 
     }
@@ -161,7 +152,12 @@ public class SuffixFilter
         }
 
         // Init the automaton
-        int maxStep = m - chunkStart[startChunk + 1] + 1;
+        int maxStep = m - chunkStart[startChunk + 1];
+        if (maxStep <= 0) {
+            out.handle(new Candidate(si, row, chunkStart[startChunk + 1]));
+            return;
+        }
+
         int height = k - row + 1; // when k=2 and row=0, the automaton height is 3
         automaton = new BitVector[maxStep][height];
         for (int step = 0; step < maxStep; ++step)
@@ -192,8 +188,6 @@ public class SuffixFilter
         searchQueue.add(new Cursor(chunkStart[startChunk + 1], si));
         while (!searchQueue.isEmpty()) {
             Cursor current = searchQueue.poll();
-            if (current.pos >= m)
-                continue;
             for (ACGT ch : ACGT.exceptN) {
                 SuffixInterval nextSi = fmIndex.forwardSearch(strand, ch, current.si);
                 if (nextSi.isEmpty())
@@ -207,7 +201,8 @@ public class SuffixFilter
                 case NoMatch:
                     break;
                 case Match:
-                    searchQueue.add(new Cursor(current.pos + 1, nextSi));
+                    if (current.pos < m - 1)
+                        searchQueue.add(new Cursor(current.pos + 1, nextSi));
                     break;
                 }
             }
