@@ -58,4 +58,25 @@ public class SuffixFilterTest
 
         });
     }
+
+    @Test
+    public void align() throws Exception {
+        final FMIndexOnGenome fmIndex = FMIndexOnGenome.buildFromSequence("seq", "ATATAGCCCGAGTAT");
+
+        final ACGTSequence q = new ACGTSequence("TATAGCCC");
+        SuffixFilter f = new SuffixFilter(2, fmIndex, q, Strand.FORWARD);
+        f.match(new Reporter() {
+            @Override
+            public void emit(Object result) throws UTGBException {
+                Candidate input = (Candidate) result;
+                _logger.debug(SilkLens.toSilk("match", input));
+                PosOnGenome gc = fmIndex.toGenomeCoordinate(input.si.lowerBound, input.offset, Strand.FORWARD);
+                if (gc != null)
+                    _logger.debug(SilkLens.toSilk("loc", gc));
+            }
+
+        });
+
+    }
+
 }

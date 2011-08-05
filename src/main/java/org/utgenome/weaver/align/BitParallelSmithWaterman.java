@@ -49,26 +49,24 @@ public class BitParallelSmithWaterman
     private static Logger _logger = Logger.getLogger(BitParallelSmithWaterman.class);
 
     public static void align64(ACGTSequence ref, ACGTSequence query, int numAllowedDiff) {
-        new Align64(ref, query, numAllowedDiff).globalMatch();
+        new Align64(ref, query).globalMatch(numAllowedDiff);
     }
 
     public static void localAlign64(ACGTSequence ref, ACGTSequence query, int numAllowedDiff) {
-        new Align64(ref, query, numAllowedDiff).localMatch();
+        new Align64(ref, query).localMatch(numAllowedDiff);
     }
 
     public static class Align64
     {
         private final ACGTSequence ref;
         private final ACGTSequence query;
-        private final int          k;
         private final long[]       pm;
         private final int          m;
         private final int          n;
 
-        public Align64(ACGTSequence ref, ACGTSequence query, int k) {
+        public Align64(ACGTSequence ref, ACGTSequence query) {
             this.ref = ref;
             this.query = query;
-            this.k = k;
             this.m = (int) query.textSize();
             this.n = (int) ref.textSize();
             // Preprocessing
@@ -79,15 +77,15 @@ public class BitParallelSmithWaterman
             }
         }
 
-        public void globalMatch() {
-            align(m, ~0L, 0L);
+        public void globalMatch(int k) {
+            align(m, ~0L, 0L, k);
         }
 
-        public void localMatch() {
-            align(0, 0L, 0L);
+        public void localMatch(int k) {
+            align(0, 0L, 0L, k);
         }
 
-        protected void align(int score, long vp, long vn) {
+        protected void align(int score, long vp, long vn, int k) {
 
             if (_logger.isDebugEnabled()) {
                 for (ACGT ch : ACGT.exceptN) {
@@ -112,9 +110,7 @@ public class BitParallelSmithWaterman
                             toBinary(vn, m), toBinary(d0, m));
                 }
             }
-
         }
-
     }
 
     public static String toBinary(long v, int m) {
