@@ -61,13 +61,15 @@ public class FMIndexOnGenome
         K = ACGT.values().length;
 
         // Load sparse suffix arrays
-        BWAlign._logger.info("Loading sparse suffix arrays");
+        _logger.debug("Loading sparse suffix arrays");
         forwardSA = SparseSuffixArray.loadFrom(forwardDB.sparseSuffixArray());
         backwardSA = SparseSuffixArray.loadFrom(backwardDB.sparseSuffixArray());
 
+        _logger.debug("Loading BWT files");
         ACGTSequence seqF = ACGTSequence.loadFrom(forwardDB.bwt());
         ACGTSequence seqR = ACGTSequence.loadFrom(backwardDB.bwt());
 
+        _logger.debug("Constructing Occ Tables");
         forwardIndex = new FMIndexOnOccTable(seqF, windowSize);
         reverseIndex = new FMIndexOnOccTable(seqR, windowSize);
         _logger.info("done.");
@@ -153,7 +155,7 @@ public class FMIndexOnGenome
             pos -= querySize;
         }
         pos += 1;
-        if (pos != -1) {
+        if (pos >= 0) {
             PosOnGenome p = index.translate(pos, strand);
             return p;
         }

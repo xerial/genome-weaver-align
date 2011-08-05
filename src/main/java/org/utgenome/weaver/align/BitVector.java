@@ -129,6 +129,30 @@ public class BitVector
     }
 
     public BitVector lshift(int len) {
+        return new BitVector(this)._lshift(len);
+    }
+
+    public BitVector rshift(int len) {
+        return new BitVector(this)._rshift(len);
+    }
+
+    public BitVector or(BitVector other) {
+        return new BitVector(this)._or(other);
+    }
+
+    public BitVector and(BitVector other) {
+        return new BitVector(this)._and(other);
+    }
+
+    public BitVector not() {
+        return new BitVector(this)._not();
+    }
+
+    public BitVector xor(BitVector other) {
+        return new BitVector(this)._xor(other);
+    }
+
+    public BitVector _lshift(int len) {
         int blockOffset = len / B;
         long offset = len % B;
         long mask = ~((~0L) >>> offset);
@@ -143,21 +167,15 @@ public class BitVector
         return this;
     }
 
-    public static BitVector or(BitVector a, BitVector b) {
-        BitVector v = new BitVector(a);
-        v.or(b);
-        return v;
-    }
-
-    public BitVector or(BitVector other) {
-        int l = Math.min(this.block.length, other.block.length);
+    public BitVector _or(BitVector other) {
+        int l = Math.min(block.length, other.block.length);
         for (int i = 0; i < l; ++i) {
-            this.block[i] |= other.block[i];
+            block[i] |= other.block[i];
         }
         return this;
     }
 
-    public BitVector rshift(int len) {
+    public BitVector _rshift(int len) {
         int blockOffset = len / B;
         long offset = len % B;
         long mask = ~((~0L) << offset);
@@ -172,7 +190,7 @@ public class BitVector
         return this;
     }
 
-    public BitVector not() {
+    public BitVector _not() {
         for (int i = 0; i < block.length - 1; ++i) {
             block[i] = ~block[i];
         }
@@ -181,18 +199,29 @@ public class BitVector
         return this;
     }
 
-    public BitVector and(BitVector other) {
+    public BitVector _and(BitVector other) {
         for (int i = 0; i < block.length; ++i) {
             block[i] &= other.block[i];
         }
         return this;
     }
 
-    public BitVector xor(BitVector other) {
+    public BitVector _xor(BitVector other) {
         for (int i = 0; i < block.length; ++i) {
             block[i] ^= other.block[i];
         }
         return this;
+    }
+
+    public boolean isZero() {
+        for (int i = 0; i < block.length - 1; ++i) {
+            if (block[i] != 0L)
+                return false;
+        }
+        if ((block[block.length - 1] & (~0L << (B - size % B))) != 0L)
+            return false;
+
+        return true;
     }
 
     /**

@@ -26,5 +26,5 @@ package org.utgenome.weaver.parallel;
 
 public interface Reporter
 {
-    public void emit(Object result);
+    public void emit(Object result) throws Exception;
 }

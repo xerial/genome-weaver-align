@@ -49,46 +49,73 @@ public class BitParallelSmithWaterman
     private static Logger _logger = Logger.getLogger(BitParallelSmithWaterman.class);
 
     public static void align64(ACGTSequence ref, ACGTSequence query, int numAllowedDiff) {
-        // Preprocessing
-        long[] pm = new long[ACGT.values().length];
-        int m = Math.min(64, (int) query.textSize());
-        for (int i = 0; i < m; ++i) {
-            pm[query.getACGT(i).code] |= 1L << i;
+        new Align64(ref, query).globalMatch(numAllowedDiff);
+    }
 
-        }
-        long vp = ~0L;
-        long vn = 0L;
-        int diff = m;
+    public static void localAlign64(ACGTSequence ref, ACGTSequence query, int numAllowedDiff) {
+        new Align64(ref, query).localMatch(numAllowedDiff);
+    }
 
-        if (_logger.isDebugEnabled()) {
-            for (ACGT ch : ACGT.exceptN) {
-                _logger.debug("peq[%s]:%s", ch, toBinary(pm[ch.code], m));
+    public static class Align64
+    {
+        private final ACGTSequence ref;
+        private final ACGTSequence query;
+        private final long[]       pm;
+        private final int          m;
+        private final int          n;
+
+        public Align64(ACGTSequence ref, ACGTSequence query) {
+            this.ref = ref;
+            this.query = query;
+            this.m = (int) query.textSize();
+            this.n = (int) ref.textSize();
+            // Preprocessing
+            pm = new long[ACGT.values().length];
+            int m = Math.min(64, (int) query.textSize());
+            for (int i = 0; i < m; ++i) {
+                pm[query.getACGT(i).code] |= 1L << i;
             }
         }
-        // Searching
-        for (int j = 0; j < ref.textSize(); ++j) {
-            long x = pm[ref.getACGT(j).code];
-            long d0 = ((vp + (x & vp)) ^ vp) | x | vn;
-            long hp = (vn | ~(vp | d0));
-            long hn = vp & d0;
-            x = (hp << 1);
-            vn = x & d0;
-            vp = (hn << 1) | ~(x | d0);
-            // diff represents the last row (C[m, j]) of the DP matrix
-            diff += (int) ((hp >>> m) & 1L);
-            diff -= (int) ((hn >>> m) & 1L);
+
+        public void globalMatch(int k) {
+            align(m, ~0L, 0L, k);
+        }
+
+        public void localMatch(int k) {
+            align(0, 0L, 0L, k);
+        }
+
+        protected void align(int score, long vp, long vn, int k) {
+
             if (_logger.isDebugEnabled()) {
-                _logger.debug("[%s] j:%2d, diff:%2d %1s hp:%s, hn:%s, vp:%s, vn:%s, d0:%s", ref.getACGT(j), j, diff,
-                        diff <= numAllowedDiff ? "*" : "", toBinary(hp, m), toBinary(hn, m), toBinary(vp, m),
-                        toBinary(vn, m), toBinary(d0, m));
+                for (ACGT ch : ACGT.exceptN) {
+                    _logger.debug("peq[%s]:%s", ch, toBinary(pm[ch.code], m));
+                }
             }
 
+            for (int j = 0; j < n; ++j) {
+                long x = pm[ref.getACGT(j).code];
+                long d0 = ((vp + (x & vp)) ^ vp) | x | vn;
+                long hp = (vn | ~(vp | d0));
+                long hn = vp & d0;
+                x = (hp << 1);
+                vn = x & d0;
+                vp = (hn << 1) | ~(x | d0);
+                // diff represents the last row (C[m, j]) of the DP matrix
+                score += (int) ((hp >>> (m - 1)) & 1L);
+                score -= (int) ((hn >>> (m - 1)) & 1L);
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("[%s] j:%2d, score:%2d %1s hp:%s, hn:%s, vp:%s, vn:%s, d0:%s", ref.getACGT(j), j,
+                            score, score <= k ? "*" : "", toBinary(hp, m), toBinary(hn, m), toBinary(vp, m),
+                            toBinary(vn, m), toBinary(d0, m));
+                }
+            }
         }
     }
 
     public static String toBinary(long v, int m) {
         StringBuilder s = new StringBuilder();
-        for (int i = 0; i <= m; ++i) {
+        for (int i = 0; i < m; ++i) {
             s.append((v & (1L << i)) > 0 ? "1" : "0");
         }
         return s.toString();

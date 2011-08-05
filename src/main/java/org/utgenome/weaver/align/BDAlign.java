@@ -63,7 +63,7 @@ public class BDAlign extends GenomeWeaverCommand
     @Option(symbol = "q", description = "query sequence")
     private String query;
 
-    @Option(symbol = "n", description = "maximum edit distances")
+    @Option(symbol = "k", description = "maximum edit distances")
     private int    maximumEditDistances = 2;
 
     @Override
