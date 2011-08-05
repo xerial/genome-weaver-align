@@ -32,10 +32,13 @@ import org.utgenome.weaver.align.BitVector;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
-import org.xerial.util.ObjectHandler;
+import org.utgenome.weaver.parallel.Reporter;
+import org.xerial.util.log.Logger;
 
 public class SuffixFilter
 {
+    private static Logger         _logger = Logger.getLogger(SuffixFilter.class);
+
     private final int             k;
     private final int             m;
     private final FMIndexOnGenome fmIndex;
@@ -131,17 +134,18 @@ public class SuffixFilter
      * @param out
      * @throws Exception
      */
-    public void match(ObjectHandler<Candidate> out) throws Exception {
+    public void match(Reporter out) throws Exception {
 
-        // row-wise simulation of NFA 
-        for (int row = 0; row <= k; ++row) {
-            //rewind = chunkStart[row] + k;
-            simulateNFA(row, out);
-        }
+        //        // row-wise simulation of NFA 
+        //        for (int row = 0; row <= k; ++row) {
+        //            //rewind = chunkStart[row] + k;
+        //            simulateNFA(row, out);
+        //        }
+        simulateNFA(0, out);
 
     }
 
-    private void simulateNFA(int row, ObjectHandler<Candidate> out) throws Exception {
+    private void simulateNFA(int row, Reporter out) throws Exception {
 
         // Starts with the chunk position  
         final int startChunk = row;
@@ -152,9 +156,9 @@ public class SuffixFilter
         }
 
         // Init the automaton
-        int maxStep = m - chunkStart[startChunk + 1];
+        int maxStep = m - chunkStart[startChunk + 1] + 1;
         if (maxStep <= 0) {
-            out.handle(new Candidate(si, row, chunkStart[startChunk + 1]));
+            out.emit(new Candidate(si, row, chunkStart[startChunk + 1]));
             return;
         }
 
@@ -186,27 +190,35 @@ public class SuffixFilter
         final int stepOffset = chunkStart[startChunk + 1];
         PriorityQueue<Cursor> searchQueue = new PriorityQueue<Cursor>();
         searchQueue.add(new Cursor(chunkStart[startChunk + 1], si));
+        int numFMindexSearch = 0;
         while (!searchQueue.isEmpty()) {
             Cursor current = searchQueue.poll();
             for (ACGT ch : ACGT.exceptN) {
                 SuffixInterval nextSi = fmIndex.forwardSearch(strand, ch, current.si);
+                numFMindexSearch++;
                 if (nextSi.isEmpty())
                     continue;
 
                 DFSState state = activateNext(current.pos - stepOffset, ch);
                 switch (state.type) {
                 case Finished:
-                    out.handle(new Candidate(nextSi, row + state.matchRow, current.pos + 1));
+                    out.emit(new Candidate(nextSi, row + state.matchRow, current.pos + 1));
                     break;
                 case NoMatch:
                     break;
                 case Match:
-                    if (current.pos < m - 1)
-                        searchQueue.add(new Cursor(current.pos + 1, nextSi));
+                    if (nextSi.range() == 1 && m - current.pos <= 4) {
+                        out.emit(new Candidate(nextSi, row + state.matchRow, current.pos + 1));
+                    }
+                    else {
+                        if (current.pos < m - 1)
+                            searchQueue.add(new Cursor(current.pos + 1, nextSi));
+                    }
                     break;
                 }
             }
         }
+        _logger.info("# FM index search: %,d", numFMindexSearch);
     }
 
     private DFSState activateNext(int step, ACGT ch) {
@@ -226,7 +238,7 @@ public class SuffixFilter
         }
         if (next0.isZero())
             ++nm;
-        next[nm]._or(next0);
+        next[nm] = next0;
 
         for (int i = 1; i < height; ++i) {
             BitVector next_i;
@@ -242,7 +254,7 @@ public class SuffixFilter
             if (next_i.get(m - 1))
                 return new DFSState(State.Finished, i);
 
-            next[i]._or(next_i);
+            next[i] = next_i;
 
             if (nm == i && next_i.isZero())
                 ++nm;

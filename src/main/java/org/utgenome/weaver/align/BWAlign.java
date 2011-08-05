@@ -54,11 +54,6 @@ public class BWAlign extends GenomeWeaverCommand
     static Logger _logger = Logger.getLogger(BWAlign.class);
 
     @Override
-    public String name() {
-        return "align";
-    }
-
-    @Override
     public String getOneLineDescription() {
         return "performs alignment";
     }
@@ -77,7 +72,7 @@ public class BWAlign extends GenomeWeaverCommand
     @Option(symbol = "q", description = "query sequence")
     private String query;
 
-    @Option(symbol = "N", description = "Num mismatches allowed. default=0")
+    @Option(symbol = "k", description = "Num mismatches allowed. default=0")
     public int     numMismachesAllowed = 0;
 
     public static class SAMOutput implements ObjectHandler<AlignmentRecord>

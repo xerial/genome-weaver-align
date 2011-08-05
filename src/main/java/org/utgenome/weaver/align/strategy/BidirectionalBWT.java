@@ -115,7 +115,7 @@ public class BidirectionalBWT
         for (; i < qLen; ++i) {
             ACGT ch = query.getACGT(i);
             si = fmIndex.forwardSearch(strand, ch, si);
-            if (!si.isValidRange()) {
+            if (si.isEmpty()) {
                 breakPoint.set(i, true);
                 numMismatches++;
                 if (longestMatch == null || longestMatch.length() < (i - mark)) {
@@ -142,7 +142,7 @@ public class BidirectionalBWT
         });
     }
 
-    void report(Alignment result) {
+    void report(Alignment result) throws Exception {
 
         reporter.emit(result);
 
@@ -271,7 +271,7 @@ public class BidirectionalBWT
     public Alignment exactMatch(Alignment aln) {
         while (!aln.isFinished()) {
             SuffixInterval nextSi = aln.nextSi(fmIndex, aln.nextACGT(), aln.si);
-            if (!nextSi.isValidRange())
+            if (nextSi.isEmpty())
                 return null;
             aln = aln.extendWithMatch(config, nextSi);
         }
@@ -373,7 +373,7 @@ public class BidirectionalBWT
                     queue.add(c.startInsertion(config));
                     // deletion from reference
                     for (ACGT ch : ACGT.exceptN) {
-                        if (next[ch.code].isValidRange())
+                        if (!next[ch.code].isEmpty())
                             queue.add(c.startDeletion(config, next[ch.code]));
                     }
                     break;
@@ -382,7 +382,7 @@ public class BidirectionalBWT
             case DELETION: { // gap extension
                 if (c.gapExtensionIsAllowed(config) && upperBound - config.gapExtensionPenalty > queue.bestScore) {
                     for (ACGT ch : ACGT.exceptN) {
-                        if (next[ch.code].isValidRange())
+                        if (!next[ch.code].isEmpty())
                             queue.add(c.extendDeletion(config, next[ch.code]));
                     }
                 }
@@ -399,7 +399,7 @@ public class BidirectionalBWT
             // Search for mismatches
             for (ACGT ch : ACGT.exceptN) {
                 SuffixInterval nextSi = next[ch.code];
-                if (!nextSi.isValidRange())
+                if (nextSi.isEmpty())
                     continue;
 
                 if (ch == c.nextACGT()) {

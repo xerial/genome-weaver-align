@@ -44,10 +44,6 @@ public class SuffixInterval
         return upperBound - lowerBound;
     }
 
-    public boolean isValidRange() {
-        return lowerBound < upperBound;
-    }
-
     public boolean isEmpty() {
         return lowerBound >= upperBound;
     }

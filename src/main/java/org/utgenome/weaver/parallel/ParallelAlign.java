@@ -41,7 +41,7 @@ public class ParallelAlign
         this.config = config;
     }
 
-    public void map(Provider<ReadSequence> readSet, Reporter reporter) {
+    public void map(Provider<ReadSequence> readSet, Reporter reporter) throws Exception {
         ReadSequence seq = readSet.get();
         // do some alignment
         AlignmentRecord rec = new AlignmentRecord();
