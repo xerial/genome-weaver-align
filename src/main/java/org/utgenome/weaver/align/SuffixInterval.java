@@ -41,7 +41,7 @@ public class SuffixInterval
     }
 
     public long range() {
-        return upperBound - lowerBound + 1;
+        return upperBound - lowerBound;
     }
 
     public boolean isValidRange() {

@@ -192,6 +192,8 @@ public class SuffixFilter
         searchQueue.add(new Cursor(chunkStart[startChunk + 1], si));
         while (!searchQueue.isEmpty()) {
             Cursor current = searchQueue.poll();
+            if (current.pos >= m)
+                continue;
             for (ACGT ch : ACGT.exceptN) {
                 SuffixInterval nextSi = fmIndex.forwardSearch(strand, ch, current.si);
                 if (nextSi.isEmpty())
@@ -205,13 +207,7 @@ public class SuffixFilter
                 case NoMatch:
                     break;
                 case Match:
-                    if (nextSi.range() == 1 && (m - current.pos) < 8) {
-                        // unique hit
-                        out.handle(new Candidate(nextSi, row + state.matchRow, current.pos + 1));
-                    }
-                    else {
-                        searchQueue.add(new Cursor(current.pos + 1, nextSi));
-                    }
+                    searchQueue.add(new Cursor(current.pos + 1, nextSi));
                     break;
                 }
             }
@@ -229,7 +225,7 @@ public class SuffixFilter
 
         // R'_0 = (R_0 << 1) | P[ch]
         BitVector next0 = prev[nm].rshift(1)._and(patternMask[ch.code]);
-        if (next0.get(m)) {
+        if (next0.get(m - 1)) {
             // Found a full match
             return new DFSState(State.Finished, 0);
         }
@@ -248,7 +244,7 @@ public class SuffixFilter
             next_i._and(stairMask[i]);
 
             // Found a match
-            if (next_i.get(m))
+            if (next_i.get(m - 1))
                 return new DFSState(State.Finished, i);
 
             next[i]._or(next_i);
@@ -261,7 +257,7 @@ public class SuffixFilter
             return new DFSState(State.NoMatch, -1);
         }
         else {
-            return new DFSState(State.Match, -1);
+            return new DFSState(State.Match, nm);
         }
 
     }
@@ -310,6 +306,11 @@ public class SuffixFilter
         public DFSState(State state, int matchRow) {
             this.type = state;
             this.matchRow = matchRow;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("type:%s, match row:%d", type, matchRow);
         }
     }
 
