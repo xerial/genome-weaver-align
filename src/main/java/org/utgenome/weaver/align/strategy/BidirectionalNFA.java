@@ -31,11 +31,14 @@ import java.util.PriorityQueue;
 
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
+import org.utgenome.weaver.align.BidirectionalSuffixInterval;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.parallel.Reporter;
+import org.xerial.lens.SilkLens;
 import org.xerial.util.Optional;
+import org.xerial.util.log.Logger;
 
 /**
  * NFA for forward and backward traversal of suffix arrays
@@ -45,11 +48,12 @@ import org.xerial.util.Optional;
  */
 public class BidirectionalNFA
 {
+    private static Logger         _logger              = Logger.getLogger(BidirectionalNFA.class);
 
     private final FMIndexOnGenome fmIndex;
     private final ACGTSequence    qF;
     private final ACGTSequence    qC;
-    private final int             m;                       // query length
+    private final int             m;                                                              // query length
     private final int             numAllowedMismatches = 1;
 
     public BidirectionalNFA(FMIndexOnGenome fmIndex, ACGTSequence query) {
@@ -61,25 +65,24 @@ public class BidirectionalNFA
 
     private static class CursorContainer
     {
-        private List<Optional<List<Cursor>>> container;
+        private List<Optional<List<Cursor>>> containerF;
+        private List<Optional<List<Cursor>>> containerR;
 
         public CursorContainer(int m) {
-            container = new ArrayList<Optional<List<Cursor>>>(m);
+            containerF = new ArrayList<Optional<List<Cursor>>>(m);
+            containerR = new ArrayList<Optional<List<Cursor>>>(m);
             for (int i = 0; i < m; ++i) {
-                container.add(new Optional<List<Cursor>>());
+                containerF.add(new Optional<List<Cursor>>());
+                containerR.add(new Optional<List<Cursor>>());
             }
         }
 
-        public boolean hasEntry(int index) {
-            return container.get(index).isDefined();
+        private List<Optional<List<Cursor>>> getContainer(Strand strand) {
+            return strand.isForward() ? containerF : containerR;
         }
 
-        public List<Cursor> get(int index) {
-            return container.get(index).get();
-        }
-
-        public void add(int index, Cursor c) {
-            Optional<List<Cursor>> l = container.get(index);
+        public void add(Cursor c) {
+            Optional<List<Cursor>> l = getContainer(c.strand).get(c.getIndex());
             if (l.isUndefined()) {
                 l.set(new ArrayList<Cursor>());
             }
@@ -88,34 +91,19 @@ public class BidirectionalNFA
 
         @Override
         public String toString() {
-            return container.toString();
+            return String.format("%s\n%s", containerF, containerR);
         }
     }
 
-    private static enum SearchDirection {
-        Forward("F"), BidirectionalForward("BF"), Backward("B");
-
-        private final String symbol;
-
-        private SearchDirection(String symbol) {
-            this.symbol = symbol;
-        }
-
-        @Override
-        public String toString() {
-            return symbol;
-        }
-    }
-
-    private class Cursor
+    private abstract class Cursor
     {
-        public final boolean        isComplement;
+        public final Strand         strand;
         public final SuffixInterval si;
         public final int            cursorF;
         public final int            cursorB;
 
-        public Cursor(boolean isComplement, SuffixInterval si, int cursorF, int cursorB) {
-            this.isComplement = isComplement;
+        public Cursor(Strand strand, SuffixInterval si, int cursorF, int cursorB) {
+            this.strand = strand;
             this.si = si;
             this.cursorF = cursorF;
             this.cursorB = cursorB;
@@ -125,43 +113,57 @@ public class BidirectionalNFA
             return cursorF;
         }
 
-        public Strand getStrand() {
-            return isComplement ? Strand.REVERSE : Strand.FORWARD;
+        public ACGT nextACGT() {
+            ACGTSequence q = strand.isForward() ? qF : qC;
+            return isForwardSearch() ? q.getACGT(cursorF) : q.getACGT(cursorB - 1);
         }
 
-        public ACGT getACGT(int index) {
-            return isComplement ? qC.getACGT(index) : qF.getACGT(index);
+        public boolean isForwardSearch() {
+            return true;
         }
 
-        public Cursor next() {
-            ACGT ch = getACGT(cursorF);
-            SuffixInterval nextSi = fmIndex.forwardSearch(getStrand(), ch, si);
-            if (!nextSi.isEmpty())
-                return new Cursor(isComplement, nextSi, cursorF + 1, cursorB);
+        public abstract String getSymbol();
 
-            // switch to bidirectional search
-            return new BidirectionalCursor(isComplement, fmIndex.wholeSARange(), fmIndex.wholeSARange(), cursorF + 1,
-                    cursorF + 1);
-        }
+        public abstract Cursor next();
 
         public int getRemainingBases() {
             return (m - cursorF) + cursorB;
         }
 
-        public SearchDirection getDirection() {
-            return SearchDirection.Forward;
+        @Override
+        public String toString() {
+            return String.format("%s%s%d/%d:%s", this.getSymbol(), strand.symbol, cursorF, cursorB, si);
+        }
+    }
+
+    private class ForwardCursor extends Cursor
+    {
+        public ForwardCursor(Strand strand, SuffixInterval si, int cursorF, int cursorB) {
+            super(strand, si, cursorF, cursorB);
         }
 
         @Override
-        public String toString() {
-            return String.format("%s-%d/%d:%s", getDirection(), cursorF, cursorB, si);
+        public Cursor next() {
+            SuffixInterval nextSi = fmIndex.forwardSearch(strand, nextACGT(), si);
+            if (!nextSi.isEmpty())
+                return new ForwardCursor(strand, nextSi, cursorF + 1, cursorB);
+
+            // switch to bidirectional search
+            return new BidirectionalForwardCursor(strand, fmIndex.wholeSARange(), fmIndex.wholeSARange(), cursorF + 1,
+                    cursorF + 1);
         }
+
+        @Override
+        public String getSymbol() {
+            return "F";
+        }
+
     }
 
     private class BackwardCursor extends Cursor
     {
-        public BackwardCursor(boolean isComplement, SuffixInterval si, int cursorF, int cursorB) {
-            super(isComplement, si, cursorF, cursorB);
+        public BackwardCursor(Strand strand, SuffixInterval si, int cursorF, int cursorB) {
+            super(strand, si, cursorF, cursorB);
         }
 
         @Override
@@ -171,77 +173,92 @@ public class BidirectionalNFA
 
         @Override
         public Cursor next() {
-            ACGT ch = getACGT(cursorB - 1);
-            SuffixInterval nextSi = fmIndex.backwardSearch(getStrand(), ch, si);
-            if (nextSi.isEmpty())
-                return null;
+            SuffixInterval nextSi = fmIndex.backwardSearch(strand, nextACGT(), si);
+            if (!nextSi.isEmpty())
+                return new BackwardCursor(strand, nextSi, cursorF, cursorB - 1);
 
-            return new BackwardCursor(isComplement, nextSi, cursorF, cursorB - 1);
+            // no match
+            return null;
         }
 
         @Override
-        public SearchDirection getDirection() {
-            return SearchDirection.Backward;
+        public boolean isForwardSearch() {
+            return false;
         }
 
+        @Override
+        public String getSymbol() {
+            return "R";
+        }
     }
 
-    private class BidirectionalCursor extends Cursor
+    private class BidirectionalForwardCursor extends Cursor
     {
         public final SuffixInterval revSi;
 
-        public BidirectionalCursor(boolean isComplement, SuffixInterval si, SuffixInterval revSi, int cursorF,
+        public BidirectionalForwardCursor(Strand readOrientation, SuffixInterval si, SuffixInterval revSi, int cursorF,
                 int cursorB) {
-            super(isComplement, si, cursorF, cursorB);
+            super(readOrientation, si, cursorF, cursorB);
             this.revSi = revSi;
         }
 
         @Override
         public Cursor next() {
-            Strand strand = getStrand();
+            ACGT ch = nextACGT();
             if (cursorF < m) {
                 // Bidirectional search
-                ACGT ch = getACGT(cursorF);
-                SuffixInterval nextSi = fmIndex.forwardSearch(strand, ch, si);
-                if (!nextSi.isEmpty()) {
-                    SuffixInterval nextRevSi = fmIndex.bidirectionalSearch(strand, ch, si, revSi);
-                    return new BidirectionalCursor(isComplement, nextSi, nextRevSi, cursorF + 1, cursorB);
+                BidirectionalSuffixInterval next = fmIndex.bidirectionalForwardSearch(strand, ch,
+                        new BidirectionalSuffixInterval(si, revSi));
+                if (next != null) {
+                    return new BidirectionalForwardCursor(strand, next.forwardSi, next.backwardSi, cursorF + 1, cursorB);
                 }
 
                 // Start new bidirectional search
-                return new BidirectionalCursor(isComplement, fmIndex.wholeSARange(), fmIndex.wholeSARange(),
+                return new BidirectionalForwardCursor(strand, fmIndex.wholeSARange(), fmIndex.wholeSARange(),
                         cursorF + 1, cursorF);
             }
             else {
                 // Switch to backward search
-                ACGT ch = getACGT(cursorB - 1);
                 SuffixInterval nextRevSi = fmIndex.backwardSearch(strand, ch, revSi);
                 if (nextRevSi.isEmpty()) {
                     return null;
                 }
 
-                return new BackwardCursor(isComplement, nextRevSi, cursorF, cursorB - 1);
+                return new BackwardCursor(strand, nextRevSi, cursorF, cursorB - 1);
             }
         }
 
         @Override
-        public SearchDirection getDirection() {
-            return SearchDirection.BidirectionalForward;
+        public String toString() {
+            return String.format("%s%s%d/%d:%s,%s", getSymbol(), strand.symbol, cursorF, cursorB, si, revSi);
         }
 
         @Override
-        public String toString() {
-            return String.format("%s-%d/%d:%s,%s", getDirection(), cursorF, cursorB, si, revSi);
+        public String getSymbol() {
+            return "B";
         }
     }
 
     public static class ExactMatch
     {
+        public final Strand         strand;
         public final SuffixInterval si;
+        public final int            numMismatches;
 
-        public ExactMatch(SuffixInterval si) {
+        public ExactMatch(Strand strand, SuffixInterval si, int numMismatches) {
+            this.strand = strand;
             this.si = si;
+            this.numMismatches = numMismatches;
         }
+    }
+
+    public void align() throws Exception {
+        bidirectionalAlign(new Reporter() {
+            @Override
+            public void emit(Object result) throws Exception {
+                _logger.debug(SilkLens.toSilk(result));
+            }
+        });
     }
 
     /**
@@ -259,22 +276,22 @@ public class BidirectionalNFA
         });
 
         // Row-wise simulation of NFA
-        CursorContainer stateF = new CursorContainer(m + 1);
-        CursorContainer stateB = new CursorContainer(m + 1);
+        CursorContainer state = new CursorContainer(m + 1);
 
-        Cursor initF = new Cursor(false, fmIndex.wholeSARange(), 0, 0);
-        Cursor initC = new BackwardCursor(true, fmIndex.wholeSARange(), m, m);
+        Cursor initF = new ForwardCursor(Strand.FORWARD, fmIndex.wholeSARange(), 0, 0);
+        Cursor initC = new ForwardCursor(Strand.REVERSE, fmIndex.wholeSARange(), 0, 0);
+        queue.add(initF);
+        queue.add(initC);
+        state.add(initF);
+        state.add(initC);
 
         for (int k = 0; k < numAllowedMismatches; ++k) {
-            stateF.add(initF.getIndex(), initF);
-            stateB.add(initC.getIndex(), initC);
-            queue.add(initF);
-            queue.add(initC);
 
             while (!queue.isEmpty()) {
                 Cursor c = queue.poll();
                 if (c.getRemainingBases() == 0) {
                     // Found a match
+                    out.emit(new ExactMatch(c.strand, c.si, k));
                     continue;
                 }
 
@@ -283,15 +300,7 @@ public class BidirectionalNFA
                     continue; // no match
                 queue.add(next);
 
-                switch (next.getDirection()) {
-                case Forward:
-                case BidirectionalForward:
-                    stateF.add(next.getIndex(), next);
-                    break;
-                case Backward:
-                    stateB.add(next.getIndex(), next);
-                    break;
-                }
+                state.add(next);
             }
         }
 

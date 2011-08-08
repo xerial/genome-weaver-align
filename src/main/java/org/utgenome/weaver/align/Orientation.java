@@ -1,6 +1,6 @@
 /*--------------------------------------------------------------------------
  *  Copyright 2011 utgenome.org
- *  
+ *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
@@ -24,29 +24,25 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-public enum Strand {
-    FORWARD("+", 0), REVERSE("-", 1);
+public enum Orientation {
+    FORWARD("F"), REVERSE("R");
 
     public final String symbol;
-    public final int    index;
 
-    private Strand(String symbol, int index) {
+    private Orientation(String symbol) {
         this.symbol = symbol;
-        this.index = index;
-    }
-
-    public static Strand toStrand(char plusOrMinus) {
-        if (plusOrMinus == '+')
-            return FORWARD;
-        else
-            return REVERSE;
     }
 
     public boolean isForward() {
         return this == FORWARD;
     }
 
-    public Strand opposite() {
+    @Override
+    public String toString() {
+        return symbol;
+    }
+
+    public Orientation opposite() {
         if (this == FORWARD)
             return REVERSE;
         else

@@ -30,7 +30,7 @@ package org.utgenome.weaver.align;
  * @author leo
  * 
  */
-public class SuffixInterval
+public class SuffixInterval implements SARange
 {
     public final long lowerBound;
     public final long upperBound;
@@ -38,6 +38,11 @@ public class SuffixInterval
     public SuffixInterval(long lowerBound, long upperBound) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
+    }
+
+    public SuffixInterval(SuffixInterval other) {
+        this.lowerBound = other.lowerBound;
+        this.upperBound = other.lowerBound;
     }
 
     public long range() {
@@ -70,4 +75,9 @@ public class SuffixInterval
         else
             return false;
     }
+
+    public SuffixInterval getReverseSi() {
+        return null;
+    }
+
 }

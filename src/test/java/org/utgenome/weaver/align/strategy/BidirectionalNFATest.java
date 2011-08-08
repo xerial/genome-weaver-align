@@ -24,29 +24,39 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.FMIndexOnGenome;
-import org.utgenome.weaver.parallel.Reporter;
-import org.xerial.lens.SilkLens;
 import org.xerial.util.log.Logger;
 
 public class BidirectionalNFATest
 {
-    private static Logger _logger = Logger.getLogger(BidirectionalNFATest.class);
+    private static Logger          _logger = Logger.getLogger(BidirectionalNFATest.class);
+
+    private static FMIndexOnGenome fmIndex;
+
+    @BeforeClass
+    public static void setUp() {
+        fmIndex = FMIndexOnGenome.buildFromSequence("seq", "AACCGTA");
+    }
 
     @Test
     public void sample() throws Exception {
-
-        FMIndexOnGenome fmIndex = FMIndexOnGenome.buildFromSequence("seq", "AACCGTA");
         ACGTSequence q = new ACGTSequence("AAGCGTA");
         BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, q);
+        nfa.align();
+    }
 
-        nfa.bidirectionalAlign(new Reporter() {
-            @Override
-            public void emit(Object result) throws Exception {
-                _logger.debug(SilkLens.toSilk(result));
-            }
-        });
+    @Test
+    public void forwardExact() throws Exception {
+        BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, new ACGTSequence("CCGTA"));
+        nfa.align();
+    }
+
+    @Test
+    public void reverseExact() throws Exception {
+        BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, new ACGTSequence("CCGTA").reverseComplement());
+        nfa.align();
     }
 }

@@ -1,6 +1,6 @@
 /*--------------------------------------------------------------------------
  *  Copyright 2011 utgenome.org
- *  
+ *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
@@ -16,41 +16,19 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// Strand.java
-// Since: 2011/02/16
+// SARange.java
+// Since: 2011/08/08
 //
 // $URL$ 
 // $Author$
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-public enum Strand {
-    FORWARD("+", 0), REVERSE("-", 1);
-
-    public final String symbol;
-    public final int    index;
-
-    private Strand(String symbol, int index) {
-        this.symbol = symbol;
-        this.index = index;
-    }
-
-    public static Strand toStrand(char plusOrMinus) {
-        if (plusOrMinus == '+')
-            return FORWARD;
-        else
-            return REVERSE;
-    }
-
-    public boolean isForward() {
-        return this == FORWARD;
-    }
-
-    public Strand opposite() {
-        if (this == FORWARD)
-            return REVERSE;
-        else
-            return FORWARD;
-    }
+public interface SARange
+{
 
 }
+
+
+
+
