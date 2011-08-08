@@ -30,6 +30,7 @@ import org.utgenome.UTGBException;
 import org.utgenome.weaver.align.BWTransform.BWT;
 import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.utgenome.weaver.align.record.AlignmentRecord;
+import org.utgenome.weaver.align.strategy.Alignment;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandler;
 import org.xerial.util.log.Logger;
@@ -207,4 +208,34 @@ public class FMIndexOnGenome
         }
 
     }
+
+    public void toGenomeCoordinate(Alignment result, ObjectHandler<AlignmentRecord> reporter) throws Exception {
+        if (_logger.isTraceEnabled())
+            _logger.info(SilkLens.toSilk("alignment", result));
+
+        final long querySize = result.read.textSize();
+
+        for (long i = result.si.lowerBound; i < result.si.upperBound; ++i) {
+            PosOnGenome p = toGenomeCoordinate(i, querySize, result.strand);
+            if (p != null) {
+                AlignmentRecord rec = new AlignmentRecord();
+                rec.chr = p.chr;
+                rec.start = p.pos;
+                rec.strand = result.strand;
+                rec.score = result.score.score;
+                rec.numMismatches = result.score.numMismatches;
+                // workaround for Picard tools, which cannot accept base character other than ACGT 
+                rec.querySeq = result.strand == Strand.FORWARD ? result.read.toString() : result.read.reverse()
+                        .toString();
+                // TODO obtain read name
+                rec.readName = result.read.toString();
+                rec.end = p.pos + result.cursorF;
+                // TODO output correct CIGAR string
+                //rec.setCIGAR(result.cigar().toCIGARString());
+                reporter.handle(rec);
+            }
+        }
+
+    }
+
 }

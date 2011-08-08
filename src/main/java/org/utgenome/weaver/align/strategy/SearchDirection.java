@@ -25,7 +25,7 @@
 package org.utgenome.weaver.align.strategy;
 
 public enum SearchDirection {
-    Forward("F", true), Backward("B", false), BidirectionalForward("BiF", true);
+    Forward("F", true), Backward("R", false), BidirectionalForward("B", true);
 
     public final String  symbol;
     public final boolean isForward;
@@ -36,6 +36,3 @@ public enum SearchDirection {
     }
 
 }
-
-
-

@@ -45,6 +45,10 @@ public class Score
         return String.format("%3d:%d/%d/%d", score, numMismatches, numGapOpens, numGapExtend);
     }
 
+    public int layer() {
+        return numMismatches + numGapOpens + numGapExtend;
+    }
+
     public static Score initial() {
         return new Score(0, 0, 0, 0);
     }
@@ -70,6 +74,3 @@ public class Score
     }
 
 }
-
-
-

@@ -35,6 +35,7 @@ import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.RawRead;
 import org.utgenome.weaver.align.record.ReadSequenceReader;
 import org.utgenome.weaver.align.record.ReadSequenceReaderFactory;
+import org.utgenome.weaver.align.strategy.Alignment;
 import org.utgenome.weaver.align.strategy.BWAStrategy;
 import org.xerial.util.ObjectHandler;
 import org.xerial.util.ObjectHandlerBase;
@@ -124,7 +125,7 @@ public class BWAlign extends GenomeWeaverCommand
         query(fastaFilePrefix, reader, samOutput);
     }
 
-    private static class GenomeCoordinateConverter extends ObjectHandlerBase<AlignmentSA>
+    private static class GenomeCoordinateConverter extends ObjectHandlerBase<Alignment>
     {
 
         private FMIndexOnGenome                fmIndex;
@@ -136,7 +137,7 @@ public class BWAlign extends GenomeWeaverCommand
         }
 
         @Override
-        public void handle(AlignmentSA aln) throws Exception {
+        public void handle(Alignment aln) throws Exception {
             fmIndex.toGenomeCoordinate(aln, handler);
         }
 

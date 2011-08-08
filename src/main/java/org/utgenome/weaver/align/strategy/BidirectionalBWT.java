@@ -24,9 +24,7 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.PriorityQueue;
 
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
@@ -69,17 +67,6 @@ public class BidirectionalBWT
 
     public void setAlignmentScoreConfig(AlignmentScoreConfig config) {
         this.config = config;
-    }
-
-    public static class SARange
-    {
-        public final SuffixInterval si;
-        public final Strand         strand;
-
-        public SARange(SuffixInterval si, Strand strand) {
-            this.si = si;
-            this.strand = strand;
-        }
     }
 
     public static class QuickScanResult
@@ -215,55 +202,6 @@ public class BidirectionalBWT
                     fmIndex.wholeSARange());
         }
         return null;
-    }
-
-    public static class AlignmentQueue
-    {
-        private final PriorityQueue<Alignment> queue;
-        private final AlignmentScoreConfig     config;
-        private int                            bestScore;
-        private int                            pushCount = 0;
-
-        public AlignmentQueue(AlignmentScoreConfig config) {
-            this.config = config;
-            this.queue = new PriorityQueue<Alignment>(11, new Comparator<Alignment>() {
-                @Override
-                public int compare(Alignment o1, Alignment o2) {
-                    // If the upper bound of the score is larger than the other, search it first
-                    int diff = o2.getUpperBoundOfScore(AlignmentQueue.this.config)
-                            - o1.getUpperBoundOfScore(AlignmentQueue.this.config);
-                    if (diff != 0)
-                        return diff;
-
-                    return o1.getRemainingBases() - o2.getRemainingBases();
-                }
-            });
-        }
-
-        @Override
-        public String toString() {
-            return String.format("size:%d, best:%d", queue.size(), bestScore);
-        }
-
-        public Alignment poll() {
-            return queue.poll();
-        }
-
-        public boolean isEmpty() {
-            return queue.isEmpty();
-        }
-
-        public boolean add(Alignment e) {
-            if (e.getUpperBoundOfScore(config) < bestScore)
-                return false;
-
-            if (e.isFinished() && e.score.score > bestScore)
-                bestScore = e.score.score;
-
-            pushCount++;
-            return queue.add(e);
-        }
-
     }
 
     public Alignment exactMatch(Alignment aln) {

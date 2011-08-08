@@ -29,10 +29,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 
+import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
+import org.utgenome.weaver.align.AlignmentScoreConfig;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
-import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.Optional;
@@ -46,19 +47,32 @@ import org.xerial.util.log.Logger;
  */
 public class BidirectionalNFA
 {
-    private static Logger         _logger              = Logger.getLogger(BidirectionalNFA.class);
+    private static Logger              _logger   = Logger.getLogger(BidirectionalNFA.class);
 
-    private final FMIndexOnGenome fmIndex;
-    private final ACGTSequence    qF;
-    private final ACGTSequence    qC;
-    private final int             m;                                                              // query length
-    private final int             numAllowedMismatches = 1;
+    private final FMIndexOnGenome      fmIndex;
+    private final ACGTSequence         qF;
+    private final ACGTSequence         qC;
+    private final int                  m;                                                   // query length
+    private final AlignmentScoreConfig config;
+    private final Reporter             out;
+    private int                        bestScore = -1;
 
     public BidirectionalNFA(FMIndexOnGenome fmIndex, ACGTSequence query) {
+        this(fmIndex, query, new Reporter() {
+            @Override
+            public void emit(Object result) throws Exception {
+                _logger.debug(SilkLens.toSilk(result));
+            }
+        });
+    }
+
+    public BidirectionalNFA(FMIndexOnGenome fmIndex, ACGTSequence query, Reporter out) {
         this.fmIndex = fmIndex;
         this.qF = query;
         this.qC = query.complement();
         this.m = (int) query.textSize();
+        this.config = new AlignmentScoreConfig();
+        this.out = out;
     }
 
     private static class CursorContainer
@@ -93,74 +107,116 @@ public class BidirectionalNFA
         }
     }
 
-    public static class ExactMatch
+    private static class CursorQueue extends PriorityQueue<BidirectionalCursor>
     {
-        public final Strand         strand;
-        public final SuffixInterval si;
-        public final int            numMismatches;
+        /**
+         * 
+         */
+        private static final long serialVersionUID = 1L;
 
-        public ExactMatch(Strand strand, SuffixInterval si, int numMismatches) {
-            this.strand = strand;
-            this.si = si;
-            this.numMismatches = numMismatches;
+        public CursorQueue() {
+            super(11, new Comparator<BidirectionalCursor>() {
+                @Override
+                public int compare(BidirectionalCursor o1, BidirectionalCursor o2) {
+                    return o1.getRemainingBases() - o2.getRemainingBases();
+                }
+            });
         }
-    }
 
-    public void align() throws Exception {
-        bidirectionalAlign(new Reporter() {
-            @Override
-            public void emit(Object result) throws Exception {
-                _logger.debug(SilkLens.toSilk(result));
-            }
-        });
     }
 
     /**
      * @param out
      * @throws Exception
      */
-    public void bidirectionalAlign(Reporter out) throws Exception {
+    public void align() throws Exception {
 
         // Prefer the cursor with smaller remaining bases
-        PriorityQueue<BidirectionalCursor> queue = new PriorityQueue<BidirectionalCursor>(11,
-                new Comparator<BidirectionalCursor>() {
-                    @Override
-                    public int compare(BidirectionalCursor o1, BidirectionalCursor o2) {
-                        return o1.getRemainingBases() - o2.getRemainingBases();
-                    }
-                });
+        CursorQueue queue = new CursorQueue();
+        CursorQueue nextQueue = new CursorQueue();
 
         // Row-wise simulation of NFA
         CursorContainer state = new CursorContainer(m + 1);
 
-        BidirectionalCursor initF = new BidirectionalCursor(qF, Strand.FORWARD, SearchDirection.Forward,
-                fmIndex.wholeSARange(), null, 0, 0);
-        BidirectionalCursor initC = new BidirectionalCursor(qC, Strand.REVERSE, SearchDirection.Forward,
-                fmIndex.wholeSARange(), null, 0, 0);
+        BidirectionalCursor initF = new BidirectionalCursor(Score.initial(), qF, Strand.FORWARD,
+                SearchDirection.Forward, fmIndex.wholeSARange(), null, 0, 0);
+        BidirectionalCursor initC = new BidirectionalCursor(Score.initial(), qC, Strand.REVERSE,
+                SearchDirection.Forward, fmIndex.wholeSARange(), null, 0, 0);
         queue.add(initF);
         queue.add(initC);
         state.add(initF);
         state.add(initC);
 
-        for (int k = 0; k < numAllowedMismatches; ++k) {
+        // k=0;
+        while (!queue.isEmpty()) {
+            BidirectionalCursor c = queue.poll();
+            if (!continueSearch(c))
+                continue;
+
+            // Proceed to next base
+            BidirectionalCursor next = c.next(fmIndex, config);
+            if (next != null) {
+                queue.add(next);
+                state.add(next);
+            }
+            else {
+                // pass to next layer
+                nextQueue.add(c);
+            }
+
+        }
+
+        // k >= 1
+        for (int k = 1; k < config.maximumEditDistances; ++k) {
+            // Transit the states to the next row
+            _logger.debug("transit k from %d to %d", k - 1, k);
+            queue = nextQueue;
+            nextQueue = new CursorQueue();
 
             while (!queue.isEmpty()) {
                 BidirectionalCursor c = queue.poll();
-                if (c.getRemainingBases() == 0) {
-                    // Found a match
-                    out.emit(c);
+                if (!continueSearch(c))
                     continue;
+
+                if (c.score.layer() == k) {
+                    // search for exact match
+                    BidirectionalCursor next = c.next(fmIndex, config);
+                    if (next != null)
+                        queue.add(next);
                 }
-
-                BidirectionalCursor next = c.next(fmIndex);
-                if (next == null)
-                    continue; // no match
-                queue.add(next);
-
-                state.add(next);
+                else {
+                    // extend the search with mismatches
+                    ACGT nextBase = c.nextACGT();
+                    for (ACGT ch : ACGT.exceptN) {
+                        if (nextBase == ch)
+                            continue;
+                        BidirectionalCursor next = c.next(fmIndex, ch, config);
+                        if (next != null)
+                            queue.add(next);
+                    }
+                }
             }
+
         }
 
+    }
+
+    public boolean continueSearch(BidirectionalCursor c) throws Exception {
+        if (c.getUpperBoundOfScore(config) < bestScore) {
+            // This cursor never produces a better alignment. Skip 
+            return false;
+        }
+
+        if (c.getRemainingBases() == 0) {
+            // Update the best score
+            if (c.score.score > bestScore) {
+                bestScore = c.score.score;
+            }
+            // Found a match
+            out.emit(c);
+            return false;
+        }
+        return true;
     }
 
 }

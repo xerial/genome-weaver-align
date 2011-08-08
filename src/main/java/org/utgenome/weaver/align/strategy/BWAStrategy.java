@@ -1,11 +1,9 @@
 package org.utgenome.weaver.align.strategy;
 
 import java.util.ArrayList;
-import java.util.PriorityQueue;
 
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
-import org.utgenome.weaver.align.AlignmentSA;
 import org.utgenome.weaver.align.AlignmentScoreConfig;
 import org.utgenome.weaver.align.CharacterCount;
 import org.utgenome.weaver.align.FMIndexOnGenome;
@@ -14,6 +12,7 @@ import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.RawRead;
 import org.utgenome.weaver.align.record.ReadSequence;
 import org.xerial.util.ObjectHandler;
+import org.xerial.util.log.Logger;
 
 /**
  * Alignment process using FM-Index.
@@ -26,10 +25,13 @@ import org.xerial.util.ObjectHandler;
  */
 public class BWAStrategy
 {
+    private static Logger              _logger              = Logger.getLogger(BWAStrategy.class);
+
     private final FMIndexOnGenome      fmIndex;
     private final int                  numMismatchesAllowed = 1;
     private final AlignmentScoreConfig config               = new AlignmentScoreConfig();
     private final ArrayList<ACGT>      lettersInGenome      = new ArrayList<ACGT>();
+    private ObjectHandler<Alignment>   out;
 
     public BWAStrategy(FMIndexOnGenome fmIndex) {
         this.fmIndex = fmIndex;
@@ -42,114 +44,149 @@ public class BWAStrategy
         }
     }
 
-    public void align(RawRead read, ObjectHandler<AlignmentSA> out) throws Exception {
-
+    public void align(RawRead read, ObjectHandler<Alignment> out) throws Exception {
+        this.out = out;
         if (ReadSequence.class.isAssignableFrom(read.getClass())) {
             ReadSequence s = ReadSequence.class.cast(read);
-            align(s, out);
+            align(s);
         }
     }
 
-    /**
-     * 
-     * @param seq
-     * @param cursor
-     * @param maximumEditDistances
-     * @param si
-     * @throws Exception
-     */
-    public void align(ReadSequence read, ObjectHandler<AlignmentSA> out) throws Exception {
-        ACGTSequence seq = new ACGTSequence(read.seq);
-
-        int minScore = (int) (seq.textSize() - numMismatchesAllowed) * config.matchScore - config.mismatchPenalty
-                * numMismatchesAllowed;
-        if (minScore < 0)
-            minScore = 1;
-
-        PriorityQueue<AlignmentSA> alignmentQueue = new PriorityQueue<AlignmentSA>();
-        int bestScore = -1;
-
-        long N = fmIndex.forwardIndex.textSize();
-        alignmentQueue.add(AlignmentSA.initialState(read.name, seq, Strand.FORWARD, N));
-        alignmentQueue.add(AlignmentSA.initialState(read.name, seq.complement(), Strand.REVERSE, N));
-
-        while (!alignmentQueue.isEmpty()) {
-
-            AlignmentSA current = alignmentQueue.poll();
-            if (current.numMismatches > numMismatchesAllowed) {
-                continue;
-            }
-
-            if (current.wordIndex >= seq.textSize()) {
-                if (current.alignmentScore >= minScore) {
-                    if (bestScore < current.alignmentScore)
-                        bestScore = current.alignmentScore;
-                    out.handle(current);
-                }
-                continue;
-            }
-
-            // search for exact match 
-            {
-                int remainingMM = numMismatchesAllowed - current.numMismatches;
-                if (current.wordIndex == 0 || remainingMM == 0) {
-                    SuffixInterval si = alignExact(current.common.query, current.strand);
-                    if (si != null) {
-                        alignmentQueue.add(current.extendWithMatch(si,
-                                (int) (current.common.query.textSize() - current.wordIndex), config));
-                        continue;
-                    }
-                    else {
-                        if (remainingMM == 0)
-                            continue;
-                    }
-                }
-            }
-
-            // Search for deletion
-            alignmentQueue.add(current.extendWithDeletion(config));
-
-            ACGT currentBase = current.common.query.getACGT(current.wordIndex);
-            // Traverse for each A, C, G, T, ... etc.
-            for (ACGT nextBase : lettersInGenome) {
-                SuffixInterval next = fmIndex.forwardSearch(current.strand, nextBase, current.suffixInterval);
-                if (!next.isEmpty()) {
-                    // Search for insertion
-                    if (current.wordIndex > 0 && current.wordIndex < seq.textSize() - 1) {
-                        alignmentQueue.add(current.extendWithInsertion(config));
-                    }
-                    if ((nextBase.code & currentBase.code) != 0) {
-                        // match
-                        alignmentQueue.add(current.extendWithMatch(next, config));
-                    }
-                    else {
-                        // mismatch
-                        alignmentQueue.add(current.extendWithMisMatch(next, config));
-                    }
-                }
-            }
-        }
-    }
-
-    public SuffixInterval alignExact(ACGTSequence seq, Strand strand) {
-
-        SuffixInterval si = new SuffixInterval(0, fmIndex.forwardIndex.textSize());
-
-        for (int wordIndex = 0; wordIndex < seq.textSize(); ++wordIndex) {
-            ACGT currentBase = seq.getACGT(wordIndex);
-            SuffixInterval next = fmIndex.forwardSearch(strand, currentBase, si);
-            if (next.isEmpty()) {
+    public Alignment exactMatch(Alignment aln) {
+        while (!aln.isFinished()) {
+            SuffixInterval nextSi = aln.nextSi(fmIndex, aln.nextACGT(), aln.si);
+            if (nextSi.isEmpty())
                 return null;
-            }
-            si = next;
+            aln = aln.extendWithMatch(config, nextSi);
         }
-
-        return si;
+        return aln;
     }
 
-    private void addToQueue(PriorityQueue<AlignmentSA> queue, AlignmentSA newState) {
+    public void align(RawRead r) throws Exception {
 
-        queue.add(newState);
+        // TODO PE mapping
+        ReadSequence read = (ReadSequence) r;
+        _logger.debug("query: " + read.seq);
+
+        ACGTSequence qF = new ACGTSequence(read.seq);
+
+        if (qF.fastCount(ACGT.N, 0, qF.textSize()) > config.maximumEditDistances) {
+            // too many Ns in the query sequence
+            return;
+        }
+        ACGTSequence qC = qF.complement();
+
+        AlignmentQueue queue = new AlignmentQueue(config);
+        // Set the initial search states
+        queue.add(new Alignment(qF, Strand.FORWARD, SearchDirection.Forward, ExtensionType.MATCH, 0, 0,
+                Score.initial(), fmIndex.wholeSARange()));
+        queue.add(new Alignment(qC, Strand.REVERSE, SearchDirection.Forward, ExtensionType.MATCH, 0, 0,
+                Score.initial(), fmIndex.wholeSARange()));
+
+        // Search iteration
+        while (!queue.isEmpty()) {
+            Alignment c = queue.poll(); // current 
+
+            if (c.isFinished() && c.score.score >= queue.bestScore) {
+                report(c);
+                queue.bestScore = c.score.score;
+                continue;
+            }
+
+            SuffixInterval si = c.suffixInterval();
+            if (c.isFinished()) {
+                continue;
+            }
+
+            int upperBound = c.getUpperBoundOfScore(config);
+
+            if (upperBound < queue.bestScore)
+                continue; // no need to proceed
+
+            int remainingDist = config.maximumEditDistances
+                    - (c.score.numMismatches + c.score.numGapOpens + c.score.numGapExtend);
+            if (remainingDist < 0)
+                continue;
+
+            if (_logger.isDebugEnabled())
+                _logger.debug("[%3d] %s SI:%s ", queue.queue.size(), c, c.suffixInterval());
+
+            if (remainingDist == 0) {
+                if (c.extensionType == ExtensionType.MATCH) {
+                    // exact match
+                    Alignment a = exactMatch(c);
+                    if (a != null)
+                        queue.add(a);
+                }
+                continue;
+            }
+
+            // Compute the next SA ranges for A, C, G, T, N
+            SuffixInterval[] next = new SuffixInterval[ACGT.exceptN.length]; // for A, C, G, T, N
+            {
+                int i = 0;
+                for (ACGT ch : ACGT.exceptN) {
+                    next[i++] = c.nextSi(fmIndex, ch, si);
+                }
+            }
+
+            // Search for indels
+            switch (c.extensionType) {
+            case MATCH: { // gap open
+                if (c.gapOpenIsAllowed(config) && upperBound - config.gapOpenPenalty > queue.bestScore) {
+                    // insertion to reference
+                    queue.add(c.startInsertion(config));
+                    // deletion from reference
+                    for (ACGT ch : ACGT.exceptN) {
+                        if (!next[ch.code].isEmpty())
+                            queue.add(c.startDeletion(config, next[ch.code]));
+                    }
+                    break;
+                }
+            }
+            case DELETION: { // gap extension
+                if (c.gapExtensionIsAllowed(config) && upperBound - config.gapExtensionPenalty > queue.bestScore) {
+                    for (ACGT ch : ACGT.exceptN) {
+                        if (!next[ch.code].isEmpty())
+                            queue.add(c.extendDeletion(config, next[ch.code]));
+                    }
+                }
+                break;
+            }
+            case INSERTION: { // gap extension
+                if (c.gapExtensionIsAllowed(config) && upperBound - config.gapExtensionPenalty > queue.bestScore) {
+                    queue.add(c.extendInsertion(config));
+                }
+                break;
+            }
+            }
+
+            // Search for mismatches
+            for (ACGT ch : ACGT.exceptN) {
+                SuffixInterval nextSi = next[ch.code];
+                if (nextSi.isEmpty())
+                    continue;
+
+                if (ch == c.nextACGT()) {
+                    // match
+                    queue.add(c.extendWithMatch(config, nextSi));
+                }
+                else {
+                    if (remainingDist > 0) {
+                        // mismatch
+                        queue.add(c.extendWithMisMatch(config, nextSi));
+                    }
+                }
+            }
+
+        }
+        if (_logger.isDebugEnabled())
+            _logger.debug("push count: %,d", queue.pushCount);
+
+    }
+
+    void report(Alignment result) throws Exception {
+        out.handle(result);
     }
 
 }
