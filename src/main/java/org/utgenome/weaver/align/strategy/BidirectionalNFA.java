@@ -61,7 +61,7 @@ public class BidirectionalNFA
         this(fmIndex, query, new Reporter() {
             @Override
             public void emit(Object result) throws Exception {
-                _logger.debug(SilkLens.toSilk(result));
+                _logger.debug(SilkLens.toSilk("result", result));
             }
         });
     }
@@ -115,6 +115,7 @@ public class BidirectionalNFA
         private static final long serialVersionUID = 1L;
 
         public CursorQueue() {
+            // Prefer the cursor with smaller remaining bases
             super(11, new Comparator<BidirectionalCursor>() {
                 @Override
                 public int compare(BidirectionalCursor o1, BidirectionalCursor o2) {
@@ -131,7 +132,7 @@ public class BidirectionalNFA
      */
     public void align() throws Exception {
 
-        // Prefer the cursor with smaller remaining bases
+
         CursorQueue queue = new CursorQueue();
         CursorQueue nextQueue = new CursorQueue();
 
@@ -150,7 +151,7 @@ public class BidirectionalNFA
         // k=0;
         while (!queue.isEmpty()) {
             BidirectionalCursor c = queue.poll();
-            if (!continueSearch(c))
+            if (doCutOff(c))
                 continue;
 
             // Proceed to next base
@@ -166,7 +167,7 @@ public class BidirectionalNFA
 
         }
 
-        // k >= 1
+        // k > 1
         for (int k = 1; k < config.maximumEditDistances; ++k) {
             // Transit the states to the next row
             _logger.debug("transit k from %d to %d", k - 1, k);
@@ -175,7 +176,7 @@ public class BidirectionalNFA
 
             while (!queue.isEmpty()) {
                 BidirectionalCursor c = queue.poll();
-                if (!continueSearch(c))
+                if (doCutOff(c))
                     continue;
 
                 if (c.score.layer() == k) {
@@ -201,10 +202,10 @@ public class BidirectionalNFA
 
     }
 
-    public boolean continueSearch(BidirectionalCursor c) throws Exception {
+    public boolean doCutOff(BidirectionalCursor c) throws Exception {
         if (c.getUpperBoundOfScore(config) < bestScore) {
             // This cursor never produces a better alignment. Skip 
-            return false;
+            return true;
         }
 
         if (c.getRemainingBases() == 0) {
@@ -214,9 +215,9 @@ public class BidirectionalNFA
             }
             // Found a match
             out.emit(c);
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
 }
