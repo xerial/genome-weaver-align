@@ -50,7 +50,7 @@ public class SuffixInterval
 
     @Override
     public String toString() {
-        return String.format("[%,d, %,d)", lowerBound, upperBound);
+        return String.format("[%,d,%,d)", lowerBound, upperBound);
     }
 
     @Override

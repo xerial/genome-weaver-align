@@ -121,18 +121,27 @@ public class FMIndexOnGenome
         return forwardIndex.backwardSearch(nextBase, si);
     }
 
-    public void bidirectionalSearch(Strand strand, ACGT nextBase, SuffixInterval forwardSi, SuffixInterval backwardSi) {
+    /**
+     * Narrow down suffix range via backward-search
+     * 
+     * @param strand
+     * @param nextBase
+     * @param forwardSi
+     * @param backwardSi
+     * @return
+     */
+    public SuffixInterval bidirectionalSearch(Strand strand, ACGT nextBase, SuffixInterval forwardSi,
+            SuffixInterval backwardSi) {
         FMIndex fm = strand == Strand.FORWARD ? reverseIndex : forwardIndex;
-        SuffixInterval f = fm.backwardSearch(nextBase, forwardSi);
         long x = 0;
         for (ACGT ch : ACGT.values()) {
             if (ch.code < nextBase.code) {
-                x += fm.count(ch, forwardSi.lowerBound, forwardSi.upperBound + 1);
+                x += fm.count(ch, forwardSi.lowerBound, forwardSi.upperBound);
             }
         }
         long y = fm.count(nextBase, forwardSi.lowerBound, forwardSi.upperBound + 1);
         SuffixInterval b = new SuffixInterval(backwardSi.lowerBound + x, backwardSi.lowerBound + x + y);
-
+        return b;
     }
 
     public long toForwardSequenceIndex(long saIndex, Strand strand) {
