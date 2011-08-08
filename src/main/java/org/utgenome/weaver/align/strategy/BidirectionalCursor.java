@@ -31,6 +31,12 @@ import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
 
+/**
+ * cursor holding alignment state
+ * 
+ * @author leo
+ * 
+ */
 public class BidirectionalCursor
 {
     public final ACGTSequence    read;
