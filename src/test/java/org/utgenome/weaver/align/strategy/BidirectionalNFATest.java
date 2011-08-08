@@ -27,7 +27,6 @@ package org.utgenome.weaver.align.strategy;
 import org.junit.Test;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.FMIndexOnGenome;
-import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.log.Logger;
@@ -41,7 +40,7 @@ public class BidirectionalNFATest
 
         FMIndexOnGenome fmIndex = FMIndexOnGenome.buildFromSequence("seq", "AACCGTA");
         ACGTSequence q = new ACGTSequence("AAGCGTA");
-        BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, q, Strand.FORWARD);
+        BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, q);
 
         nfa.bidirectionalAlign(new Reporter() {
             @Override
