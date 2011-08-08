@@ -40,8 +40,6 @@ import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.RawRead;
 import org.utgenome.weaver.align.record.ReadSequence;
-import org.utgenome.weaver.align.strategy.Alignment.ExtensionType;
-import org.utgenome.weaver.align.strategy.Alignment.Orientation;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandlerBase;
@@ -206,14 +204,14 @@ public class BidirectionalBWT
 
         switch (searchStart) {
         case FRONT:
-            return new Alignment(q, strand, Orientation.Forward, ExtensionType.MATCH, 0, -1, Score.initial(),
+            return new Alignment(q, strand, SearchDirection.Forward, ExtensionType.MATCH, 0, -1, Score.initial(),
                     fmIndex.wholeSARange());
         case MIDDLE: {
-            return new Alignment(q, strand, Orientation.BidirectionalForward, ExtensionType.MATCH, s1, s1,
+            return new Alignment(q, strand, SearchDirection.BidirectionalForward, ExtensionType.MATCH, s1, s1,
                     Score.initial(), fmIndex.wholeSARange());
         }
         case TAIL:
-            return new Alignment(q, strand, Orientation.Backward, ExtensionType.MATCH, M, M, Score.initial(),
+            return new Alignment(q, strand, SearchDirection.Backward, ExtensionType.MATCH, M, M, Score.initial(),
                     fmIndex.wholeSARange());
         }
         return null;

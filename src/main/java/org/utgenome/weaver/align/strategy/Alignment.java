@@ -15,35 +15,18 @@ import org.utgenome.weaver.align.SuffixInterval;
  */
 public class Alignment
 {
-    public static enum ExtensionType {
-        MATCH, INSERTION, DELETION
-    };
-
-    public static enum Orientation {
-        Forward("F", true), Backward("B", false), BidirectionalForward("BF", true), BidirectionalBackward("BB", false);
-
-        public final String  symbol;
-        public final boolean isForward;
-
-        private Orientation(String symbol, boolean isForward) {
-            this.symbol = symbol;
-            this.isForward = isForward;
-        }
-
-    }
-
     // minimum bit length for this state: 1,1,2,2,16,16,32+8+8+8,64+64 = 222 bit < 28 bytes
-    public final ACGTSequence            read;
-    public final Strand                  strand;       // forward or reverse (complement of the query sequence)
-    public final Alignment.Orientation   orientation;  // alignment direction
-    public final Alignment.ExtensionType extensionType;
-    public final int                     cursorF;
-    public final int                     cursorB;
-    public final Score                   score;
-    public final SuffixInterval          si;
+    public final ACGTSequence    read;
+    public final Strand          strand;       // forward or reverse (complement of the query sequence)
+    public final SearchDirection orientation;  // search direction
+    public final ExtensionType   extensionType;
+    public final int             cursorF;
+    public final int             cursorB;
+    public final Score           score;
+    public final SuffixInterval  si;
 
-    protected Alignment(ACGTSequence read, Strand strand, Alignment.Orientation orientation,
-            Alignment.ExtensionType extensionType, int cursorF, int cursorB, Score score, SuffixInterval si) {
+    protected Alignment(ACGTSequence read, Strand strand, SearchDirection orientation, ExtensionType extensionType,
+            int cursorF, int cursorB, Score score, SuffixInterval si) {
         this.read = read;
         this.strand = strand;
         this.orientation = orientation;
@@ -112,7 +95,7 @@ public class Alignment
             return fmIndex.backwardSearch(strand, ch, si);
     }
 
-    public Alignment extend(Alignment.ExtensionType type, int extensionLength, Score newScore, SuffixInterval newSi) {
+    public Alignment extend(ExtensionType type, int extensionLength, Score newScore, SuffixInterval newSi) {
         int M = (int) read.textSize();
         int nextF = cursorF;
         int nextB = cursorB;
@@ -131,11 +114,6 @@ public class Alignment
             if (nextF >= M) {
                 // switch to backward search
 
-            }
-            break;
-        case BidirectionalBackward:
-            if (nextB <= 0) {
-                // switch to forward search
             }
             break;
         default:
