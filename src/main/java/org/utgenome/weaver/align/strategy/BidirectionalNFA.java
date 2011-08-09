@@ -244,9 +244,9 @@ public class BidirectionalNFA
 
         }
 
-        _logger.debug("# of FM-index searches: %,d", this.fmIndexSearchCount);
-        _logger.debug("# of exact match searches: %,d", this.exactSearchCount);
-        _logger.debug("# of cut off: %,d", this.numCutOff);
+        if (_logger.isDebugEnabled())
+            _logger.debug("stat %s k:%d, FM Search:%,d, Exact:%d, CutOff:%d", bestScore > 0 ? "found" : "no match",
+                    this.minMismatches, this.fmIndexSearchCount, this.exactSearchCount, this.numCutOff);
 
     }
 
