@@ -47,7 +47,10 @@ public class AlignmentRecord
     public AlignmentRecord split         = null;
 
     public CIGAR getCigar() {
-        return cigar;
+        if (cigar != null)
+            return cigar;
+        else
+            return new CIGAR();
     }
 
     public void setCIGAR(String cigarStr) throws UTGBClientException {

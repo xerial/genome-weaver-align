@@ -217,6 +217,7 @@ public class BidirectionalNFA
 
                 // No more mismatches are allowed in this layer
                 if (nm >= k) {
+                    nextQueue.add(c);
                     // search for exact match
                     BidirectionalCursor next = exactMatch(c);
                     if (next != null) {

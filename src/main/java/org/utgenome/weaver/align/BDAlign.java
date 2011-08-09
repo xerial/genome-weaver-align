@@ -26,6 +26,7 @@ package org.utgenome.weaver.align;
 
 import org.utgenome.UTGBException;
 import org.utgenome.weaver.GenomeWeaverCommand;
+import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.RawRead;
 import org.utgenome.weaver.align.record.ReadSequence;
 import org.utgenome.weaver.align.record.ReadSequenceReader;
@@ -57,16 +58,19 @@ public class BDAlign extends GenomeWeaverCommand
     }
 
     @Argument(index = 0)
-    private String fastaFilePrefix;
+    private String  fastaFilePrefix;
 
     @Argument(index = 1)
-    private String readFile;
+    private String  readFile;
 
     @Option(symbol = "q", description = "query sequence")
-    private String query;
+    private String  query;
 
     @Option(symbol = "k", description = "maximum edit distances")
-    private int    maximumEditDistances = 2;
+    private int     maximumEditDistances = 2;
+
+    @Option(longName = "quiet", description = "quiet mode")
+    private boolean quite                = false;
 
     @Override
     public void execute(String[] args) throws Exception {
@@ -89,24 +93,11 @@ public class BDAlign extends GenomeWeaverCommand
         AlignmentScoreConfig config = new AlignmentScoreConfig();
         config.maximumEditDistances = maximumEditDistances;
 
-        query(fastaFilePrefix, reader, config, new Reporter() {
-            @Override
-            public void emit(Object result) {
-                if (_logger.isDebugEnabled())
-                    _logger.debug(SilkLens.toSilk("result", result));
-
-                if (BidirectionalCursor.class.isInstance(result)) {
-                    BidirectionalCursor c = BidirectionalCursor.class.cast(result);
-                    //c.convert(readName, fmIndex);
-                }
-
-            }
-        });
-
+        query(fastaFilePrefix, reader, config);
     }
 
-    public static void query(String fastaFilePrefix, ReadSequenceReader readReader, final AlignmentScoreConfig config,
-            final Reporter reporter) throws Exception {
+    public void query(String fastaFilePrefix, ReadSequenceReader readReader, final AlignmentScoreConfig config)
+            throws Exception {
         final FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix);
 
         readReader.parse(new ObjectHandlerBase<RawRead>() {
@@ -115,8 +106,24 @@ public class BDAlign extends GenomeWeaverCommand
 
             @Override
             public void handle(RawRead read) throws Exception {
-                ReadSequence r = (ReadSequence) read;
-                BidirectionalNFA aligner = new BidirectionalNFA(fmIndex, new ACGTSequence(r.seq), config, reporter);
+                final ReadSequence r = (ReadSequence) read;
+                BidirectionalNFA aligner = new BidirectionalNFA(fmIndex, new ACGTSequence(r.seq), config,
+                        new Reporter() {
+                            @Override
+                            public void emit(Object result) throws UTGBException {
+                                if (_logger.isDebugEnabled())
+                                    _logger.debug(SilkLens.toSilk("result", result));
+
+                                if (BidirectionalCursor.class.isInstance(result)) {
+                                    BidirectionalCursor c = BidirectionalCursor.class.cast(result);
+                                    AlignmentRecord aln = c.convert(r.name, fmIndex);
+                                    if (!quite)
+                                        System.out.println(aln.toSAMLine());
+                                }
+
+                            }
+                        });
+
                 aligner.align();
                 count++;
                 double time = timer.getElapsedTime();

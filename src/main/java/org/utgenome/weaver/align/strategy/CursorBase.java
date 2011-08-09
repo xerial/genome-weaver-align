@@ -49,7 +49,7 @@ public class CursorBase
     }
 
     public ACGT nextACGT() {
-        return isForwardSearch() ? read.getACGT(cursorF) : read.getACGT(cursorB - 1);
+        return isForwardSearch() && cursorF < read.textSize() ? read.getACGT(cursorF) : read.getACGT(cursorB - 1);
     }
 
     public boolean isForwardSearch() {

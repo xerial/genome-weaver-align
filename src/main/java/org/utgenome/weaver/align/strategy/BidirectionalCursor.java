@@ -121,6 +121,7 @@ public class BidirectionalCursor
         AlignmentRecord rec = new AlignmentRecord();
         SuffixInterval si = isForwardSearch() ? siF : siB;
         // TODO non unique alignment
+        // TODO fix for bi-directional search
         PosOnGenome p = fmIndex.toGenomeCoordinate(si.lowerBound, cursor.processedBases(), cursor.strand);
         rec.chr = p.chr;
         rec.start = p.pos;

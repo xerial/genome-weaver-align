@@ -49,6 +49,13 @@ public class BidirectionalNFATest
     }
 
     @Test
+    public void twoMismatch() throws Exception {
+        ACGTSequence q = new ACGTSequence("TTGCCTAGTTT");
+        BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, q);
+        nfa.align();
+    }
+
+    @Test
     public void forwardExact() throws Exception {
         BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, new ACGTSequence("GCCTA"));
         nfa.align();
