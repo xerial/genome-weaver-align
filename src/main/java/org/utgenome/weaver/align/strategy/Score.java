@@ -71,6 +71,10 @@ public class Score
         return new Score(score - config.gapOpenPenalty, numMismatches, numGapOpens + 1, numGapExtend, numSplit);
     }
 
+    public Score extendWithSplit(AlignmentScoreConfig config) {
+        return new Score(score - config.splitOpenPenalty, numMismatches, numGapOpens, numGapExtend, numSplit + 1);
+    }
+
     public Score extendWithGapExtend(AlignmentScoreConfig config) {
         return new Score(score - config.gapExtensionPenalty, numMismatches, numGapOpens, numGapExtend + 1, numSplit);
     }

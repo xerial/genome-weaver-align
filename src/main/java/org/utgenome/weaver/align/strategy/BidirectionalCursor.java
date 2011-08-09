@@ -38,67 +38,68 @@ import org.utgenome.weaver.align.SuffixInterval;
  */
 public class BidirectionalCursor
 {
+    public final CursorBase          cursor;
     public final Score               score;
-    public final ACGTSequence        read;
-    public final Strand              strand;
-    public final SearchDirection     searchDirection;
     public final ExtensionType       extensionType;
     public final SuffixInterval      siF;
     public final SuffixInterval      siB;
-    public final int                 cursorF;
-    public final int                 cursorB;
     public final BidirectionalCursor split;
 
     public BidirectionalCursor(Score score, ACGTSequence read, Strand strand, SearchDirection searchDirection,
             ExtensionType extensionType, SuffixInterval siF, SuffixInterval siB, int cursorF, int cursorB,
             BidirectionalCursor split) {
         this.score = score;
-        this.read = read;
-        this.strand = strand;
-        this.searchDirection = searchDirection;
+        this.cursor = new CursorBase(read, strand, searchDirection, cursorF, cursorB);
         this.extensionType = extensionType;
         this.siF = siF;
         this.siB = siB;
-        this.cursorF = cursorF;
-        this.cursorB = cursorB;
         this.split = split;
     }
 
-    public BidirectionalCursor(Score score, ACGTSequence read, Strand strand, SearchDirection searchDirection,
-            ExtensionType extensionType, SuffixInterval siF, SuffixInterval siB, int cursorF, int cursorB) {
-        this(score, read, strand, searchDirection, extensionType, siF, siB, cursorF, cursorB, null);
+    public BidirectionalCursor(Score score, CursorBase cursor, ExtensionType extensionType, SuffixInterval siF,
+            SuffixInterval siB, BidirectionalCursor split) {
+        this.score = score;
+        this.cursor = cursor;
+        this.extensionType = extensionType;
+        this.siF = siF;
+        this.siB = siB;
+        this.split = split;
     }
 
     public int getUpperBoundOfScore(AlignmentScoreConfig config) {
         return score.score + getRemainingBases() * config.matchScore;
     }
 
-    public int getIndex() {
-        return isForwardSearch() ? cursorF : cursorB - 1;
+    public boolean reachedForwardEnd() {
+        return cursor.cursorF >= cursor.read.textSize();
+    }
+
+    public Strand strand() {
+        return cursor.strand;
     }
 
     public ACGT nextACGT() {
-        return isForwardSearch() ? read.getACGT(cursorF) : read.getACGT(cursorB - 1);
+        return cursor.nextACGT();
     }
 
     public boolean isForwardSearch() {
-        return searchDirection.isForward;
+        return cursor.isForwardSearch();
     }
 
     public int getRemainingBases() {
-        return ((int) read.textSize() - cursorF) + cursorB;
+        return cursor.getRemainingBases();
     }
 
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(String.format("%s%s%2d:%d/%d:%s", strand.symbol, searchDirection.symbol, score.score, cursorF,
-                cursorB, siF));
+        s.append(String.format("%s%s%2d:%d/%d:%s", cursor.strand.symbol, cursor.searchDirection.symbol, score.score,
+                cursor.cursorF, cursor.cursorB, siF));
         if (siB != null)
             s.append(String.format(" %s", siB));
+        if (split != null)
+            s.append(String.format(" split(%s)", split));
         return s.toString();
     }
-
-    //public BidirectionalCursor extendWithMatch(AlignmentScoreConfig config, )
 
 }

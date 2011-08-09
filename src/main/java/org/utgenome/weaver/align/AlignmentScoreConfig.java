@@ -38,6 +38,7 @@ public class AlignmentScoreConfig
     public int mismatchPenalty        = 3;
     public int gapOpenPenalty         = 11;
     public int gapExtensionPenalty    = 4;
+    public int splitOpenPenalty       = 5;
 
     public int numGapOpenAllowed      = 1;
     public int numGapExtensionAllowed = 4;

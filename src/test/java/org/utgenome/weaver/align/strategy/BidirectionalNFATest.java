@@ -50,13 +50,20 @@ public class BidirectionalNFATest
 
     @Test
     public void forwardExact() throws Exception {
-        BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, new ACGTSequence("CCGTA"));
+        BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, new ACGTSequence("GCCTA"));
         nfa.align();
     }
 
     @Test
     public void reverseExact() throws Exception {
-        BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, new ACGTSequence("CCGTA").reverseComplement());
+        BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, new ACGTSequence("GCCTA").reverseComplement());
         nfa.align();
     }
+
+    @Test
+    public void splitExact() throws Exception {
+        BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, new ACGTSequence("AAGGTT"));
+        nfa.align();
+    }
+
 }

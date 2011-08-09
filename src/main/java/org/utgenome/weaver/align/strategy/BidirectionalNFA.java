@@ -24,9 +24,7 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.PriorityQueue;
 
 import org.utgenome.weaver.align.ACGT;
@@ -38,7 +36,6 @@ import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
-import org.xerial.util.Optional;
 import org.xerial.util.log.Logger;
 
 /**
@@ -107,43 +104,44 @@ public class BidirectionalNFA
         this.minMismatches = config.maximumEditDistances;
     }
 
-    /**
-     * Holding states of a row in NFA
-     * 
-     * @author leo
-     * 
-     */
-    private static class CursorContainer
-    {
-        private List<Optional<List<BidirectionalCursor>>> containerF;
-        private List<Optional<List<BidirectionalCursor>>> containerR;
-
-        public CursorContainer(int m) {
-            containerF = new ArrayList<Optional<List<BidirectionalCursor>>>(m);
-            containerR = new ArrayList<Optional<List<BidirectionalCursor>>>(m);
-            for (int i = 0; i < m; ++i) {
-                containerF.add(new Optional<List<BidirectionalCursor>>());
-                containerR.add(new Optional<List<BidirectionalCursor>>());
-            }
-        }
-
-        private List<Optional<List<BidirectionalCursor>>> getContainer(Strand strand) {
-            return strand.isForward() ? containerF : containerR;
-        }
-
-        public void add(BidirectionalCursor c) {
-            Optional<List<BidirectionalCursor>> l = getContainer(c.strand).get(c.getIndex());
-            if (l.isUndefined()) {
-                l.set(new ArrayList<BidirectionalCursor>());
-            }
-            l.get().add(c);
-        }
-
-        @Override
-        public String toString() {
-            return String.format("%s\n%s", containerF, containerR);
-        }
-    }
+    //
+    //    /**
+    //     * Holding states of a row in NFA
+    //     * 
+    //     * @author leo
+    //     * 
+    //     */
+    //    private static class CursorContainer
+    //    {
+    //        private List<Optional<List<BidirectionalCursor>>> containerF;
+    //        private List<Optional<List<BidirectionalCursor>>> containerR;
+    //
+    //        public CursorContainer(int m) {
+    //            containerF = new ArrayList<Optional<List<BidirectionalCursor>>>(m);
+    //            containerR = new ArrayList<Optional<List<BidirectionalCursor>>>(m);
+    //            for (int i = 0; i < m; ++i) {
+    //                containerF.add(new Optional<List<BidirectionalCursor>>());
+    //                containerR.add(new Optional<List<BidirectionalCursor>>());
+    //            }
+    //        }
+    //
+    //        private List<Optional<List<BidirectionalCursor>>> getContainer(Strand strand) {
+    //            return strand.isForward() ? containerF : containerR;
+    //        }
+    //
+    //        public void add(BidirectionalCursor c) {
+    //            Optional<List<BidirectionalCursor>> l = getContainer(c.strand).get(c.getIndex());
+    //            if (l.isUndefined()) {
+    //                l.set(new ArrayList<BidirectionalCursor>());
+    //            }
+    //            l.get().add(c);
+    //        }
+    //
+    //        @Override
+    //        public String toString() {
+    //            return String.format("%s\n%s", containerF, containerR);
+    //        }
+    //    }
 
     /**
      * @param out
@@ -158,9 +156,9 @@ public class BidirectionalNFA
         // Add search states for both strand
         {
             BidirectionalCursor initF = new BidirectionalCursor(Score.initial(), qF, Strand.FORWARD,
-                    SearchDirection.Forward, ExtensionType.MATCH, fmIndex.wholeSARange(), null, 0, 0);
+                    SearchDirection.Forward, ExtensionType.MATCH, fmIndex.wholeSARange(), null, 0, 0, null);
             BidirectionalCursor initC = new BidirectionalCursor(Score.initial(), qC, Strand.REVERSE,
-                    SearchDirection.Forward, ExtensionType.MATCH, fmIndex.wholeSARange(), null, 0, 0);
+                    SearchDirection.Forward, ExtensionType.MATCH, fmIndex.wholeSARange(), null, 0, 0, null);
             queue.add(initF);
             queue.add(initC);
         }
@@ -194,9 +192,9 @@ public class BidirectionalNFA
                 // No more mismatches are allowed in this layer
                 if (c.score.layer() == k) {
                     // search for exact match
-                    BidirectionalCursor next = exactMatch(c);
+                    BidirectionalCursor next = next(c);
                     if (next != null)
-                        out.emit(next);
+                        queue.add(c);
                     continue;
                 }
 
@@ -206,8 +204,7 @@ public class BidirectionalNFA
                     case MATCH:
                         if (gapOpenIsAllowed(c)) {
                             // insertion to reference
-                            queue.add(new BidirectionalCursor(c.score.extendWithGapOpen(config), c.read, c.strand,
-                                    c.searchDirection, ExtensionType.INSERTION, c.siF, c.siB, c.cursorF, c.cursorB));
+                            queue.add(extendWithInsertion(c));
                         }
                         // deletion from reference
                         for (ACGT ch : ACGT.exceptN) {
@@ -215,17 +212,14 @@ public class BidirectionalNFA
                         }
                         // extend the search with read split
                         if (c.score.numSplit < config.numSplitAlowed) {
-                            queue.add(new BidirectionalCursor(c.score.extendWithGapOpen(config), c.read, c.strand,
-                                    c.searchDirection, ExtensionType.MATCH, fmIndex.wholeSARange(), fmIndex
-                                            .wholeSARange(), c.cursorF, c.cursorB, c));
+                            queue.add(extendWithSplit(c));
                         }
                         break;
                     case DELETION:
                         break;
                     case INSERTION:
                         if (c.score.numGapExtend < config.numGapExtensionAllowed) {
-                            queue.add(new BidirectionalCursor(c.score.extendWithGapExtend(config), c.read, c.strand,
-                                    c.searchDirection, ExtensionType.INSERTION, c.siF, c.siB, c.cursorF, c.cursorB));
+                            queue.add(extendWithInsertion(c));
                         }
                         break;
                     }
@@ -304,65 +298,89 @@ public class BidirectionalNFA
     private int exactSearchCount   = 0;
     private int numCutOff          = 0;
 
+    BidirectionalCursor extendWithSplit(BidirectionalCursor c) {
+        Score nextScore = c.score.extendWithSplit(config);
+        CursorBase next = c.cursor.next();
+        return new BidirectionalCursor(nextScore, next, ExtensionType.MATCH, c.siF, c.siB, c);
+    }
+
+    BidirectionalCursor extendWithInsertion(BidirectionalCursor c) {
+
+        ExtensionType e = ExtensionType.MATCH;
+        CursorBase next = c.cursor.next();
+        Score nextScore;
+        switch (c.extensionType) {
+        case INSERTION:
+            e = ExtensionType.INSERTION;
+            nextScore = c.score.extendWithGapExtend(config);
+            break;
+        case MATCH:
+        default:
+            nextScore = c.score.extendWithGapOpen(config);
+            break;
+        }
+        return new BidirectionalCursor(nextScore, next, e, c.siF, c.siB, c.split);
+    }
+
     BidirectionalCursor next(BidirectionalCursor c, ACGT nextBase) {
         fmIndexSearchCount++;
-        switch (c.searchDirection) {
+        switch (c.cursor.searchDirection) {
         case Forward: {
-            SuffixInterval nextF = fmIndex.forwardSearch(c.strand, nextBase, c.siF);
+            SuffixInterval nextF = fmIndex.forwardSearch(c.strand(), nextBase, c.siF);
             if (nextF.hasEntry()) {
                 // extend the search to forward
-                return new BidirectionalCursor(nextScore(c, nextBase), c.read, c.strand, c.searchDirection,
-                        c.extensionType, nextF, c.siB, c.cursorF + 1, c.cursorB);
+                return new BidirectionalCursor(nextScore(c, nextBase), c.cursor.next(), c.extensionType, nextF, c.siB,
+                        c.split);
             }
 
             // switch to bidirectional search when k=0
             if (c.score.layer() == 0) {
                 // Set high priority to the search beginning with this cursor for k>0 
-                return new BidirectionalCursor(Score.initial(), c.read, c.strand, SearchDirection.BidirectionalForward,
-                        c.extensionType, fmIndex.wholeSARange(), fmIndex.wholeSARange(), c.cursorF + 1, c.cursorF + 1);
+                return new BidirectionalCursor(Score.initial(), c.cursor.newBidirectionalFowardCursor(),
+                        c.extensionType, fmIndex.wholeSARange(), fmIndex.wholeSARange(), c.split);
             }
             else
                 return null;
         }
         case Backward: {
-            SuffixInterval nextB = fmIndex.backwardSearch(c.strand, nextBase, c.siB);
+            SuffixInterval nextB = fmIndex.backwardSearch(c.strand(), nextBase, c.siB);
             if (nextB.hasEntry()) {
                 // extend the search for backward
-                return new BidirectionalCursor(nextScore(c, nextBase), c.read, c.strand, c.searchDirection,
-                        c.extensionType, c.siF, nextB, c.cursorF, c.cursorB - 1);
+                return new BidirectionalCursor(nextScore(c, nextBase), c.cursor.next(), c.extensionType, c.siF, nextB,
+                        c.split);
             }
 
             // no match
             return null;
         }
         case BidirectionalForward: {
-            if (c.cursorF < (int) c.read.textSize()) {
+            if (!c.reachedForwardEnd()) {
                 // Bidirectional search
-                BidirectionalSuffixInterval next = fmIndex.bidirectionalForwardSearch(c.strand, nextBase,
+                BidirectionalSuffixInterval next = fmIndex.bidirectionalForwardSearch(c.strand(), nextBase,
                         new BidirectionalSuffixInterval(c.siF, c.siB));
                 if (next != null) {
-                    return new BidirectionalCursor(nextScore(c, nextBase), c.read, c.strand, c.searchDirection,
-                            c.extensionType, next.forwardSi, next.backwardSi, c.cursorF + 1, c.cursorB);
+                    return new BidirectionalCursor(nextScore(c, nextBase), c.cursor.next(), c.extensionType,
+                            next.forwardSi, next.backwardSi, c.split);
                 }
 
                 // Start new bidirectional search
                 if (c.score.layer() == 0) {
                     // Set high priority to the search beginning with this cursor for k>0 
-                    return new BidirectionalCursor(Score.initial(), c.read, c.strand, c.searchDirection,
-                            c.extensionType, fmIndex.wholeSARange(), fmIndex.wholeSARange(), c.cursorF + 1, c.cursorF);
+                    return new BidirectionalCursor(Score.initial(), c.cursor.next(), c.extensionType,
+                            fmIndex.wholeSARange(), fmIndex.wholeSARange(), c.split);
                 }
                 else
                     return null;
             }
             else {
                 // Switch to backward search
-                SuffixInterval nextB = fmIndex.backwardSearch(c.strand, nextBase, c.siB);
+                SuffixInterval nextB = fmIndex.backwardSearch(c.strand(), nextBase, c.siB);
                 if (nextB.isEmpty()) {
                     return null;
                 }
 
-                return new BidirectionalCursor(nextScore(c, nextBase), c.read, c.strand, SearchDirection.Backward,
-                        c.extensionType, null, nextB, c.cursorF, c.cursorB - 1);
+                return new BidirectionalCursor(nextScore(c, nextBase), c.cursor.next(), c.extensionType, null, nextB,
+                        c.split);
             }
         }
         default:
