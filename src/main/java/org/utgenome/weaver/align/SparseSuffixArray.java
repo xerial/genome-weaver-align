@@ -153,9 +153,6 @@ public class SparseSuffixArray
         final long N = fmIndex.textSize();
         for (long j = 1; j <= N; j++) {
             cursor = fmIndex.suffixLink(cursor);
-            //            if (cursor == 0) {
-            //                return j - 1;
-            //            }
             if (cursor % L == 0)
                 return (sparseSA.lookup(cursor / L) + j + N) % N;
         }

@@ -169,6 +169,10 @@ public class FMIndexOnGenome
         return pos;
     }
 
+    public PosOnGenome translate(long pos, Strand strand) throws UTGBException {
+        return index.translate(pos, strand);
+    }
+
     public PosOnGenome toGenomeCoordinate(long saIndex, long querySize, Strand strand) throws UTGBException {
         long pos = toForwardSequenceIndex(saIndex, strand);
         if (strand == Strand.FORWARD) {

@@ -119,10 +119,18 @@ public class BidirectionalCursor
     public AlignmentRecord convert(String readName, FMIndexOnGenome fmIndex) throws UTGBException {
 
         AlignmentRecord rec = new AlignmentRecord();
-        SuffixInterval si = isForwardSearch() ? siF : siB;
+        long pos = -1;
         // TODO non unique alignment
-        // TODO fix for bi-directional search
-        PosOnGenome p = fmIndex.toGenomeCoordinate(si.lowerBound, cursor.processedBases(), cursor.strand);
+        if (isForwardSearch()) {
+            pos = fmIndex.toForwardSequenceIndex(siF.lowerBound, Strand.FORWARD);
+            pos -= cursor.processedBases();
+        }
+        else {
+            pos = fmIndex.toForwardSequenceIndex(siB.lowerBound, Strand.REVERSE);
+            pos++;
+        }
+
+        PosOnGenome p = fmIndex.translate(pos, cursor.strand);
         rec.chr = p.chr;
         rec.start = p.pos;
         rec.strand = cursor.strand;
