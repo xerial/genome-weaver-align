@@ -181,6 +181,7 @@ public class BidirectionalNFA
                 queue.add(next);
             }
         }
+        reportStat();
 
         // k > 1
         for (int k = 1; k < minMismatches; ++k) {
@@ -249,10 +250,8 @@ public class BidirectionalNFA
                     }
                 }
             }
-
+            reportStat();
         }
-
-        reportStat();
 
     }
 
