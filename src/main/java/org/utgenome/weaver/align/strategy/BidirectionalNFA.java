@@ -31,6 +31,7 @@ import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.AlignmentScoreConfig;
 import org.utgenome.weaver.align.BidirectionalSuffixInterval;
+import org.utgenome.weaver.align.BitVector;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
@@ -178,6 +179,9 @@ public class BidirectionalNFA
             if (doCutOff(c, 0)) {
                 continue;
             }
+            else {
+                nextQueue.add(c);
+            }
 
             // Proceed to next base
             BidirectionalCursor next = next(c);
@@ -194,13 +198,24 @@ public class BidirectionalNFA
             queue = nextQueue;
             nextQueue = new CursorQueue();
 
+            BitVector filter = staircaseFilter.getStaircaseMask(k);
+
             while (!queue.isEmpty()) {
                 BidirectionalCursor c = queue.poll();
                 if (doCutOff(c, k))
                     continue;
 
+                // suffix filter
+                int nm = c.score.layer();
+                if (nm + 1 == k) {
+                    if (!filter.get(c.getProcessedBases())) {
+                        numFiltered++;
+                        continue;
+                    }
+                }
+
                 // No more mismatches are allowed in this layer
-                if (c.score.layer() >= k) {
+                if (nm >= k) {
                     // search for exact match
                     BidirectionalCursor next = exactMatch(c);
                     if (next != null) {
@@ -275,20 +290,13 @@ public class BidirectionalNFA
             return true;
         }
 
-        int nm = c.score.layer();
-        if (nm == k) {
-            int pos = m - c.getRemainingBases();
-            if (staircaseFilter.getStaircaseMask(k + 1).get(pos)) {
-                nextQueue.add(c);
-            }
-        }
         return false;
     }
 
     void reportStat(int k) {
         if (_logger.isDebugEnabled())
-            _logger.debug("stat %s k:%d, FM Search:%,d, Exact:%d, CutOff:%d", bestScore > 0 ? "found" : "no match", k,
-                    this.fmIndexSearchCount, this.exactSearchCount, this.numCutOff);
+            _logger.debug("stat %s k:%d, FM Search:%,d, Exact:%d, CutOff:%d, Filtered:%d", bestScore > 0 ? "found"
+                    : "no match", k, this.fmIndexSearchCount, this.exactSearchCount, this.numCutOff, this.numFiltered);
     }
 
     public void reportAlignment(BidirectionalCursor c) throws Exception {
@@ -321,6 +329,7 @@ public class BidirectionalNFA
     private int fmIndexSearchCount = 0;
     private int exactSearchCount   = 0;
     private int numCutOff          = 0;
+    private int numFiltered        = 0;
 
     BidirectionalCursor extendWithSplit(BidirectionalCursor c) {
         Score nextScore = c.score.extendWithSplit(config);
