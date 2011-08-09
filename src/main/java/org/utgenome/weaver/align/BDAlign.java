@@ -27,9 +27,10 @@ package org.utgenome.weaver.align;
 import org.utgenome.UTGBException;
 import org.utgenome.weaver.GenomeWeaverCommand;
 import org.utgenome.weaver.align.record.RawRead;
+import org.utgenome.weaver.align.record.ReadSequence;
 import org.utgenome.weaver.align.record.ReadSequenceReader;
 import org.utgenome.weaver.align.record.ReadSequenceReaderFactory;
-import org.utgenome.weaver.align.strategy.BidirectionalBWT;
+import org.utgenome.weaver.align.strategy.BidirectionalNFA;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandlerBase;
@@ -97,11 +98,9 @@ public class BDAlign extends GenomeWeaverCommand
 
     }
 
-    public static void query(String fastaFilePrefix, ReadSequenceReader readReader, AlignmentScoreConfig config,
+    public static void query(String fastaFilePrefix, ReadSequenceReader readReader, final AlignmentScoreConfig config,
             final Reporter reporter) throws Exception {
         final FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix);
-        final BidirectionalBWT aligner = new BidirectionalBWT(fmIndex, reporter);
-        aligner.setAlignmentScoreConfig(config);
 
         readReader.parse(new ObjectHandlerBase<RawRead>() {
             int       count = 0;
@@ -109,7 +108,9 @@ public class BDAlign extends GenomeWeaverCommand
 
             @Override
             public void handle(RawRead read) throws Exception {
-                aligner.align(read);
+                ReadSequence r = (ReadSequence) read;
+                BidirectionalNFA aligner = new BidirectionalNFA(fmIndex, new ACGTSequence(r.seq), config, reporter);
+                aligner.align();
                 count++;
                 double time = timer.getElapsedTime();
                 if (count % 10000 == 0) {

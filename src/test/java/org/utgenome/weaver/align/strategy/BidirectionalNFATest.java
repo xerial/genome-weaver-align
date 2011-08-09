@@ -42,7 +42,7 @@ public class BidirectionalNFATest
     }
 
     @Test
-    public void sample() throws Exception {
+    public void oneMismatch() throws Exception {
         ACGTSequence q = new ACGTSequence("GCGTAG");
         BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, q);
         nfa.align();

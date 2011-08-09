@@ -29,9 +29,13 @@ import java.io.InputStream;
 import java.util.Properties;
 
 import org.xerial.util.StringUtil;
+import org.xerial.util.log.LogLevel;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.CommandHelpMessage;
 import org.xerial.util.opt.CommandLauncher;
+import org.xerial.util.opt.CommandLauncherEventHandler;
+import org.xerial.util.opt.GlobalCommandOption;
+import org.xerial.util.opt.Option;
 
 /**
  * Entry point of the Genome Weaver
@@ -47,12 +51,29 @@ public class GenomeWeaver
         execute(StringUtil.tokenizeCommandLineArgument(arg));
     }
 
+    public static class GlobalOption extends GlobalCommandOption
+    {
+        @Option(symbol = "l", description = "log level: (trace|debug|info|warn|error|fatal)")
+        public LogLevel logLevel = LogLevel.INFO;
+    }
+
+    public static GlobalOption globalOption = new GlobalOption();
+
     public static void execute(String[] arg) throws Exception {
         CommandLauncher l = new CommandLauncher();
+        l.setGlobalCommandOption(globalOption);
         CommandHelpMessage m = new CommandHelpMessage();
         m.defaultHeader = String.format("Genome Weaver: version %s", getVersion());
         l.setMessage(m);
         l.addCommandsIn(GenomeWeaver.class.getPackage(), true);
+        l.addEventHandler(new CommandLauncherEventHandler() {
+
+            @Override
+            public void afterReadingGlobalOptions(GlobalCommandOption opt) {
+                Logger.getLogger(GenomeWeaver.class.getPackage()).setLogLevel(globalOption.logLevel);
+            }
+        });
+
         l.execute(arg);
     }
 

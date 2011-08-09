@@ -46,21 +46,21 @@ import org.xerial.util.log.Logger;
  */
 public class BidirectionalNFA
 {
-    private static Logger              _logger   = Logger.getLogger(BidirectionalNFA.class);
+    private static Logger         _logger   = Logger.getLogger(BidirectionalNFA.class);
 
-    private final FMIndexOnGenome      fmIndex;
-    private final ACGTSequence         qF;
-    private final ACGTSequence         qC;
-    private final int                  m;                                                   // query length
-    private final AlignmentScoreConfig config;
-    private final Reporter             out;
-    private int                        bestScore = -1;
-    private int                        minMismatches;
+    private final FMIndexOnGenome fmIndex;
+    private final ACGTSequence    qF;
+    private final ACGTSequence    qC;
+    private final int             m;                                                   // query length
+    private AlignmentScoreConfig  config;
+    private final Reporter        out;
+    private int                   bestScore = -1;
+    private int                   minMismatches;
 
-    private CursorQueue                queue     = new CursorQueue();
-    private CursorQueue                nextQueue = new CursorQueue();
+    private CursorQueue           queue     = new CursorQueue();
+    private CursorQueue           nextQueue = new CursorQueue();
 
-    private StaircaseFilter            staircaseFilter;
+    private StaircaseFilter       staircaseFilter;
 
     /**
      * Priority queue holding alignment cursors
@@ -85,7 +85,7 @@ public class BidirectionalNFA
     }
 
     public BidirectionalNFA(FMIndexOnGenome fmIndex, ACGTSequence query) {
-        this(fmIndex, query, new Reporter() {
+        this(fmIndex, query, new AlignmentScoreConfig(), new Reporter() {
             @Override
             public void emit(Object result) throws Exception {
                 _logger.debug(SilkLens.toSilk("result", result));
@@ -93,12 +93,12 @@ public class BidirectionalNFA
         });
     }
 
-    public BidirectionalNFA(FMIndexOnGenome fmIndex, ACGTSequence query, Reporter out) {
+    public BidirectionalNFA(FMIndexOnGenome fmIndex, ACGTSequence query, AlignmentScoreConfig config, Reporter out) {
         this.fmIndex = fmIndex;
         this.qF = query;
         this.qC = query.complement();
         this.m = (int) query.textSize();
-        this.config = new AlignmentScoreConfig();
+        this.config = config;
         this.out = out;
         this.staircaseFilter = new StaircaseFilter(m, config.maximumEditDistances);
         this.minMismatches = config.maximumEditDistances;
@@ -208,7 +208,7 @@ public class BidirectionalNFA
                         }
                         // deletion from reference
                         for (ACGT ch : ACGT.exceptN) {
-
+                            // TODO
                         }
                         // extend the search with read split
                         if (c.score.numSplit < config.numSplitAlowed) {
@@ -216,6 +216,7 @@ public class BidirectionalNFA
                         }
                         break;
                     case DELETION:
+                        // TODO
                         break;
                     case INSERTION:
                         if (c.score.numGapExtend < config.numGapExtensionAllowed) {
@@ -301,8 +302,7 @@ public class BidirectionalNFA
 
     BidirectionalCursor extendWithSplit(BidirectionalCursor c) {
         Score nextScore = c.score.extendWithSplit(config);
-        CursorBase next = c.cursor.next();
-        return new BidirectionalCursor(nextScore, next, ExtensionType.MATCH, fmIndex.wholeSARange(),
+        return new BidirectionalCursor(nextScore, c.cursor, ExtensionType.MATCH, fmIndex.wholeSARange(),
                 fmIndex.wholeSARange(), c);
     }
 
