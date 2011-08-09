@@ -53,6 +53,10 @@ public class SuffixInterval implements SARange
         return lowerBound >= upperBound;
     }
 
+    public boolean hasEntry() {
+        return lowerBound < upperBound;
+    }
+
     @Override
     public String toString() {
         return String.format("[%,d,%,d)", lowerBound, upperBound);

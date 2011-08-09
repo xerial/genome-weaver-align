@@ -32,45 +32,47 @@ public class Score
     public final int numMismatches;
     public final int numGapOpens;
     public final int numGapExtend;
+    public final int numSplit;
 
-    public Score(int score, int numMismatches, int numGapOpens, int numGapExtend) {
+    public Score(int score, int numMismatches, int numGapOpens, int numGapExtend, int numSplit) {
         this.score = score;
         this.numMismatches = numMismatches;
         this.numGapOpens = numGapOpens;
         this.numGapExtend = numGapExtend;
+        this.numSplit = numSplit;
     }
 
     @Override
     public String toString() {
-        return String.format("%3d:%d/%d/%d", score, numMismatches, numGapOpens, numGapExtend);
+        return String.format("%3d:%dM%dO%dE%dS", score, numMismatches, numGapOpens, numGapExtend);
     }
 
     public int layer() {
-        return numMismatches + numGapOpens + numGapExtend;
+        return numMismatches + numGapOpens + numGapExtend + numSplit;
     }
 
     public static Score initial() {
-        return new Score(0, 0, 0, 0);
+        return new Score(0, 0, 0, 0, 0);
     }
 
     public Score update(int newScore) {
-        return new Score(newScore, numMismatches, numGapOpens, numGapExtend);
+        return new Score(newScore, numMismatches, numGapOpens, numGapExtend, numSplit);
     }
 
     public Score extendWithMatch(AlignmentScoreConfig config) {
-        return new Score(score + config.matchScore, numMismatches, numGapOpens, numGapExtend);
+        return new Score(score + config.matchScore, numMismatches, numGapOpens, numGapExtend, numSplit);
     }
 
     public Score extendWithMismatch(AlignmentScoreConfig config) {
-        return new Score(score - config.mismatchPenalty, numMismatches + 1, numGapOpens, numGapExtend);
+        return new Score(score - config.mismatchPenalty, numMismatches + 1, numGapOpens, numGapExtend, numSplit);
     }
 
     public Score extendWithGapOpen(AlignmentScoreConfig config) {
-        return new Score(score - config.gapOpenPenalty, numMismatches, numGapOpens + 1, numGapExtend);
+        return new Score(score - config.gapOpenPenalty, numMismatches, numGapOpens + 1, numGapExtend, numSplit);
     }
 
     public Score extendWithGapExtend(AlignmentScoreConfig config) {
-        return new Score(score - config.gapExtensionPenalty, numMismatches, numGapOpens, numGapExtend + 1);
+        return new Score(score - config.gapExtensionPenalty, numMismatches, numGapOpens, numGapExtend + 1, numSplit);
     }
 
 }

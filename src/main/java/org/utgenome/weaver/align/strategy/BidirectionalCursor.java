@@ -27,38 +27,46 @@ package org.utgenome.weaver.align.strategy;
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.AlignmentScoreConfig;
-import org.utgenome.weaver.align.BidirectionalSuffixInterval;
-import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
 
 /**
- * cursor holding alignment state
+ * cursor holding an alignment state of the bidirectional search
  * 
  * @author leo
  * 
  */
 public class BidirectionalCursor
 {
-    public final Score           score;
-    public final ACGTSequence    read;
-    public final Strand          strand;
-    public final SearchDirection searchDirection;
-    public final SuffixInterval  siF;
-    public final SuffixInterval  siB;
-    public final int             cursorF;
-    public final int             cursorB;
+    public final Score               score;
+    public final ACGTSequence        read;
+    public final Strand              strand;
+    public final SearchDirection     searchDirection;
+    public final ExtensionType       extensionType;
+    public final SuffixInterval      siF;
+    public final SuffixInterval      siB;
+    public final int                 cursorF;
+    public final int                 cursorB;
+    public final BidirectionalCursor split;
 
     public BidirectionalCursor(Score score, ACGTSequence read, Strand strand, SearchDirection searchDirection,
-            SuffixInterval siF, SuffixInterval siB, int cursorF, int cursorB) {
+            ExtensionType extensionType, SuffixInterval siF, SuffixInterval siB, int cursorF, int cursorB,
+            BidirectionalCursor split) {
         this.score = score;
         this.read = read;
         this.strand = strand;
         this.searchDirection = searchDirection;
+        this.extensionType = extensionType;
         this.siF = siF;
         this.siB = siB;
         this.cursorF = cursorF;
         this.cursorB = cursorB;
+        this.split = split;
+    }
+
+    public BidirectionalCursor(Score score, ACGTSequence read, Strand strand, SearchDirection searchDirection,
+            ExtensionType extensionType, SuffixInterval siF, SuffixInterval siB, int cursorF, int cursorB) {
+        this(score, read, strand, searchDirection, extensionType, siF, siB, cursorF, cursorB, null);
     }
 
     public int getUpperBoundOfScore(AlignmentScoreConfig config) {
@@ -77,71 +85,6 @@ public class BidirectionalCursor
         return searchDirection.isForward;
     }
 
-    public Score nextScore(ACGT ch, AlignmentScoreConfig config) {
-        ACGT nextBase = nextACGT();
-        if (ch == nextBase) {
-            return score.extendWithMatch(config);
-        }
-        else
-            return score.extendWithMismatch(config);
-    }
-
-    public BidirectionalCursor next(FMIndexOnGenome fmIndex, AlignmentScoreConfig config) {
-        return next(fmIndex, nextACGT(), config);
-    }
-
-    public BidirectionalCursor next(FMIndexOnGenome fmIndex, ACGT nextBase, AlignmentScoreConfig config) {
-        switch (searchDirection) {
-        case Forward: {
-            SuffixInterval nextF = fmIndex.forwardSearch(strand, nextBase, siF);
-            if (!nextF.isEmpty())
-                return new BidirectionalCursor(nextScore(nextBase, config), read, strand, searchDirection, nextF, siB,
-                        cursorF + 1, cursorB);
-
-            // switch to bidirectional search
-            return new BidirectionalCursor(Score.initial(), read, strand, SearchDirection.BidirectionalForward,
-                    fmIndex.wholeSARange(), fmIndex.wholeSARange(), cursorF + 1, cursorF + 1);
-        }
-        case Backward: {
-            SuffixInterval nextB = fmIndex.backwardSearch(strand, nextBase, siB);
-            if (!nextB.isEmpty())
-                return new BidirectionalCursor(nextScore(nextBase, config), read, strand, searchDirection, siF, nextB,
-                        cursorF, cursorB - 1);
-
-            // no match
-            return null;
-        }
-        case BidirectionalForward: {
-            if (cursorF < (int) read.textSize()) {
-                // Bidirectional search
-                BidirectionalSuffixInterval next = fmIndex.bidirectionalForwardSearch(strand, nextBase,
-                        new BidirectionalSuffixInterval(siF, siB));
-                if (next != null) {
-                    return new BidirectionalCursor(nextScore(nextBase, config), read, strand, searchDirection,
-                            next.forwardSi, next.backwardSi, cursorF + 1, cursorB);
-                }
-
-                // Start new bidirectional search
-                return new BidirectionalCursor(Score.initial(), read, strand, searchDirection, fmIndex.wholeSARange(),
-                        fmIndex.wholeSARange(), cursorF + 1, cursorF);
-            }
-            else {
-                // Switch to backward search
-                SuffixInterval nextB = fmIndex.backwardSearch(strand, nextBase, siB);
-                if (nextB.isEmpty()) {
-                    return null;
-                }
-
-                return new BidirectionalCursor(nextScore(nextBase, config), read, strand, SearchDirection.Backward,
-                        siF, nextB, cursorF, cursorB - 1);
-            }
-        }
-        default:
-            throw new IllegalStateException("cannot reach here");
-        }
-
-    }
-
     public int getRemainingBases() {
         return ((int) read.textSize() - cursorF) + cursorB;
     }
@@ -149,11 +92,13 @@ public class BidirectionalCursor
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(String.format("%s%s:%2d:%d/%d:%s", strand.symbol, searchDirection.symbol, score.score, cursorF,
+        s.append(String.format("%s%s%2d:%d/%d:%s", strand.symbol, searchDirection.symbol, score.score, cursorF,
                 cursorB, siF));
         if (siB != null)
             s.append(String.format(" %s", siB));
         return s.toString();
     }
+
+    //public BidirectionalCursor extendWithMatch(AlignmentScoreConfig config, )
 
 }

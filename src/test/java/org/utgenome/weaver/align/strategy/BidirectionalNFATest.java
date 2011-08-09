@@ -38,12 +38,12 @@ public class BidirectionalNFATest
 
     @BeforeClass
     public static void setUp() {
-        fmIndex = FMIndexOnGenome.buildFromSequence("seq", "AACCGTA");
+        fmIndex = FMIndexOnGenome.buildFromSequence("seq", "AAGCCTAGTT");
     }
 
     @Test
     public void sample() throws Exception {
-        ACGTSequence q = new ACGTSequence("AAGCGTA");
+        ACGTSequence q = new ACGTSequence("GCGTAG");
         BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, q);
         nfa.align();
     }
