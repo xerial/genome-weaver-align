@@ -90,7 +90,7 @@ public class BidirectionalNFA
         this(fmIndex, query, new AlignmentScoreConfig(), new Reporter() {
             @Override
             public void emit(Object result) throws Exception {
-                _logger.debug(SilkLens.toSilk("result", result));
+                _logger.trace(SilkLens.toSilk("result", result));
                 BidirectionalCursor c = (BidirectionalCursor) result;
                 AlignmentRecord convert = c.convert("read", fmIndex);
                 _logger.debug(SilkLens.toSilk("alignment", convert));
