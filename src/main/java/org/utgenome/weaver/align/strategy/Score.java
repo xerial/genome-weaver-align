@@ -44,7 +44,9 @@ public class Score
 
     @Override
     public String toString() {
-        return String.format("%3d:%dM%dO%dE%dS", score, numMismatches, numGapOpens, numGapExtend);
+        StringBuilder s = new StringBuilder();
+        s.append(String.format("%d:%d/%d/%d/%d", score, numMismatches, numGapOpens, numGapExtend, numSplit));
+        return s.toString();
     }
 
     public int layer() {

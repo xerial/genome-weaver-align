@@ -194,7 +194,7 @@ public class BidirectionalNFA
                     // search for exact match
                     BidirectionalCursor next = next(c);
                     if (next != null)
-                        queue.add(c);
+                        queue.add(next);
                     continue;
                 }
 
@@ -233,8 +233,9 @@ public class BidirectionalNFA
                         if (nextBase == ch)
                             continue;
                         BidirectionalCursor next = next(c, ch);
-                        if (next != null)
+                        if (next != null) {
                             queue.add(next);
+                        }
                     }
                 }
             }
@@ -301,7 +302,8 @@ public class BidirectionalNFA
     BidirectionalCursor extendWithSplit(BidirectionalCursor c) {
         Score nextScore = c.score.extendWithSplit(config);
         CursorBase next = c.cursor.next();
-        return new BidirectionalCursor(nextScore, next, ExtensionType.MATCH, c.siF, c.siB, c);
+        return new BidirectionalCursor(nextScore, next, ExtensionType.MATCH, fmIndex.wholeSARange(),
+                fmIndex.wholeSARange(), c);
     }
 
     BidirectionalCursor extendWithInsertion(BidirectionalCursor c) {

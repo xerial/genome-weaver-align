@@ -93,7 +93,7 @@ public class BidirectionalCursor
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(String.format("%s%s%2d:%d/%d:%s", cursor.strand.symbol, cursor.searchDirection.symbol, score.score,
+        s.append(String.format("%s%s%s:%d/%d:%s", cursor.strand.symbol, cursor.searchDirection.symbol, score,
                 cursor.cursorF, cursor.cursorB, siF));
         if (siB != null)
             s.append(String.format(" %s", siB));
