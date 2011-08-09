@@ -24,11 +24,15 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
+import org.utgenome.UTGBException;
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.AlignmentScoreConfig;
+import org.utgenome.weaver.align.FMIndexOnGenome;
+import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
+import org.utgenome.weaver.align.record.AlignmentRecord;
 
 /**
  * cursor holding an alignment state of the bidirectional search
@@ -87,11 +91,17 @@ public class BidirectionalCursor
     }
 
     public int getProcessedBases() {
-        return cursor.getProcessedBases();
+        if (split == null)
+            return cursor.processedBases();
+        else
+            return cursor.processedBases() + split.cursor.processedBases();
     }
 
     public int getRemainingBases() {
-        return cursor.getRemainingBases();
+        if (split == null)
+            return cursor.remainingBases();
+        else
+            return cursor.remainingBases() - split.cursor.processedBases();
     }
 
     @Override
@@ -104,6 +114,28 @@ public class BidirectionalCursor
         if (split != null)
             s.append(String.format(" split(%s)", split));
         return s.toString();
+    }
+
+    public AlignmentRecord convert(String readName, FMIndexOnGenome fmIndex) throws UTGBException {
+
+        AlignmentRecord rec = new AlignmentRecord();
+        SuffixInterval si = isForwardSearch() ? siF : siB;
+        // TODO non unique alignment
+        PosOnGenome p = fmIndex.toGenomeCoordinate(si.lowerBound, cursor.processedBases(), cursor.strand);
+        rec.chr = p.chr;
+        rec.start = p.pos;
+        rec.strand = cursor.strand;
+        rec.score = score.score;
+        rec.numMismatches = score.numMismatches;
+        rec.querySeq = cursor.strand == Strand.FORWARD ? cursor.read.toString() : cursor.read.reverse().toString();
+        rec.readName = readName;
+        rec.end = p.pos + cursor.processedBases();
+
+        if (split != null) {
+            rec.split = split.convert(readName, fmIndex);
+        }
+
+        return rec;
     }
 
 }

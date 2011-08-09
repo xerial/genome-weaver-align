@@ -49,6 +49,10 @@ public class SuffixInterval implements SARange
         return upperBound - lowerBound;
     }
 
+    public boolean isUniqueHit() {
+        return range() == 1;
+    }
+
     public boolean isEmpty() {
         return lowerBound >= upperBound;
     }

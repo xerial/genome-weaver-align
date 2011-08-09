@@ -56,16 +56,24 @@ public class CursorBase
         return searchDirection.isForward;
     }
 
-    public int getProcessedBases() {
+    public int processedBases() {
         return cursorF - cursorB;
     }
 
-    public int getRemainingBases() {
+    public int remainingBases() {
         return ((int) read.textSize() - cursorF) + cursorB;
     }
 
     public CursorBase newBidirectionalFowardCursor() {
         return new CursorBase(read, strand, SearchDirection.BidirectionalForward, cursorF + 1, cursorF + 1);
+    }
+
+    public CursorBase split() {
+        int cursor = cursorF;
+        if (searchDirection == SearchDirection.Backward)
+            cursor = cursorB;
+
+        return new CursorBase(read, strand, searchDirection, cursor, cursor);
     }
 
     public CursorBase next() {

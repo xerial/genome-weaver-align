@@ -34,6 +34,7 @@ import org.utgenome.weaver.align.BidirectionalSuffixInterval;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
+import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.log.Logger;
@@ -84,11 +85,14 @@ public class BidirectionalNFA
 
     }
 
-    public BidirectionalNFA(FMIndexOnGenome fmIndex, ACGTSequence query) {
+    public BidirectionalNFA(final FMIndexOnGenome fmIndex, ACGTSequence query) {
         this(fmIndex, query, new AlignmentScoreConfig(), new Reporter() {
             @Override
             public void emit(Object result) throws Exception {
                 _logger.debug(SilkLens.toSilk("result", result));
+                BidirectionalCursor c = (BidirectionalCursor) result;
+                AlignmentRecord convert = c.convert("read", fmIndex);
+                _logger.debug(SilkLens.toSilk("alignment", convert));
             }
         });
     }
@@ -181,12 +185,12 @@ public class BidirectionalNFA
                 queue.add(next);
             }
         }
-        reportStat();
 
         // k > 1
         for (int k = 1; k < minMismatches; ++k) {
             // Transit the states to the next row
-            _logger.debug("transit k from %d to %d", k - 1, k);
+            if (_logger.isTraceEnabled())
+                _logger.trace("transit k from %d to %d", k - 1, k);
             queue = nextQueue;
             nextQueue = new CursorQueue();
 
@@ -250,7 +254,7 @@ public class BidirectionalNFA
                     }
                 }
             }
-            reportStat();
+            reportStat(k);
         }
 
     }
@@ -281,10 +285,10 @@ public class BidirectionalNFA
         return false;
     }
 
-    void reportStat() {
+    void reportStat(int k) {
         if (_logger.isDebugEnabled())
-            _logger.debug("stat %s k:%d, FM Search:%,d, Exact:%d, CutOff:%d", bestScore > 0 ? "found" : "no match",
-                    this.minMismatches, this.fmIndexSearchCount, this.exactSearchCount, this.numCutOff);
+            _logger.debug("stat %s k:%d, FM Search:%,d, Exact:%d, CutOff:%d", bestScore > 0 ? "found" : "no match", k,
+                    this.fmIndexSearchCount, this.exactSearchCount, this.numCutOff);
     }
 
     public void reportAlignment(BidirectionalCursor c) throws Exception {
@@ -297,7 +301,7 @@ public class BidirectionalNFA
             }
             // Found a match
             out.emit(c);
-            reportStat();
+            reportStat(minMismatches);
         }
     }
 
@@ -320,7 +324,7 @@ public class BidirectionalNFA
 
     BidirectionalCursor extendWithSplit(BidirectionalCursor c) {
         Score nextScore = c.score.extendWithSplit(config);
-        return new BidirectionalCursor(nextScore, c.cursor, ExtensionType.MATCH, fmIndex.wholeSARange(),
+        return new BidirectionalCursor(nextScore, c.cursor.split(), ExtensionType.MATCH, fmIndex.wholeSARange(),
                 fmIndex.wholeSARange(), c);
     }
 

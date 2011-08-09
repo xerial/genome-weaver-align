@@ -30,6 +30,7 @@ import org.utgenome.weaver.align.record.RawRead;
 import org.utgenome.weaver.align.record.ReadSequence;
 import org.utgenome.weaver.align.record.ReadSequenceReader;
 import org.utgenome.weaver.align.record.ReadSequenceReaderFactory;
+import org.utgenome.weaver.align.strategy.BidirectionalCursor;
 import org.utgenome.weaver.align.strategy.BidirectionalNFA;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
@@ -93,6 +94,12 @@ public class BDAlign extends GenomeWeaverCommand
             public void emit(Object result) {
                 if (_logger.isDebugEnabled())
                     _logger.debug(SilkLens.toSilk("result", result));
+
+                if (BidirectionalCursor.class.isInstance(result)) {
+                    BidirectionalCursor c = BidirectionalCursor.class.cast(result);
+                    //c.convert(readName, fmIndex);
+                }
+
             }
         });
 

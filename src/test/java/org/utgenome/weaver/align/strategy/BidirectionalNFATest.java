@@ -62,7 +62,7 @@ public class BidirectionalNFATest
 
     @Test
     public void splitExact() throws Exception {
-        BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, new ACGTSequence("AAGCCTCTTG"));
+        BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, new ACGTSequence("AAGCCTTCCTTG"));
         nfa.align();
     }
 

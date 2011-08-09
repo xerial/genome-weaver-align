@@ -34,16 +34,17 @@ import org.xerial.util.StringUtil;
 
 public class AlignmentRecord
 {
-    public String readName;
-    public String chr;
-    public Strand strand;
-    public int    start;
-    public int    end;
-    public int    numMismatches = 0;
-    private CIGAR cigar;
-    public String querySeq;
-    public String qual;
-    public int    score;
+    public String          readName;
+    public String          chr;
+    public Strand          strand;
+    public int             start;
+    public int             end;
+    public int             numMismatches = 0;
+    private CIGAR          cigar;
+    public String          querySeq;
+    public String          qual;
+    public int             score;
+    public AlignmentRecord split         = null;
 
     public CIGAR getCigar() {
         return cigar;
