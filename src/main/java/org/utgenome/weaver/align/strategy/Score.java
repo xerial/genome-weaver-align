@@ -65,6 +65,10 @@ public class Score
         return new Score(score + config.matchScore, numMismatches, numGapOpens, numGapExtend, numSplit);
     }
 
+    public Score extendWithMatch(AlignmentScoreConfig config, int numMatchExtend) {
+        return new Score(score + config.matchScore * numMatchExtend, numMismatches, numGapOpens, numGapExtend, numSplit);
+    }
+
     public Score extendWithMismatch(AlignmentScoreConfig config) {
         return new Score(score - config.mismatchPenalty, numMismatches + 1, numGapOpens, numGapExtend, numSplit);
     }

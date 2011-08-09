@@ -176,6 +176,14 @@ public class BidirectionalNFA
         // k=0;
         while (!queue.isEmpty()) {
             BidirectionalCursor c = queue.poll();
+
+            if (c.score.layer() >= config.maximumEditDistances) {
+                BidirectionalCursor next = exactMatch(c);
+                if (next != null)
+                    reportAlignment(next);
+                continue;
+            }
+
             if (doCutOff(c, 0)) {
                 continue;
             }
@@ -205,14 +213,7 @@ public class BidirectionalNFA
                 if (doCutOff(c, k))
                     continue;
 
-                // suffix filter
                 int nm = c.score.layer();
-                if (nm + 1 == k) {
-                    if (!filter.get(c.getProcessedBases())) {
-                        numFiltered++;
-                        continue;
-                    }
-                }
 
                 // No more mismatches are allowed in this layer
                 if (nm >= k) {
@@ -222,6 +223,14 @@ public class BidirectionalNFA
                         reportAlignment(next);
                     }
                     continue;
+                }
+
+                // suffix filter for further searches
+                if (nm + 1 == k) {
+                    if (!filter.get(c.getProcessedBases())) {
+                        numFiltered++;
+                        continue;
+                    }
                 }
 
                 {
@@ -424,12 +433,46 @@ public class BidirectionalNFA
 
     BidirectionalCursor exactMatch(BidirectionalCursor c) {
         exactSearchCount++;
-        while (c != null) {
-            if (c.getRemainingBases() == 0)
-                return c;
+        CursorBase cursor = c.cursor;
+        SuffixInterval siF = c.siF;
+        SuffixInterval siB = c.siB;
 
-            c = next(c);
+        final int n = c.getRemainingBases();
+        int numExtend = 0;
+        while (numExtend < n) {
+            ACGT ch = cursor.nextACGT();
+            switch (cursor.searchDirection) {
+            case Forward:
+                siF = fmIndex.forwardSearch(c.strand(), ch, siF);
+                if (siF.isEmpty())
+                    return null;
+                break;
+            case Backward:
+                siB = fmIndex.backwardSearch(c.strand(), ch, siB);
+                if (siB.isEmpty())
+                    return null;
+                break;
+            case BidirectionalForward:
+                if (cursor.cursorF < cursor.read.textSize()) {
+                    BidirectionalSuffixInterval bSi = fmIndex.bidirectionalForwardSearch(c.strand(), ch,
+                            new BidirectionalSuffixInterval(siF, siB));
+                    if (bSi == null)
+                        return null;
+                    siF = bSi.forwardSi;
+                    siB = bSi.backwardSi;
+                }
+                else {
+                    siB = fmIndex.backwardSearch(c.strand(), ch, siB);
+                    if (siB == null)
+                        return null;
+                }
+                break;
+            }
+            cursor = cursor.next();
+            numExtend++;
         }
-        return c;
+
+        return new BidirectionalCursor(c.score.extendWithMatch(config, numExtend), cursor, c.extensionType, siF, siB,
+                c.split);
     }
 }
