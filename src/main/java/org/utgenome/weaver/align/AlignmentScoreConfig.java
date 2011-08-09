@@ -44,4 +44,6 @@ public class AlignmentScoreConfig
     public int numGapExtensionAllowed = 4;
     public int numSplitAlowed         = 1;
 
+    public int indelEndSkip           = 5;
+
 }

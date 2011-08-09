@@ -65,7 +65,7 @@ public class BidirectionalNFA
     /**
      * Priority queue holding alignment cursors
      */
-    private static class CursorQueue extends PriorityQueue<BidirectionalCursor>
+    private class CursorQueue extends PriorityQueue<BidirectionalCursor>
     {
         /**
          * 
@@ -200,16 +200,18 @@ public class BidirectionalNFA
                 }
 
                 {
-                    // extend the search with indels 
+                    // extend the search with indels
                     switch (c.extensionType) {
                     case MATCH:
-                        if (gapOpenIsAllowed(c)) {
-                            // insertion to reference
-                            queue.add(extendWithInsertion(c));
-                        }
-                        // deletion from reference
-                        for (ACGT ch : ACGT.exceptN) {
-                            // TODO
+                        if (c.getProcessedBases() > config.indelEndSkip && c.getRemainingBases() > config.indelEndSkip) {
+                            if (gapOpenIsAllowed(c)) {
+                                // insertion to reference
+                                queue.add(extendWithInsertion(c));
+                            }
+                            // deletion from reference
+                            for (ACGT ch : ACGT.exceptN) {
+                                // TODO
+                            }
                         }
                         // extend the search with read split
                         if (c.score.numSplit < config.numSplitAlowed) {
@@ -266,7 +268,8 @@ public class BidirectionalNFA
             return true;
         }
 
-        if (k < config.maximumEditDistances) {
+        int nm = c.score.layer();
+        if (nm == k) {
             int pos = m - c.getRemainingBases();
             if (staircaseFilter.getStaircaseMask(k + 1).get(pos)) {
                 nextQueue.add(c);

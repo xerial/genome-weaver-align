@@ -56,6 +56,10 @@ public class CursorBase
         return searchDirection.isForward;
     }
 
+    public int getProcessedBases() {
+        return cursorF - cursorB;
+    }
+
     public int getRemainingBases() {
         return ((int) read.textSize() - cursorF) + cursorB;
     }

@@ -38,7 +38,7 @@ public class BidirectionalNFATest
 
     @BeforeClass
     public static void setUp() {
-        fmIndex = FMIndexOnGenome.buildFromSequence("seq", "AAGCCTAGTT");
+        fmIndex = FMIndexOnGenome.buildFromSequence("seq", "AAGCCTAGTTTCCTTG");
     }
 
     @Test
@@ -62,7 +62,7 @@ public class BidirectionalNFATest
 
     @Test
     public void splitExact() throws Exception {
-        BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, new ACGTSequence("AAGGTT"));
+        BidirectionalNFA nfa = new BidirectionalNFA(fmIndex, new ACGTSequence("AAGCCTCTTG"));
         nfa.align();
     }
 

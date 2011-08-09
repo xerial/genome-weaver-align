@@ -86,6 +86,10 @@ public class BidirectionalCursor
         return cursor.isForwardSearch();
     }
 
+    public int getProcessedBases() {
+        return cursor.getProcessedBases();
+    }
+
     public int getRemainingBases() {
         return cursor.getRemainingBases();
     }
