@@ -199,7 +199,7 @@ public class BidirectionalNFA
         }
 
         // k > 1
-        for (int k = 1; k < minMismatches; ++k) {
+        for (int k = 1; k <= minMismatches; ++k) {
             // Transit the states to the next row
             if (_logger.isTraceEnabled())
                 _logger.trace("transit k from %d to %d", k - 1, k);
