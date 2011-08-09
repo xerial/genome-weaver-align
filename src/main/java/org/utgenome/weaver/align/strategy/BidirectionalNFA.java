@@ -153,6 +153,11 @@ public class BidirectionalNFA
         //CursorContainer prevState = new CursorContainer(m + 1);
         //CursorContainer currentState = new CursorContainer(m + 1);
 
+        // Check whether there are too many Ns 
+        if (qF.fastCount(ACGT.N, 0, m) > config.maximumEditDistances) {
+            return; // no alignment. skip
+        }
+
         // Add search states for both strand
         {
             BidirectionalCursor initF = new BidirectionalCursor(Score.initial(), qF, Strand.FORWARD,
@@ -212,10 +217,11 @@ public class BidirectionalNFA
                             for (ACGT ch : ACGT.exceptN) {
                                 // TODO
                             }
-                        }
-                        // extend the search with read split
-                        if (c.score.numSplit < config.numSplitAlowed) {
-                            queue.add(extendWithSplit(c));
+
+                            // extend the search with read split
+                            if (c.score.numSplit < config.numSplitAlowed) {
+                                queue.add(extendWithSplit(c));
+                            }
                         }
                         break;
                     case DELETION:
@@ -246,9 +252,7 @@ public class BidirectionalNFA
 
         }
 
-        if (_logger.isDebugEnabled())
-            _logger.debug("stat %s k:%d, FM Search:%,d, Exact:%d, CutOff:%d", bestScore > 0 ? "found" : "no match",
-                    this.minMismatches, this.fmIndexSearchCount, this.exactSearchCount, this.numCutOff);
+        reportStat();
 
     }
 
@@ -278,6 +282,12 @@ public class BidirectionalNFA
         return false;
     }
 
+    void reportStat() {
+        if (_logger.isDebugEnabled())
+            _logger.debug("stat %s k:%d, FM Search:%,d, Exact:%d, CutOff:%d", bestScore > 0 ? "found" : "no match",
+                    this.minMismatches, this.fmIndexSearchCount, this.exactSearchCount, this.numCutOff);
+    }
+
     public void reportAlignment(BidirectionalCursor c) throws Exception {
         if (c.score.score > bestScore) {
             // Update the best score
@@ -288,6 +298,7 @@ public class BidirectionalNFA
             }
             // Found a match
             out.emit(c);
+            reportStat();
         }
     }
 
