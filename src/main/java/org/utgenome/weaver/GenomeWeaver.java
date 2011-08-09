@@ -54,7 +54,7 @@ public class GenomeWeaver
     public static class GlobalOption extends GlobalCommandOption
     {
         @Option(symbol = "l", description = "log level: (trace|debug|info|warn|error|fatal)")
-        public LogLevel logLevel = LogLevel.INFO;
+        public LogLevel logLevel = null;
     }
 
     public static GlobalOption globalOption = new GlobalOption();
@@ -70,7 +70,8 @@ public class GenomeWeaver
 
             @Override
             public void afterReadingGlobalOptions(GlobalCommandOption opt) {
-                Logger.getLogger(GenomeWeaver.class.getPackage()).setLogLevel(globalOption.logLevel);
+                if (globalOption.logLevel != null)
+                    Logger.getLogger(GenomeWeaver.class.getPackage()).setLogLevel(globalOption.logLevel);
             }
         });
 

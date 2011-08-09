@@ -190,11 +190,12 @@ public class BidirectionalNFA
                     continue;
 
                 // No more mismatches are allowed in this layer
-                if (c.score.layer() == k) {
+                if (c.score.layer() >= k) {
                     // search for exact match
-                    BidirectionalCursor next = next(c);
-                    if (next != null)
-                        queue.add(next);
+                    BidirectionalCursor next = exactMatch(c);
+                    if (next != null) {
+                        reportAlignment(next);
+                    }
                     continue;
                 }
 
@@ -261,16 +262,7 @@ public class BidirectionalNFA
         }
 
         if (c.getRemainingBases() == 0) {
-            // Update the best score
-            if (c.score.score > bestScore) {
-                bestScore = c.score.score;
-                int nm = c.score.layer();
-                if (nm < minMismatches) {
-                    minMismatches = nm;
-                }
-            }
-            // Found a match
-            out.emit(c);
+            reportAlignment(c);
             return true;
         }
 
@@ -281,6 +273,19 @@ public class BidirectionalNFA
             }
         }
         return false;
+    }
+
+    public void reportAlignment(BidirectionalCursor c) throws Exception {
+        if (c.score.score > bestScore) {
+            // Update the best score
+            bestScore = c.score.score;
+            int nm = c.score.layer();
+            if (nm < minMismatches) {
+                minMismatches = nm;
+            }
+            // Found a match
+            out.emit(c);
+        }
     }
 
     Score nextScore(BidirectionalCursor c, ACGT ch) {
@@ -368,8 +373,8 @@ public class BidirectionalNFA
                 // Start new bidirectional search
                 if (c.score.layer() == 0) {
                     // Set high priority to the search beginning with this cursor for k>0 
-                    return new BidirectionalCursor(Score.initial(), c.cursor.next(), c.extensionType,
-                            fmIndex.wholeSARange(), fmIndex.wholeSARange(), c.split);
+                    return new BidirectionalCursor(Score.initial(), c.cursor.newBidirectionalFowardCursor(),
+                            c.extensionType, fmIndex.wholeSARange(), fmIndex.wholeSARange(), c.split);
                 }
                 else
                     return null;
