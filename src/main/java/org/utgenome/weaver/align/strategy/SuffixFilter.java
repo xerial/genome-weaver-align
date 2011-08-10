@@ -201,12 +201,16 @@ public class SuffixFilter
             this.state |= 1 << ch.code;
         }
 
+        public void updateSplitFlag() {
+            this.state |= 1 << 5;
+        }
+
         public boolean isChecked(ACGT ch) {
             return (state & (1 << ch.code)) != 0;
         }
 
         public SearchState nextStateAfterSplit() {
-            this.state |= 1 << 5;
+            updateSplitFlag();
             // use the same automaton state
             if (getMinDifferences() < k) {
                 return new SearchState(cursor.split(), automaton, getMinDifferences() + 1, fmIndex.wholeSARange(),
@@ -264,6 +268,7 @@ public class SuffixFilter
                 return new SearchState(cursor.next(), next, nm, siF, siB);
             }
         }
+
     }
 
     private SearchState initialState(Strand strand, SearchDirection searchDirection, int k, int m) {
@@ -383,16 +388,17 @@ public class SuffixFilter
                     continue;
                 }
 
+                if (allowedMismatches == 0) {
+                    // exact match
+                }
+
                 ACGT nextBase = c.cursor.nextACGT(q);
                 if (!c.isChecked(nextBase)) {
                     // search for a base in the read
                     c.updateFlag(nextBase);
                     BidirectionalSuffixInterval nextSi = extendSearch(c, nextBase);
                     if (nextSi != null) {
-                        SearchState nextState = c.nextState(nextBase, nextSi.forwardSi, nextSi.backwardSi,
-                                queryMask[strandIndex]);
-                        if (nextState != null)
-                            queue.add(nextState);
+                        enqueue(c.nextState(nextBase, nextSi.forwardSi, nextSi.backwardSi, queryMask[strandIndex]));
                     }
                     continue;
                 }
@@ -410,7 +416,10 @@ public class SuffixFilter
                 }
 
                 // split
-                enqueue(c.nextStateAfterSplit());
+                {
+                    c.updateSplitFlag();
+                    enqueue(c.nextStateAfterSplit());
+                }
 
             }
         }
