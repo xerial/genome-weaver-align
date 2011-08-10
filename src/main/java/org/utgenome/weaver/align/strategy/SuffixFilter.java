@@ -31,6 +31,7 @@ import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.BitVector;
 import org.utgenome.weaver.align.FMIndexOnGenome;
+import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.util.log.Logger;
 
@@ -51,12 +52,13 @@ import org.xerial.util.log.Logger;
  */
 public class SuffixFilter
 {
-    private static Logger   _logger = Logger.getLogger(SuffixFilter.class);
+    private static Logger         _logger = Logger.getLogger(SuffixFilter.class);
 
-    private final int       k;
-    private final int       m;
+    private final FMIndexOnGenome fmIndex;
+    private final int             k;
+    private final int             m;
 
-    private StaircaseFilter staircaseFilter;
+    private StaircaseFilter       staircaseFilter;
 
     /**
      * NFA
@@ -67,12 +69,18 @@ public class SuffixFilter
     public static class SearchState
     {
         private final BitVector[] automaton;
-        // 32 bit = searchFlag (8) + minK (8) + index (16)  
+        // 32 bit = strand(1) + searchDirection(2) + searchFlag (5) + minK (8) + index (16)  
         private int               state = 0;
 
-        private SearchState(BitVector[] automaton, int minK, int index) {
+        private SearchState(BitVector[] automaton, Strand strand, SearchDirection searchDirection, int minK, int index) {
             this.automaton = automaton;
-            this.state = ((minK & 0xFF) << 8) | ((index & 0xFFFF) << 16);
+            this.state = (strand.index & 1) | ((searchDirection.index & 0x03) << 1);
+            this.state = newFlag(minK, index);
+        }
+
+        private SearchState(BitVector[] automaton, int newState) {
+            this.automaton = automaton;
+            this.state = newState;
         }
 
         public int getIndex() {
@@ -84,10 +92,14 @@ public class SuffixFilter
         }
 
         public boolean isFinished() {
-            return (state & 0xFF) == 0x1F; // ACGT + split
+            return ((state >>> 3) & 0x1F) == 0x1F; // ACGT + split
         }
 
-        public static SearchState initialState(int k, int m) {
+        private int newFlag(int minDiff, int newIndex) {
+            return (state & 0x07) | ((minDiff & 0xFF) << 8) | ((newIndex & 0xFFFF) << 16);
+        }
+
+        public static SearchState initialState(Strand strand, SearchDirection searchDirection, int k, int m) {
             BitVector[] automaton = new BitVector[k + 1];
             // Activate the diagonal states 
             for (int i = 0; i <= k; ++i) {
@@ -96,7 +108,7 @@ public class SuffixFilter
                 for (int j = 0; j <= i; ++j)
                     automaton[i].set(j);
             }
-            SearchState s = new SearchState(automaton, 0, 0);
+            SearchState s = new SearchState(automaton, strand, searchDirection, 0, 0);
             return s;
         }
 
@@ -105,7 +117,7 @@ public class SuffixFilter
             // use the same automaton state
             final int k = automaton.length - 1;
             if (getMinDifferences() < k) {
-                return new SearchState(automaton, getMinDifferences() + 1, getIndex());
+                return new SearchState(automaton, newFlag(getMinDifferences() + 1, getIndex()));
             }
             else
                 return null;
@@ -131,7 +143,7 @@ public class SuffixFilter
             if (next[nm].get(m - 1)) {
                 // Found a full match
                 //return new DFSState(State.Finished, 0);
-                return new SearchState(next, nm, nextIndex);
+                return new SearchState(next, newFlag(nm, nextIndex));
             }
             if (!next[nm].get(nextIndex))
                 ++nm;
@@ -147,7 +159,7 @@ public class SuffixFilter
 
                 // Found a match
                 if (next[i].get(m - 1))
-                    return new SearchState(next, i, nextIndex);
+                    return new SearchState(next, newFlag(i, nextIndex));
 
                 if (nm == i && !next[i].get(nextIndex))
                     ++nm;
@@ -159,7 +171,7 @@ public class SuffixFilter
             }
             else {
                 // extend the match
-                return new SearchState(next, nm, nextIndex);
+                return new SearchState(next, newFlag(nm, nextIndex));
             }
         }
     }
@@ -205,16 +217,19 @@ public class SuffixFilter
         }
     }
 
-    public SuffixFilter(int k, int m) {
+    public SuffixFilter(FMIndexOnGenome fmIndex, int k, int m) {
+        this.fmIndex = fmIndex;
         this.k = k;
         this.m = m;
         this.staircaseFilter = new StaircaseFilter(m, k);
+    }
 
+    public void align(ACGTSequence query, Reporter out) {
+        new AlignmentProcess(query).align(out);
     }
 
     private static class StatePreference implements Comparator<SearchState>
     {
-
         @Override
         public int compare(SearchState o1, SearchState o2) {
             // prefer longer match
@@ -225,14 +240,31 @@ public class SuffixFilter
             int kDiff = o1.getMinDifferences() - o2.getMinDifferences();
             return kDiff;
         }
-
     }
 
-    public void align(FMIndexOnGenome fmIndex, ACGTSequence query, Reporter out) {
+    public class AlignmentProcess
+    {
 
-        QueryMask queryMask = new QueryMask(query);
+        private ACGTSequence[]     q         = new ACGTSequence[2];
+        private QueryMask[]        queryMask = new QueryMask[2];
+        PriorityQueue<SearchState> queue     = new PriorityQueue<SearchState>(11, new StatePreference());
 
-        PriorityQueue<SearchState> queue = new PriorityQueue<SearchState>(11, new StatePreference());
+        public AlignmentProcess(ACGTSequence query) {
+            q[0] = query;
+            q[1] = query.complement();
+            queryMask[0] = new QueryMask(q[0]);
+            queryMask[1] = new QueryMask(q[1]);
+        }
+
+        public void align(Reporter out) {
+            // Add states for both strands
+            queue.add(SearchState.initialState(Strand.FORWARD, SearchDirection.Forward, k, m));
+            queue.add(SearchState.initialState(Strand.REVERSE, SearchDirection.Forward, k, m));
+
+            while (!queue.isEmpty()) {
+
+            }
+        }
 
     }
 

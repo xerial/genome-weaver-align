@@ -25,14 +25,22 @@
 package org.utgenome.weaver.align.strategy;
 
 public enum SearchDirection {
-    Forward("F", true), Backward("B", false), BidirectionalForward("BF", true);
+    Forward("F", 0, true), Backward("B", 1, false), BidirectionalForward("BF", 2, true);
 
-    public final String  symbol;
-    public final boolean isForward;
+    private final static SearchDirection[] lookupTable = { Forward, Backward, BidirectionalForward, Forward };
 
-    private SearchDirection(String symbol, boolean isForward) {
+    public final String                    symbol;
+    public final boolean                   isForward;
+    public final int                       index;
+
+    private SearchDirection(String symbol, int index, boolean isForward) {
         this.symbol = symbol;
+        this.index = index;
         this.isForward = isForward;
+    }
+
+    public static SearchDirection decode(int index) {
+        return lookupTable[index & 0x03];
     }
 
 }
