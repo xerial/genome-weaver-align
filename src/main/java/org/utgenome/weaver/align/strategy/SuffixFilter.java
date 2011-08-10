@@ -24,10 +24,14 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
+import java.util.Comparator;
+import java.util.PriorityQueue;
+
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.BitVector;
-import org.utgenome.weaver.align.SuffixInterval;
+import org.utgenome.weaver.align.FMIndexOnGenome;
+import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.util.log.Logger;
 
 /**
@@ -52,71 +56,43 @@ public class SuffixFilter
     private final int       k;
     private final int       m;
 
-    // automaton
-
     private StaircaseFilter staircaseFilter;
-    private QueryMask       queryMask;
 
-    public static class Candidate
+    /**
+     * NFA
+     * 
+     * @author leo
+     * 
+     */
+    public static class SearchState
     {
-        public final SuffixInterval si;
-        public final int            k;
-        public final int            offset;
-
-        public Candidate(SuffixInterval si, int k, int offset) {
-            this.si = si;
-            this.k = k;
-            this.offset = offset;
-        }
-    }
-
-    public enum SearchFlag {
-        A(1), C(1 << 1), G(1 << 2), T(1 << 3), Split(1 << 4);
-        private int flag;
-
-        private SearchFlag(int flag) {
-            this.flag = flag;
-        }
-    }
-
-    private enum State {
-        Finished, NoMatch, Match
-    }
-
-    private static class DFSState
-    {
-        public final State type;
-        public final int   matchRow;
-
-        public DFSState(State state, int matchRow) {
-            this.type = state;
-            this.matchRow = matchRow;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("type:%s, match row:%d", type, matchRow);
-        }
-    }
-
-    public class SearchState
-    {
-        public final BitVector[] automaton;
-
+        private final BitVector[] automaton;
         // 32 bit = searchFlag (8) + minK (8) + index (16)  
-        public int               state = 0;
+        private int               state = 0;
 
         private SearchState(BitVector[] automaton, int minK, int index) {
             this.automaton = automaton;
             this.state = ((minK & 0xFF) << 8) | ((index & 0xFFFF) << 16);
         }
 
-        public SearchState initialState(int k, int m) {
+        public int getIndex() {
+            return (state >>> 16) & 0xFFFF;
+        }
+
+        public int getMinDifferences() {
+            return (state >>> 8) & 0xFF;
+        }
+
+        public boolean isFinished() {
+            return (state & 0xFF) == 0x1F; // ACGT + split
+        }
+
+        public static SearchState initialState(int k, int m) {
             BitVector[] automaton = new BitVector[k + 1];
             // Activate the diagonal states 
             for (int i = 0; i <= k; ++i) {
                 automaton[i] = new BitVector(m);
-                // TODO optimize
+                // TODO optimize flag set
                 for (int j = 0; j <= i; ++j)
                     automaton[i].set(j);
             }
@@ -124,7 +100,19 @@ public class SuffixFilter
             return s;
         }
 
-        public SearchState nextState(ACGT ch) {
+        public SearchState nextStateAfterSplit(StaircaseFilter staircaseFilter) {
+            this.state |= 1 << 5;
+            // use the same automaton state
+            final int k = automaton.length - 1;
+            if (getMinDifferences() < k) {
+                return new SearchState(automaton, getMinDifferences() + 1, getIndex());
+            }
+            else
+                return null;
+        }
+
+        public SearchState nextState(ACGT ch, QueryMask queryMask, StaircaseFilter staircaseFilter) {
+            // update the search flag
             this.state |= 1 << ch.code;
 
             final int k = automaton.length - 1;
@@ -135,7 +123,7 @@ public class SuffixFilter
 
             final BitVector qeq = queryMask.getPatternMask(ch);
 
-            final int nextIndex = (state >>> 16) + 1;
+            final int nextIndex = getIndex() + 1;
 
             int nm = 0;
             // R'_0 = (R_0 << 1) | P[ch]
@@ -217,11 +205,35 @@ public class SuffixFilter
         }
     }
 
-    public SuffixFilter(int k, ACGTSequence query) {
+    public SuffixFilter(int k, int m) {
         this.k = k;
-        this.m = (int) query.textSize();
+        this.m = m;
         this.staircaseFilter = new StaircaseFilter(m, k);
-        this.queryMask = new QueryMask(query);
+
+    }
+
+    private static class StatePreference implements Comparator<SearchState>
+    {
+
+        @Override
+        public int compare(SearchState o1, SearchState o2) {
+            // prefer longer match
+            int diff = o2.getIndex() - o1.getIndex();
+            if (diff != 0)
+                return diff;
+
+            int kDiff = o1.getMinDifferences() - o2.getMinDifferences();
+            return kDiff;
+        }
+
+    }
+
+    public void align(FMIndexOnGenome fmIndex, ACGTSequence query, Reporter out) {
+
+        QueryMask queryMask = new QueryMask(query);
+
+        PriorityQueue<SearchState> queue = new PriorityQueue<SearchState>(11, new StatePreference());
+
     }
 
 }
