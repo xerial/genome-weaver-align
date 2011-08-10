@@ -245,7 +245,10 @@ public class BidirectionalNFA
                             }
                             // deletion from reference
                             for (ACGT ch : ACGT.exceptN) {
-                                // TODO
+                                BidirectionalCursor next = next(c, ch, NextScore.StartDeletion);
+                                if (next != null) {
+                                    queue.add(next);
+                                }
                             }
 
                             // extend the search with read split
@@ -254,8 +257,15 @@ public class BidirectionalNFA
                             }
                         }
                         break;
-                    case DELETION:
-                        // TODO
+                    case DELETION: {
+                        // extend the deletion
+                        for (ACGT ch : ACGT.exceptN) {
+                            BidirectionalCursor next = next(c, ch, NextScore.ExtendDeletion);
+                            if (next != null) {
+                                queue.add(next);
+                            }
+                        }
+                    }
                         break;
                     case INSERTION:
                         if (c.score.numGapExtend < config.numGapExtensionAllowed) {
@@ -323,17 +333,23 @@ public class BidirectionalNFA
         }
     }
 
-    Score nextScore(BidirectionalCursor c, ACGT ch) {
-        ACGT nextBase = c.nextACGT();
-        if (ch == nextBase) {
-            return c.score.extendWithMatch(config);
-        }
-        else
-            return c.score.extendWithMismatch(config);
+    public static enum NextScore {
+        Match, StartDeletion, ExtendDeletion
     }
 
-    BidirectionalCursor next(BidirectionalCursor c) {
-        return next(c, c.nextACGT());
+    Score nextScore(BidirectionalCursor c, ACGT ch, NextScore sType) {
+        ACGT nextBase = c.nextACGT();
+        switch (sType) {
+        case StartDeletion:
+            return c.score.extendWithGapOpen(config);
+        case ExtendDeletion:
+            return c.score.extendWithGapExtend(config);
+        default:
+            if (ch == nextBase)
+                return c.score.extendWithMatch(config);
+            else
+                return c.score.extendWithMismatch(config);
+        }
     }
 
     private int fmIndexSearchCount = 0;
@@ -365,15 +381,23 @@ public class BidirectionalNFA
         return new BidirectionalCursor(nextScore, next, e, c.siF, c.siB, c.split);
     }
 
+    BidirectionalCursor next(BidirectionalCursor c) {
+        return next(c, c.nextACGT());
+    }
+
     BidirectionalCursor next(BidirectionalCursor c, ACGT nextBase) {
+        return next(c, nextBase, NextScore.Match);
+    }
+
+    BidirectionalCursor next(BidirectionalCursor c, ACGT nextBase, NextScore sType) {
         fmIndexSearchCount++;
         switch (c.cursor.searchDirection) {
         case Forward: {
             SuffixInterval nextF = fmIndex.forwardSearch(c.strand(), nextBase, c.siF);
             if (nextF.hasEntry()) {
                 // extend the search to forward
-                return new BidirectionalCursor(nextScore(c, nextBase), c.cursor.next(), c.extensionType, nextF, c.siB,
-                        c.split);
+                return new BidirectionalCursor(nextScore(c, nextBase, sType), c.cursor.next(), c.extensionType, nextF,
+                        c.siB, c.split);
             }
 
             // switch to bidirectional search when k=0
@@ -389,8 +413,8 @@ public class BidirectionalNFA
             SuffixInterval nextB = fmIndex.backwardSearch(c.strand(), nextBase, c.siB);
             if (nextB.hasEntry()) {
                 // extend the search for backward
-                return new BidirectionalCursor(nextScore(c, nextBase), c.cursor.next(), c.extensionType, c.siF, nextB,
-                        c.split);
+                return new BidirectionalCursor(nextScore(c, nextBase, sType), c.cursor.next(), c.extensionType, c.siF,
+                        nextB, c.split);
             }
 
             // no match
@@ -402,7 +426,7 @@ public class BidirectionalNFA
                 BidirectionalSuffixInterval next = fmIndex.bidirectionalForwardSearch(c.strand(), nextBase,
                         new BidirectionalSuffixInterval(c.siF, c.siB));
                 if (next != null) {
-                    return new BidirectionalCursor(nextScore(c, nextBase), c.cursor.next(), c.extensionType,
+                    return new BidirectionalCursor(nextScore(c, nextBase, sType), c.cursor.next(), c.extensionType,
                             next.forwardSi, next.backwardSi, c.split);
                 }
 
@@ -422,8 +446,8 @@ public class BidirectionalNFA
                     return null;
                 }
 
-                return new BidirectionalCursor(nextScore(c, nextBase), c.cursor.next(), c.extensionType, null, nextB,
-                        c.split);
+                return new BidirectionalCursor(nextScore(c, nextBase, sType), c.cursor.next(), c.extensionType, null,
+                        nextB, c.split);
             }
         }
         default:

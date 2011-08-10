@@ -267,7 +267,7 @@ public class CyclicSAIS
         // Initialize the buckets. 
         // A bucket is a container of the suffixes sharing the same first character
         {
-            _logger.debug("Initialize the buckets");
+            _logger.trace("Initialize the buckets");
             Arrays.fill(bucketEnd, 0);
             // Compute the size of each bucket
             for (long i = 0; i < N; ++i) {
@@ -277,7 +277,7 @@ public class CyclicSAIS
             for (int i = 1; i < bucketEnd.length; ++i) {
                 bucketEnd[i] += bucketEnd[i - 1];
             }
-            _logger.debug("Done.");
+            _logger.trace("Done.");
         }
 
         // initialize the suffix array
@@ -296,9 +296,9 @@ public class CyclicSAIS
 
         // Induced sorting LMS prefixes
         {
-            _logger.info(String.format("[N=%,d] induceSA", SA.textSize()));
+            _logger.trace(String.format("[N=%,d] induceSA", SA.textSize()));
             induceSA(SA);
-            _logger.info("Done.");
+            _logger.trace("Done.");
         }
 
         int numLMS = 0;
@@ -315,7 +315,7 @@ public class CyclicSAIS
             SA.set(i, N);
 
         // Find the lexicographic names of the LMS substrings
-        _logger.debug("Sorting LMS substrings: N=" + SA.textSize());
+        _logger.trace("Sorting LMS substrings: N=" + SA.textSize());
         int name = 1;
         SA.set(numLMS + (SA.lookup(0) / 2), name++);
         for (long i = 1; i < numLMS; ++i) {
@@ -334,7 +334,7 @@ public class CyclicSAIS
 
         // Step 2: solve the reduced problem
         // Create SA1, a view of SA[0, numLMS-1]
-        _logger.debug("Solving the reduced problem: N=" + SA.textSize());
+        _logger.trace("Solving the reduced problem: N=" + SA.textSize());
         LSeq SA1 = new ArrayWrap(SA, 0, numLMS);
         LSeq T1 = new ArrayWrap(SA, N - numLMS, numLMS);
         if (name - 1 != numLMS) {
@@ -375,7 +375,7 @@ public class CyclicSAIS
         //SA.set(0, T.textSize() - 1);
 
         // Step 3-2, 3-3
-        _logger.info("Inducing SA from SA1: N=" + SA.textSize());
+        _logger.trace("Inducing SA from SA1: N=" + SA.textSize());
         induceSA(SA);
 
         _logger.info(String.format("done. %.2f sec.", timer.getElapsedTime()));

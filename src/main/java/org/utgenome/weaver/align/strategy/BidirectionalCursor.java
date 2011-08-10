@@ -25,6 +25,7 @@
 package org.utgenome.weaver.align.strategy;
 
 import org.utgenome.UTGBException;
+import org.utgenome.gwt.utgb.client.bio.CIGAR;
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.AlignmentScoreConfig;
@@ -120,7 +121,7 @@ public class BidirectionalCursor
 
         AlignmentRecord rec = new AlignmentRecord();
         long pos = -1;
-        // TODO non unique alignment
+        // TODO handle non-unique alignment
         if (isForwardSearch()) {
             pos = fmIndex.toForwardSequenceIndex(siF.lowerBound, Strand.FORWARD);
             pos -= cursor.processedBases();
@@ -142,6 +143,11 @@ public class BidirectionalCursor
 
         if (split != null) {
             rec.split = split.convert(readName, fmIndex);
+
+            CIGAR cigar = new CIGAR();
+            if (rec.chr.equals(rec.split.chr)) {
+
+            }
         }
 
         return rec;
