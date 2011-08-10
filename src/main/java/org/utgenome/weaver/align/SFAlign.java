@@ -91,20 +91,22 @@ public class SFAlign extends GenomeWeaverCommand
 
     }
 
-    public void query(String fastaFilePrefix, ReadSequenceReader readReader, AlignmentScoreConfig config,
+    public void query(String fastaFilePrefix, ReadSequenceReader readReader, final AlignmentScoreConfig config,
             final Reporter reporter) throws Exception {
         final FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix);
 
         readReader.parse(new ObjectHandlerBase<RawRead>() {
-            int       count = 0;
-            StopWatch timer = new StopWatch();
+            int          count = 0;
+            StopWatch    timer = new StopWatch();
+            SuffixFilter sf;
 
             @Override
             public void handle(RawRead read) throws Exception {
                 ReadSequence r = (ReadSequence) read;
-                final SuffixFilter sf = new SuffixFilter(maximumEditDistances, fmIndex, new ACGTSequence(r.seq),
-                        Strand.FORWARD);
-                sf.match(reporter);
+                ACGTSequence q = new ACGTSequence(r.seq);
+                if (sf == null)
+                    sf = new SuffixFilter(fmIndex, config, q.textSize());
+                sf.align(q, reporter);
                 count++;
                 double time = timer.getElapsedTime();
                 if (count % 10000 == 0) {

@@ -360,7 +360,7 @@ public class SuffixFilter
                 ACGT ch = query.getACGT(index);
                 if (ch == ACGT.N) {
                     for (ACGT each : ACGT.exceptN)
-                        patternMask[ch.code].set(index + 1);
+                        patternMask[each.code].set(index + 1);
                 }
                 else
                     patternMask[ch.code].set(index + 1);
@@ -425,6 +425,11 @@ public class SuffixFilter
         }
 
         public void align() throws Exception {
+
+            if (q[0].fastCount(ACGT.N, 0, m) > config.maximumEditDistances) {
+                return; // skip this alignment
+            }
+
             // Add states for both strands
             queue.add(initialState(Strand.FORWARD, SearchDirection.Forward, k, m));
             queue.add(initialState(Strand.REVERSE, SearchDirection.Forward, k, m));
