@@ -24,59 +24,58 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.utgenome.UTGBException;
 import org.utgenome.weaver.align.ACGTSequence;
+import org.utgenome.weaver.align.AlignmentScoreConfig;
 import org.utgenome.weaver.align.FMIndexOnGenome;
-import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
-import org.utgenome.weaver.align.Strand;
-import org.utgenome.weaver.align.strategy.SuffixFilter.Candidate;
-import org.utgenome.weaver.parallel.Reporter;
-import org.xerial.lens.SilkLens;
 import org.xerial.util.log.Logger;
 
 public class SuffixFilterTest
 {
-    private static Logger _logger = Logger.getLogger(SuffixFilterTest.class);
+    private static Logger               _logger = Logger.getLogger(SuffixFilterTest.class);
 
-    @Test
-    public void constructor() throws Exception {
-        final FMIndexOnGenome fmIndex = FMIndexOnGenome.buildFromSequence("seq",
-                "TAGCCTATAGAGCGAAAGGAGATATATAGCCCGAGTAT");
+    private static FMIndexOnGenome      fmIndex;
+    private static AlignmentScoreConfig config  = new AlignmentScoreConfig();
 
-        final ACGTSequence q = new ACGTSequence("GCCTATAGAGCG");
-        SuffixFilter f = new SuffixFilter(2, fmIndex, q, Strand.FORWARD);
-        f.match(new Reporter() {
-            @Override
-            public void emit(Object result) throws UTGBException {
-                Candidate input = (Candidate) result;
-                _logger.debug(SilkLens.toSilk("match", input));
-                PosOnGenome gc = fmIndex.toGenomeCoordinate(input.si.lowerBound, input.offset, Strand.FORWARD);
-                if (gc != null)
-                    _logger.debug(SilkLens.toSilk("loc", gc));
-            }
-
-        });
+    @BeforeClass
+    public static void setUp() {
+        fmIndex = FMIndexOnGenome.buildFromSequence("seq", "AAGCCTAGTTTCCTTG");
     }
 
     @Test
-    public void align() throws Exception {
-        final FMIndexOnGenome fmIndex = FMIndexOnGenome.buildFromSequence("seq", "ATATAGCCCGAGTAT");
+    public void oneMismatch() throws Exception {
+        ACGTSequence q = new ACGTSequence("GCGTAG");
+        SuffixFilter f = new SuffixFilter(fmIndex, config, q.textSize());
+        f.align(q);
+    }
 
-        final ACGTSequence q = new ACGTSequence("TATAGCCC");
-        SuffixFilter f = new SuffixFilter(2, fmIndex, q, Strand.FORWARD);
-        f.match(new Reporter() {
-            @Override
-            public void emit(Object result) throws UTGBException {
-                Candidate input = (Candidate) result;
-                _logger.debug(SilkLens.toSilk("match", input));
-                PosOnGenome gc = fmIndex.toGenomeCoordinate(input.si.lowerBound, input.offset, Strand.FORWARD);
-                if (gc != null)
-                    _logger.debug(SilkLens.toSilk("loc", gc));
-            }
+    @Test
+    public void twoMismatch() throws Exception {
+        ACGTSequence q = new ACGTSequence("TTGCCTAGTTT");
+        SuffixFilter f = new SuffixFilter(fmIndex, config, q.textSize());
+        f.align(q);
+    }
 
-        });
+    @Test
+    public void forwardExact() throws Exception {
+        ACGTSequence q = new ACGTSequence("GCCTA");
+        SuffixFilter f = new SuffixFilter(fmIndex, config, q.textSize());
+        f.align(q);
+    }
 
+    @Test
+    public void reverseExact() throws Exception {
+        ACGTSequence q = new ACGTSequence("GCCTA").reverseComplement();
+        SuffixFilter f = new SuffixFilter(fmIndex, config, q.textSize());
+        f.align(q);
+    }
+
+    @Test
+    public void splitExact() throws Exception {
+        ACGTSequence q = new ACGTSequence("AAGCCTTCCTTG");
+        SuffixFilter f = new SuffixFilter(fmIndex, config, q.textSize());
+        f.align(q);
     }
 
 }

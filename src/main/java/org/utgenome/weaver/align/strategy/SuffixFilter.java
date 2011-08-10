@@ -36,6 +36,7 @@ import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.parallel.Reporter;
+import org.xerial.lens.SilkLens;
 import org.xerial.util.log.Logger;
 
 /**
@@ -97,6 +98,18 @@ public class SuffixFilter
         public Cursor(Strand strand, SearchDirection searchDirection, SuffixInterval siF, SuffixInterval siB,
                 int cursorF, int cursorB, Cursor split) {
             this((byte) (strand.index | (searchDirection.index << 1)), siF, siB, cursorF, cursorB, split);
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder s = new StringBuilder();
+            s.append(String.format("%s%s:%d/%d:%s", getStrand().symbol, getSearchDirection().symbol, cursorF, cursorB,
+                    siF));
+            if (siB != null)
+                s.append(String.format(" %s", siB));
+            if (split != null)
+                s.append(String.format(" split(%s)", split));
+            return s.toString();
         }
 
         public int getProcessedBases() {
@@ -193,6 +206,8 @@ public class SuffixFilter
     /**
      * NFA state and alignment cursor holder
      * 
+     * TODO optimize the automaton size
+     * 
      * @author leo
      * 
      */
@@ -207,6 +222,11 @@ public class SuffixFilter
             this.cursor = cursor;
             this.automaton = automaton;
             this.state = minK << 5;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("k%d%s", getNumDifferences(), cursor);
         }
 
         public int getStrandIndex() {
@@ -230,7 +250,7 @@ public class SuffixFilter
         }
 
         public void updateSplitFlag() {
-            this.state |= 1 << 5;
+            this.state |= 1 << 4;
         }
 
         public boolean isChecked(ACGT ch) {
@@ -248,8 +268,6 @@ public class SuffixFilter
         }
 
         public SearchState nextState(ACGT ch, Cursor nextCursor, QueryMask queryMask) {
-            // update the search flag
-            updateFlag(ch);
 
             BitVector[] prev = automaton;
             BitVector[] next = new BitVector[k + 1];
@@ -307,8 +325,8 @@ public class SuffixFilter
             for (int j = 0; j <= i; ++j)
                 automaton[i].set(j);
         }
-        SearchState s = new SearchState(new Cursor(strand, searchDirection, fmIndex.wholeSARange(),
-                fmIndex.wholeSARange(), 0, 0, null), automaton, 0);
+        SearchState s = new SearchState(new Cursor(strand, searchDirection, fmIndex.wholeSARange(), null, 0, 0, null),
+                automaton, 0);
 
         return s;
     }
@@ -331,7 +349,7 @@ public class SuffixFilter
             int m = (int) query.textSize();
             patternMask = new BitVector[ACGT.exceptN.length];
             for (int i = 0; i < patternMask.length; ++i)
-                patternMask[i] = new BitVector(m);
+                patternMask[i] = new BitVector(m + 1);
 
             for (int i = 0; i < m; ++i) {
                 int index = offset + i;
@@ -342,10 +360,10 @@ public class SuffixFilter
                 ACGT ch = query.getACGT(index);
                 if (ch == ACGT.N) {
                     for (ACGT each : ACGT.exceptN)
-                        patternMask[ch.code].set(i);
+                        patternMask[ch.code].set(index + 1);
                 }
                 else
-                    patternMask[ch.code].set(i);
+                    patternMask[ch.code].set(index + 1);
             }
         }
 
@@ -354,12 +372,22 @@ public class SuffixFilter
         }
     }
 
-    public SuffixFilter(FMIndexOnGenome fmIndex, AlignmentScoreConfig config, int m) {
+    public SuffixFilter(FMIndexOnGenome fmIndex, AlignmentScoreConfig config, long m) {
         this.fmIndex = fmIndex;
         this.config = config;
         this.k = config.maximumEditDistances;
-        this.m = m;
-        this.staircaseFilter = new StaircaseFilter(m, k);
+        this.m = (int) m;
+        this.staircaseFilter = new StaircaseFilter(this.m, k);
+    }
+
+    public void align(ACGTSequence query) throws Exception {
+        new AlignmentProcess(query, new Reporter() {
+            @Override
+            public void emit(Object result) throws Exception {
+                _logger.debug(SilkLens.toSilk("result", result));
+
+            }
+        }).align();
     }
 
     public void align(ACGTSequence query, Reporter out) throws Exception {
@@ -443,10 +471,13 @@ public class SuffixFilter
 
                 // split
                 {
+                    int index = c.getIndex();
                     c.updateSplitFlag();
-                    SearchState nextState = c.nextStateAfterSplit();
-                    if (nextState != null)
-                        queue.add(nextState);
+                    if (index > config.indelEndSkip && m - index > config.indelEndSkip) {
+                        SearchState nextState = c.nextStateAfterSplit();
+                        if (nextState != null)
+                            queue.add(nextState);
+                    }
                 }
 
                 assert (c.isFinished());
