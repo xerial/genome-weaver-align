@@ -24,34 +24,38 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
-import java.util.PriorityQueue;
-
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.BitVector;
-import org.utgenome.weaver.align.FMIndexOnGenome;
-import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
-import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.util.log.Logger;
 
+/**
+ * Suffix filter
+ * 
+ * <pre>
+ *   *---*---*---*
+ *   | \ | \ | \ |
+ *   *---*---*---*
+ *   | \ | \ | \ |
+ *   *---*---*---*
+ * 
+ * </pre>
+ * 
+ * @author leo
+ * 
+ */
 public class SuffixFilter
 {
-    private static Logger         _logger = Logger.getLogger(SuffixFilter.class);
+    private static Logger   _logger = Logger.getLogger(SuffixFilter.class);
 
-    private final int             k;
-    private final int             m;
-    private final FMIndexOnGenome fmIndex;
-    private final ACGTSequence    query;
-    private final Strand          strand;
-
-    private byte[]                chunkStart;
-    private byte[]                chunkLen;
+    private final int       k;
+    private final int       m;
 
     // automaton
-    private BitVector[]           patternMask;
-    private BitVector[][]         automaton;
-    private BitVector[]           stairMask;
+
+    private StaircaseFilter staircaseFilter;
+    private QueryMask       queryMask;
 
     public static class Candidate
     {
@@ -66,238 +70,12 @@ public class SuffixFilter
         }
     }
 
-    public SuffixFilter(int k, FMIndexOnGenome fmIndex, ACGTSequence query, Strand strand) {
-        this.k = k;
-        this.fmIndex = fmIndex;
-        this.query = query;
-        this.strand = strand;
+    public enum SearchFlag {
+        A(1), C(1 << 1), G(1 << 2), T(1 << 3), Split(1 << 4);
+        private int flag;
 
-        this.m = (int) query.textSize();
-        int lastChunkSize = (m - k >= 6) ? m * 2 / (k + 2) : m - k;
-
-        // prefix length of each chunk of the filter
-        chunkStart = new byte[k + 2];
-        byte rest = (byte) (m - lastChunkSize);
-        if (k == 0)
-            chunkStart[0] = rest;
-        else {
-            for (int i = 0; i <= k; ++i) {
-                chunkStart[i] = (byte) (rest * i / k);
-            }
-        }
-        chunkStart[k + 1] = (byte) m;
-
-        chunkLen = new byte[k + 1];
-        for (int i = 0; i <= k; ++i) {
-            chunkLen[i] = (byte) (chunkStart[i + 1] - chunkStart[i]);
-        }
-
-        patternMask = new BitVector[ACGT.values().length];
-        for (int i = 0; i < patternMask.length; ++i)
-            patternMask[i] = new BitVector(m);
-
-        // Set bit flag where the character appears.
-        for (BitVector each : patternMask) {
-            each.clear();
-        }
-        for (int i = 0; i < m; ++i) {
-            ACGT ch = query.getACGT(i);
-            patternMask[ch.code].set(i);
-        }
-
-    }
-
-    public SuffixInterval exactMatch(int start, int end) {
-        SuffixInterval si = fmIndex.wholeSARange();
-        for (int i = start; i < end; ++i) {
-            ACGT ch = query.getACGT(i);
-            si = fmIndex.forwardSearch(strand, ch, si);
-            if (si.isEmpty())
-                break;
-        }
-        return si;
-    }
-
-    /**
-     * <pre>
-     *   *---*---*---*
-     *   | \ | \ | \ |
-     *   *---*---*---*
-     *   | \ | \ | \ |
-     *   *---*---*---*
-     * 
-     * </pre>
-     * 
-     * 
-     * 
-     * @param strand
-     * @param out
-     * @throws Exception
-     */
-    public void match(Reporter out) throws Exception {
-
-        //        // row-wise simulation of NFA 
-        //        for (int row = 0; row <= k; ++row) {
-        //            //rewind = chunkStart[row] + k;
-        //            simulateNFA(row, out);
-        //        }
-        simulateNFA(0, out);
-
-    }
-
-    private void simulateNFA(int row, Reporter out) throws Exception {
-
-        // Starts with the chunk position  
-        final int startChunk = row;
-        // First chunk must have an exact match  
-        SuffixInterval si = exactMatch(chunkStart[startChunk], chunkStart[startChunk + 1]);
-        if (si.isEmpty()) {
-            return;
-        }
-
-        // Init the automaton
-        int maxStep = m - chunkStart[startChunk + 1] + 1;
-        if (maxStep <= 0) {
-            out.emit(new Candidate(si, row, chunkStart[startChunk + 1]));
-            return;
-        }
-
-        int height = k - row + 1; // when k=2 and row=0, the automaton height is 3
-        automaton = new BitVector[maxStep][height];
-        for (int step = 0; step < maxStep; ++step)
-            for (int i = 0; i < height; ++i)
-                automaton[step][i] = new BitVector(m);
-
-        // Prepare staircase filter
-        stairMask = new BitVector[height];
-        for (int i = 0; i < stairMask.length; ++i) {
-            stairMask[i] = new BitVector(m)._not()._rshift(chunkStart[startChunk + i]);
-        }
-
-        // Init the diagonal of the automaton
-        byte q = chunkStart[startChunk + 1];
-        automaton[0][0].set(q);
-        for (int i = 1; i < height; ++i) {
-            if (stairMask[i].get(q + 1)) {
-                q++;
-                automaton[0][i].set(q);
-            }
-            else
-                break;
-        }
-
-        // Continue the search 
-        final int stepOffset = chunkStart[startChunk + 1];
-        PriorityQueue<Cursor> searchQueue = new PriorityQueue<Cursor>();
-        searchQueue.add(new Cursor(chunkStart[startChunk + 1], si));
-        int numFMindexSearch = 0;
-        while (!searchQueue.isEmpty()) {
-            Cursor current = searchQueue.poll();
-            for (ACGT ch : ACGT.exceptN) {
-                SuffixInterval nextSi = fmIndex.forwardSearch(strand, ch, current.si);
-                numFMindexSearch++;
-                if (nextSi.isEmpty())
-                    continue;
-
-                DFSState state = activateNext(current.pos - stepOffset, ch);
-                switch (state.type) {
-                case Finished:
-                    out.emit(new Candidate(nextSi, row + state.matchRow, current.pos + 1));
-                    break;
-                case NoMatch:
-                    break;
-                case Match:
-                    if (nextSi.range() == 1 && m - current.pos <= 4) {
-                        out.emit(new Candidate(nextSi, row + state.matchRow, current.pos + 1));
-                    }
-                    else {
-                        if (current.pos < m - 1)
-                            searchQueue.add(new Cursor(current.pos + 1, nextSi));
-                    }
-                    break;
-                }
-            }
-        }
-        _logger.info("# FM index search: %,d", numFMindexSearch);
-    }
-
-    private DFSState activateNext(int step, ACGT ch) {
-
-        final int height = automaton[0].length;
-
-        final BitVector[] prev = automaton[step];
-        final BitVector[] next = automaton[step + 1];
-
-        int nm = 0;
-
-        // R'_0 = (R_0 << 1) | P[ch]
-        BitVector next0 = prev[nm].rshift(1)._and(patternMask[ch.code]);
-        if (next0.get(m - 1)) {
-            // Found a full match
-            return new DFSState(State.Finished, 0);
-        }
-        if (next0.isZero())
-            ++nm;
-        next[nm] = next0;
-
-        for (int i = 1; i < height; ++i) {
-            BitVector next_i;
-            // R'_{i+1} = ((R_{i+1} << 1) &  P[ch]) | R_i | (R_i << 1) | (R'_i << 1)   
-            next_i = prev[i].rshift(1)._and(patternMask[ch.code]);
-            next_i._or(prev[i - 1]);
-            next_i._or(prev[i - 1].rshift(1));
-            next_i._or(next[i - 1].rshift(1));
-            // Apply a suffix filter (staircase mask)
-            next_i._and(stairMask[i]);
-
-            // Found a match
-            if (next_i.get(m - 1))
-                return new DFSState(State.Finished, i);
-
-            next[i] = next_i;
-
-            if (nm == i && next_i.isZero())
-                ++nm;
-        }
-
-        if (nm >= height) {
-            return new DFSState(State.NoMatch, -1);
-        }
-        else {
-            return new DFSState(State.Match, nm);
-        }
-
-    }
-
-    private static class Cursor implements Comparable<Cursor>
-    {
-        public final int            pos;
-        public final SuffixInterval si;
-
-        public Cursor(int pos, SuffixInterval si) {
-            this.pos = pos;
-            this.si = si;
-        }
-
-        @Override
-        public int compareTo(Cursor o) {
-            int diff = this.pos - o.pos;
-            if (diff != 0)
-                return diff;
-
-            long rDiff = this.si.range() - o.si.range();
-            if (rDiff < 0L)
-                return -1;
-            else if (rDiff == 0L)
-                return 0;
-            else
-                return 1;
-
-        }
-
-        @Override
-        public String toString() {
-            return String.format("pos:%d, si:%s", pos, si);
+        private SearchFlag(int flag) {
+            this.flag = flag;
         }
     }
 
@@ -319,6 +97,131 @@ public class SuffixFilter
         public String toString() {
             return String.format("type:%s, match row:%d", type, matchRow);
         }
+    }
+
+    public class SearchState
+    {
+        public final BitVector[] automaton;
+
+        // 32 bit = searchFlag (8) + minK (8) + index (16)  
+        public int               state = 0;
+
+        private SearchState(BitVector[] automaton, int minK, int index) {
+            this.automaton = automaton;
+            this.state = ((minK & 0xFF) << 8) | ((index & 0xFFFF) << 16);
+        }
+
+        public SearchState initialState(int k, int m) {
+            BitVector[] automaton = new BitVector[k + 1];
+            // Activate the diagonal states 
+            for (int i = 0; i <= k; ++i) {
+                automaton[i] = new BitVector(m);
+                // TODO optimize
+                for (int j = 0; j <= i; ++j)
+                    automaton[i].set(j);
+            }
+            SearchState s = new SearchState(automaton, 0, 0);
+            return s;
+        }
+
+        public SearchState nextState(ACGT ch) {
+            this.state |= 1 << ch.code;
+
+            final int k = automaton.length - 1;
+            final int m = (int) automaton[0].size();
+
+            BitVector[] prev = automaton;
+            BitVector[] next = new BitVector[k + 1];
+
+            final BitVector qeq = queryMask.getPatternMask(ch);
+
+            final int nextIndex = (state >>> 16) + 1;
+
+            int nm = 0;
+            // R'_0 = (R_0 << 1) | P[ch]
+            next[nm] = prev[nm].rshift(1)._and(qeq);
+            if (next[nm].get(m - 1)) {
+                // Found a full match
+                //return new DFSState(State.Finished, 0);
+                return new SearchState(next, nm, nextIndex);
+            }
+            if (!next[nm].get(nextIndex))
+                ++nm;
+
+            for (int i = 1; i <= k; ++i) {
+                // R'_{i+1} = ((R_{i+1} << 1) &  P[ch]) | R_i | (R_i << 1) | (R'_i << 1)   
+                next[i] = prev[i].rshift(1)._and(qeq);
+                next[i]._or(prev[i - 1]);
+                next[i]._or(prev[i - 1].rshift(1));
+                next[i]._or(next[i - 1].rshift(1));
+                // Apply a suffix filter (staircase mask)
+                next[i]._and(staircaseFilter.getStaircaseMask(i));
+
+                // Found a match
+                if (next[i].get(m - 1))
+                    return new SearchState(next, i, nextIndex);
+
+                if (nm == i && !next[i].get(nextIndex))
+                    ++nm;
+            }
+
+            if (nm >= k) {
+                // no match
+                return null;
+            }
+            else {
+                // extend the match
+                return new SearchState(next, nm, nextIndex);
+            }
+        }
+    }
+
+    /**
+     * A set of bit flags of ACGT characters in a query sequence
+     * 
+     * @author leo
+     * 
+     */
+    public static class QueryMask
+    {
+        private BitVector[] patternMask;
+
+        public QueryMask(ACGTSequence query) {
+            this(query, 0);
+        }
+
+        public QueryMask(ACGTSequence query, int offset) {
+            int m = (int) query.textSize();
+            patternMask = new BitVector[ACGT.exceptN.length];
+            for (int i = 0; i < patternMask.length; ++i)
+                patternMask[i] = new BitVector(m);
+
+            for (int i = 0; i < m; ++i) {
+                int index = offset + i;
+                if (index >= m) {
+                    // for bidirectional search
+                    index = m - i - 1;
+                }
+                ACGT ch = query.getACGT(index);
+                if (ch == ACGT.N) {
+                    for (ACGT each : ACGT.exceptN)
+                        patternMask[ch.code].set(i);
+                }
+                else
+                    patternMask[ch.code].set(i);
+            }
+        }
+
+        public BitVector getPatternMask(ACGT ch) {
+            return patternMask[ch.code];
+        }
+    }
+
+    public SuffixFilter(int k, ACGTSequence query) {
+        this.k = k;
+        this.m = (int) query.textSize();
+        this.staircaseFilter = new StaircaseFilter(m, k);
+        this.queryMask = new QueryMask(query);
     }
 
 }

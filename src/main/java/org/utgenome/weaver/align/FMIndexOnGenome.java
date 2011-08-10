@@ -50,6 +50,8 @@ public class FMIndexOnGenome
     private final long              N;
     private final int               K;
 
+    private final SuffixInterval    wholeRange;
+
     public FMIndexOnGenome(String fastaFilePrefix) throws UTGBException, IOException {
 
         _logger.info("Preparing FM-indexes");
@@ -74,6 +76,7 @@ public class FMIndexOnGenome
         forwardIndex = new FMIndexOnOccTable(seqF, windowSize);
         reverseIndex = new FMIndexOnOccTable(seqR, windowSize);
         _logger.info("done.");
+        this.wholeRange = new SuffixInterval(0L, N);
     }
 
     private FMIndexOnGenome(FMIndex forwardIndex, FMIndex reverseIndex, SparseSuffixArray forwardSA,
@@ -85,6 +88,7 @@ public class FMIndexOnGenome
         this.index = index;
         N = n;
         K = k;
+        this.wholeRange = new SuffixInterval(0L, N);
     }
 
     public static FMIndexOnGenome buildFromSequence(String name, String seq) {
@@ -101,7 +105,7 @@ public class FMIndexOnGenome
     }
 
     public SuffixInterval wholeSARange() {
-        return new SuffixInterval(0, N);
+        return wholeRange;
     }
 
     public long textSize() {
