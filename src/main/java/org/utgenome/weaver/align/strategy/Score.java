@@ -28,18 +28,18 @@ import org.utgenome.weaver.align.AlignmentScoreConfig;
 
 public class Score
 {
-    public final int score;
-    public final int numMismatches;
-    public final int numGapOpens;
-    public final int numGapExtend;
-    public final int numSplit;
+    public final int  score;
+    public final byte numMismatches;
+    public final byte numGapOpens;
+    public final byte numGapExtend;
+    public final byte numSplit;
 
     public Score(int score, int numMismatches, int numGapOpens, int numGapExtend, int numSplit) {
         this.score = score;
-        this.numMismatches = numMismatches;
-        this.numGapOpens = numGapOpens;
-        this.numGapExtend = numGapExtend;
-        this.numSplit = numSplit;
+        this.numMismatches = (byte) numMismatches;
+        this.numGapOpens = (byte) numGapOpens;
+        this.numGapExtend = (byte) numGapExtend;
+        this.numSplit = (byte) numSplit;
     }
 
     @Override

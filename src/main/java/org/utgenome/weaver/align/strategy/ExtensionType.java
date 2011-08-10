@@ -25,8 +25,17 @@
 package org.utgenome.weaver.align.strategy;
 
 public enum ExtensionType {
-    MATCH, INSERTION, DELETION
+    MATCH(0), INSERTION(1), DELETION(2);
+
+    private final static ExtensionType[] table = new ExtensionType[] { MATCH, INSERTION, DELETION, MATCH };
+
+    public final int                     code;
+
+    private ExtensionType(int code) {
+        this.code = code;
+    }
+
+    public static ExtensionType decode(int i) {
+        return table[i & 0x3];
+    }
 }
-
-
-

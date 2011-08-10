@@ -29,9 +29,12 @@ import java.util.PriorityQueue;
 
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
+import org.utgenome.weaver.align.AlignmentScoreConfig;
+import org.utgenome.weaver.align.BidirectionalSuffixInterval;
 import org.utgenome.weaver.align.BitVector;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
+import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.util.log.Logger;
 
@@ -52,13 +55,103 @@ import org.xerial.util.log.Logger;
  */
 public class SuffixFilter
 {
-    private static Logger         _logger = Logger.getLogger(SuffixFilter.class);
+    private static Logger              _logger = Logger.getLogger(SuffixFilter.class);
 
-    private final FMIndexOnGenome fmIndex;
-    private final int             k;
-    private final int             m;
+    private final FMIndexOnGenome      fmIndex;
+    private final AlignmentScoreConfig config;
+    private final int                  k;
+    private final int                  m;
 
-    private StaircaseFilter       staircaseFilter;
+    private StaircaseFilter            staircaseFilter;
+
+    public static enum Diff {
+        Match, Mismatch, Insertion, Deletion, Split
+    };
+
+    /**
+     * Cursor for bidirectional search
+     * 
+     * @author leo
+     * 
+     */
+    public class Cursor
+    {
+        // flag(8bit) :=  strand(1), searchDirection(2), extension type(2)
+        private final byte flag;
+        private Score      score;
+        public final int   cursorF;
+        public final int   cursorB;
+
+        Cursor(byte flag, Score score, int cursorF, int cursorB) {
+            this.flag = flag;
+            this.score = score;
+            this.cursorF = cursorF;
+            this.cursorB = cursorB;
+        }
+
+        public Cursor(Strand strand, SearchDirection searchDirection, Score score, ExtensionType extensionType,
+                int cursorF, int cursorB) {
+            this((byte) (strand.index | (searchDirection.index << 1) | (extensionType.code << 3)), score, cursorF,
+                    cursorB);
+        }
+
+        public Strand getStrand() {
+            return Strand.decode(flag & 1);
+        }
+
+        public ACGT nextACGT(ACGTSequence[] q) {
+            int strand = flag & 1;
+            return getSearchDirection().isForward && cursorF < m ? q[strand].getACGT(cursorF) : q[strand]
+                    .getACGT(cursorB - 1);
+        }
+
+        public int getIndex() {
+            return cursorF - cursorB;
+        }
+
+        public SearchDirection getSearchDirection() {
+            return SearchDirection.decode((flag >>> 1) & 0x03);
+        }
+
+        public ExtensionType getExtentionType() {
+            return ExtensionType.decode((flag >>> 3) & 0x03);
+        }
+
+        public Cursor split() {
+            int cursor = cursorF;
+            if (getSearchDirection() == SearchDirection.Backward)
+                cursor = cursorB;
+
+            // increment num split
+            return new Cursor(flag, score.extendWithSplit(config), cursor, cursor);
+        }
+
+        public Cursor next() {
+            int nextF = cursorF;
+            int nextB = cursorB;
+            SearchDirection d = getSearchDirection();
+            switch (d) {
+            case Forward:
+                ++nextF;
+                break;
+            case Backward:
+                --nextB;
+                break;
+            case BidirectionalForward:
+                if (nextF < m) {
+                    ++nextF;
+                }
+                else {
+                    // switch to backward search
+                    d = SearchDirection.Backward;
+                    --nextB;
+                }
+                break;
+            }
+
+            return new Cursor(flag, score, nextF, nextB);
+        }
+    }
 
     /**
      * NFA
@@ -66,76 +159,73 @@ public class SuffixFilter
      * @author leo
      * 
      */
-    public static class SearchState
+    public class SearchState
     {
-        private final BitVector[] automaton;
-        // 32 bit = strand(1) + searchDirection(2) + searchFlag (5) + minK (8) + index (16)  
-        private int               state = 0;
+        public final Cursor         cursor;
+        private final BitVector[]   automaton;
+        // 32 bit = searchFlag (5) + minK (8)
+        private int                 state;
 
-        private SearchState(BitVector[] automaton, Strand strand, SearchDirection searchDirection, int minK, int index) {
+        public final SuffixInterval siF;
+        public final SuffixInterval siB;
+
+        private SearchState(Cursor cursor, BitVector[] automaton, int minK, SuffixInterval siF, SuffixInterval siB) {
+            this.cursor = cursor;
             this.automaton = automaton;
-            this.state = (strand.index & 1) | ((searchDirection.index & 0x03) << 1);
-            this.state = newFlag(minK, index);
+            this.state = minK << 5;
+            this.siF = siF;
+            this.siB = siB;
         }
 
-        private SearchState(BitVector[] automaton, int newState) {
-            this.automaton = automaton;
-            this.state = newState;
+        public int getStrandIndex() {
+            return cursor.flag & 1;
+        }
+
+        public int getNumDifferences() {
+            return this.cursor.score.layer();
         }
 
         public int getIndex() {
-            return (state >>> 16) & 0xFFFF;
+            return cursor.getIndex();
         }
 
         public int getMinDifferences() {
-            return (state >>> 8) & 0xFF;
+            return (state >>> 5) & 0xFF;
         }
 
         public boolean isFinished() {
-            return ((state >>> 3) & 0x1F) == 0x1F; // ACGT + split
+            return (state & 0x1F) == 0x1F; // ACGT + split
         }
 
-        private int newFlag(int minDiff, int newIndex) {
-            return (state & 0x07) | ((minDiff & 0xFF) << 8) | ((newIndex & 0xFFFF) << 16);
+        public void updateFlag(ACGT ch) {
+            this.state |= 1 << ch.code;
         }
 
-        public static SearchState initialState(Strand strand, SearchDirection searchDirection, int k, int m) {
-            BitVector[] automaton = new BitVector[k + 1];
-            // Activate the diagonal states 
-            for (int i = 0; i <= k; ++i) {
-                automaton[i] = new BitVector(m);
-                // TODO optimize flag set
-                for (int j = 0; j <= i; ++j)
-                    automaton[i].set(j);
-            }
-            SearchState s = new SearchState(automaton, strand, searchDirection, 0, 0);
-            return s;
+        public boolean isChecked(ACGT ch) {
+            return (state & (1 << ch.code)) != 0;
         }
 
-        public SearchState nextStateAfterSplit(StaircaseFilter staircaseFilter) {
+        public SearchState nextStateAfterSplit() {
             this.state |= 1 << 5;
             // use the same automaton state
-            final int k = automaton.length - 1;
             if (getMinDifferences() < k) {
-                return new SearchState(automaton, newFlag(getMinDifferences() + 1, getIndex()));
+                return new SearchState(cursor.split(), automaton, getMinDifferences() + 1, fmIndex.wholeSARange(),
+                        fmIndex.wholeSARange());
             }
             else
                 return null;
         }
 
-        public SearchState nextState(ACGT ch, QueryMask queryMask, StaircaseFilter staircaseFilter) {
+        public SearchState nextState(ACGT ch, SuffixInterval siF, SuffixInterval siB, QueryMask queryMask) {
             // update the search flag
-            this.state |= 1 << ch.code;
-
-            final int k = automaton.length - 1;
-            final int m = (int) automaton[0].size();
+            updateFlag(ch);
 
             BitVector[] prev = automaton;
             BitVector[] next = new BitVector[k + 1];
 
             final BitVector qeq = queryMask.getPatternMask(ch);
 
-            final int nextIndex = getIndex() + 1;
+            final int nextIndex = cursor.getIndex() + 1;
 
             int nm = 0;
             // R'_0 = (R_0 << 1) | P[ch]
@@ -143,7 +233,7 @@ public class SuffixFilter
             if (next[nm].get(m - 1)) {
                 // Found a full match
                 //return new DFSState(State.Finished, 0);
-                return new SearchState(next, newFlag(nm, nextIndex));
+                return new SearchState(cursor.next(), next, nm, siF, siB);
             }
             if (!next[nm].get(nextIndex))
                 ++nm;
@@ -159,7 +249,7 @@ public class SuffixFilter
 
                 // Found a match
                 if (next[i].get(m - 1))
-                    return new SearchState(next, newFlag(i, nextIndex));
+                    return new SearchState(cursor.next(), next, i, siF, siB);
 
                 if (nm == i && !next[i].get(nextIndex))
                     ++nm;
@@ -171,9 +261,24 @@ public class SuffixFilter
             }
             else {
                 // extend the match
-                return new SearchState(next, newFlag(nm, nextIndex));
+                return new SearchState(cursor.next(), next, nm, siF, siB);
             }
         }
+    }
+
+    private SearchState initialState(Strand strand, SearchDirection searchDirection, int k, int m) {
+        BitVector[] automaton = new BitVector[k + 1];
+        // Activate the diagonal states 
+        for (int i = 0; i <= k; ++i) {
+            automaton[i] = new BitVector(m);
+            // TODO optimize flag set
+            for (int j = 0; j <= i; ++j)
+                automaton[i].set(j);
+        }
+        SearchState s = new SearchState(
+                new Cursor(strand, searchDirection, Score.initial(), ExtensionType.MATCH, 0, 0), automaton, 0,
+                fmIndex.wholeSARange(), fmIndex.wholeSARange());
+        return s;
     }
 
     /**
@@ -217,14 +322,15 @@ public class SuffixFilter
         }
     }
 
-    public SuffixFilter(FMIndexOnGenome fmIndex, int k, int m) {
+    public SuffixFilter(FMIndexOnGenome fmIndex, AlignmentScoreConfig config, int m) {
         this.fmIndex = fmIndex;
-        this.k = k;
+        this.config = config;
+        this.k = config.maximumEditDistances;
         this.m = m;
         this.staircaseFilter = new StaircaseFilter(m, k);
     }
 
-    public void align(ACGTSequence query, Reporter out) {
+    public void align(ACGTSequence query, Reporter out) throws Exception {
         new AlignmentProcess(query).align(out);
     }
 
@@ -256,14 +362,103 @@ public class SuffixFilter
             queryMask[1] = new QueryMask(q[1]);
         }
 
-        public void align(Reporter out) {
+        public void align(Reporter out) throws Exception {
             // Add states for both strands
-            queue.add(SearchState.initialState(Strand.FORWARD, SearchDirection.Forward, k, m));
-            queue.add(SearchState.initialState(Strand.REVERSE, SearchDirection.Forward, k, m));
+            queue.add(initialState(Strand.FORWARD, SearchDirection.Forward, k, m));
+            queue.add(initialState(Strand.REVERSE, SearchDirection.Forward, k, m));
 
             while (!queue.isEmpty()) {
+                SearchState c = queue.peek();
+                if (c.isFinished()) {
+                    queue.poll();
+                    continue;
+                }
+
+                int strandIndex = c.getStrandIndex();
+                int allowedMismatches = k - c.getNumDifferences();
+                if (c.getIndex() + allowedMismatches >= m) {
+                    // found a hit
+                    out.emit(c);
+                    queue.poll();
+                    continue;
+                }
+
+                ACGT nextBase = c.cursor.nextACGT(q);
+                if (!c.isChecked(nextBase)) {
+                    // search for a base in the read
+                    c.updateFlag(nextBase);
+                    BidirectionalSuffixInterval nextSi = extendSearch(c, nextBase);
+                    if (nextSi != null) {
+                        SearchState nextState = c.nextState(nextBase, nextSi.forwardSi, nextSi.backwardSi,
+                                queryMask[strandIndex]);
+                        if (nextState != null)
+                            queue.add(nextState);
+                    }
+                    continue;
+                }
+
+                // search for the other bases
+                for (ACGT ch : ACGT.exceptN) {
+                    if (ch == nextBase)
+                        continue;
+
+                    if (!c.isChecked(ch)) {
+                        c.updateFlag(ch);
+                        BidirectionalSuffixInterval nextSi = extendSearch(c, ch);
+                        enqueue(c.nextState(ch, nextSi.forwardSi, nextSi.backwardSi, queryMask[strandIndex]));
+                    }
+                }
+
+                // split
+                enqueue(c.nextStateAfterSplit());
 
             }
+        }
+
+        private void enqueue(SearchState c) {
+            if (c == null)
+                return;
+
+            queue.add(c);
+        }
+
+        BidirectionalSuffixInterval extendSearch(SearchState c, ACGT ch) {
+
+            SuffixInterval siF = c.siF;
+            SuffixInterval siB = c.siB;
+
+            Strand strand = c.cursor.getStrand();
+
+            switch (c.cursor.getSearchDirection()) {
+            case Forward:
+                siF = fmIndex.forwardSearch(strand, ch, siF);
+                if (siF.isEmpty())
+                    return null;
+                break;
+            case Backward:
+                siB = fmIndex.backwardSearch(strand, ch, siB);
+                if (siB.isEmpty())
+                    return null;
+                break;
+            case BidirectionalForward:
+                if (c.cursor.cursorF < m) {
+                    BidirectionalSuffixInterval bSi = fmIndex.bidirectionalForwardSearch(strand, ch,
+                            new BidirectionalSuffixInterval(siF, siB));
+                    if (bSi == null)
+                        return null;
+                    siF = bSi.forwardSi;
+                    siB = bSi.backwardSi;
+                }
+                else {
+                    siB = fmIndex.backwardSearch(strand, ch, siB);
+                    if (siB == null)
+                        return null;
+                }
+                break;
+            }
+
+            return new BidirectionalSuffixInterval(siF, siB);
+
         }
 
     }

@@ -35,6 +35,10 @@ public enum Strand {
         this.index = index;
     }
 
+    public static Strand decode(int index) {
+        return index == 0 ? FORWARD : REVERSE;
+    }
+
     public static Strand toStrand(char plusOrMinus) {
         if (plusOrMinus == '+')
             return FORWARD;
