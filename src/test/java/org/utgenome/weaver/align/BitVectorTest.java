@@ -26,17 +26,7 @@ package org.utgenome.weaver.align;
 
 import static org.junit.Assert.*;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.util.TreeSet;
-
 import org.junit.Test;
-import org.xerial.util.FileUtil;
 import org.xerial.util.log.Logger;
 
 public class BitVectorTest
@@ -44,84 +34,13 @@ public class BitVectorTest
     private static Logger _logger = Logger.getLogger(BitVectorTest.class);
 
     @Test
-    public void vector() throws Exception {
-        RSBitVector v = new RSBitVector(100);
-        assertEquals(100, v.size());
-        TreeSet<Long> pos = new TreeSet<Long>();
-        pos.add(3L);
-        pos.add(63L);
-        pos.add(80L);
-        pos.add(10L);
-        pos.add(34L);
-        for (long each : pos) {
-            v.set(each);
+    public void bitFlag() throws Exception {
+        int n = 100;
+        for (int i = 0; i < n; ++i) {
+            BitVector v = new BitVector(n);
+            v.set(i);
+            assertTrue(v.get(i));
         }
-        _logger.debug(v);
-
-        for (long i = 0; i < v.size(); ++i) {
-            if (pos.contains(i))
-                assertTrue(v.get(i));
-            else
-                assertFalse(v.get(i));
-        }
-
-        long count = 0;
-        for (long i = 0; i < v.size(); ++i) {
-            assertEquals("index i=" + i, count, v.rank(true, i));
-            assertEquals("index i=" + i, i - count, v.rank(false, i));
-            if (pos.contains(i))
-                count++;
-        }
-    }
-
-    @Test
-    public void select() throws Exception {
-        RSBitVector v = new RSBitVector(100);
-        assertEquals(100, v.size());
-        TreeSet<Long> pos = new TreeSet<Long>();
-        pos.add(3L);
-        pos.add(10L);
-        pos.add(34L);
-        pos.add(63L);
-        pos.add(80L);
-        for (long each : pos) {
-            v.set(each);
-        }
-        _logger.debug(v);
-
-        long count = 0;
-        for (long each : pos) {
-            count++;
-            assertEquals(each, v.select(true, count));
-        }
-
-    }
-
-    @Test
-    public void save() throws Exception {
-        RSBitVector v = new RSBitVector(100);
-        for (long i = 0; i < v.size(); ++i) {
-            if (i % 3 == 0 || i % 5 == 0)
-                v.set(i);
-        }
-        File tmp = FileUtil.createTempFile(new File("target"), "bitvector", ".b");
-        tmp.deleteOnExit();
-
-        // save
-        DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tmp)));
-        v.saveTo(out);
-        out.close();
-
-        DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(tmp)));
-        RSBitVector v2 = RSBitVector.loadFrom(in);
-        in.close();
-
-        assertEquals(v.size(), v2.size());
-        for (long i = 0; i < v.size(); ++i) {
-            assertEquals(v.get(i), v2.get(i));
-        }
-        assertEquals(v.toString(), v2.toString());
-
     }
 
     @Test
@@ -138,7 +57,7 @@ public class BitVectorTest
     private static int countOne(String s, int start, int end) {
         int count = 0;
         for (int i = start; i < end; ++i) {
-            if (s.charAt(i) == '1')
+            if (s.charAt(s.length() - i - 1) == '1')
                 count++;
         }
         return count;
@@ -163,8 +82,8 @@ public class BitVectorTest
     @Test
     public void lshift7() throws Exception {
         BitVector v = new BitVector(28).not();
-        v.lshift(7);
-        assertEquals("1111111111111111111110000000", v.toString());
+        BitVector l = v.lshift(7);
+        assertEquals("1111111111111111111110000000", l.toString());
     }
 
     @Test

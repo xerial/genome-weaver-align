@@ -213,15 +213,15 @@ public class SuffixFilter
      */
     public class SearchState
     {
-        public final Cursor       cursor;
-        private final BitVector[] automaton;
-        // 32 bit = searchFlag (5) + minK (8)
-        private int               state;
+        public final Cursor  cursor;
+        private final long[] automaton;
+        // 32 bit = searchFlag (5) + minK (8) + offset(16);
+        private int          state;
 
-        private SearchState(Cursor cursor, BitVector[] automaton, int minK) {
+        private SearchState(Cursor cursor, long[] automaton, int minK, int offset) {
             this.cursor = cursor;
             this.automaton = automaton;
-            this.state = minK << 5;
+            this.state = (minK << 5) | (offset << 13);
         }
 
         @Override
@@ -269,8 +269,8 @@ public class SuffixFilter
 
         public SearchState nextState(ACGT ch, Cursor nextCursor, QueryMask queryMask) {
 
-            BitVector[] prev = automaton;
-            BitVector[] next = new BitVector[k + 1];
+            long[] prev = automaton;
+            long[] next = new long[prev.length];
 
             final BitVector qeq = queryMask.getPatternMask(ch);
 
@@ -317,17 +317,13 @@ public class SuffixFilter
     }
 
     private SearchState initialState(Strand strand, SearchDirection searchDirection, int k, int m) {
-        BitVector[] automaton = new BitVector[k + 1];
+        long[] automaton = new long[k + 1];
         // Activate the diagonal states 
         for (int i = 0; i <= k; ++i) {
-            automaton[i] = new BitVector(m);
-            // TODO optimize flag set
-            for (int j = 0; j <= i; ++j)
-                automaton[i].set(j);
+            automaton[i] = 1L << i;
         }
         SearchState s = new SearchState(new Cursor(strand, searchDirection, fmIndex.wholeSARange(), null, 0, 0, null),
-                automaton, 0);
-
+                automaton, 0, 0);
         return s;
     }
 
@@ -370,8 +366,18 @@ public class SuffixFilter
         public BitVector getPatternMask(ACGT ch) {
             return patternMask[ch.code];
         }
+
+        public long getPatternMaskInLong(ACGT ch, int offset) {
+            patternMask[ch.code].
+        }
     }
 
+    /**
+     * @param fmIndex
+     * @param config
+     * @param m
+     *            read length
+     */
     public SuffixFilter(FMIndexOnGenome fmIndex, AlignmentScoreConfig config, long m) {
         this.fmIndex = fmIndex;
         this.config = config;
@@ -460,7 +466,8 @@ public class SuffixFilter
                 if (!c.isChecked(nextBase)) {
                     // search for a base in the read
                     step(c, nextBase);
-                    queue.add(c); // preserve the state for backtracking
+                    if (!c.isFinished())
+                        queue.add(c); // preserve the state for backtracking
                     continue;
                 }
 
@@ -493,15 +500,21 @@ public class SuffixFilter
             out.emit(c);
         }
 
-        private void step(SearchState c, ACGT ch) {
+        /**
+         * @param c
+         * @param ch
+         * @return has match
+         */
+        private boolean step(SearchState c, ACGT ch) {
             c.updateFlag(ch);
             Cursor nextCursor = c.cursor.next(ch);
             if (nextCursor == null)
-                return; // no match
+                return false; // no match
 
             SearchState nextState = c.nextState(ch, nextCursor, queryMask[c.getStrandIndex()]);
             if (nextState != null)
                 queue.add(nextState);
+            return true;
         }
 
         private SearchState exactMatch(SearchState c) {

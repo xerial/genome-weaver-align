@@ -82,8 +82,7 @@ public class BitVector
             return false;
 
         long offset = index % B;
-        long mask = 0x8000000000000000L >>> offset;
-        return (block[(int) blockPos] & mask) != 0;
+        return ((block[(int) blockPos] >>> offset) & 1L) != 0;
     }
 
     public int getInt(long index) {
@@ -92,9 +91,24 @@ public class BitVector
             return 0;
 
         long offset = index % B;
-        long mask = 0x8000000000000000L >>> offset;
-        return (int) ((block[(int) blockPos] & mask) & 0x1L);
+        return (int) ((block[(int) blockPos] >>> offset) & 1L);
     }
+
+    //    /**
+    //     * @param index
+    //     * @param len < 64
+    //     * @return
+    //     */
+    //    public long get64(long index, int len) {
+    //        long blockPos = index / B;
+    //        if (blockPos > block.length)
+    //            return 0L;
+    //            
+    //        long offset = index % B;
+    //        long mask = 0x8000000000000000L >>> offset;
+    //        
+    //        
+    //    }
 
     public void set(long index, boolean c) {
         if (c)
@@ -113,13 +127,13 @@ public class BitVector
     public void set(long index) {
         long blockPos = index / B;
         long offset = index % B;
-        block[(int) blockPos] |= 0x8000000000000000L >>> offset;
+        block[(int) blockPos] |= 1L << offset;
     }
 
     public void reset(long index) {
         long blockPos = index / B;
         long offset = index % B;
-        long mask = 0x8000000000000000L >>> offset;
+        long mask = 1L << offset;
         block[(int) blockPos] &= ~mask;
     }
 
@@ -155,14 +169,13 @@ public class BitVector
     public BitVector _lshift(int len) {
         int blockOffset = len / B;
         long offset = len % B;
-        long mask = ~((~0L) >>> offset);
+        long lowMask = ~(~0L >>> offset);
 
-        for (int i = 0; i < block.length; ++i) {
-            int b = blockOffset + i;
-            long high = b < block.length ? block[b] << offset : 0L;
-            block[i] = high;
-            long low = (b + 1 < block.length) ? (block[b + 1] & mask) >>> (B - offset) : 0L;
-            block[i] |= low;
+        for (int i = block.length - 1; i >= 0; --i) {
+            int b = i - blockOffset;
+            long high = b >= 0 ? block[b] << offset : 0L;
+            long low = (b - 1 >= 0) ? ((block[b - 1] & lowMask) >>> (B - offset)) : 0L;
+            block[i] = high | low;
         }
         return this;
     }
@@ -178,14 +191,14 @@ public class BitVector
     public BitVector _rshift(int len) {
         int blockOffset = len / B;
         long offset = len % B;
-        long mask = ~((~0L) << offset);
+        long mask = ~(~0L << offset);
 
-        for (int i = block.length - 1; i >= 0; --i) {
-            int bi = i - blockOffset;
-            block[i] = bi >= 0 ? block[bi] >>> offset : 0L;
-            if (bi - 1 >= 0) {
-                block[i] |= (block[bi - 1] & mask) << (B - offset);
-            }
+        for (int i = 0; i < block.length; ++i) {
+            int bi = i + blockOffset;
+            long low = bi < block.length ? block[bi] >>> offset : 0L;
+            block[i] = low;
+            long high = bi + 1 < block.length ? (block[bi + 1] & mask) << (B - offset) : 0L;
+            block[i] |= high;
         }
         return this;
     }
@@ -195,7 +208,7 @@ public class BitVector
             block[i] = ~block[i];
         }
         int offset = (int) size % B;
-        block[block.length - 1] = (~block[block.length - 1]) & ((~0L) << (B - offset));
+        block[block.length - 1] = (~block[block.length - 1]) & ~(~0L << offset);
         return this;
     }
 
@@ -218,7 +231,7 @@ public class BitVector
             if (block[i] != 0L)
                 return false;
         }
-        if ((block[block.length - 1] & (~0L << (B - size % B))) != 0L)
+        if ((block[block.length - 1] & (~0L >>> (B - size % B))) != 0L)
             return false;
 
         return true;
@@ -259,13 +272,13 @@ public class BitVector
 
             // 00011111
             // 01234567
-            long mask = ~0L >>> sOffset;
+            long mask = ~0L << sOffset;
             long v = block[index] & mask;
             if (index == eIndex) {
                 // tail mask
                 // 11111110
                 // 01234567
-                long tMask = eOffset == 0 ? 0L : (~0L) << (B - eOffset);
+                long tMask = eOffset == 0 ? 0L : (~0L) >>> (B - eOffset);
                 v &= tMask;
             }
             count += popCount(v);
@@ -294,9 +307,10 @@ public class BitVector
     }
 
     public static BitVector parseString(String binaryString) {
-        BitVector v = new BitVector(binaryString.length());
-        for (int i = 0; i < binaryString.length(); ++i) {
-            v.set(i, binaryString.charAt(i) == '1');
+        int n = binaryString.length();
+        BitVector v = new BitVector(n);
+        for (int i = 0; i < n; ++i) {
+            v.set(i, binaryString.charAt(n - i - 1) == '1');
         }
         return v;
     }
@@ -319,7 +333,7 @@ public class BitVector
         // Apply mask for flanking bits
         if (i < this.block.length) {
             long offset = this.size % B;
-            long mask = ~(~0L >>> offset);
+            long mask = ~(~0L << offset);
             if ((this.block[i] & mask) != (other.block[i] & mask))
                 return false;
         }
@@ -327,10 +341,15 @@ public class BitVector
         return true;
     }
 
+    /**
+     * Return string representation of this bit vector. LSB is left
+     * 
+     * @see java.lang.Object#toString()
+     */
     @Override
     public String toString() {
         StringBuilder buf = new StringBuilder();
-        for (int i = 0; i < size; i++)
+        for (long i = size - 1; i >= 0; --i)
             buf.append(get(i) ? "1" : "0");
         return buf.toString();
     }
