@@ -35,6 +35,7 @@ import org.utgenome.weaver.align.BitVector;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
+import org.utgenome.weaver.align.strategy.BidirectionalBWT.QuickScanResult;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.log.Logger;
@@ -520,122 +521,120 @@ public class SuffixFilter
                 return; // skip this alignment
             }
 
+            // k=0
+            QuickScanResult scanF = BidirectionalBWT.scanMismatchLocations(fmIndex, q[0], Strand.FORWARD);
+            QuickScanResult scanR = BidirectionalBWT.scanMismatchLocations(fmIndex, q[1], Strand.REVERSE);
+            if (scanF.numMismatches == 0) {
+                out.emit(scanF);
+                return;
+            }
+            if (scanR.numMismatches == 0) {
+                out.emit(scanR);
+                return;
+            }
+
             // Add states for both strands
             queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.Forward, fmIndex.wholeSARange(), null,
                     0, 0, null)));
             queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.Forward, fmIndex.wholeSARange(), null,
                     0, 0, null)));
-
-            // k=0. extend exact match
-            PriorityQueue<SearchState> nextQueue = new PriorityQueue<SearchState>(11, new StatePreference());
-            while (!queue.isEmpty()) {
-                SearchState c = queue.poll();
-                if (c.isFinished())
-                    continue;
-
-                if (c.hasHit()) {
-                    reportAlignment(c);
-                    break;
-                }
-
-                ACGT ch = c.cursor.nextACGT(q);
-                if (!c.isChecked(ch)) {
-                    boolean hasNext = step(c, ch);
-                    if (!hasNext) {
-                        if (c.cursor.cursorF + 1 < m) {
-                            // add bidirectional search state
-                            queue.add(new SearchState(new Cursor(c.cursor.getStrand(),
-                                    SearchDirection.BidirectionalForward, fmIndex.wholeSARange(), fmIndex
-                                            .wholeSARange(), c.cursor.cursorF + 1, c.cursor.cursorF + 1, null)));
-                        }
-                    }
-                }
-
-                nextQueue.add(c);
+            if (scanF.longestMatch.start != 0 && scanF.longestMatch.start < m) {
+                // add bidirectional search state
+                queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.BidirectionalForward, fmIndex
+                        .wholeSARange(), fmIndex.wholeSARange(), scanF.longestMatch.start, scanF.longestMatch.start,
+                        null)));
+            }
+            if (scanR.longestMatch.start != 0 && scanR.longestMatch.start < m) {
+                // add bidirectional search state
+                queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward, fmIndex
+                        .wholeSARange(), fmIndex.wholeSARange(), scanR.longestMatch.start, scanR.longestMatch.start,
+                        null)));
             }
 
-            queue = nextQueue;
+            try {
 
-            while (!queue.isEmpty()) {
-                SearchState c = queue.poll();
-                if (c.isFinished()) {
-                    continue;
-                }
+                while (!queue.isEmpty()) {
+                    SearchState c = queue.poll();
+                    if (c.isFinished()) {
+                        continue;
+                    }
 
-                if (c.hasHit()) {
-                    // TODO verification
-                    reportAlignment(c);
-                    break;
-                }
-
-                if (c.cursor.getRemainingBases() == 0) {
-                    reportAlignment(c);
-                    break;
-                }
-
-                int nm = c.getLowerBoundOfK();
-                int allowedMismatches = k - nm;
-                if (allowedMismatches == 0) {
-                    // do exact match
-                    SearchState matchState = exactMatch(c);
-                    if (matchState != null) {
-                        reportAlignment(matchState);
+                    if (c.hasHit()) {
+                        // TODO verification
+                        reportAlignment(c);
                         break;
                     }
-                    continue;
-                }
 
-                ACGT nextBase = c.cursor.nextACGT(q);
-                if (!c.isChecked(nextBase)) {
-                    // search for a base in the read
-                    c.setInitFlag();
-                    boolean hasNextStep = step(c, nextBase);
-                    if (!c.isFinished())
-                        queue.add(c); // preserve the state for backtracking
+                    if (c.cursor.getRemainingBases() == 0) {
+                        reportAlignment(c);
+                        break;
+                    }
 
-                    continue;
-                }
-
-                if (nm + 1 > minMismatches) {
-                    ++numCutOff;
-                    continue;
-                }
-
-                if (!staircaseFilter.getStaircaseMask(nm + 1).get(c.getIndex())) {
-                    numFiltered++;
-                    continue;
-                }
-
-                // search for the other bases
-                for (ACGT ch : ACGT.exceptN) {
-                    if (ch == nextBase)
+                    int nm = c.getLowerBoundOfK();
+                    int allowedMismatches = k - nm;
+                    if (allowedMismatches == 0) {
+                        // do exact match
+                        SearchState matchState = exactMatch(c);
+                        if (matchState != null) {
+                            reportAlignment(matchState);
+                            break;
+                        }
                         continue;
-
-                    if (!c.isChecked(ch)) {
-                        step(c, ch);
                     }
-                }
 
-                // split
-                {
-                    int index = c.getIndex();
-                    c.updateSplitFlag();
-                    if (!c.cursor.hasSplit() && index > config.indelEndSkip && m - index > config.indelEndSkip) {
-                        SearchState nextState = c.nextStateAfterSplit();
-                        if (nextState != null)
-                            queue.add(nextState);
-                        else
-                            ++numFiltered;
+                    ACGT nextBase = c.cursor.nextACGT(q);
+                    if (!c.isChecked(nextBase)) {
+                        // search for a base in the read
+                        c.setInitFlag();
+                        boolean hasNextStep = step(c, nextBase);
+                        if (!c.isFinished())
+                            queue.add(c); // preserve the state for backtracking
+
+                        continue;
                     }
-                }
 
-                assert (c.isFinished());
+                    if (nm + 1 > minMismatches) {
+                        ++numCutOff;
+                        continue;
+                    }
+
+                    if (!staircaseFilter.getStaircaseMask(nm + 1).get(c.getIndex())) {
+                        numFiltered++;
+                        continue;
+                    }
+
+                    // search for the other bases
+                    for (ACGT ch : ACGT.exceptN) {
+                        if (ch == nextBase)
+                            continue;
+
+                        if (!c.isChecked(ch)) {
+                            step(c, ch);
+                        }
+                    }
+
+                    // split
+                    {
+                        int index = c.getIndex();
+                        c.updateSplitFlag();
+                        if (!c.cursor.hasSplit() && index > config.indelEndSkip && m - index > config.indelEndSkip) {
+                            SearchState nextState = c.nextStateAfterSplit();
+                            if (nextState != null)
+                                queue.add(nextState);
+                            else
+                                ++numFiltered;
+                        }
+                    }
+
+                    assert (c.isFinished());
+                }
             }
-
-            if (_logger.isDebugEnabled())
-                _logger.debug("stat: %s min K:%d, FM Search:%,d, Exact:%d, CutOff:%d, Filtered:%d",
-                        minMismatches <= k ? "found" : "no match", minMismatches, numFMIndexSearches,
-                        numExactSearchCount, numCutOff, numFiltered);
+            finally {
+                if (_logger.isDebugEnabled())
+                    _logger.debug("stat: %s min K:%d, FM Search:%,d, Exact:%d, CutOff:%d, Filtered:%d",
+                            minMismatches <= k ? "found" : "no match", minMismatches, numFMIndexSearches,
+                            numExactSearchCount, numCutOff, numFiltered);
+            }
 
         }
 

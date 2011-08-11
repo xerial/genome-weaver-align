@@ -87,11 +87,11 @@ public class BidirectionalBWT
         }
     }
 
-    public QuickScanResult scanMismatchLocations(ACGTSequence query, Strand strand) {
+    public static QuickScanResult scanMismatchLocations(FMIndexOnGenome fmIndex, ACGTSequence query, Strand strand) {
         int qLen = (int) query.textSize();
         int numMismatches = 0;
         BitVector breakPoint = new BitVector(qLen);
-        SuffixInterval si = new SuffixInterval(0, N - 1);
+        SuffixInterval si = fmIndex.wholeSARange();
         int longestMatchLength = 0;
         int mark = 0;
         Range longestMatch = null;
@@ -228,7 +228,7 @@ public class BidirectionalBWT
         }
 
         // Find potential mismatch positions for forward direction
-        QuickScanResult scanF = scanMismatchLocations(qF, Strand.FORWARD);
+        QuickScanResult scanF = scanMismatchLocations(fmIndex, qF, Strand.FORWARD);
         if (scanF.numMismatches == 0) {
             // Found an exact match
             report(AlignmentSA.exactMatch(config, r.name(), qF, scanF.si, Strand.FORWARD));
@@ -237,7 +237,7 @@ public class BidirectionalBWT
 
         // Find potential mismatch positions for reverse direction
         ACGTSequence qC = qF.complement();
-        QuickScanResult scanR = scanMismatchLocations(qC, Strand.REVERSE);
+        QuickScanResult scanR = scanMismatchLocations(fmIndex, qC, Strand.REVERSE);
         if (scanR.numMismatches == 0) {
             // Found an exact match
             report(AlignmentSA.exactMatch(config, r.name(), qC, scanR.si, Strand.REVERSE));
