@@ -482,18 +482,16 @@ public class SuffixFilter
             //            if (pDiff != 0)
             //                return pDiff;
 
+            int diff = 0;
             // prefer longer match
-            int diff = o2.getIndex() - o1.getIndex();
+            diff = o2.getIndex() - o1.getIndex();
             if (diff != 0)
                 return diff;
 
             // prefer a state with smaller mismatches
-            int lDiff = o1.getLowerBoundOfK() - o2.getLowerBoundOfK();
-            if (lDiff != 0)
-                return lDiff;
-            else
-                return 0;
+            diff = o1.getLowerBoundOfK() - o2.getLowerBoundOfK();
 
+            return diff;
         }
     }
 
@@ -503,6 +501,7 @@ public class SuffixFilter
         private ACGTSequence[]             q             = new ACGTSequence[2];
         private QueryMask[]                queryMask     = new QueryMask[2];
         private PriorityQueue<SearchState> queue         = new PriorityQueue<SearchState>(11, new StatePreference());
+
         private Reporter                   out;
 
         private int                        minMismatches = k + 1;
@@ -527,6 +526,36 @@ public class SuffixFilter
             queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.Forward, fmIndex.wholeSARange(), null,
                     0, 0, null)));
 
+            // k=0. extend exact match
+            PriorityQueue<SearchState> nextQueue = new PriorityQueue<SearchState>(11, new StatePreference());
+            while (!queue.isEmpty()) {
+                SearchState c = queue.poll();
+                if (c.isFinished())
+                    continue;
+
+                if (c.hasHit()) {
+                    reportAlignment(c);
+                    break;
+                }
+
+                ACGT ch = c.cursor.nextACGT(q);
+                if (!c.isChecked(ch)) {
+                    boolean hasNext = step(c, ch);
+                    if (!hasNext) {
+                        if (c.cursor.cursorF + 1 < m) {
+                            // add bidirectional search state
+                            queue.add(new SearchState(new Cursor(c.cursor.getStrand(),
+                                    SearchDirection.BidirectionalForward, fmIndex.wholeSARange(), fmIndex
+                                            .wholeSARange(), c.cursor.cursorF + 1, c.cursor.cursorF + 1, null)));
+                        }
+                    }
+                }
+
+                nextQueue.add(c);
+            }
+
+            queue = nextQueue;
+
             while (!queue.isEmpty()) {
                 SearchState c = queue.poll();
                 if (c.isFinished()) {
@@ -541,7 +570,7 @@ public class SuffixFilter
 
                 if (c.cursor.getRemainingBases() == 0) {
                     reportAlignment(c);
-                    continue;
+                    break;
                 }
 
                 int nm = c.getLowerBoundOfK();
@@ -549,8 +578,10 @@ public class SuffixFilter
                 if (allowedMismatches == 0) {
                     // do exact match
                     SearchState matchState = exactMatch(c);
-                    if (matchState != null)
+                    if (matchState != null) {
                         reportAlignment(matchState);
+                        break;
+                    }
                     continue;
                 }
 
@@ -562,12 +593,6 @@ public class SuffixFilter
                     if (!c.isFinished())
                         queue.add(c); // preserve the state for backtracking
 
-                    if (!hasNextStep && nm == 0 && c.cursor.cursorF + 1 < m) {
-                        // add bidirectional search state
-                        queue.add(new SearchState(new Cursor(c.cursor.getStrand(),
-                                SearchDirection.BidirectionalForward, fmIndex.wholeSARange(), fmIndex.wholeSARange(),
-                                c.cursor.cursorF + 1, c.cursor.cursorF + 1, null)));
-                    }
                     continue;
                 }
 
@@ -577,7 +602,6 @@ public class SuffixFilter
                 }
 
                 if (!staircaseFilter.getStaircaseMask(nm + 1).get(c.getIndex())) {
-                    c.fillSearchFlags();
                     numFiltered++;
                     continue;
                 }
