@@ -38,6 +38,7 @@ import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.strategy.BidirectionalBWT.QuickScanResult;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
+import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
 
 /**
@@ -276,6 +277,12 @@ public class SuffixFilter
             return String.format("%sk%d%s", hasHit() ? "*" : "", getLowerBoundOfK(), cursor);
         }
 
+        public int score() {
+            int nm = getLowerBoundOfK();
+            int mm = getIndex() - nm;
+            return mm * config.matchScore - nm * config.mismatchPenalty;
+        }
+
         public int getStrandIndex() {
             return cursor.flag & 1;
         }
@@ -479,20 +486,20 @@ public class SuffixFilter
     {
         @Override
         public int compare(SearchState o1, SearchState o2) {
-            //            int pDiff = o1.getInitFlag() - o2.getInitFlag();
-            //            if (pDiff != 0)
-            //                return pDiff;
 
-            int diff = 0;
-            // prefer longer match
-            diff = o2.getIndex() - o1.getIndex();
-            if (diff != 0)
-                return diff;
+            return o2.score() - o1.score();
 
-            // prefer a state with smaller mismatches
-            diff = o1.getLowerBoundOfK() - o2.getLowerBoundOfK();
-
-            return diff;
+            //            int diff = 0;
+            //            // prefer a state with smaller mismatches
+            //            diff = o1.getLowerBoundOfK() - o2.getLowerBoundOfK();
+            //
+            //            if (diff != 0)
+            //                return diff;
+            //
+            //            // prefer longer match
+            //            diff = o2.getIndex() - o1.getIndex();
+            //
+            //            return diff;
         }
     }
 
@@ -515,6 +522,23 @@ public class SuffixFilter
 
         public void align() throws Exception {
 
+            StopWatch s = new StopWatch();
+            align_internal();
+
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("stat: %s min K:%d, FM Search:%,d, Exact:%d, CutOff:%d, Filtered:%d, %.5f sec.",
+                        minMismatches <= k ? "(*)" : "   ", minMismatches, numFMIndexSearches, numExactSearchCount,
+                        numCutOff, numFiltered, s.getElapsedTime());
+
+                if (minMismatches == 0 && numFMIndexSearches > 500) {
+                    _logger.debug("query: %s", q[0]);
+                }
+            }
+
+        }
+
+        public void align_internal() throws Exception {
+
             if (q[0].fastCount(ACGT.N, 0, m) > config.maximumEditDistances) {
                 return; // skip this alignment
             }
@@ -522,14 +546,21 @@ public class SuffixFilter
             // k=0
             QuickScanResult scanF = BidirectionalBWT.scanMismatchLocations(fmIndex, q[0], Strand.FORWARD);
             if (scanF.numMismatches == 0) {
+                minMismatches = 0;
                 out.emit(scanF);
                 return;
             }
             QuickScanResult scanR = BidirectionalBWT.scanMismatchLocations(fmIndex, q[1], Strand.REVERSE);
             if (scanR.numMismatches == 0) {
+                minMismatches = 0;
                 out.emit(scanR);
                 return;
             }
+
+            if (_logger.isTraceEnabled())
+                _logger.trace(SilkLens.toSilk("scanF", scanF));
+            if (_logger.isTraceEnabled())
+                _logger.trace(SilkLens.toSilk("scanR", scanR));
 
             if (k == 0)
                 return;
@@ -538,12 +569,10 @@ public class SuffixFilter
             this.queryMask[1] = new QueryMask(q[1]);
 
             // Add states for both strands
-            queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.Forward, fmIndex.wholeSARange(), null,
-                    0, 0, null)));
-            queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.Forward, fmIndex.wholeSARange(), null,
-                    0, 0, null)));
+            if (scanF.numMismatches <= k) {
+                queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.Forward, fmIndex.wholeSARange(),
+                        null, 0, 0, null)));
 
-            if (scanF.numMismatches < scanR.numMismatches) {
                 if (scanF.longestMatch.start != 0 && scanF.longestMatch.start < m) {
                     // add bidirectional search state
                     queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.BidirectionalForward, fmIndex
@@ -551,101 +580,100 @@ public class SuffixFilter
                             scanF.longestMatch.start, null)));
                 }
             }
-            else if (scanF.numMismatches > scanR.numMismatches) {
-                if (scanR.longestMatch.start != 0 && scanR.longestMatch.start < m) {
-                    // add bidirectional search state
-                    queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward, fmIndex
-                            .wholeSARange(), fmIndex.wholeSARange(), scanR.longestMatch.start,
-                            scanR.longestMatch.start, null)));
+
+            if (scanR.numMismatches <= k) {
+                queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.Forward, fmIndex.wholeSARange(),
+                        null, 0, 0, null)));
+                if (scanF.numMismatches > scanR.numMismatches) {
+                    if (scanR.longestMatch.start != 0 && scanR.longestMatch.start < m) {
+                        // add bidirectional search state
+                        queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward,
+                                fmIndex.wholeSARange(), fmIndex.wholeSARange(), scanR.longestMatch.start,
+                                scanR.longestMatch.start, null)));
+                    }
                 }
             }
 
-            try {
-
-                while (!queue.isEmpty()) {
-                    SearchState c = queue.poll();
-                    if (c.isFinished()) {
-                        continue;
-                    }
-
-                    if (c.hasHit()) {
-                        // TODO verification
-                        reportAlignment(c);
-                        break;
-                    }
-
-                    if (c.cursor.getRemainingBases() == 0) {
-                        reportAlignment(c);
-                        break;
-                    }
-
-                    int nm = c.getLowerBoundOfK();
-                    int allowedMismatches = k - nm;
-                    if (allowedMismatches < 0)
-                        continue;
-
-                    if (allowedMismatches == 0) {
-                        // do exact match
-                        SearchState matchState = exactMatch(c);
-                        if (matchState != null) {
-                            reportAlignment(matchState);
-                            break;
-                        }
-                        continue;
-                    }
-
-                    ACGT nextBase = c.cursor.nextACGT(q);
-                    if (!c.isChecked(nextBase)) {
-                        // search for a base in the read
-                        c.setInitFlag();
-                        boolean hasNextStep = step(c, nextBase);
-                        if (!c.isFinished())
-                            queue.add(c); // preserve the state for backtracking
-
-                        continue;
-                    }
-
-                    if (nm + 1 > minMismatches) {
-                        ++numCutOff;
-                        continue;
-                    }
-
-                    if (!staircaseFilter.getStaircaseMask(nm + 1).get(c.getIndex())) {
-                        numFiltered++;
-                        continue;
-                    }
-
-                    // search for the other bases
-                    for (ACGT ch : ACGT.exceptN) {
-                        if (ch == nextBase)
-                            continue;
-
-                        if (!c.isChecked(ch)) {
-                            step(c, ch);
-                        }
-                    }
-
-                    // split
-                    if (config.numSplitAlowed > 0) {
-                        int index = c.getIndex();
-                        c.updateSplitFlag();
-                        if (!c.cursor.hasSplit() && index > config.indelEndSkip && m - index > config.indelEndSkip) {
-                            SearchState nextState = c.nextStateAfterSplit();
-                            if (nextState != null)
-                                queue.add(nextState);
-                            else
-                                ++numFiltered;
-                        }
-                    }
-
-                    assert (c.isFinished());
+            while (!queue.isEmpty()) {
+                SearchState c = queue.poll();
+                if (_logger.isTraceEnabled()) {
+                    _logger.trace("cursor: %s", c);
                 }
-            }
-            finally {
-                if (_logger.isDebugEnabled())
-                    _logger.debug("stat: %s min K:%d, FM Search:%,d, Exact:%d, CutOff:%d, Filtered:%d",
-                            minMismatches <= k ? "(*)" : "   ", minMismatches, numFMIndexSearches, numExactSearchCount,
-                            numCutOff, numFiltered);
+                if (c.isFinished()) {
+                    continue;
+                }
+
+                if (c.hasHit()) {
+                    // TODO verification
+                    reportAlignment(c);
+                    break;
+                }
+
+                if (c.cursor.getRemainingBases() == 0) {
+                    reportAlignment(c);
+                    break;
+                }
+
+                int nm = c.getLowerBoundOfK();
+                int allowedMismatches = k - nm;
+                if (allowedMismatches < 0)
+                    continue;
+
+                if (allowedMismatches == 0) {
+                    // do exact match
+                    SearchState matchState = exactMatch(c);
+                    if (matchState != null) {
+                        reportAlignment(matchState);
+                        break;
+                    }
+                    continue;
+                }
+
+                ACGT nextBase = c.cursor.nextACGT(q);
+                if (!c.isChecked(nextBase)) {
+                    // search for a base in the read
+                    c.setInitFlag();
+                    boolean hasNextStep = step(c, nextBase);
+                    if (!c.isFinished())
+                        queue.add(c); // preserve the state for backtracking
+
+                    continue;
+                }
+
+                if (nm + 1 > minMismatches) {
+                    ++numCutOff;
+                    continue;
+                }
+
+                if (!staircaseFilter.getStaircaseMask(nm + 1).get(c.getIndex())) {
+                    numFiltered++;
+                    continue;
+                }
+
+                // search for the other bases
+                for (ACGT ch : ACGT.exceptN) {
+                    if (ch == nextBase)
+                        continue;
+
+                    if (!c.isChecked(ch)) {
+                        step(c, ch);
+                    }
+                }
+
+                // split
+                if (config.numSplitAlowed > 0) {
+                    int index = c.getIndex();
+                    c.updateSplitFlag();
+                    if (!c.cursor.hasSplit() && index > config.indelEndSkip && m - index > config.indelEndSkip) {
+                        SearchState nextState = c.nextStateAfterSplit();
+                        if (nextState != null)
+                            queue.add(nextState);
+                        else
+                            ++numFiltered;
+                    }
+                }
+
+                assert (c.isFinished());
             }
 
         }

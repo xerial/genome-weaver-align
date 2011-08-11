@@ -78,4 +78,12 @@ public class SuffixFilterTest
         f.align(q);
     }
 
+    @Test
+    public void longRead() throws Exception {
+        ACGTSequence q = new ACGTSequence("AAGCCTAGATTCCGTG");
+        SuffixFilter f = new SuffixFilter(fmIndex, config, q.textSize());
+        f.align(q);
+
+    }
+
 }

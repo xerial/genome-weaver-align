@@ -63,7 +63,7 @@ public class SuffixInterval implements SARange
 
     @Override
     public String toString() {
-        return String.format("[%,d,%,d)", lowerBound, upperBound);
+        return String.format("[%d,%d)%s", lowerBound, upperBound, isUniqueHit() ? "!" : "");
     }
 
     @Override
