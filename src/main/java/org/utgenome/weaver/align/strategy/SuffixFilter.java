@@ -350,14 +350,9 @@ public class SuffixFilter
             final int index = getIndex();
             final int colStart = index - height + 1;
             final long qeq = queryMask.getPatternMaskIn64bit(ch, cursor.getNextACGTIndex() - height + 1);
-
-            String qeqStr = toBinary(qeq, (height - 1) * 2 + 1);
-
             // Update the automaton
             // R'_0 = ((R_0 & P[ch]) << 1) & (suffix filter)
-            long stairCase = staircaseFilter.getStairCaseMask64bit(minK, colStart);
-            String stairCaseStr = toBinary(stairCase, (height - 1) * 2 + 1);
-            next[0] = ((prev[0] & qeq) << 1) & stairCase;
+            next[0] = ((prev[0] & qeq) << 1) & staircaseFilter.getStairCaseMask64bit(minK, colStart);
             for (int i = 1; i < height; ++i) {
                 // R'_{i+1} = ((R_{i+1} & P[ch]) << 1) | R_i | (R_i << 1) | (R'_i << 1)   
                 next[i] = ((prev[i] & qeq) << 1) | prev[i - 1] | (prev[i - 1] << 1) | (next[i - 1] << 1);
@@ -483,9 +478,9 @@ public class SuffixFilter
     {
         @Override
         public int compare(SearchState o1, SearchState o2) {
-            int pDiff = o1.getInitFlag() - o2.getInitFlag();
-            if (pDiff != 0)
-                return pDiff;
+            //            int pDiff = o1.getInitFlag() - o2.getInitFlag();
+            //            if (pDiff != 0)
+            //                return pDiff;
 
             // prefer longer match
             int diff = o2.getIndex() - o1.getIndex();
@@ -494,8 +489,10 @@ public class SuffixFilter
 
             // prefer a state with smaller mismatches
             int lDiff = o1.getLowerBoundOfK() - o2.getLowerBoundOfK();
-
-            return lDiff;
+            if (lDiff != 0)
+                return lDiff;
+            else
+                return 0;
 
         }
     }
