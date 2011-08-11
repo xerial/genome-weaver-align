@@ -297,6 +297,10 @@ public class SuffixFilter
             this.state |= 1 << ch.code;
         }
 
+        public void fillSearchFlags() {
+            this.state |= 0x1F;
+        }
+
         public void updateSplitFlag() {
             this.state |= 1 << 4;
         }
@@ -536,17 +540,13 @@ public class SuffixFilter
                 //                    continue;
                 //                }
 
-                int allowedMismatches = k - c.getLowerBoundOfK();
+                int nm = c.getLowerBoundOfK();
+                int allowedMismatches = k - nm;
                 if (allowedMismatches == 0) {
                     // do exact match
                     SearchState matchState = exactMatch(c);
                     if (matchState != null)
                         reportAlignment(matchState);
-                    continue;
-                }
-
-                if (c.getLowerBoundOfK() + 1 > minMismatches) {
-                    ++numCutOff;
                     continue;
                 }
 
@@ -558,6 +558,17 @@ public class SuffixFilter
                         queue.add(c); // preserve the state for backtracking
 
                     c.setInitFlag();
+                    continue;
+                }
+
+                if (nm + 1 > minMismatches) {
+                    ++numCutOff;
+                    continue;
+                }
+
+                if (!staircaseFilter.getStaircaseMask(nm + 1).get(c.getIndex())) {
+                    c.fillSearchFlags();
+                    numFiltered++;
                     continue;
                 }
 
@@ -615,6 +626,7 @@ public class SuffixFilter
          */
         private boolean step(SearchState c, ACGT ch) {
             c.updateFlag(ch);
+
             Cursor nextCursor = c.cursor.next(ch);
             ++numFMIndexSearches;
             if (nextCursor == null)
