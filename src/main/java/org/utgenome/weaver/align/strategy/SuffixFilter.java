@@ -491,11 +491,16 @@ public class SuffixFilter
                     continue;
                 }
 
+                if (c.cursor.getRemainingBases() == 0) {
+                    reportAlignment(c);
+                    continue;
+                }
+
                 int allowedMismatches = k - c.getLowerBoundOfK();
                 if (c.hasHit()) {
                     // TODO verification
-                    reportAlignment(c);
-                    continue;
+                    //reportAlignment(c);
+                    //continue;
                 }
 
                 if (allowedMismatches == 0) {

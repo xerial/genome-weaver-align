@@ -59,14 +59,14 @@ public class SuffixFilterTest
 
     @Test
     public void forwardExact() throws Exception {
-        ACGTSequence q = new ACGTSequence("GCCTA");
+        ACGTSequence q = new ACGTSequence("GCCTAGT");
         SuffixFilter f = new SuffixFilter(fmIndex, config, q.textSize());
         f.align(q);
     }
 
     @Test
     public void reverseExact() throws Exception {
-        ACGTSequence q = new ACGTSequence("TAGGC");
+        ACGTSequence q = new ACGTSequence("GCCTAGT").reverseComplement();
         SuffixFilter f = new SuffixFilter(fmIndex, config, q.textSize());
         f.align(q);
     }
