@@ -84,8 +84,8 @@ public class SFAlign extends GenomeWeaverCommand
         query(fastaFilePrefix, reader, config, new Reporter() {
             @Override
             public void emit(Object result) {
-                if (_logger.isDebugEnabled())
-                    _logger.debug(SilkLens.toSilk("result", result));
+                if (_logger.isTraceEnabled())
+                    _logger.trace(SilkLens.toSilk("result", result));
             }
         });
 
