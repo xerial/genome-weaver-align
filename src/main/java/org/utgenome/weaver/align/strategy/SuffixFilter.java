@@ -240,9 +240,24 @@ public class SuffixFilter
             }
         }
 
+        public String showNFAState(long[] automaton) {
+            int w = (k - getLowerBoundOfK()) * 2 + 1;
+            StringBuilder s = new StringBuilder();
+            for (int j = 0; j < automaton.length; ++j) {
+                for (int i = 0; i < w; ++i) {
+                    s.append(((automaton[j] >>> i) & 1) == 0 ? "0" : "1");
+                }
+                if (j != automaton.length - 1) {
+                    s.append(" \n");
+                }
+            }
+            return s.toString();
+        }
+
         @Override
         public String toString() {
-            return String.format("k%d%s", getLowerBoundOfK(), cursor);
+            return String.format("%sk%d%s \n%s", hasHit() ? "*" : "", getLowerBoundOfK(), cursor,
+                    showNFAState(automaton));
         }
 
         public int getStrandIndex() {
@@ -296,13 +311,13 @@ public class SuffixFilter
             long[] next = new long[height];
 
             final int index = getIndex();
-            final int colStart = index - minK;
+            final int colStart = index - height + 1;
             final long qeq = queryMask.getPatternMaskIn64bit(ch, colStart);
 
             // Update the automaton
             // R'_0 = ((R_0 & P[ch]) << 1) & (suffix filter)
             next[0] = ((prev[0] & qeq) << 1) & staircaseFilter.getStairCaseMask64bit(minK, colStart);
-            for (int i = 1; i <= height; ++i) {
+            for (int i = 1; i < height; ++i) {
                 // R'_{i+1} = ((R_{i+1} & P[ch]) << 1) | R_i | (R_i << 1) | (R'_i << 1)   
                 next[i] = ((prev[i] & qeq) << 1) | prev[i - 1] | (prev[i - 1] << 1) | (next[i - 1] << 1);
                 // Apply a suffix filter (staircase mask)
@@ -311,7 +326,7 @@ public class SuffixFilter
 
             // Find a match at query position m 
             boolean foundMatch = false;
-            final int mPos = m - index + height - 1;
+            final int mPos = height + m - index - 1;
             for (int i = 0; i < height; ++i) {
                 if ((next[i] & (1L << mPos)) != 0L) {
                     foundMatch = true;
@@ -319,7 +334,7 @@ public class SuffixFilter
                 }
             }
             // Find a match at next step 
-            final int nextIndex = index + height;
+            final int nextIndex = height;
             for (int i = 0; i < height; ++i) {
                 if ((next[i] & (1L << nextIndex)) != 0L) {
                     return createNextState(nextCursor, next, i, foundMatch);
@@ -337,6 +352,7 @@ public class SuffixFilter
             for (int i = 0; i < nextHeight; ++i) {
                 trimmed[i] = nextAutomaton[i + nm] >>> 1;
             }
+            //_logger.debug("\n" + showNFAState(trimmed));
             return new SearchState(nextCursor, trimmed, getLowerBoundOfK() + nm, foundMatch);
         }
 
@@ -466,7 +482,6 @@ public class SuffixFilter
                     continue;
                 }
 
-                int strandIndex = c.getStrandIndex();
                 int allowedMismatches = k - c.getLowerBoundOfK();
                 if (c.hasHit()) {
                     // TODO verification

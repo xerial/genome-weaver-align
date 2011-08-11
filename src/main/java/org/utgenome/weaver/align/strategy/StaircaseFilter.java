@@ -60,7 +60,7 @@ public class StaircaseFilter
 
         stairMask = new BitVector[k + 1];
         for (int i = 0; i < stairMask.length; ++i) {
-            stairMask[i] = new BitVector(m)._not()._rshift(chunkStart[i]);
+            stairMask[i] = new BitVector(m)._not()._lshift(chunkStart[i]);
         }
     }
 

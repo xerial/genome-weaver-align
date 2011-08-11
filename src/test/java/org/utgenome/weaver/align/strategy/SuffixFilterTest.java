@@ -66,7 +66,7 @@ public class SuffixFilterTest
 
     @Test
     public void reverseExact() throws Exception {
-        ACGTSequence q = new ACGTSequence("GCCTA").reverseComplement();
+        ACGTSequence q = new ACGTSequence("TAGGC");
         SuffixFilter f = new SuffixFilter(fmIndex, config, q.textSize());
         f.align(q);
     }
