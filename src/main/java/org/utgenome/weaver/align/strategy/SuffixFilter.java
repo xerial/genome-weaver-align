@@ -139,7 +139,10 @@ public class SuffixFilter
         }
 
         public int getIndex() {
-            return cursorF - cursorB;
+            if (split == null)
+                return cursorF - cursorB;
+            else
+                return cursorF - cursorB + (split.cursorF - split.cursorB);
         }
 
         public SearchDirection getSearchDirection() {
@@ -296,7 +299,13 @@ public class SuffixFilter
             updateSplitFlag();
             // use the same automaton state
             if (getLowerBoundOfK() < k) {
-                return new SearchState(cursor.split(), automaton, getLowerBoundOfK() + 1, hasHit());
+                int minK = getLowerBoundOfK() + 1;
+                int height = k - minK + 1;
+                long[] nextAutomaton = new long[height];
+                for (int i = 0; i < height; ++i) {
+                    nextAutomaton[i] = 1L << (height + i - 1);
+                }
+                return new SearchState(cursor.split(), nextAutomaton, minK, hasHit());
             }
             else
                 return null;
