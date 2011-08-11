@@ -244,9 +244,9 @@ public class BitVector
      * @param other
      * @return
      */
-    public BitVector add(BitVector other) {
+    public BitVector _add(BitVector other) {
         long c = 0; // carry (borrow in from lower bits)
-        for (int i = block.length - 1; i >= 0; --i) {
+        for (int i = 0; i < block.length; ++i) {
             long x = block[i];
             long y = other.block[i];
             long v = x + y + c; // 0 <= c <= 1
