@@ -510,8 +510,6 @@ public class SuffixFilter
         public AlignmentProcess(ACGTSequence query, Reporter out) {
             this.q[0] = query;
             this.q[1] = query.complement();
-            this.queryMask[0] = new QueryMask(q[0]);
-            this.queryMask[1] = new QueryMask(q[1]);
             this.out = out;
         }
 
@@ -523,32 +521,43 @@ public class SuffixFilter
 
             // k=0
             QuickScanResult scanF = BidirectionalBWT.scanMismatchLocations(fmIndex, q[0], Strand.FORWARD);
-            QuickScanResult scanR = BidirectionalBWT.scanMismatchLocations(fmIndex, q[1], Strand.REVERSE);
             if (scanF.numMismatches == 0) {
                 out.emit(scanF);
                 return;
             }
+            QuickScanResult scanR = BidirectionalBWT.scanMismatchLocations(fmIndex, q[1], Strand.REVERSE);
             if (scanR.numMismatches == 0) {
                 out.emit(scanR);
                 return;
             }
+
+            if (k == 0)
+                return;
+
+            this.queryMask[0] = new QueryMask(q[0]);
+            this.queryMask[1] = new QueryMask(q[1]);
 
             // Add states for both strands
             queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.Forward, fmIndex.wholeSARange(), null,
                     0, 0, null)));
             queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.Forward, fmIndex.wholeSARange(), null,
                     0, 0, null)));
-            if (scanF.longestMatch.start != 0 && scanF.longestMatch.start < m) {
-                // add bidirectional search state
-                queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.BidirectionalForward, fmIndex
-                        .wholeSARange(), fmIndex.wholeSARange(), scanF.longestMatch.start, scanF.longestMatch.start,
-                        null)));
+
+            if (scanF.numMismatches < scanR.numMismatches) {
+                if (scanF.longestMatch.start != 0 && scanF.longestMatch.start < m) {
+                    // add bidirectional search state
+                    queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.BidirectionalForward, fmIndex
+                            .wholeSARange(), fmIndex.wholeSARange(), scanF.longestMatch.start,
+                            scanF.longestMatch.start, null)));
+                }
             }
-            if (scanR.longestMatch.start != 0 && scanR.longestMatch.start < m) {
-                // add bidirectional search state
-                queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward, fmIndex
-                        .wholeSARange(), fmIndex.wholeSARange(), scanR.longestMatch.start, scanR.longestMatch.start,
-                        null)));
+            else if (scanF.numMismatches > scanR.numMismatches) {
+                if (scanR.longestMatch.start != 0 && scanR.longestMatch.start < m) {
+                    // add bidirectional search state
+                    queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward, fmIndex
+                            .wholeSARange(), fmIndex.wholeSARange(), scanR.longestMatch.start,
+                            scanR.longestMatch.start, null)));
+                }
             }
 
             try {
@@ -572,6 +581,9 @@ public class SuffixFilter
 
                     int nm = c.getLowerBoundOfK();
                     int allowedMismatches = k - nm;
+                    if (allowedMismatches < 0)
+                        continue;
+
                     if (allowedMismatches == 0) {
                         // do exact match
                         SearchState matchState = exactMatch(c);
@@ -614,7 +626,7 @@ public class SuffixFilter
                     }
 
                     // split
-                    {
+                    if (config.numSplitAlowed > 0) {
                         int index = c.getIndex();
                         c.updateSplitFlag();
                         if (!c.cursor.hasSplit() && index > config.indelEndSkip && m - index > config.indelEndSkip) {
@@ -632,8 +644,8 @@ public class SuffixFilter
             finally {
                 if (_logger.isDebugEnabled())
                     _logger.debug("stat: %s min K:%d, FM Search:%,d, Exact:%d, CutOff:%d, Filtered:%d",
-                            minMismatches <= k ? "found" : "no match", minMismatches, numFMIndexSearches,
-                            numExactSearchCount, numCutOff, numFiltered);
+                            minMismatches <= k ? "(*)" : "   ", minMismatches, numFMIndexSearches, numExactSearchCount,
+                            numCutOff, numFiltered);
             }
 
         }

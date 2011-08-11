@@ -60,6 +60,9 @@ public class SFAlign extends GenomeWeaverCommand
     @Option(symbol = "k", description = "maximum edit distances")
     private int    maximumEditDistances = 2;
 
+    @Option(symbol = "s", description = "# of read split")
+    private int    numSplitAllowed      = 1;
+
     @Override
     public void execute(String[] args) throws Exception {
 
@@ -80,6 +83,7 @@ public class SFAlign extends GenomeWeaverCommand
 
         AlignmentScoreConfig config = new AlignmentScoreConfig();
         config.maximumEditDistances = maximumEditDistances;
+        config.numSplitAlowed = numSplitAllowed;
 
         query(fastaFilePrefix, reader, config, new Reporter() {
             @Override
