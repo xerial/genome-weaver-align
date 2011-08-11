@@ -134,8 +134,11 @@ public class SuffixFilter
 
         public ACGT nextACGT(ACGTSequence[] q) {
             int strand = flag & 1;
-            return getSearchDirection().isForward && cursorF < m ? q[strand].getACGT(cursorF) : q[strand]
-                    .getACGT(cursorB - 1);
+            return q[strand].getACGT(getNextACGTIndex());
+        }
+
+        public int getNextACGTIndex() {
+            return getSearchDirection().isForward && cursorF < m ? cursorF : cursorB - 1;
         }
 
         public int getIndex() {
@@ -206,7 +209,7 @@ public class SuffixFilter
                 break;
             }
 
-            return new Cursor(flag, nextSiF, nextSiB, nextF, nextB, split);
+            return new Cursor(strand, d, nextSiF, nextSiB, nextF, nextB, split);
         }
     }
 
@@ -238,9 +241,8 @@ public class SuffixFilter
          * @param strand
          * @param searchDirection
          */
-        public SearchState(Strand strand, SearchDirection searchDirection) {
-            this(new Cursor(strand, searchDirection, fmIndex.wholeSARange(), null, 0, 0, null), new long[k + 1], true,
-                    0, false);
+        public SearchState(Cursor cursor) {
+            this(cursor, new long[k + 1], true, 0, false);
             // Activate the diagonal states 
             for (int i = 0; i <= k; ++i) {
                 automaton[i] = 1L << (k + i);
@@ -347,7 +349,7 @@ public class SuffixFilter
 
             final int index = getIndex();
             final int colStart = index - height + 1;
-            final long qeq = queryMask.getPatternMaskIn64bit(ch, colStart);
+            final long qeq = queryMask.getPatternMaskIn64bit(ch, cursor.getNextACGTIndex() - height + 1);
 
             String qeqStr = toBinary(qeq, (height - 1) * 2 + 1);
 
@@ -481,17 +483,20 @@ public class SuffixFilter
     {
         @Override
         public int compare(SearchState o1, SearchState o2) {
-
             int pDiff = o1.getInitFlag() - o2.getInitFlag();
             if (pDiff != 0)
                 return pDiff;
+
             // prefer longer match
             int diff = o2.getIndex() - o1.getIndex();
             if (diff != 0)
                 return diff;
 
             // prefer a state with smaller mismatches
-            return o1.getLowerBoundOfK() - o2.getLowerBoundOfK();
+            int lDiff = o1.getLowerBoundOfK() - o2.getLowerBoundOfK();
+
+            return lDiff;
+
         }
     }
 
@@ -520,8 +525,10 @@ public class SuffixFilter
             }
 
             // Add states for both strands
-            queue.add(new SearchState(Strand.FORWARD, SearchDirection.Forward));
-            queue.add(new SearchState(Strand.REVERSE, SearchDirection.Forward));
+            queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.Forward, fmIndex.wholeSARange(), null,
+                    0, 0, null)));
+            queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.Forward, fmIndex.wholeSARange(), null,
+                    0, 0, null)));
 
             while (!queue.isEmpty()) {
                 SearchState c = queue.poll();
@@ -529,16 +536,16 @@ public class SuffixFilter
                     continue;
                 }
 
+                if (c.hasHit()) {
+                    // TODO verification
+                    reportAlignment(c);
+                    break;
+                }
+
                 if (c.cursor.getRemainingBases() == 0) {
                     reportAlignment(c);
                     continue;
                 }
-
-                //                if (c.hasHit()) {
-                //                    // TODO verification
-                //                    reportAlignment(c);
-                //                    continue;
-                //                }
 
                 int nm = c.getLowerBoundOfK();
                 int allowedMismatches = k - nm;
@@ -553,11 +560,17 @@ public class SuffixFilter
                 ACGT nextBase = c.cursor.nextACGT(q);
                 if (!c.isChecked(nextBase)) {
                     // search for a base in the read
-                    step(c, nextBase);
+                    c.setInitFlag();
+                    boolean hasNextStep = step(c, nextBase);
                     if (!c.isFinished())
                         queue.add(c); // preserve the state for backtracking
 
-                    c.setInitFlag();
+                    if (!hasNextStep && nm == 0 && c.cursor.cursorF + 1 < m) {
+                        // add bidirectional search state
+                        queue.add(new SearchState(new Cursor(c.cursor.getStrand(),
+                                SearchDirection.BidirectionalForward, fmIndex.wholeSARange(), fmIndex.wholeSARange(),
+                                c.cursor.cursorF + 1, c.cursor.cursorF + 1, null)));
+                    }
                     continue;
                 }
 
@@ -633,11 +646,14 @@ public class SuffixFilter
                 return false; // no match
 
             SearchState nextState = c.nextState(ch, nextCursor, queryMask[c.getStrandIndex()]);
-            if (nextState != null)
+            if (nextState != null) {
                 queue.add(nextState);
-            else
+                return true;
+            }
+            else {
                 ++numFiltered;
-            return true;
+                return false;
+            }
         }
 
         private SearchState exactMatch(SearchState c) {
