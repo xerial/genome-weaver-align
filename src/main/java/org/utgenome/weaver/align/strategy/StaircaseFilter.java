@@ -68,6 +68,14 @@ public class StaircaseFilter
         return stairMask[k];
     }
 
+    public long getStairCaseMask64bit(int k, int offset) {
+        if (offset >= 0)
+            return stairMask[k].substring64(offset, offset + 64);
+        else {
+            return stairMask[k].substring64(0, 64) << (-offset);
+        }
+    }
+
     @Override
     public String toString() {
         return StringUtil.join(stairMask, ", ");

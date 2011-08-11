@@ -94,21 +94,26 @@ public class BitVector
         return (int) ((block[(int) blockPos] >>> offset) & 1L);
     }
 
-    //    /**
-    //     * @param index
-    //     * @param len < 64
-    //     * @return
-    //     */
-    //    public long get64(long index, int len) {
-    //        long blockPos = index / B;
-    //        if (blockPos > block.length)
-    //            return 0L;
-    //            
-    //        long offset = index % B;
-    //        long mask = 0x8000000000000000L >>> offset;
-    //        
-    //        
-    //    }
+    /**
+     * Extract within 64 bit range
+     * 
+     * @param start
+     * @param end
+     *            must be smaller than 64
+     * 
+     * @return
+     */
+    public long substring64(long start, long end) {
+        int pos = (int) (start / B);
+        if (pos > block.length)
+            return 0L;
+        long range = end - start;
+        long mask = (range >= 64) ? ~0L : ~(~0L << range);
+        long offset = start % B;
+        long low = block[pos] >>> offset;
+        long high = pos + 1 < block.length ? (block[pos + 1] & ~(~0L << offset)) << (B - offset) : 0L;
+        return (high | low) & mask;
+    }
 
     public void set(long index, boolean c) {
         if (c)
