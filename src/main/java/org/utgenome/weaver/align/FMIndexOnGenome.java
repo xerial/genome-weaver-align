@@ -122,6 +122,59 @@ public class FMIndexOnGenome
         return fm.backwardSearch(nextBase, si);
     }
 
+    public static class SiSet
+    {
+        public final SuffixInterval[] siF;
+        public final SuffixInterval[] siB;
+
+        public SiSet(SuffixInterval[] siF, SuffixInterval[] siB) {
+            this.siF = siF;
+            this.siB = siB;
+        }
+    }
+
+    public SiSet bidirectionalForwardSearch(Strand strand, BidirectionalSuffixInterval si) {
+
+        SuffixInterval F = si.forwardSi, B = si.backwardSi;
+        FMIndex fm = (strand == Strand.FORWARD) ? reverseIndex : forwardIndex;
+
+        long[] occLowerBound = fm.rankACGTN(F.lowerBound);
+        long[] occUpperBound = fm.rankACGTN(F.upperBound);
+
+        // forward search
+        final int K = ACGT.exceptN.length;
+        CharacterCount C = fm.getCharacterCount();
+
+        SuffixInterval[] nextSiF = new SuffixInterval[K];
+        for (int i = 0; i < K; ++i) {
+            ACGT ch = ACGT.decode((byte) i);
+            long lb = C.getCharacterCountSmallerThan(ch) + occLowerBound[i];
+            long ub = C.getCharacterCountSmallerThan(ch) + occUpperBound[i];
+            if (lb < ub)
+                nextSiF[i] = new SuffixInterval(lb, ub);
+        }
+
+        // backward search
+        SuffixInterval[] nextSiB = new SuffixInterval[K];
+        for (int i = 0; i < K; ++i) {
+            if (nextSiF[i] == null)
+                continue;
+
+            // Count the occurrences of characters smaller than ACGT[i] in bwt[F.lowerbound, F.upperBound)
+            long x = 0;
+            for (int j = 0; j < i; ++i) {
+                x += occUpperBound[j] - occLowerBound[j];
+            }
+            // Count the occurrences of ACGT[i] in bwt[F.lowerbound, F.upperBound)
+            long y = occUpperBound[i] - occLowerBound[i];
+            // Narrow down the backward suffix interval 
+            nextSiB[i] = new SuffixInterval(B.lowerBound + x, B.lowerBound + x + y);
+        }
+
+        return new SiSet(nextSiF, nextSiB);
+
+    }
+
     /**
      * Narrow down suffix range via backward-search
      * 
