@@ -488,18 +488,6 @@ public class SuffixFilter
         public int compare(SearchState o1, SearchState o2) {
 
             return o2.score() - o1.score();
-
-            //            int diff = 0;
-            //            // prefer a state with smaller mismatches
-            //            diff = o1.getLowerBoundOfK() - o2.getLowerBoundOfK();
-            //
-            //            if (diff != 0)
-            //                return diff;
-            //
-            //            // prefer longer match
-            //            diff = o2.getIndex() - o1.getIndex();
-            //
-            //            return diff;
         }
     }
 
