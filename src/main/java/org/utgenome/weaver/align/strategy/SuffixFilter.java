@@ -285,8 +285,7 @@ public class SuffixFilter
 
         @Override
         public String toString() {
-            //          return String.format("%sk%d%s \n%s", hasHit() ? "*" : "", getLowerBoundOfK(), cursor,   showNFAState(automaton));
-            return String.format("%sk%d%s", hasHit() ? "*" : "", getLowerBoundOfK(), cursor);
+            return String.format("%sk%d%s %s", hasHit() ? "*" : "", getLowerBoundOfK(), cursor, si);
         }
 
         public int score() {
@@ -465,7 +464,11 @@ public class SuffixFilter
     {
         @Override
         public int compare(SearchState o1, SearchState o2) {
-            return o2.score() - o1.score();
+            int diff = o1.getLowerBoundOfK() - o2.getLowerBoundOfK();
+            if (diff == 0)
+                diff = -(o1.cursor.getIndex() - o2.cursor.getIndex());
+
+            return diff;
         }
     }
 
@@ -561,6 +564,9 @@ public class SuffixFilter
                 if (_logger.isTraceEnabled()) {
                     _logger.trace("cursor: %s", c);
                 }
+
+                if (c.isFinished())
+                    continue;
 
                 if (c.hasHit() || c.cursor.getRemainingBases() == 0) {
                     // TODO verification

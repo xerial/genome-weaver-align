@@ -24,7 +24,6 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import org.xerial.util.StringUtil;
 
 /**
  * Various types of suffix intervals for forward, backward, bidirectional
@@ -60,8 +59,26 @@ public abstract class SiSet
 
         @Override
         public String toString() {
-            return String.format("[%s]", StringUtil.join(siF, ","));
+            return toString(siF);
         }
+    }
+
+    private static String toString(SuffixInterval[] si) {
+        StringBuilder s = new StringBuilder();
+        s.append("[");
+        int count = 0;
+        for (int i = 0; i < si.length; ++i) {
+            if (si[i] != null) {
+                if (count != 0)
+                    s.append(" ");
+                s.append(ACGT.decode(i));
+                s.append(":");
+                s.append(si[i].toString());
+                ++count;
+            }
+        }
+        s.append("]");
+        return s.toString();
     }
 
     public static class BackwardSiSet extends SiSet
@@ -89,7 +106,7 @@ public abstract class SiSet
 
         @Override
         public String toString() {
-            return String.format("[%s]", StringUtil.join(siB, ","));
+            return toString(siB);
         }
     }
 
@@ -120,7 +137,7 @@ public abstract class SiSet
 
         @Override
         public String toString() {
-            return String.format("[%s]:[%s]", StringUtil.join(siF, ","), StringUtil.join(siB, ","));
+            return String.format("%s:%s", toString(siF), toString(siB));
         }
     }
 

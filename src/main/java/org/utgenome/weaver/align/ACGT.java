@@ -62,6 +62,10 @@ public enum ACGT {
         return codeTable[code & 0x07];
     }
 
+    public static ACGT decode(int code) {
+        return decode((byte) code);
+    }
+
     public static ACGT encode(char ch) {
         return decode(charToACGTCodeTable[ch & 0xFF]);
     }

@@ -81,7 +81,7 @@ public class FMIndexOnGenome
         _logger.info("done.");
         this.wholeRange = new SuffixInterval(0L, N);
         this.wholeRangeBi = new BidirectionalSuffixInterval(wholeRange, wholeRange);
-        this.initRange = new SuffixInterval[] { wholeRange, wholeRange, wholeRange, wholeRange, wholeRange };
+        this.initRange = forwardSearch(Strand.FORWARD, wholeRange);
     }
 
     private FMIndexOnGenome(FMIndex forwardIndex, FMIndex reverseIndex, SparseSuffixArray forwardSA,
@@ -95,7 +95,7 @@ public class FMIndexOnGenome
         K = k;
         this.wholeRange = new SuffixInterval(0L, N);
         this.wholeRangeBi = new BidirectionalSuffixInterval(wholeRange, wholeRange);
-        this.initRange = new SuffixInterval[] { wholeRange, wholeRange, wholeRange, wholeRange, wholeRange };
+        this.initRange = forwardSearch(Strand.FORWARD, wholeRange);
     }
 
     public static FMIndexOnGenome buildFromSequence(String name, String seq) {

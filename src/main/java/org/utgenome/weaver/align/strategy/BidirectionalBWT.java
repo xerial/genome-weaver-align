@@ -85,6 +85,11 @@ public class BidirectionalBWT
             this.longestMatch = longestMatch;
             this.longestMatchSi = longestMatchSi;
         }
+
+        @Override
+        public String toString() {
+            return SilkLens.toSilk(this);
+        }
     }
 
     public static QuickScanResult scanMismatchLocations(FMIndexOnGenome fmIndex, ACGTSequence query, Strand strand) {
