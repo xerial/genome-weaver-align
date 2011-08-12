@@ -24,33 +24,137 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import org.utgenome.weaver.align.strategy.SearchDirection;
+import org.xerial.util.StringUtil;
 
-public class SiSet
+/**
+ * Various types of suffix intervals for forward, backward, bidirectional
+ * searches.
+ * 
+ * @author leo
+ * 
+ */
+public abstract class SiSet
 {
-    public final SuffixInterval[] siF;
-    public final SuffixInterval[] siB;
+    public static class ForwardSiSet extends SiSet
+    {
+        private final SuffixInterval[] siF;
 
-    public SiSet(SuffixInterval[] siF, SuffixInterval[] siB) {
-        this.siF = siF;
-        this.siB = siB;
-    }
-
-    public SARange get(int index) {
-        return new BidirectionalSuffixInterval(siF == null ? null : siF[index], siB == null ? null : siB[index]);
-    }
-
-    public boolean isEmpty(ACGT ch, SearchDirection d) {
-        int i = ch.code;
-        switch (d) {
-        case Forward:
-            return siF[i] != null && siF[i].isEmpty();
-        case Backward:
-            return siB[i] != null && siB[i].isEmpty();
-        case BidirectionalForward:
-            return (siF[i] != null && siF[i].isEmpty()) && (siB[i] != null && siB[i].isEmpty());
+        public ForwardSiSet(SuffixInterval[] siF) {
+            this.siF = siF;
         }
-        return false;
+
+        @Override
+        public boolean isEmpty(ACGT ch) {
+            return (siF[ch.code] == null) || siF[ch.code].isEmpty();
+        }
+
+        @Override
+        public SuffixInterval getForward(ACGT ch) {
+            return siF[ch.code];
+        }
+
+        @Override
+        public SuffixInterval getBackward(ACGT ch) {
+            return null;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("[%s]", StringUtil.join(siF, ","));
+        }
     }
+
+    public static class BackwardSiSet extends SiSet
+    {
+        private final SuffixInterval[] siB;
+
+        public BackwardSiSet(SuffixInterval[] siB) {
+            this.siB = siB;
+        }
+
+        @Override
+        public SuffixInterval getForward(ACGT ch) {
+            return null;
+        }
+
+        @Override
+        public SuffixInterval getBackward(ACGT ch) {
+            return siB[ch.code];
+        }
+
+        @Override
+        public boolean isEmpty(ACGT ch) {
+            return (siB[ch.code] == null) || siB[ch.code].isEmpty();
+        }
+
+        @Override
+        public String toString() {
+            return String.format("[%s]", StringUtil.join(siB, ","));
+        }
+    }
+
+    public static class BidirectionalSiSet extends SiSet
+    {
+        private final SuffixInterval[] siF;
+        private final SuffixInterval[] siB;
+
+        public BidirectionalSiSet(SuffixInterval[] siF, SuffixInterval[] siB) {
+            this.siF = siF;
+            this.siB = siB;
+        }
+
+        @Override
+        public SuffixInterval getForward(ACGT ch) {
+            return siF[ch.code];
+        }
+
+        @Override
+        public SuffixInterval getBackward(ACGT ch) {
+            return siB[ch.code];
+        }
+
+        @Override
+        public boolean isEmpty(ACGT ch) {
+            return (siF[ch.code] == null) || siF[ch.code].isEmpty();
+        }
+
+        @Override
+        public String toString() {
+            return String.format("[%s]:[%s]", StringUtil.join(siF, ","), StringUtil.join(siB, ","));
+        }
+    }
+
+    public static SiSet empty = new EmptySiSet();
+
+    public static class EmptySiSet extends SiSet
+    {
+
+        @Override
+        public SuffixInterval getForward(ACGT ch) {
+            return null;
+        }
+
+        @Override
+        public SuffixInterval getBackward(ACGT ch) {
+            return null;
+        }
+
+        @Override
+        public boolean isEmpty(ACGT ch) {
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return "[]";
+        }
+
+    }
+
+    public abstract SuffixInterval getForward(ACGT ch);
+
+    public abstract SuffixInterval getBackward(ACGT ch);
+
+    public abstract boolean isEmpty(ACGT ch);
 
 }

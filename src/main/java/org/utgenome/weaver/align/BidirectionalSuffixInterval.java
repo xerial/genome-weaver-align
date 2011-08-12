@@ -30,7 +30,7 @@ package org.utgenome.weaver.align;
  * @author leo
  * 
  */
-public class BidirectionalSuffixInterval implements SARange
+public class BidirectionalSuffixInterval
 {
     public final SuffixInterval forwardSi;
     public final SuffixInterval backwardSi;
@@ -38,16 +38,6 @@ public class BidirectionalSuffixInterval implements SARange
     public BidirectionalSuffixInterval(SuffixInterval forwardSi, SuffixInterval backwardSi) {
         this.forwardSi = forwardSi;
         this.backwardSi = backwardSi;
-    }
-
-    @Override
-    public SuffixInterval forwardSi() {
-        return forwardSi;
-    }
-
-    @Override
-    public SuffixInterval backwardSi() {
-        return backwardSi;
     }
 
 }
