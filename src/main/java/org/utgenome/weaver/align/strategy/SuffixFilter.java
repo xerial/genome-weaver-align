@@ -478,7 +478,8 @@ public class SuffixFilter
     {
         @Override
         public int compare(SearchState o1, SearchState o2) {
-            int diff = o1.getLowerBoundOfK() - o2.getLowerBoundOfK();
+            int diff = -(o1.score() - o2.score());
+            //int diff = o1.getLowerBoundOfK() - o2.getLowerBoundOfK();
             if (diff == 0)
                 diff = -(o1.cursor.getIndex() - o2.cursor.getIndex());
 
@@ -692,11 +693,11 @@ public class SuffixFilter
             ACGT ch = c.currentACGT();
             while (numExtend < n) {
                 ch = cursor.nextACGT(q);
-                siSet = fmIndex.bidirectionalSearch(strand, siSet.getForward(ch), siSet.getBackward(ch));
-                ++numFMIndexSearches;
                 if (siSet.isEmpty(ch))
                     return null;
-
+                siSet = next(c, ch);
+                //fmIndex.bidirectionalSearch(strand, siSet.getForward(ch), siSet.getBackward(ch));
+                ++numFMIndexSearches;
                 cursor = cursor.next();
                 ++numExtend;
             }
