@@ -24,8 +24,6 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import java.util.ArrayList;
-
 import org.xerial.util.log.Logger;
 
 /**
@@ -38,9 +36,10 @@ public class OccurrenceCountTable
 {
     private static Logger      _logger = Logger.getLogger(OccurrenceCountTable.class);
 
-    private ArrayList<int[]>   occTable;
+    private int[][]            occTable;
     private final ACGTSequence seq;
     private final int          W;
+    private final int          K;
 
     /**
      * Create a character occurrence count table. This class saves the
@@ -54,31 +53,39 @@ public class OccurrenceCountTable
         this.W = windowSize;
 
         _logger.trace("preparing occurrence count table...");
-        final int K = ACGT.values().length;
-        final int tableSize = (int) ((seq.textSize() + W) / W);
+        this.K = ACGT.values().length;
+        final int numRows = (int) ((seq.textSize() + W) / W);
 
-        occTable = new ArrayList<int[]>(K);
+        occTable = new int[numRows][K];
         for (int k = 0; k < K; ++k) {
-            int[] occ = new int[tableSize];
-            for (int i = 0; i < occ.length; ++i)
-                occ[i] = 0;
-            occTable.add(occ);
+            occTable[0][k] = 0;
         }
-
-        for (int i = 0; i < seq.textSize(); ++i) {
-            ACGT base = seq.getACGT(i);
-            int codeIndex = base.code;
-            final int blockIndex = i / W;
-
-            if (i % W == 0 && blockIndex > 0) {
-                for (ACGT each : ACGT.values()) {
-                    int[] occ = occTable.get(each.code);
-                    occ[blockIndex] = occ[blockIndex - 1];
-                }
+        for (int i = 1; i < numRows; ++i) {
+            long start = (i - 1) * W;
+            long end = Math.min(start + W, seq.textSize());
+            for (ACGT each : ACGT.values()) {
+                occTable[i][each.code] = occTable[i - 1][each.code] + (int) seq.fastCount(each, start, end);
             }
-            occTable.get(codeIndex)[blockIndex]++;
         }
         _logger.trace("done.");
+    }
+
+    /**
+     * Get the character occurrence counts of ACGTN in seq[0..index)
+     * 
+     * @param index
+     * @return
+     */
+    public int[] getOccACGT(long index) {
+        if (index > seq.textSize())
+            index = seq.textSize();
+        int blockPos = (int) (index / W);
+
+        int[] occ = new int[K];
+        for (int i = 0; i < K; ++i) {
+            occ[i] = occTable[blockPos][i] + (int) seq.fastCount(ACGT.decode((byte) i), blockPos * W, index);
+        }
+        return occ;
     }
 
     /**
@@ -90,16 +97,12 @@ public class OccurrenceCountTable
      * @return
      */
     public int getOcc(ACGT ch, long index) {
-        long blockPos = index / W;
-        if (blockPos > Integer.MAX_VALUE) {
-            // index / W must be smaller than Integer.MIN 
-            throw new IllegalStateException("Occ table size cannot exceed 2^31-1");
-        }
-        // Look up the occurrence count table
-        int occ = blockPos <= 0 ? 0 : occTable.get(ch.code)[(int) (blockPos - 1)];
-        // Count the characters using the original sequence
-        final long upperLimit = Math.min(index, seq.textSize());
-        occ += seq.fastCount(ch, blockPos * W, upperLimit);
+        if (index > seq.textSize())
+            index = seq.textSize();
+        int blockPos = (int) (index / W);
+        // Look up the occurrence count table. 
+        // And also count the characters using the original sequence
+        int occ = occTable[blockPos][ch.code] + (int) seq.fastCount(ch, blockPos * W, index);
         return occ;
     }
 
