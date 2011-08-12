@@ -36,7 +36,7 @@ public class OccurrenceCountTable
 {
     private static Logger      _logger = Logger.getLogger(OccurrenceCountTable.class);
 
-    private int[][]            occTable;
+    private long[][]           occTable;
     private final ACGTSequence seq;
     private final int          W;
     private final int          K;
@@ -56,15 +56,16 @@ public class OccurrenceCountTable
         this.K = ACGT.values().length;
         final int numRows = (int) ((seq.textSize() + W) / W);
 
-        occTable = new int[numRows][K];
+        occTable = new long[numRows][K];
         for (int k = 0; k < K; ++k) {
             occTable[0][k] = 0;
         }
         for (int i = 1; i < numRows; ++i) {
             long start = (i - 1) * W;
             long end = Math.min(start + W, seq.textSize());
-            for (ACGT each : ACGT.values()) {
-                occTable[i][each.code] = occTable[i - 1][each.code] + (int) seq.fastCount(each, start, end);
+            long[] count = seq.fastCountACGTN(start, end);
+            for (int k = 0; k < K; ++k) {
+                occTable[i][k] = occTable[i - 1][k] + count[k];
             }
         }
         _logger.trace("done.");
@@ -76,14 +77,13 @@ public class OccurrenceCountTable
      * @param index
      * @return
      */
-    public int[] getOccACGT(long index) {
+    public long[] getOccACGTN(long index) {
         if (index > seq.textSize())
             index = seq.textSize();
         int blockPos = (int) (index / W);
-
-        int[] occ = new int[K];
+        long[] occ = seq.fastCountACGTN(blockPos * W, index);
         for (int i = 0; i < K; ++i) {
-            occ[i] = occTable[blockPos][i] + (int) seq.fastCount(ACGT.decode((byte) i), blockPos * W, index);
+            occ[i] += occTable[blockPos][i];
         }
         return occ;
     }
@@ -96,13 +96,13 @@ public class OccurrenceCountTable
      * @param index
      * @return
      */
-    public int getOcc(ACGT ch, long index) {
+    public long getOcc(ACGT ch, long index) {
         if (index > seq.textSize())
             index = seq.textSize();
         int blockPos = (int) (index / W);
         // Look up the occurrence count table. 
         // And also count the characters using the original sequence
-        int occ = occTable[blockPos][ch.code] + (int) seq.fastCount(ch, blockPos * W, index);
+        long occ = occTable[blockPos][ch.code] + seq.fastCount(ch, blockPos * W, index);
         return occ;
     }
 

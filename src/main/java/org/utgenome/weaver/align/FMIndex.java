@@ -32,7 +32,22 @@ package org.utgenome.weaver.align;
  */
 public interface FMIndex
 {
+    /**
+     * Perform backward search of the character to retrieve next suffix interval
+     * 
+     * @param ch
+     * @param current
+     * @return
+     */
     public SuffixInterval backwardSearch(ACGT ch, SuffixInterval current);
+
+    /**
+     * bulk-retrieval of next ranks of ACGTN characters
+     * 
+     * @param current
+     * @return
+     */
+    public long[] rankACGTN(long suffixIndex);
 
     public CharacterCount getCharacterCount();
 

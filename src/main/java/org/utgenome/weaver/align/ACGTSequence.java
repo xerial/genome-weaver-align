@@ -476,6 +476,48 @@ public class ACGTSequence implements LSeq
         return count;
     }
 
+    public long[] fastCountACGTN(long start, long end) {
+
+        long count[] = new long[5];
+
+        // Count A, C, G, T
+        int sPos = (int) (start >>> 5);
+        int sOffset = (int) (start & 0x1FL);
+        int ePos = (int) (end >>> 5);
+
+        for (; sPos <= ePos; ++sPos) {
+
+            long mask = ~0L;
+            if (sOffset != 0) {
+                mask >>>= sOffset * 2;
+                sOffset = 0;
+            }
+            int bIndex = sPos / 2 * 3;
+            int block = sPos % 2;
+            long v = seq[bIndex + 1 + block];
+            long nFlag = interleave32With0(seq[bIndex] >>> (32 * (1 - block)));
+            if (sPos == ePos) {
+                int eOffset = (int) (end & 0x1FL);
+                long rMask = (eOffset == 0) ? 0L : ~((1L << (32 - eOffset) * 2) - 1);
+                mask &= rMask;
+            }
+
+            for (ACGT base : ACGT.exceptN) {
+                long r = ~0L;
+                r &= ((base.code & 0x02) == 0 ? ~v : v) >>> 1;
+                r &= ((base.code & 0x01) == 0 ? ~v : v);
+                r &= 0x5555555555555555L;
+                r &= ~nFlag;
+                r &= mask;
+                count[base.code] += countOneBit(r);
+            }
+
+            count[ACGT.N.code] += countOneBit(nFlag & mask);
+        }
+
+        return count;
+    }
+
     static int interleaveWith0(int v) {
         v = ((v & 0xFF00) << 8) | (v & 0x00FF);
         v = ((v << 4) | v) & 0x0F0F0F0F;

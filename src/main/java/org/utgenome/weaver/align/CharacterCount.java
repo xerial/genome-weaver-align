@@ -24,7 +24,6 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-
 /**
  * Character count <i>C[x]</i> is the number of characters in the input text
  * that are lexicographically smaller than the symbol <i>x</i>. This information
@@ -39,17 +38,19 @@ public class CharacterCount
     private long[]     C     = new long[K];
     private long[]     count = new long[K];
 
-    public CharacterCount(LSeq seq) {
-
+    public CharacterCount(OccurrenceCountTable occ, long N) {
+        for (ACGT ch : ACGT.values()) {
+            this.count[ch.code] = occ.getOcc(ch, N);
+        }
+        long sum = 0;
         for (int i = 0; i < K; ++i) {
-            count[i] = 0;
+            C[i] = sum;
+            sum += count[i];
         }
+    }
 
-        for (long i = 0; i < seq.textSize(); ++i) {
-            ACGT ch = ACGT.decode((byte) seq.lookup(i));
-            count[ch.code]++;
-        }
-
+    public CharacterCount(ACGTSequence seq) {
+        this.count = seq.fastCountACGTN(0, seq.textSize());
         long sum = 0;
         for (int i = 0; i < K; ++i) {
             C[i] = sum;
@@ -58,6 +59,7 @@ public class CharacterCount
     }
 
     public CharacterCount(WaveletArray W) {
+        this.count = new long[K];
         for (int i = 0; i < K; ++i) {
             count[i] = (int) W.rank(i, W.textSize());
         }

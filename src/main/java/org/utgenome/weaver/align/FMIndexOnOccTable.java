@@ -33,7 +33,7 @@ public class FMIndexOnOccTable implements FMIndex
     public FMIndexOnOccTable(ACGTSequence seq, int windowSize) {
         this.seq = seq;
         this.occ = new OccurrenceCountTable(seq, windowSize);
-        this.C = new CharacterCount(seq);
+        this.C = new CharacterCount(occ, seq.textSize());
     }
 
     public CharacterCount getCharacterCount() {
@@ -44,6 +44,10 @@ public class FMIndexOnOccTable implements FMIndex
         long lowerBound = C.getCharacterCountSmallerThan(ch) + occ.getOcc(ch, current.lowerBound);
         long upperBound = C.getCharacterCountSmallerThan(ch) + occ.getOcc(ch, current.upperBound);
         return new SuffixInterval(lowerBound, upperBound);
+    }
+
+    public long[] rankACGTN(long suffixIndex) {
+        return occ.getOccACGTN(suffixIndex);
     }
 
     /**
@@ -67,7 +71,7 @@ public class FMIndexOnOccTable implements FMIndex
 
     @Override
     public long count(ACGT ch, long start, long end) {
-    	return occ.getOcc(ch, end) - occ.getOcc(ch, start);
+        return occ.getOcc(ch, end) - occ.getOcc(ch, start);
     }
-    
+
 }

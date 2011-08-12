@@ -166,6 +166,31 @@ public class ACGTSequenceTest
     }
 
     @Test
+    public void fastCountACGT() throws Exception {
+        Random r = new Random(0);
+        StringBuilder seq = new StringBuilder();
+        for (int i = 0; i < 69; ++i) {
+            seq.append(ACGT.decode((byte) (r.nextInt(4) + 1)).toString());
+        }
+
+        ACGTSequence s = new ACGTSequence(seq.toString());
+        _logger.debug(s);
+
+        {
+            for (int x = 0; x < s.textSize(); x++) {
+                for (int y = x; y < s.textSize(); y++) {
+                    long count[] = s.fastCountACGTN(x, y);
+                    for (ACGT c : ACGT.values()) {
+                        assertEquals(String.format("code:%s, s=%d, e=%d", c, x, y), s.count(c, x, y), count[c.code]);
+                    }
+                }
+            }
+
+        }
+
+    }
+
+    @Test
     public void fastCount2() throws Exception {
         ACGTSequence s = new ACGTSequence("TTTTATTAAAAAAAA");
         assertEquals(9, s.fastCount(ACGT.A, 0, 15));

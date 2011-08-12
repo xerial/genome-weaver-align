@@ -40,7 +40,7 @@ public class FMIndexOnWaveletArray implements FMIndex
 
     public SuffixInterval backwardSearch(ACGT ch, SuffixInterval current) {
         long lowerBound = C.getCharacterCountSmallerThan(ch) + W.rank(ch.code, current.lowerBound);
-        long upperBound = C.getCharacterCountSmallerThan(ch) + W.rank(ch.code, current.upperBound + 1) - 1;
+        long upperBound = C.getCharacterCountSmallerThan(ch) + W.rank(ch.code, current.upperBound);
         return new SuffixInterval(lowerBound, upperBound);
     }
 
@@ -68,4 +68,11 @@ public class FMIndexOnWaveletArray implements FMIndex
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public long[] rankACGTN(long suffixIndex) {
+        long[] rank = new long[ACGT.values().length];
+        for (ACGT ch : ACGT.values())
+            rank[ch.code] = W.rank(ch.code, suffixIndex);
+        return rank;
+    }
 }
