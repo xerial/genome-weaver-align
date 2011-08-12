@@ -40,4 +40,14 @@ public class BidirectionalSuffixInterval implements SARange
         this.backwardSi = backwardSi;
     }
 
+    @Override
+    public SuffixInterval forwardSi() {
+        return forwardSi;
+    }
+
+    @Override
+    public SuffixInterval backwardSi() {
+        return backwardSi;
+    }
+
 }

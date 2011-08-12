@@ -37,20 +37,21 @@ import org.xerial.util.log.Logger;
 
 public class FMIndexOnGenome
 {
-    private static Logger           _logger    = Logger.getLogger(FMIndexOnGenome.class);
+    private static Logger                     _logger    = Logger.getLogger(FMIndexOnGenome.class);
 
-    private static final int        windowSize = 64;                                     // Occ table window size 
+    private static final int                  windowSize = 64;                                     // Occ table window size 
 
-    public final FMIndex            forwardIndex;
-    public final FMIndex            reverseIndex;
-    private final SparseSuffixArray forwardSA;
-    private final SparseSuffixArray backwardSA;
-    private final SequenceBoundary  index;
+    public final FMIndex                      forwardIndex;
+    public final FMIndex                      reverseIndex;
+    private final SparseSuffixArray           forwardSA;
+    private final SparseSuffixArray           backwardSA;
+    private final SequenceBoundary            index;
 
-    private final long              N;
-    private final int               K;
+    private final long                        N;
+    private final int                         K;
 
-    private final SuffixInterval    wholeRange;
+    private final SuffixInterval              wholeRange;
+    private final BidirectionalSuffixInterval wholeRangeBi;
 
     public FMIndexOnGenome(String fastaFilePrefix) throws UTGBException, IOException {
 
@@ -77,6 +78,7 @@ public class FMIndexOnGenome
         reverseIndex = new FMIndexOnOccTable(seqR, windowSize);
         _logger.info("done.");
         this.wholeRange = new SuffixInterval(0L, N);
+        this.wholeRangeBi = new BidirectionalSuffixInterval(wholeRange, wholeRange);
     }
 
     private FMIndexOnGenome(FMIndex forwardIndex, FMIndex reverseIndex, SparseSuffixArray forwardSA,
@@ -89,6 +91,7 @@ public class FMIndexOnGenome
         N = n;
         K = k;
         this.wholeRange = new SuffixInterval(0L, N);
+        this.wholeRangeBi = new BidirectionalSuffixInterval(wholeRange, wholeRange);
     }
 
     public static FMIndexOnGenome buildFromSequence(String name, String seq) {
@@ -108,6 +111,10 @@ public class FMIndexOnGenome
         return wholeRange;
     }
 
+    public BidirectionalSuffixInterval wholeBidirectionalSARange() {
+        return wholeRangeBi;
+    }
+
     public long textSize() {
         return N;
     }
@@ -122,25 +129,61 @@ public class FMIndexOnGenome
         return fm.backwardSearch(nextBase, si);
     }
 
-    public static class SiSet
-    {
-        public final SuffixInterval[] siF;
-        public final SuffixInterval[] siB;
+    public SiSet bidirectionalSearch(Strand strand, SARange si) {
+        SuffixInterval F = si.forwardSi(), B = si.backwardSi();
+        SuffixInterval[] nextSiF = null, nextSiB = null;
+        if (F != null) {
+            // forward search
+            FMIndex fm = (strand == Strand.FORWARD) ? reverseIndex : forwardIndex;
+            long[] occLowerBound = fm.rankACGTN(F.lowerBound);
+            long[] occUpperBound = fm.rankACGTN(F.upperBound);
+            nextSiF = forwardSearch(fm, occLowerBound, occUpperBound);
 
-        public SiSet(SuffixInterval[] siF, SuffixInterval[] siB) {
-            this.siF = siF;
-            this.siB = siB;
+            if (B != null) {
+                nextSiB = new SuffixInterval[K];
+                // backward search (shrink SA range)
+                for (int i = 0; i < K; ++i) {
+                    if (nextSiF[i].isEmpty())
+                        continue;
+
+                    // Count the occurrences of characters smaller than ACGT[i] in bwt[F.lowerbound, F.upperBound)
+                    long x = 0;
+                    for (int j = 0; j < i; ++i) {
+                        x += occUpperBound[j] - occLowerBound[j];
+                    }
+                    // Count the occurrences of ACGT[i] in bwt[F.lowerbound, F.upperBound)
+                    long y = occUpperBound[i] - occLowerBound[i];
+                    // Narrow down the backward suffix interval 
+                    nextSiB[i] = new SuffixInterval(B.lowerBound + x, B.lowerBound + x + y);
+                }
+            }
         }
+        else if (B != null) { // F==null
+            // backward search 
+            FMIndex fm = (strand == Strand.FORWARD) ? forwardIndex : reverseIndex;
+            long[] occLowerBound = fm.rankACGTN(B.lowerBound);
+            long[] occUpperBound = fm.rankACGTN(B.upperBound);
+            nextSiB = forwardSearch(fm, occLowerBound, occUpperBound);
+        }
+        return new SiSet(nextSiF, nextSiB);
     }
 
-    public SiSet bidirectionalForwardSearch(Strand strand, BidirectionalSuffixInterval si) {
+    public SuffixInterval[] backwardSearch(Strand strand, SuffixInterval si) {
+        FMIndex fm = (strand == Strand.FORWARD) ? forwardIndex : reverseIndex;
+        long[] occLowerBound = fm.rankACGTN(si.lowerBound);
+        long[] occUpperBound = fm.rankACGTN(si.upperBound);
+        return forwardSearch(fm, occLowerBound, occUpperBound);
+    }
 
-        SuffixInterval F = si.forwardSi, B = si.backwardSi;
+    public SuffixInterval[] forwardSearch(Strand strand, SuffixInterval si) {
         FMIndex fm = (strand == Strand.FORWARD) ? reverseIndex : forwardIndex;
 
-        long[] occLowerBound = fm.rankACGTN(F.lowerBound);
-        long[] occUpperBound = fm.rankACGTN(F.upperBound);
+        long[] occLowerBound = fm.rankACGTN(si.lowerBound);
+        long[] occUpperBound = fm.rankACGTN(si.upperBound);
+        return forwardSearch(fm, occLowerBound, occUpperBound);
+    }
 
+    private SuffixInterval[] forwardSearch(FMIndex fm, long[] occLowerBound, long[] occUpperBound) {
         // forward search
         final int K = ACGT.exceptN.length;
         CharacterCount C = fm.getCharacterCount();
@@ -154,25 +197,7 @@ public class FMIndexOnGenome
                 nextSiF[i] = new SuffixInterval(lb, ub);
         }
 
-        // backward search
-        SuffixInterval[] nextSiB = new SuffixInterval[K];
-        for (int i = 0; i < K; ++i) {
-            if (nextSiF[i] == null)
-                continue;
-
-            // Count the occurrences of characters smaller than ACGT[i] in bwt[F.lowerbound, F.upperBound)
-            long x = 0;
-            for (int j = 0; j < i; ++i) {
-                x += occUpperBound[j] - occLowerBound[j];
-            }
-            // Count the occurrences of ACGT[i] in bwt[F.lowerbound, F.upperBound)
-            long y = occUpperBound[i] - occLowerBound[i];
-            // Narrow down the backward suffix interval 
-            nextSiB[i] = new SuffixInterval(B.lowerBound + x, B.lowerBound + x + y);
-        }
-
-        return new SiSet(nextSiF, nextSiB);
-
+        return nextSiF;
     }
 
     /**

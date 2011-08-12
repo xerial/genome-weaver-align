@@ -32,6 +32,8 @@ package org.utgenome.weaver.align;
  */
 public class SuffixInterval implements SARange
 {
+    //public final static SuffixInterval NULL = new SuffixInterval(-1, -1);
+
     public final long lowerBound;
     public final long upperBound;
 
@@ -85,6 +87,16 @@ public class SuffixInterval implements SARange
     }
 
     public SuffixInterval getReverseSi() {
+        return null;
+    }
+
+    @Override
+    public SuffixInterval forwardSi() {
+        return this;
+    }
+
+    @Override
+    public SuffixInterval backwardSi() {
         return null;
     }
 

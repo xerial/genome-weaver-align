@@ -16,19 +16,41 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// SARange.java
-// Since: 2011/08/08
+// SiSet.java
+// Since: 2011/08/12
 //
 // $URL$ 
 // $Author$
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-public interface SARange
+import org.utgenome.weaver.align.strategy.SearchDirection;
+
+public class SiSet
 {
-    public SuffixInterval forwardSi();
+    public final SuffixInterval[] siF;
+    public final SuffixInterval[] siB;
 
-    public SuffixInterval backwardSi();
+    public SiSet(SuffixInterval[] siF, SuffixInterval[] siB) {
+        this.siF = siF;
+        this.siB = siB;
+    }
 
-    public boolean isEmpty();
+    public SARange get(int index) {
+        return new BidirectionalSuffixInterval(siF == null ? null : siF[index], siB == null ? null : siB[index]);
+    }
+
+    public boolean isEmpty(ACGT ch, SearchDirection d) {
+        int i = ch.code;
+        switch (d) {
+        case Forward:
+            return siF[i] != null && siF[i].isEmpty();
+        case Backward:
+            return siB[i] != null && siB[i].isEmpty();
+        case BidirectionalForward:
+            return (siF[i] != null && siF[i].isEmpty()) && (siB[i] != null && siB[i].isEmpty());
+        }
+        return false;
+    }
+
 }
