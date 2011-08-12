@@ -238,6 +238,10 @@ public class SuffixFilter
             this.state |= 1 << 4;
         }
 
+        public boolean isSplitChecked() {
+            return (state & (1 << 4)) != 0;
+        }
+
         public boolean isChecked(ACGT ch) {
             return (state & (1 << ch.code)) != 0;
         }
@@ -246,7 +250,7 @@ public class SuffixFilter
             this.cursor = cursor;
             this.si = si;
             this.automaton = automaton;
-            this.state = (ch.code << 5) | ((hasHit ? 1 : 0) << 8) | (minK << 9);
+            this.state = ((ch.code & 0x7) << 5) | ((hasHit ? 1 : 0) << 8) | (minK << 9);
         }
 
         /**
@@ -283,9 +287,19 @@ public class SuffixFilter
             return s.toString();
         }
 
+        String getUpdateFlag() {
+            StringBuilder s = new StringBuilder();
+            for (ACGT ch : ACGT.exceptN) {
+                s.append(isChecked(ch) ? ch.name() : ch.name().toLowerCase());
+            }
+            if (isSplitChecked())
+                s.append("^");
+            return s.toString();
+        }
+
         @Override
         public String toString() {
-            return String.format("%sk%d%s %s", hasHit() ? "*" : "", getLowerBoundOfK(), cursor, si);
+            return String.format("%sk%d%s %s%s", hasHit() ? "*" : "", getLowerBoundOfK(), cursor, getUpdateFlag(), si);
         }
 
         public int score() {
@@ -375,7 +389,7 @@ public class SuffixFilter
         SuffixInterval siF = c.si.getForward(ch), siB = c.si.getBackward(ch);
         switch (d) {
         case BidirectionalForward:
-            if (c.cursor.cursorF >= m) {
+            if (c.cursor.cursorF >= m - 1) {
                 siF = null;
             }
         }
@@ -600,10 +614,9 @@ public class SuffixFilter
                 {
                     if (!c.isChecked(nextBase)) {
                         c.updateFlag(nextBase);
-
-                        SiSet nextSi = next(c, nextBase);
-                        ++numFMIndexSearches;
-                        if (!nextSi.isEmpty(nextBase)) {
+                        if (!c.si.isEmpty(nextBase)) {
+                            SiSet nextSi = next(c, nextBase);
+                            ++numFMIndexSearches;
                             SearchState nextState = c.nextState(nextBase, nextCursor, nextSi, queryMask[strandIndex]);
                             if (nextState != null)
                                 queue.add(nextState);
@@ -625,15 +638,15 @@ public class SuffixFilter
                     if (!c.isChecked(ch)) {
                         c.updateFlag(ch);
 
-                        SiSet nextSi = next(c, ch);
-                        ++numFMIndexSearches;
-                        if (nextSi.isEmpty(ch))
-                            continue;
-                        SearchState nextState = c.nextState(ch, nextCursor, nextSi, queryMask[strandIndex]);
-                        if (nextState != null)
-                            queue.add(nextState);
-                        else
-                            ++numFiltered;
+                        if (!c.si.isEmpty(ch)) {
+                            SiSet nextSi = next(c, ch);
+                            ++numFMIndexSearches;
+                            SearchState nextState = c.nextState(ch, nextCursor, nextSi, queryMask[strandIndex]);
+                            if (nextState != null)
+                                queue.add(nextState);
+                            else
+                                ++numFiltered;
+                        }
                     }
                 }
 
@@ -666,30 +679,6 @@ public class SuffixFilter
         private int numCutOff           = 0;
         private int numFiltered         = 0;
         private int numExactSearchCount = 0;
-
-        //        /**
-        //         * @param c
-        //         * @param ch
-        //         * @return has match
-        //         */
-        //        private boolean step(SearchState c, ACGT ch) {
-        //            c.updateFlag(ch);
-        //
-        //            Cursor nextCursor = c.cursor.next(ch);
-        //            ++numFMIndexSearches;
-        //            if (nextCursor == null)
-        //                return false; // no match
-        //
-        //            SearchState nextState = c.nextState(ch, nextCursor, queryMask[c.getStrandIndex()]);
-        //            if (nextState != null) {
-        //                queue.add(nextState);
-        //                return true;
-        //            }
-        //            else {
-        //                ++numFiltered;
-        //                return false;
-        //            }
-        //        }
 
         private SearchState exactMatch(SearchState c) {
             ++numExactSearchCount;
