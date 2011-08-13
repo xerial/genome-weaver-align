@@ -507,18 +507,23 @@ public class SuffixFilter
         public void align() throws Exception {
 
             StopWatch s = new StopWatch();
-            align_internal();
+            try {
+                align_internal();
 
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("stat: %s min K:%d, FM Search:%,d, Exact:%d, CutOff:%d, Filtered:%d, %.5f sec.",
-                        minMismatches <= k ? "(*)" : "   ", minMismatches, numFMIndexSearches, numExactSearchCount,
-                        numCutOff, numFiltered, s.getElapsedTime());
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("stat: %s min K:%d, FM Search:%,d, Exact:%d, CutOff:%d, Filtered:%d, %.5f sec.",
+                            minMismatches <= k ? "(*)" : "   ", minMismatches, numFMIndexSearches, numExactSearchCount,
+                            numCutOff, numFiltered, s.getElapsedTime());
 
-                if (minMismatches == 0 && numFMIndexSearches > 500) {
-                    _logger.debug("query: %s", q[0]);
+                    if (minMismatches == 0 && numFMIndexSearches > 500) {
+                        _logger.debug("query: %s", q[0]);
+                    }
                 }
             }
-
+            catch (Exception e) {
+                _logger.error("error at query: %s", q[0]);
+                throw e;
+            }
         }
 
         public void align_internal() throws Exception {
@@ -554,23 +559,26 @@ public class SuffixFilter
 
             // Add states for both strands
             if (scanF.numMismatches <= k) {
-                queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.Forward, 0, 0, null)));
-
                 if (scanF.longestMatch.start != 0 && scanF.longestMatch.start < m) {
                     // add bidirectional search state
                     queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.BidirectionalForward,
                             scanF.longestMatch.start, scanF.longestMatch.start, null)));
                 }
+                else {
+                    queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.Forward, 0, 0, null)));
+                }
             }
 
             if (scanR.numMismatches <= k) {
-                queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.Forward, 0, 0, null)));
                 if (scanF.numMismatches > scanR.numMismatches) {
                     if (scanR.longestMatch.start != 0 && scanR.longestMatch.start < m) {
                         // add bidirectional search state
                         queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward,
                                 scanR.longestMatch.start, scanR.longestMatch.start, null)));
                     }
+                }
+                else {
+                    queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.Forward, 0, 0, null)));
                 }
             }
 
@@ -583,13 +591,19 @@ public class SuffixFilter
                 if (c.isFinished())
                     continue;
 
+                int nm = c.getLowerBoundOfK();
+                if (nm > minMismatches) {
+                    ++numCutOff;
+                    continue;
+                }
+
                 if (c.hasHit() || c.cursor.getRemainingBases() == 0) {
-                    // TODO verification
+                    // TODO verify the alignment
                     reportAlignment(c);
+                    numCutOff += queue.size();
                     break;
                 }
 
-                int nm = c.getLowerBoundOfK();
                 int allowedMismatches = k - nm;
                 if (allowedMismatches < 0)
                     continue;
@@ -599,7 +613,6 @@ public class SuffixFilter
                     SearchState matchState = exactMatch(c);
                     if (matchState != null) {
                         reportAlignment(matchState);
-                        break;
                     }
                     continue;
                 }
@@ -653,7 +666,7 @@ public class SuffixFilter
 
                 // Split alignment
                 c.updateSplitFlag();
-                if (config.numSplitAlowed > 0 && nm + 1 <= minMismatches) {
+                if (!c.cursor.hasSplit() && config.numSplitAlowed > 0 && nm + 1 <= minMismatches) {
                     int index = c.cursor.getIndex();
                     if (index > config.indelEndSkip && m - index > config.indelEndSkip) {
                         SearchState nextState = c.nextStateAfterSplit(nextBase);
