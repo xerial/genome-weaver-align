@@ -11,7 +11,7 @@ import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.xerial.util.ObjectHandler;
 
 /**
- * Represents an alignment state
+ * Represents an alignment state using FM-index
  * 
  * @author leo
  * 

@@ -41,7 +41,10 @@ import org.xerial.util.ObjectHandlerBase;
 import org.xerial.util.log.Logger;
 
 /**
- * Alignment algorithm using Bi-directional BWT
+ * Alignment algorithm using Bi-directional BWT.
+ * 
+ * @see SuffixFilter for better integration with bidirectional BWT and staircase
+ *      NFA
  * 
  * @author leo
  * 

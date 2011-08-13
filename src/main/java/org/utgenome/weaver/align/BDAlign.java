@@ -30,8 +30,7 @@ import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.RawRead;
 import org.utgenome.weaver.align.record.ReadSequenceReader;
 import org.utgenome.weaver.align.record.ReadSequenceReaderFactory;
-import org.utgenome.weaver.align.strategy.BidirectionalCursor;
-import org.utgenome.weaver.align.strategy.BidirectionalNFA;
+import org.utgenome.weaver.align.strategy.BidirectionalBWT;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandlerBase;
@@ -106,23 +105,21 @@ public class BDAlign extends GenomeWeaverCommand
             @Override
             public void handle(RawRead read) throws Exception {
                 final RawRead r = read;
-                BidirectionalNFA aligner = new BidirectionalNFA(fmIndex, r.getRead(0), config, new Reporter() {
+                BidirectionalBWT aligner = new BidirectionalBWT(fmIndex, new Reporter() {
                     @Override
                     public void emit(Object result) throws UTGBException {
                         if (_logger.isDebugEnabled())
                             _logger.debug(SilkLens.toSilk("result", result));
 
-                        if (BidirectionalCursor.class.isInstance(result)) {
-                            BidirectionalCursor c = BidirectionalCursor.class.cast(result);
-                            AlignmentRecord aln = c.convert(r.name(), fmIndex);
+                        if (AlignmentRecord.class.isInstance(result)) {
+                            AlignmentRecord aln = AlignmentRecord.class.cast(result);
                             if (!quite)
                                 System.out.println(aln.toSAMLine());
                         }
 
                     }
                 });
-
-                aligner.align();
+                aligner.align(r);
                 count++;
                 double time = timer.getElapsedTime();
                 if (count % 10000 == 0) {
