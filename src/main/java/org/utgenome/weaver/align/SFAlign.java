@@ -27,7 +27,6 @@ package org.utgenome.weaver.align;
 import org.utgenome.UTGBException;
 import org.utgenome.weaver.GenomeWeaverCommand;
 import org.utgenome.weaver.align.record.RawRead;
-import org.utgenome.weaver.align.record.ReadSequence;
 import org.utgenome.weaver.align.record.ReadSequenceReader;
 import org.utgenome.weaver.align.record.ReadSequenceReaderFactory;
 import org.utgenome.weaver.align.strategy.SuffixFilter;
@@ -106,11 +105,9 @@ public class SFAlign extends GenomeWeaverCommand
 
             @Override
             public void handle(RawRead read) throws Exception {
-                ReadSequence r = (ReadSequence) read;
-                ACGTSequence q = new ACGTSequence(r.seq);
                 if (sf == null)
-                    sf = new SuffixFilter(fmIndex, config, q.textSize());
-                sf.align(q, reporter);
+                    sf = new SuffixFilter(fmIndex, config, read.getRead(0).textSize());
+                sf.align(read, reporter);
                 count++;
                 double time = timer.getElapsedTime();
                 if (count % 10000 == 0) {

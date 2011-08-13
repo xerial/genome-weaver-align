@@ -30,21 +30,21 @@ import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.AlignmentSA;
 import org.utgenome.weaver.align.AlignmentScoreConfig;
-import org.utgenome.weaver.align.BitVector;
 import org.utgenome.weaver.align.FMIndexOnGenome;
-import org.utgenome.weaver.align.Range;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.RawRead;
-import org.utgenome.weaver.align.record.ReadSequence;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandlerBase;
 import org.xerial.util.log.Logger;
 
 /**
- * Alignment algorithm using Bi-directional BWT
+ * Alignment algorithm using Bi-directional BWT.
+ * 
+ * @see SuffixFilter for better integration with bidirectional BWT and staircase
+ *      NFA
  * 
  * @author leo
  * 
@@ -69,60 +69,6 @@ public class BidirectionalBWT
         this.config = config;
     }
 
-    public static class QuickScanResult
-    {
-        public final SuffixInterval si;
-        public final BitVector      breakPoint;
-        public final int            numMismatches;
-        public final Range          longestMatch;
-        public final SuffixInterval longestMatchSi;
-
-        public QuickScanResult(SuffixInterval si, BitVector breakPoint, int numMismatches, Range longestMatch,
-                SuffixInterval longestMatchSi) {
-            this.si = si;
-            this.breakPoint = breakPoint;
-            this.numMismatches = numMismatches;
-            this.longestMatch = longestMatch;
-            this.longestMatchSi = longestMatchSi;
-        }
-
-        @Override
-        public String toString() {
-            return SilkLens.toSilk(this);
-        }
-    }
-
-    public static QuickScanResult scanMismatchLocations(FMIndexOnGenome fmIndex, ACGTSequence query, Strand strand) {
-        int qLen = (int) query.textSize();
-        int numMismatches = 0;
-        BitVector breakPoint = new BitVector(qLen);
-        SuffixInterval si = fmIndex.wholeSARange();
-        int longestMatchLength = 0;
-        int mark = 0;
-        Range longestMatch = null;
-        SuffixInterval longestMatchSi = null;
-        int i = 0;
-        for (; i < qLen; ++i) {
-            ACGT ch = query.getACGT(i);
-            si = fmIndex.forwardSearch(strand, ch, si);
-            if (si.isEmpty()) {
-                breakPoint.set(i, true);
-                numMismatches++;
-                if (longestMatch == null || longestMatch.length() < (i - mark)) {
-                    longestMatch = new Range(mark, i);
-                    longestMatchSi = si;
-                }
-                si = fmIndex.wholeSARange();
-                mark = i + 1;
-            }
-        }
-        if (longestMatch == null || longestMatch.length() < (i - mark)) {
-            longestMatch = new Range(mark, i);
-        }
-
-        return new QuickScanResult(si, breakPoint, numMismatches, longestMatch, longestMatchSi);
-    }
-
     void report(AlignmentSA result) throws Exception {
         fmIndex.toGenomeCoordinate(result, new ObjectHandlerBase<AlignmentRecord>() {
             @Override
@@ -132,7 +78,7 @@ public class BidirectionalBWT
         });
     }
 
-    void report(Alignment result) throws Exception {
+    void report(BWAState result) throws Exception {
 
         reporter.emit(result);
 
@@ -153,7 +99,7 @@ public class BidirectionalBWT
         searchStrategyTable.put(Integer.parseInt("011", 2), SearchStart.FRONT);
     }
 
-    public Alignment prepareInitialAlignmentState(ACGTSequence q, QuickScanResult scan, Strand strand) {
+    public BWAState prepareInitialAlignmentState(ACGTSequence q, QuickScanResult scan, Strand strand) {
         // Break the read sequence into three parts
         int M = (int) q.textSize();
         int s1 = M / 3;
@@ -196,20 +142,20 @@ public class BidirectionalBWT
 
         switch (searchStart) {
         case FRONT:
-            return new Alignment(q, strand, SearchDirection.Forward, ExtensionType.MATCH, 0, -1, Score.initial(),
+            return new BWAState(q, strand, SearchDirection.Forward, ExtensionType.MATCH, 0, -1, Score.initial(),
                     fmIndex.wholeSARange());
         case MIDDLE: {
-            return new Alignment(q, strand, SearchDirection.BidirectionalForward, ExtensionType.MATCH, s1, s1,
+            return new BWAState(q, strand, SearchDirection.BidirectionalForward, ExtensionType.MATCH, s1, s1,
                     Score.initial(), fmIndex.wholeSARange());
         }
         case TAIL:
-            return new Alignment(q, strand, SearchDirection.Backward, ExtensionType.MATCH, M, M, Score.initial(),
+            return new BWAState(q, strand, SearchDirection.Backward, ExtensionType.MATCH, M, M, Score.initial(),
                     fmIndex.wholeSARange());
         }
         return null;
     }
 
-    public Alignment exactMatch(Alignment aln) {
+    public BWAState exactMatch(BWAState aln) {
         while (!aln.isFinished()) {
             SuffixInterval nextSi = aln.nextSi(fmIndex, aln.nextACGT(), aln.si);
             if (nextSi.isEmpty())
@@ -222,10 +168,8 @@ public class BidirectionalBWT
     public void align(RawRead r) throws Exception {
 
         // TODO PE mapping
-        ReadSequence read = (ReadSequence) r;
-        _logger.debug("query: " + read.seq);
-
-        ACGTSequence qF = new ACGTSequence(read.seq);
+        ACGTSequence qF = r.getRead(0);
+        _logger.debug("query: " + qF);
 
         if (qF.fastCount(ACGT.N, 0, qF.textSize()) > config.maximumEditDistances) {
             // too many Ns in the query sequence
@@ -233,7 +177,7 @@ public class BidirectionalBWT
         }
 
         // Find potential mismatch positions for forward direction
-        QuickScanResult scanF = scanMismatchLocations(fmIndex, qF, Strand.FORWARD);
+        QuickScanResult scanF = QuickScanResult.scanMismatchLocations(fmIndex, qF, Strand.FORWARD);
         if (scanF.numMismatches == 0) {
             // Found an exact match
             report(AlignmentSA.exactMatch(config, r.name(), qF, scanF.si, Strand.FORWARD));
@@ -242,7 +186,7 @@ public class BidirectionalBWT
 
         // Find potential mismatch positions for reverse direction
         ACGTSequence qC = qF.complement();
-        QuickScanResult scanR = scanMismatchLocations(fmIndex, qC, Strand.REVERSE);
+        QuickScanResult scanR = QuickScanResult.scanMismatchLocations(fmIndex, qC, Strand.REVERSE);
         if (scanR.numMismatches == 0) {
             // Found an exact match
             report(AlignmentSA.exactMatch(config, r.name(), qC, scanR.si, Strand.REVERSE));
@@ -261,7 +205,7 @@ public class BidirectionalBWT
 
         // Search iteration
         while (!queue.isEmpty()) {
-            Alignment c = queue.poll(); // current 
+            BWAState c = queue.poll(); // current 
 
             if (c.isFinished() && c.score.score >= queue.bestScore) {
                 report(c);
@@ -290,7 +234,7 @@ public class BidirectionalBWT
             if (remainingDist == 0) {
                 if (c.extensionType == ExtensionType.MATCH) {
                     // exact match
-                    Alignment a = exactMatch(c);
+                    BWAState a = exactMatch(c);
                     if (a != null)
                         queue.add(a);
                 }

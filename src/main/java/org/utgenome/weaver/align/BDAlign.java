@@ -28,11 +28,9 @@ import org.utgenome.UTGBException;
 import org.utgenome.weaver.GenomeWeaverCommand;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.RawRead;
-import org.utgenome.weaver.align.record.ReadSequence;
 import org.utgenome.weaver.align.record.ReadSequenceReader;
 import org.utgenome.weaver.align.record.ReadSequenceReaderFactory;
-import org.utgenome.weaver.align.strategy.BidirectionalCursor;
-import org.utgenome.weaver.align.strategy.BidirectionalNFA;
+import org.utgenome.weaver.align.strategy.BidirectionalBWT;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandlerBase;
@@ -106,25 +104,22 @@ public class BDAlign extends GenomeWeaverCommand
 
             @Override
             public void handle(RawRead read) throws Exception {
-                final ReadSequence r = (ReadSequence) read;
-                BidirectionalNFA aligner = new BidirectionalNFA(fmIndex, new ACGTSequence(r.seq), config,
-                        new Reporter() {
-                            @Override
-                            public void emit(Object result) throws UTGBException {
-                                if (_logger.isDebugEnabled())
-                                    _logger.debug(SilkLens.toSilk("result", result));
+                final RawRead r = read;
+                BidirectionalBWT aligner = new BidirectionalBWT(fmIndex, new Reporter() {
+                    @Override
+                    public void emit(Object result) throws UTGBException {
+                        if (_logger.isDebugEnabled())
+                            _logger.debug(SilkLens.toSilk("result", result));
 
-                                if (BidirectionalCursor.class.isInstance(result)) {
-                                    BidirectionalCursor c = BidirectionalCursor.class.cast(result);
-                                    AlignmentRecord aln = c.convert(r.name, fmIndex);
-                                    if (!quite)
-                                        System.out.println(aln.toSAMLine());
-                                }
+                        if (AlignmentRecord.class.isInstance(result)) {
+                            AlignmentRecord aln = AlignmentRecord.class.cast(result);
+                            if (!quite)
+                                System.out.println(aln.toSAMLine());
+                        }
 
-                            }
-                        });
-
-                aligner.align();
+                    }
+                });
+                aligner.align(r);
                 count++;
                 double time = timer.getElapsedTime();
                 if (count % 10000 == 0) {

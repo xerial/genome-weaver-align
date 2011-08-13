@@ -24,6 +24,12 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
+/**
+ * Alignment extension type
+ * 
+ * @author leo
+ * 
+ */
 public enum ExtensionType {
     MATCH(0), INSERTION(1), DELETION(2);
 

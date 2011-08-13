@@ -31,7 +31,7 @@ public class BWAStrategy
     private final int                  numMismatchesAllowed = 1;
     private final AlignmentScoreConfig config               = new AlignmentScoreConfig();
     private final ArrayList<ACGT>      lettersInGenome      = new ArrayList<ACGT>();
-    private ObjectHandler<Alignment>   out;
+    private ObjectHandler<BWAState>   out;
 
     public BWAStrategy(FMIndexOnGenome fmIndex) {
         this.fmIndex = fmIndex;
@@ -44,7 +44,7 @@ public class BWAStrategy
         }
     }
 
-    public void align(RawRead read, ObjectHandler<Alignment> out) throws Exception {
+    public void align(RawRead read, ObjectHandler<BWAState> out) throws Exception {
         this.out = out;
         if (ReadSequence.class.isAssignableFrom(read.getClass())) {
             ReadSequence s = ReadSequence.class.cast(read);
@@ -52,7 +52,7 @@ public class BWAStrategy
         }
     }
 
-    public Alignment exactMatch(Alignment aln) {
+    public BWAState exactMatch(BWAState aln) {
         while (!aln.isFinished()) {
             SuffixInterval nextSi = aln.nextSi(fmIndex, aln.nextACGT(), aln.si);
             if (nextSi.isEmpty())
@@ -65,10 +65,8 @@ public class BWAStrategy
     public void align(RawRead r) throws Exception {
 
         // TODO PE mapping
-        ReadSequence read = (ReadSequence) r;
-        _logger.debug("query: " + read.seq);
-
-        ACGTSequence qF = new ACGTSequence(read.seq);
+        ACGTSequence qF = r.getRead(0);
+        _logger.debug("query: " + qF);
 
         if (qF.fastCount(ACGT.N, 0, qF.textSize()) > config.maximumEditDistances) {
             // too many Ns in the query sequence
@@ -78,14 +76,14 @@ public class BWAStrategy
 
         AlignmentQueue queue = new AlignmentQueue(config);
         // Set the initial search states
-        queue.add(new Alignment(qF, Strand.FORWARD, SearchDirection.Forward, ExtensionType.MATCH, 0, 0,
+        queue.add(new BWAState(qF, Strand.FORWARD, SearchDirection.Forward, ExtensionType.MATCH, 0, 0,
                 Score.initial(), fmIndex.wholeSARange()));
-        queue.add(new Alignment(qC, Strand.REVERSE, SearchDirection.Forward, ExtensionType.MATCH, 0, 0,
+        queue.add(new BWAState(qC, Strand.REVERSE, SearchDirection.Forward, ExtensionType.MATCH, 0, 0,
                 Score.initial(), fmIndex.wholeSARange()));
 
         // Search iteration
         while (!queue.isEmpty()) {
-            Alignment c = queue.poll(); // current 
+            BWAState c = queue.poll(); // current 
 
             if (c.isFinished() && c.score.score >= queue.bestScore) {
                 report(c);
@@ -114,7 +112,7 @@ public class BWAStrategy
             if (remainingDist == 0) {
                 if (c.extensionType == ExtensionType.MATCH) {
                     // exact match
-                    Alignment a = exactMatch(c);
+                    BWAState a = exactMatch(c);
                     if (a != null)
                         queue.add(a);
                 }
@@ -185,7 +183,7 @@ public class BWAStrategy
 
     }
 
-    void report(Alignment result) throws Exception {
+    void report(BWAState result) throws Exception {
         out.handle(result);
     }
 

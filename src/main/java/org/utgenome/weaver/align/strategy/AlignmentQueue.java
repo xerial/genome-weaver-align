@@ -31,16 +31,16 @@ import org.utgenome.weaver.align.AlignmentScoreConfig;
 
 public class AlignmentQueue
 {
-    final PriorityQueue<Alignment>     queue;
+    final PriorityQueue<BWAState>     queue;
     private final AlignmentScoreConfig config;
     int                                bestScore;
     int                                pushCount = 0;
 
     public AlignmentQueue(AlignmentScoreConfig config) {
         this.config = config;
-        this.queue = new PriorityQueue<Alignment>(11, new Comparator<Alignment>() {
+        this.queue = new PriorityQueue<BWAState>(11, new Comparator<BWAState>() {
             @Override
-            public int compare(Alignment o1, Alignment o2) {
+            public int compare(BWAState o1, BWAState o2) {
                 // If the upper bound of the score is larger than the other, search it first
                 int diff = o2.getUpperBoundOfScore(AlignmentQueue.this.config)
                         - o1.getUpperBoundOfScore(AlignmentQueue.this.config);
@@ -57,7 +57,7 @@ public class AlignmentQueue
         return String.format("size:%d, best:%d", queue.size(), bestScore);
     }
 
-    public Alignment poll() {
+    public BWAState poll() {
         return queue.poll();
     }
 
@@ -65,7 +65,7 @@ public class AlignmentQueue
         return queue.isEmpty();
     }
 
-    public boolean add(Alignment e) {
+    public boolean add(BWAState e) {
         if (e.getUpperBoundOfScore(config) < bestScore)
             return false;
 

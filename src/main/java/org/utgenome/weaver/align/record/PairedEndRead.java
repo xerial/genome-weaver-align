@@ -24,6 +24,7 @@
 //--------------------------------------
 package org.utgenome.weaver.align.record;
 
+import org.utgenome.weaver.align.ACGTSequence;
 import org.xerial.util.StringUtil;
 
 /**
@@ -52,4 +53,32 @@ public class PairedEndRead implements RawRead
         return StringUtil.join(new ReadSequence[] { first, second }, "\n");
     }
 
+    @Override
+    public int getNumReadFragment() {
+        return 1;
+    }
+
+    @Override
+    public ACGTSequence getRead(int index) {
+        switch (index) {
+        case 0:
+            return first.getRead(0);
+        case 1:
+            return second.getRead(0);
+        default:
+            throw new ArrayIndexOutOfBoundsException(index);
+        }
+    }
+
+    @Override
+    public String getQual(int index) {
+        switch (index) {
+        case 0:
+            return first.getQual(0);
+        case 1:
+            return second.getQual(0);
+        default:
+            throw new ArrayIndexOutOfBoundsException(index);
+        }
+    }
 }

@@ -35,7 +35,8 @@ import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.SiSet;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
-import org.utgenome.weaver.align.strategy.BidirectionalBWT.QuickScanResult;
+import org.utgenome.weaver.align.record.RawRead;
+import org.utgenome.weaver.align.record.ReadSequence;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.StopWatch;
@@ -327,8 +328,12 @@ public class SuffixFilter
     }
 
     /**
+     * Prepare a suffix filter
+     * 
      * @param fmIndex
+     *            FM index
      * @param config
+     *            alignment score config
      * @param m
      *            read length
      */
@@ -340,8 +345,12 @@ public class SuffixFilter
         this.staircaseFilter = new StaircaseFilter(this.m, k);
     }
 
-    public void align(ACGTSequence query) throws Exception {
-        new AlignmentProcess(query, new Reporter() {
+    public void align(ACGTSequence seq) throws Exception {
+        align(new ReadSequence("read", seq, null));
+    }
+
+    public void align(RawRead read) throws Exception {
+        new AlignmentProcess(read, new Reporter() {
             @Override
             public void emit(Object result) throws Exception {
                 _logger.debug(SilkLens.toSilk("result", result));
@@ -350,10 +359,16 @@ public class SuffixFilter
         }).align();
     }
 
-    public void align(ACGTSequence query, Reporter out) throws Exception {
-        new AlignmentProcess(query, out).align();
+    public void align(RawRead read, Reporter out) throws Exception {
+        new AlignmentProcess(read, out).align();
     }
 
+    /**
+     * Comparator for selecting next target state to search
+     * 
+     * @author leo
+     * 
+     */
     private static class StatePreference implements Comparator<SearchState>
     {
         @Override
@@ -367,9 +382,16 @@ public class SuffixFilter
         }
     }
 
-    public class AlignmentProcess
+    /**
+     * Alignment procedure
+     * 
+     * @author leo
+     * 
+     */
+    class AlignmentProcess
     {
 
+        private final RawRead              read;
         private ACGTSequence[]             q             = new ACGTSequence[2];
         private QueryMask[]                queryMask     = new QueryMask[2];
         private PriorityQueue<SearchState> queue         = new PriorityQueue<SearchState>(11, new StatePreference());
@@ -378,27 +400,36 @@ public class SuffixFilter
 
         private int                        minMismatches = k + 1;
 
-        public AlignmentProcess(ACGTSequence query, Reporter out) {
-            this.q[0] = query;
-            this.q[1] = query.complement();
+        public AlignmentProcess(RawRead read, Reporter out) {
+            this.read = read;
+            this.q[0] = read.getRead(0);
+            this.q[1] = q[0].complement();
             this.out = out;
         }
 
         public void align() throws Exception {
 
             StopWatch s = new StopWatch();
-            align_internal();
+            try {
+                align_internal();
 
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("stat: %s min K:%d, FM Search:%,d, Exact:%d, CutOff:%d, Filtered:%d, %.5f sec.",
-                        minMismatches <= k ? "(*)" : "   ", minMismatches, numFMIndexSearches, numExactSearchCount,
-                        numCutOff, numFiltered, s.getElapsedTime());
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("query:%s - %s min K:%d, FM Search:%,d, Exact:%d, CutOff:%d, Filtered:%d, %.5f sec.",
+                            read.name(), minMismatches <= k ? "(*)" : "   ", minMismatches, numFMIndexSearches,
+                            numExactSearchCount, numCutOff, numFiltered, s.getElapsedTime());
 
-                if (minMismatches == 0 && numFMIndexSearches > 500) {
-                    _logger.debug("query: %s", q[0]);
+                    if (numFMIndexSearches > 500) {
+                        _logger.debug("query:%s", q[0]);
+                    }
                 }
-            }
+                if (_logger.isTraceEnabled())
+                    _logger.trace("qual :%s", read.getQual(0));
 
+            }
+            catch (Exception e) {
+                _logger.error("error at query: %s", q[0]);
+                throw e;
+            }
         }
 
         public void align_internal() throws Exception {
@@ -408,13 +439,13 @@ public class SuffixFilter
             }
 
             // quick scan for k=0 (exact match)
-            QuickScanResult scanF = BidirectionalBWT.scanMismatchLocations(fmIndex, q[0], Strand.FORWARD);
+            QuickScanResult scanF = QuickScanResult.scanMismatchLocations(fmIndex, q[0], Strand.FORWARD);
             if (scanF.numMismatches == 0) {
                 minMismatches = 0;
                 out.emit(scanF);
                 return;
             }
-            QuickScanResult scanR = BidirectionalBWT.scanMismatchLocations(fmIndex, q[1], Strand.REVERSE);
+            QuickScanResult scanR = QuickScanResult.scanMismatchLocations(fmIndex, q[1], Strand.REVERSE);
             if (scanR.numMismatches == 0) {
                 minMismatches = 0;
                 out.emit(scanR);
@@ -434,23 +465,26 @@ public class SuffixFilter
 
             // Add states for both strands
             if (scanF.numMismatches <= k) {
-                queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.Forward, m, 0, 0, null)));
-
                 if (scanF.longestMatch.start != 0 && scanF.longestMatch.start < m) {
                     // add bidirectional search state
                     queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.BidirectionalForward, m, 
                             scanF.longestMatch.start, scanF.longestMatch.start, null)));
                 }
+                else {
+                    queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.Forward, m, 0, 0, null)));
+                }
             }
 
             if (scanR.numMismatches <= k) {
-                queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.Forward, m, 0, 0, null)));
                 if (scanF.numMismatches > scanR.numMismatches) {
                     if (scanR.longestMatch.start != 0 && scanR.longestMatch.start < m) {
                         // add bidirectional search state
                         queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward,
                                 m, scanR.longestMatch.start, scanR.longestMatch.start, null)));
                     }
+                }
+                else {
+                    queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.Forward, m, 0, 0, null)));
                 }
             }
 
@@ -463,13 +497,19 @@ public class SuffixFilter
                 if (c.isFinished())
                     continue;
 
+                int nm = c.getLowerBoundOfK();
+                if (nm > minMismatches) {
+                    ++numCutOff;
+                    continue;
+                }
+
                 if (c.hasHit() || c.cursor.getRemainingBases() == 0) {
-                    // TODO verification
+                    // TODO verify the alignment
                     reportAlignment(c);
+                    numCutOff += queue.size();
                     break;
                 }
 
-                int nm = c.getLowerBoundOfK();
                 int allowedMismatches = k - nm;
                 if (allowedMismatches < 0)
                     continue;
@@ -479,7 +519,6 @@ public class SuffixFilter
                     SearchState matchState = exactMatch(c);
                     if (matchState != null) {
                         reportAlignment(matchState);
-                        break;
                     }
                     continue;
                 }
@@ -533,7 +572,7 @@ public class SuffixFilter
 
                 // Split alignment
                 c.updateSplitFlag();
-                if (config.numSplitAlowed > 0 && nm + 1 <= minMismatches) {
+                if (!c.cursor.hasSplit() && config.numSplitAlowed > 0 && nm + 1 <= minMismatches) {
                     int index = c.cursor.getIndex();
                     if (index > config.indelEndSkip && m - index > config.indelEndSkip) {
                         SearchState nextState = c.nextStateAfterSplit(nextBase);
