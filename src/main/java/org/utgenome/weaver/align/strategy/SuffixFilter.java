@@ -71,128 +71,8 @@ public class SuffixFilter
         Match, Mismatch, Insertion, Deletion, Split
     };
 
-    /**
-     * FM-index cursor for bidirectional search
-     * 
-     * @author leo
-     * 
-     */
-    public class Cursor
-    {
-        // flag(8bit) :=  strand(1), searchDirection(2)
-        private final byte  flag;
-        public final int    cursorF;
-        public final int    cursorB;
-        public final Cursor split;
-
-        private Cursor(byte flag, int cursorF, int cursorB, Cursor split) {
-            this.flag = flag;
-            this.cursorF = cursorF;
-            this.cursorB = cursorB;
-            this.split = split;
-        }
-
-        public Cursor(Strand strand, SearchDirection searchDirection, int cursorF, int cursorB, Cursor split) {
-            this((byte) (strand.index | (searchDirection.index << 1)), cursorF, cursorB, split);
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder s = new StringBuilder();
-            s.append(String.format("%s%s:%d/%d", getStrand().symbol, getSearchDirection().symbol, cursorF, cursorB));
-            if (split != null)
-                s.append(String.format(" split(%s)", split));
-            return s.toString();
-        }
-
-        public int getProcessedBases() {
-            int p = cursorF - cursorB;
-            if (split == null)
-                return p;
-            else
-                return p + (split.cursorF - split.cursorB);
-        }
-
-        public int getRemainingBases() {
-            int r = (m - cursorF) + cursorB;
-            if (split == null)
-                return r;
-            else
-                return r - (split.cursorF - split.cursorB);
-        }
-
-        public Strand getStrand() {
-            return Strand.decode(flag & 1);
-        }
-
-        public int getStrandIndex() {
-            return flag & 1;
-        }
-
-        public ACGT nextACGT(ACGTSequence[] q) {
-            int strand = flag & 1;
-            return q[strand].getACGT(getNextACGTIndex());
-        }
-
-        public int getNextACGTIndex() {
-            return getSearchDirection().isForward && cursorF < m ? cursorF : cursorB - 1;
-        }
-
-        public int getIndex() {
-            if (split == null)
-                return cursorF - cursorB;
-            else
-                return cursorF - cursorB + (split.cursorF - split.cursorB);
-        }
-
-        public SearchDirection getSearchDirection() {
-            return SearchDirection.decode((flag >>> 1) & 0x03);
-        }
-
-        public ExtensionType getExtentionType() {
-            return ExtensionType.decode((flag >>> 3) & 0x03);
-        }
-
-        Cursor split() {
-            int cursor = cursorF;
-            if (getSearchDirection() == SearchDirection.Backward)
-                cursor = cursorB;
-
-            return new Cursor(flag, cursor, cursor, this);
-        }
-
-        public boolean hasSplit() {
-            return split != null;
-        }
-
-        public Cursor next() {
-            Strand strand = getStrand();
-            int nextF = cursorF;
-            int nextB = cursorB;
-            SearchDirection d = getSearchDirection();
-            switch (d) {
-            case Forward:
-                ++nextF;
-                break;
-            case Backward:
-                --nextB;
-                break;
-            case BidirectionalForward:
-                if (nextF < m) {
-                    ++nextF;
-                }
-                else {
-                    // switch to backward search
-                    d = SearchDirection.Backward;
-                    --nextB;
-                }
-                break;
-            }
-
-            return new Cursor(strand, d, nextF, nextB, split);
-        }
-    }
-
+    
+    
     /**
      * NFA state and alignment cursor holder.
      * 
@@ -554,22 +434,22 @@ public class SuffixFilter
 
             // Add states for both strands
             if (scanF.numMismatches <= k) {
-                queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.Forward, 0, 0, null)));
+                queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.Forward, m, 0, 0, null)));
 
                 if (scanF.longestMatch.start != 0 && scanF.longestMatch.start < m) {
                     // add bidirectional search state
-                    queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.BidirectionalForward,
+                    queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.BidirectionalForward, m, 
                             scanF.longestMatch.start, scanF.longestMatch.start, null)));
                 }
             }
 
             if (scanR.numMismatches <= k) {
-                queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.Forward, 0, 0, null)));
+                queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.Forward, m, 0, 0, null)));
                 if (scanF.numMismatches > scanR.numMismatches) {
                     if (scanR.longestMatch.start != 0 && scanR.longestMatch.start < m) {
                         // add bidirectional search state
                         queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward,
-                                scanR.longestMatch.start, scanR.longestMatch.start, null)));
+                                m, scanR.longestMatch.start, scanR.longestMatch.start, null)));
                     }
                 }
             }
@@ -623,10 +503,10 @@ public class SuffixFilter
                                 queue.add(nextState);
                             else
                                 ++numFiltered;
+                            
+                            continue;	// A match is found. Proceed to the next base 
                         }
-
                         queue.add(c); // preserve the state for back-tracking
-                        continue;
                     }
                 }
 
@@ -684,9 +564,7 @@ public class SuffixFilter
         private SearchState exactMatch(SearchState c) {
             ++numExactSearchCount;
             Cursor cursor = c.cursor;
-            Strand strand = cursor.getStrand();
             final int n = cursor.getRemainingBases();
-            final int strandIndex = cursor.getStrandIndex();
             int numExtend = 0;
 
             SiSet siSet = c.si;
