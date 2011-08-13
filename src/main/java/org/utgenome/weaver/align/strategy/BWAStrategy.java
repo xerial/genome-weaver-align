@@ -65,10 +65,8 @@ public class BWAStrategy
     public void align(RawRead r) throws Exception {
 
         // TODO PE mapping
-        ReadSequence read = (ReadSequence) r;
-        _logger.debug("query: " + read.seq);
-
-        ACGTSequence qF = new ACGTSequence(read.seq);
+        ACGTSequence qF = r.getRead(0);
+        _logger.debug("query: " + qF);
 
         if (qF.fastCount(ACGT.N, 0, qF.textSize()) > config.maximumEditDistances) {
             // too many Ns in the query sequence

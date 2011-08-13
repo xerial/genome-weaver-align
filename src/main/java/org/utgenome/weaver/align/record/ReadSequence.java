@@ -26,6 +26,7 @@ package org.utgenome.weaver.align.record;
 
 import org.utgenome.format.fasta.FASTASequence;
 import org.utgenome.format.fastq.FastqRead;
+import org.utgenome.weaver.align.ACGTSequence;
 
 /**
  * 
@@ -35,18 +36,25 @@ import org.utgenome.format.fastq.FastqRead;
  */
 public class ReadSequence implements RawRead
 {
-    public final String name;
+    public final String       name;
 
     /**
      * Read sequence
      */
-    public final String seq;
+    public final ACGTSequence seq;
+
     /**
      * Phread quality value of the read sequence
      */
-    public final String qual;
+    public final String       qual;
 
     public ReadSequence(String name, String seq, String qual) {
+        this.name = name;
+        this.seq = new ACGTSequence(seq);
+        this.qual = qual;
+    }
+
+    public ReadSequence(String name, ACGTSequence seq, String qual) {
         this.name = name;
         this.seq = seq;
         this.qual = qual;
@@ -68,6 +76,25 @@ public class ReadSequence implements RawRead
 
     public static ReadSequence createFrom(FastqRead seq) {
         return new ReadSequence(seq.seqname, seq.seq, seq.qual);
+    }
+
+    @Override
+    public int getNumReadFragment() {
+        return 1;
+    }
+
+    @Override
+    public ACGTSequence getRead(int index) {
+        if (index != 0)
+            throw new ArrayIndexOutOfBoundsException(index);
+        return seq;
+    }
+
+    @Override
+    public String getQual(int index) {
+        if (index != 0)
+            throw new ArrayIndexOutOfBoundsException(index);
+        return qual;
     }
 
 }

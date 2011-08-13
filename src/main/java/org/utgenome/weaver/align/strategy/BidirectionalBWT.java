@@ -37,7 +37,6 @@ import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.RawRead;
-import org.utgenome.weaver.align.record.ReadSequence;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandlerBase;
@@ -222,10 +221,8 @@ public class BidirectionalBWT
     public void align(RawRead r) throws Exception {
 
         // TODO PE mapping
-        ReadSequence read = (ReadSequence) r;
-        _logger.debug("query: " + read.seq);
-
-        ACGTSequence qF = new ACGTSequence(read.seq);
+        ACGTSequence qF = r.getRead(0);
+        _logger.debug("query: " + qF);
 
         if (qF.fastCount(ACGT.N, 0, qF.textSize()) > config.maximumEditDistances) {
             // too many Ns in the query sequence

@@ -24,7 +24,15 @@
 //--------------------------------------
 package org.utgenome.weaver.align.record;
 
+import org.utgenome.weaver.align.ACGTSequence;
+
 public interface RawRead
 {
     public String name();
+
+    public int getNumReadFragment();
+
+    public ACGTSequence getRead(int index);
+
+    public String getQual(int index);
 }

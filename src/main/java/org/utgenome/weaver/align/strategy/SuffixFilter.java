@@ -35,6 +35,8 @@ import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.SiSet;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
+import org.utgenome.weaver.align.record.RawRead;
+import org.utgenome.weaver.align.record.ReadSequence;
 import org.utgenome.weaver.align.strategy.BidirectionalBWT.QuickScanResult;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
@@ -460,8 +462,12 @@ public class SuffixFilter
         this.staircaseFilter = new StaircaseFilter(this.m, k);
     }
 
-    public void align(ACGTSequence query) throws Exception {
-        new AlignmentProcess(query, new Reporter() {
+    public void align(ACGTSequence seq) throws Exception {
+        align(new ReadSequence("read", seq, null));
+    }
+
+    public void align(RawRead read) throws Exception {
+        new AlignmentProcess(read, new Reporter() {
             @Override
             public void emit(Object result) throws Exception {
                 _logger.debug(SilkLens.toSilk("result", result));
@@ -470,8 +476,8 @@ public class SuffixFilter
         }).align();
     }
 
-    public void align(ACGTSequence query, Reporter out) throws Exception {
-        new AlignmentProcess(query, out).align();
+    public void align(RawRead read, Reporter out) throws Exception {
+        new AlignmentProcess(read, out).align();
     }
 
     private static class StatePreference implements Comparator<SearchState>
@@ -490,6 +496,7 @@ public class SuffixFilter
     public class AlignmentProcess
     {
 
+        private final RawRead              read;
         private ACGTSequence[]             q             = new ACGTSequence[2];
         private QueryMask[]                queryMask     = new QueryMask[2];
         private PriorityQueue<SearchState> queue         = new PriorityQueue<SearchState>(11, new StatePreference());
@@ -498,9 +505,10 @@ public class SuffixFilter
 
         private int                        minMismatches = k + 1;
 
-        public AlignmentProcess(ACGTSequence query, Reporter out) {
-            this.q[0] = query;
-            this.q[1] = query.complement();
+        public AlignmentProcess(RawRead read, Reporter out) {
+            this.read = read;
+            this.q[0] = read.getRead(0);
+            this.q[1] = q[0].complement();
             this.out = out;
         }
 
@@ -511,14 +519,17 @@ public class SuffixFilter
                 align_internal();
 
                 if (_logger.isDebugEnabled()) {
-                    _logger.debug("stat: %s min K:%d, FM Search:%,d, Exact:%d, CutOff:%d, Filtered:%d, %.5f sec.",
-                            minMismatches <= k ? "(*)" : "   ", minMismatches, numFMIndexSearches, numExactSearchCount,
-                            numCutOff, numFiltered, s.getElapsedTime());
+                    _logger.debug("query:%s - %s min K:%d, FM Search:%,d, Exact:%d, CutOff:%d, Filtered:%d, %.5f sec.",
+                            read.name(), minMismatches <= k ? "(*)" : "   ", minMismatches, numFMIndexSearches,
+                            numExactSearchCount, numCutOff, numFiltered, s.getElapsedTime());
 
-                    if (minMismatches == 0 && numFMIndexSearches > 500) {
-                        _logger.debug("query: %s", q[0]);
+                    if (numFMIndexSearches > 500) {
+                        _logger.debug("query:%s", q[0]);
                     }
                 }
+                if (_logger.isTraceEnabled())
+                    _logger.trace("qual :%s", read.getQual(0));
+
             }
             catch (Exception e) {
                 _logger.error("error at query: %s", q[0]);
