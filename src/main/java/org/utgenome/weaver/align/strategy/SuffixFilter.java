@@ -37,7 +37,6 @@ import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.RawRead;
 import org.utgenome.weaver.align.record.ReadSequence;
-import org.utgenome.weaver.align.strategy.BidirectionalBWT.QuickScanResult;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.StopWatch;
@@ -449,8 +448,12 @@ public class SuffixFilter
     }
 
     /**
+     * Prepare a suffix filter
+     * 
      * @param fmIndex
+     *            FM index
      * @param config
+     *            alignment score config
      * @param m
      *            read length
      */
@@ -480,6 +483,12 @@ public class SuffixFilter
         new AlignmentProcess(read, out).align();
     }
 
+    /**
+     * Comparator for selecting next target state to search
+     * 
+     * @author leo
+     * 
+     */
     private static class StatePreference implements Comparator<SearchState>
     {
         @Override
@@ -493,7 +502,13 @@ public class SuffixFilter
         }
     }
 
-    public class AlignmentProcess
+    /**
+     * Alignment procedure
+     * 
+     * @author leo
+     * 
+     */
+    class AlignmentProcess
     {
 
         private final RawRead              read;
@@ -544,13 +559,13 @@ public class SuffixFilter
             }
 
             // quick scan for k=0 (exact match)
-            QuickScanResult scanF = BidirectionalBWT.scanMismatchLocations(fmIndex, q[0], Strand.FORWARD);
+            QuickScanResult scanF = QuickScanResult.scanMismatchLocations(fmIndex, q[0], Strand.FORWARD);
             if (scanF.numMismatches == 0) {
                 minMismatches = 0;
                 out.emit(scanF);
                 return;
             }
-            QuickScanResult scanR = BidirectionalBWT.scanMismatchLocations(fmIndex, q[1], Strand.REVERSE);
+            QuickScanResult scanR = QuickScanResult.scanMismatchLocations(fmIndex, q[1], Strand.REVERSE);
             if (scanR.numMismatches == 0) {
                 minMismatches = 0;
                 out.emit(scanR);

@@ -26,6 +26,12 @@ package org.utgenome.weaver.align.strategy;
 
 import org.utgenome.weaver.align.AlignmentScoreConfig;
 
+/**
+ * Alignment score
+ * 
+ * @author leo
+ * 
+ */
 public class Score
 {
     public final int  score;

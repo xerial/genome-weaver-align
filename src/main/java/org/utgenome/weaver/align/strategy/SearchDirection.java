@@ -24,6 +24,12 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
+/**
+ * Search direction of alignment
+ * 
+ * @author leo
+ * 
+ */
 public enum SearchDirection {
     Forward("F", 0, true), Backward("B", 1, false), BidirectionalForward("BF", 2, true);
 

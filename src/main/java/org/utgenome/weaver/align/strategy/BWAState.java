@@ -4,8 +4,11 @@ import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.AlignmentScoreConfig;
 import org.utgenome.weaver.align.FMIndexOnGenome;
+import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
+import org.utgenome.weaver.align.record.AlignmentRecord;
+import org.xerial.util.ObjectHandler;
 
 /**
  * Represents an alignment state
@@ -13,7 +16,7 @@ import org.utgenome.weaver.align.SuffixInterval;
  * @author leo
  * 
  */
-public class Alignment
+public class BWAState
 {
     // minimum bit length for this state: 1,1,2,2,16,16,32+8+8+8,64+64 = 222 bit < 28 bytes
     public final ACGTSequence    read;
@@ -25,7 +28,7 @@ public class Alignment
     public final Score           score;
     public final SuffixInterval  si;
 
-    protected Alignment(ACGTSequence read, Strand strand, SearchDirection orientation, ExtensionType extensionType,
+    protected BWAState(ACGTSequence read, Strand strand, SearchDirection orientation, ExtensionType extensionType,
             int cursorF, int cursorB, Score score, SuffixInterval si) {
         this.read = read;
         this.strand = strand;
@@ -37,7 +40,7 @@ public class Alignment
         this.si = si;
     }
 
-    protected Alignment(Alignment other) {
+    protected BWAState(BWAState other) {
         this.read = other.read;
         this.strand = other.strand;
         this.orientation = other.orientation;
@@ -95,7 +98,7 @@ public class Alignment
             return fmIndex.backwardSearch(strand, ch, si);
     }
 
-    public Alignment extend(ExtensionType type, int extensionLength, Score newScore, SuffixInterval newSi) {
+    public BWAState extend(ExtensionType type, int extensionLength, Score newScore, SuffixInterval newSi) {
         int M = (int) read.textSize();
         int nextF = cursorF;
         int nextB = cursorB;
@@ -104,11 +107,11 @@ public class Alignment
         else
             nextB -= extensionLength;
 
-        Alignment next = null;
+        BWAState next = null;
         switch (orientation) {
         case Forward:
         case Backward:
-            next = new Alignment(read, strand, orientation, type, nextF, nextB, newScore, newSi);
+            next = new BWAState(read, strand, orientation, type, nextF, nextB, newScore, newSi);
             break;
         case BidirectionalForward:
             if (nextF >= M) {
@@ -123,28 +126,53 @@ public class Alignment
         return next;
     }
 
-    public Alignment extendWithMatch(AlignmentScoreConfig config, SuffixInterval newSi) {
+    public BWAState extendWithMatch(AlignmentScoreConfig config, SuffixInterval newSi) {
         return extend(ExtensionType.MATCH, 1, score.extendWithMatch(config), newSi);
     }
 
-    public Alignment extendWithMisMatch(AlignmentScoreConfig config, SuffixInterval newSi) {
+    public BWAState extendWithMisMatch(AlignmentScoreConfig config, SuffixInterval newSi) {
         return extend(ExtensionType.MATCH, 1, score.extendWithMismatch(config), newSi);
     }
 
-    public Alignment startInsertion(AlignmentScoreConfig config) {
+    public BWAState startInsertion(AlignmentScoreConfig config) {
         return extend(ExtensionType.INSERTION, 1, score.extendWithGapOpen(config), si);
     }
 
-    public Alignment startDeletion(AlignmentScoreConfig config, SuffixInterval newSi) {
+    public BWAState startDeletion(AlignmentScoreConfig config, SuffixInterval newSi) {
         return extend(ExtensionType.DELETION, 0, score.extendWithGapOpen(config), newSi);
     }
 
-    public Alignment extendInsertion(AlignmentScoreConfig config) {
+    public BWAState extendInsertion(AlignmentScoreConfig config) {
         return extend(ExtensionType.INSERTION, 1, score.extendWithGapExtend(config), si);
     }
 
-    public Alignment extendDeletion(AlignmentScoreConfig config, SuffixInterval newSi) {
+    public BWAState extendDeletion(AlignmentScoreConfig config, SuffixInterval newSi) {
         return extend(ExtensionType.DELETION, 0, score.extendWithGapExtend(config), newSi);
+    }
+
+    public void toGenomeCoordinate(FMIndexOnGenome fmIndex, ObjectHandler<AlignmentRecord> reporter) throws Exception {
+        final long querySize = read.textSize();
+
+        for (long i = si.lowerBound; i < si.upperBound; ++i) {
+            PosOnGenome p = fmIndex.toGenomeCoordinate(i, querySize, strand);
+            if (p != null) {
+                AlignmentRecord rec = new AlignmentRecord();
+                rec.chr = p.chr;
+                rec.start = p.pos;
+                rec.strand = strand;
+                rec.score = score.score;
+                rec.numMismatches = score.numMismatches;
+                // workaround for Picard tools, which cannot accept base character other than ACGT 
+                rec.querySeq = strand == Strand.FORWARD ? read.toString() : read.reverse().toString();
+                // TODO obtain read name
+                rec.readName = read.toString();
+                rec.end = p.pos + cursorF;
+                // TODO output correct CIGAR string
+                //rec.setCIGAR(result.cigar().toCIGARString());
+                reporter.handle(rec);
+            }
+        }
+
     }
 
 }

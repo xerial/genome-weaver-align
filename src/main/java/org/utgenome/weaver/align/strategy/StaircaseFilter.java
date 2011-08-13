@@ -27,6 +27,12 @@ package org.utgenome.weaver.align.strategy;
 import org.utgenome.weaver.align.BitVector;
 import org.xerial.util.StringUtil;
 
+/**
+ * Staircase filter is a mask over NFA for read alignment
+ * 
+ * @author leo
+ * 
+ */
 public class StaircaseFilter
 {
     private final int   m;
