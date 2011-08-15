@@ -82,6 +82,8 @@ public class BitParallelSmithWatermanTest
         ACGTSequence ref = new ACGTSequence("ACGTCATAACG");
         SWResult r = BitParallelSmithWaterman.alignBlock(ref, new ACGTSequence("TAACG"), 6);
         _logger.debug(SilkLens.toSilk("result", r));
+        SWResult r2 = BitParallelSmithWaterman.alignBlock(ref, new ACGTSequence("ACGTC"), 6);
+        _logger.debug(SilkLens.toSilk("result", r2));
     }
 
     @Test
