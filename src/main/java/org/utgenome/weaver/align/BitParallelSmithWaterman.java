@@ -115,7 +115,7 @@ public class BitParallelSmithWaterman
 
     public static String toBinary(long v, int m) {
         StringBuilder s = new StringBuilder();
-        for (int i = 0; i < m; ++i) {
+        for (int i = m - 1; i >= 0; --i) {
             s.append((v & (1L << i)) > 0 ? "1" : "0");
         }
         return s.toString();
@@ -128,61 +128,89 @@ public class BitParallelSmithWaterman
 
     }
 
+    public static void alignBlock(ACGTSequence ref, ACGTSequence query, int k, int w) {
+
+        AlignBlocks a = new AlignBlocks(w, (int) query.textSize(), k);
+        a.align(ref, query);
+
+    }
+
+    /**
+     * Block-based aligment for more than 64-bit queries
+     * 
+     * @author leo
+     * 
+     */
     public static class AlignBlocks
     {
-
-        private static final int w = 63;                  // word size
         private static final int Z = ACGT.values().length; // alphabet size
 
+        private final int        w;                       // word size
         private final int        k;
         private final int        m;
         private final int        bMax;
         private long[]           vp;
         private long[]           vn;
+
         private long[][]         peq;                     // [# of block][A, C, G, T]
         private int[]            D;                       // D[block]
 
         public AlignBlocks(int m, int k) {
+            this(m, k, 64);
+        }
+
+        public AlignBlocks(int w, int m, int k) {
+            this.w = w;
             this.m = m;
             this.k = k;
-            bMax = (int) Math.ceil((double) m / w);
+            bMax = Math.max(1, (m + w - 1) / w);
             vp = new long[bMax];
             vn = new long[bMax];
-            peq = new long[bMax][Z];
+            peq = new long[Z][bMax];
             D = new int[bMax];
         }
 
         public void clear() {
             Arrays.fill(vp, 0L);
             Arrays.fill(vn, 0L);
-            for (int i = 0; i < bMax; ++i)
-                for (int j = 0; j < Z; ++j)
+            for (int i = 0; i < Z; ++i)
+                for (int j = 0; j < bMax; ++j)
                     peq[i][j] = 0L;
         }
 
         public void align(ACGTSequence ref, ACGTSequence query) {
+            QueryMask qm = new QueryMask(query);
+            align(ref, qm);
+        }
+
+        public void align(ACGTSequence ref, QueryMask qMask) {
             // Peq bit-vector holds flags of the character occurrence positions in the query
-            for (int i = 0; i < m; ++i) {
-                peq[i / w][query.getACGT(i).code] |= 1L << (i % w);
-            }
-            // Fill the flanking region with 1s
-            {
-                int f = m % w;
-                long mask = ~0L >>> f << f;
-                for (int i = 0; i < Z; ++i)
-                    peq[bMax - 1][i] |= mask;
-            }
-            if (_logger.isDebugEnabled()) {
-                for (ACGT ch : ACGT.exceptN) {
-                    _logger.debug("peq[%s]:%s", ch, toBinary(peq[0][ch.code], m));
+            for (ACGT ch : ACGT.exceptN) {
+                for (int i = 0; i < bMax; ++i) {
+                    peq[ch.code][i] = qMask.getPatternMaskIn64bit(ch, i, w);
                 }
             }
 
-            int b = (int) Math.ceil((double) k / w);
-            for (int r = 0; r < b; ++r) {
+            // Fill the flanking region with 1s
+            {
+                int f = m % w;
+                long mask = f == 0 ? 0L : (~0L << f);
+                for (int i = 0; i < Z; ++i)
+                    peq[i][bMax - 1] |= mask;
+            }
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("peq:%s", qMask);
+            }
+            align(ref);
+        }
+
+        private void align(ACGTSequence ref) {
+
+            int b = Math.max(1, (k + w - 1) / w);
+            for (int r = 0; r < bMax; ++r) {
                 vp[r] = ~0L; // all 1s
                 vn[r] = 0L; // all 0s
-                D[r] = b * w;
+                D[r] = w;
             }
 
             final int N = (int) ref.textSize();
@@ -190,12 +218,23 @@ public class BitParallelSmithWaterman
                 ACGT ch = ref.getACGT(j);
                 int carry = 0;
                 for (int r = 0; r < b; ++r) {
-                    D[r] += (carry = alignBlock(ch, r, carry));
+                    int nextScore = alignBlock(j, ch, r, carry);
+                    D[r] += nextScore;
+                    //                    if (_logger.isDebugEnabled()) {
+                    //                        _logger.debug("j:%d[%s], block:%d, hin:%2d, hout:%2d, D:%d", j, ref.getACGT(j), r, carry,
+                    //                                nextScore, D[r]);
+                    //                    }
+                    carry = nextScore;
                 }
 
-                if (D[b - 1] - carry <= k && b < bMax && (((peq[b][ch.code] & 1L) != 0) | carry < 0)) {
+                if (D[b - 1] <= k && b < bMax && (((peq[ch.code][b] & 1L) != 0L) | carry < 0)) {
                     b++;
-                    D[b - 1] = D[b - 2] + w - carry + alignBlock(ch, b - 1, carry);
+                    int nextScore = alignBlock(j, ch, b - 1, carry);
+                    D[b - 1] = D[b - 2] + w - carry + nextScore;
+                    //                    if (_logger.isDebugEnabled()) {
+                    //                        _logger.debug("j:%d[%s], block:%d, hin:%2d, hout:%2d, D:%d", j, ref.getACGT(j), b - 1, carry,
+                    //                                nextScore, D[b - 1]);
+                    //                    }
                 }
                 else {
                     while (b > 1 && D[b - 1] >= k + w) {
@@ -206,34 +245,33 @@ public class BitParallelSmithWaterman
 
         }
 
-        private int alignBlock(ACGT ch, int r, int hin) {
+        private int alignBlock(int j, ACGT ch, int r, int hin) {
             long vp = this.vp[r];
             long vn = this.vn[r];
-            long x = this.peq[r][ch.code];
+            long x = this.peq[ch.code][r];
             if (hin < 0)
                 x |= 1L;
             long d0 = ((vp + (x & vp)) ^ vp) | x | vn;
             long hn = vp & d0;
             long hp = (vn | ~(vp | d0));
-
             int hout = 0;
-            hout += (int) ((hp >>> w) & 1L);
-            hout -= (int) ((hn >>> w) & 1L);
+            hout += (int) ((hp >>> (w - 1)) & 1L);
+            hout -= (int) ((hn >>> (w - 1)) & 1L);
 
             long ph = (hp << 1);
             long mh = (hn << 1);
             if (hin < 0)
-                mh |= 1;
-            else if (hin > 0)
-                ph |= 1;
+                mh |= 1L;
+            if (hin > 0)
+                ph |= 1L;
 
             this.vp[r] = mh | ~(ph | d0);
             this.vn[r] = ph & d0;
 
             if (_logger.isDebugEnabled()) {
-                _logger.debug("block:%d, hin:%2d, hout:%2d %1s hp:%s, hn:%s, vp:%s, vn:%s, d0:%s", r, hin, hout,
-                        hout <= k ? "*" : "", toBinary(hp, m), toBinary(hn, m), toBinary(this.vp[r], m),
-                        toBinary(this.vn[r], m), toBinary(d0, m));
+                _logger.debug("[%s] j:%2d, block:%d, hin:%2d, hout:%2d, hp:%s, hn:%s, vp:%s, vn:%s, d0:%s", ch, j, r,
+                        hin, hout, toBinary(hp, m), toBinary(hn, m), toBinary(this.vp[r], m), toBinary(this.vn[r], m),
+                        toBinary(d0, m));
             }
 
             return hout;

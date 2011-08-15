@@ -30,8 +30,8 @@ import java.util.PriorityQueue;
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.AlignmentScoreConfig;
-import org.utgenome.weaver.align.BitVector;
 import org.utgenome.weaver.align.FMIndexOnGenome;
+import org.utgenome.weaver.align.QueryMask;
 import org.utgenome.weaver.align.SiSet;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
@@ -72,8 +72,6 @@ public class SuffixFilter
         Match, Mismatch, Insertion, Deletion, Split
     };
 
-    
-    
     /**
      * NFA state and alignment cursor holder.
      * 
@@ -216,7 +214,7 @@ public class SuffixFilter
 
             final int index = cursor.getIndex();
             final int colStart = index - height + 1;
-            final long qeq = queryMask.getPatternMaskIn64bit(ch, cursor.getNextACGTIndex() - height + 1);
+            final long qeq = queryMask.getPatternMaskIn64bitForBidirectionalSearch(ch, cursor.getNextACGTIndex() - height + 1);
             // Update the automaton
             // R'_0 = ((R_0 & P[ch]) << 1) & (suffix filter)
             next[0] = ((prev[0] & qeq) << 1) & staircaseFilter.getStairCaseMask64bit(minK, colStart);
@@ -275,56 +273,6 @@ public class SuffixFilter
             }
         }
         return fmIndex.bidirectionalSearch(strand, siF, siB);
-    }
-
-    /**
-     * A set of bit flags of ACGT characters in a query sequence
-     * 
-     * @author leo
-     * 
-     */
-    public static class QueryMask
-    {
-        private int         m;
-        private BitVector[] patternMaskF;
-        private BitVector[] patternMaskR; // reverse pattern
-
-        public QueryMask(ACGTSequence query) {
-            m = (int) query.textSize();
-            patternMaskF = new BitVector[ACGT.exceptN.length];
-            patternMaskR = new BitVector[ACGT.exceptN.length];
-            for (int i = 0; i < patternMaskF.length; ++i) {
-                patternMaskF[i] = new BitVector(m);
-                patternMaskR[i] = new BitVector(m);
-            }
-
-            for (int i = 0; i < m; ++i) {
-                ACGT ch = query.getACGT(i);
-                if (ch == ACGT.N) {
-                    for (ACGT each : ACGT.exceptN) {
-                        patternMaskF[each.code].set(i);
-                        patternMaskR[each.code].set(m - i - 1);
-                    }
-                }
-                else {
-                    patternMaskF[ch.code].set(i);
-                    patternMaskR[ch.code].set(m - i - 1);
-                }
-            }
-        }
-
-        public long getPatternMaskIn64bit(ACGT ch, int start) {
-            if (start < 0) {
-                long p = patternMaskF[ch.code].substring64(0, 64);
-                return p << (-start);
-            }
-            long p = patternMaskF[ch.code].substring64(start, m);
-            if (start + 64 >= m) {
-                // combine forward and reverse pattern mask
-                p |= (patternMaskR[ch.code].substring64(0, start + 64 - m)) << (m - start);
-            }
-            return p;
-        }
     }
 
     /**
@@ -467,7 +415,7 @@ public class SuffixFilter
             if (scanF.numMismatches <= k) {
                 if (scanF.longestMatch.start != 0 && scanF.longestMatch.start < m) {
                     // add bidirectional search state
-                    queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.BidirectionalForward, m, 
+                    queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.BidirectionalForward, m,
                             scanF.longestMatch.start, scanF.longestMatch.start, null)));
                 }
                 else {
@@ -479,8 +427,8 @@ public class SuffixFilter
                 if (scanF.numMismatches > scanR.numMismatches) {
                     if (scanR.longestMatch.start != 0 && scanR.longestMatch.start < m) {
                         // add bidirectional search state
-                        queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward,
-                                m, scanR.longestMatch.start, scanR.longestMatch.start, null)));
+                        queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward, m,
+                                scanR.longestMatch.start, scanR.longestMatch.start, null)));
                     }
                 }
                 else {
@@ -542,8 +490,8 @@ public class SuffixFilter
                                 queue.add(nextState);
                             else
                                 ++numFiltered;
-                            
-                            continue;	// A match is found. Proceed to the next base 
+
+                            continue; // A match is found. Proceed to the next base 
                         }
                         queue.add(c); // preserve the state for back-tracking
                     }

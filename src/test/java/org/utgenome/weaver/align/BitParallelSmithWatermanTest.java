@@ -51,10 +51,9 @@ public class BitParallelSmithWatermanTest
     }
 
     @Test
-    public void alignBlockOver64() throws Exception {
-        ACGTSequence ref = new ACGTSequence(
-                "ACGTGGTCTTACGTTATATAGGGCGCGGGGATATCTGCTATAAAATTAAGCGCAGATGGCGAGGCGTTTTAGAGAGCCGAAGAGACGCGCGCTTCGCGAGAAAGCGGAGCGCAGAGAGGGGCGCCATATATATAGAGCGCGAAGAGAGAT");
-        BitParallelSmithWaterman.alignBlock(ref, ref, 2);
+    public void alignBlocks() throws Exception {
+        ACGTSequence ref = new ACGTSequence("ACGTCATA");
+        BitParallelSmithWaterman.alignBlock(ref, ref, 0, 4);
 
     }
 
