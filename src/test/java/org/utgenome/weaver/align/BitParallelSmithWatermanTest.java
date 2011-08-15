@@ -24,7 +24,7 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.utgenome.weaver.align.BitParallelSmithWaterman.SWResult;
@@ -58,7 +58,8 @@ public class BitParallelSmithWatermanTest
     @Test
     public void alignBlocks() throws Exception {
         ACGTSequence ref = new ACGTSequence("ACGTCATA");
-        BitParallelSmithWaterman.alignBlock(ref, ref, 0);
+        SWResult r = BitParallelSmithWaterman.alignBlock(ref, ref, 0, 5);
+        _logger.debug(SilkLens.toSilk("result", r));
     }
 
     @Test
