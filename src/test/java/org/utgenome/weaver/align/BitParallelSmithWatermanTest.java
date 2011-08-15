@@ -24,7 +24,11 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import static org.junit.Assert.*;
+
 import org.junit.Test;
+import org.utgenome.weaver.align.BitParallelSmithWaterman.SWResult;
+import org.xerial.lens.SilkLens;
 import org.xerial.util.log.Logger;
 
 public class BitParallelSmithWatermanTest
@@ -47,14 +51,37 @@ public class BitParallelSmithWatermanTest
     @Test
     public void alignBlock() throws Exception {
         ACGTSequence ref = new ACGTSequence("ACGTGGTCTT");
-        BitParallelSmithWaterman.alignBlock(ref, new ACGTSequence("ACGTGGT"), 2);
+        SWResult r = BitParallelSmithWaterman.alignBlock(ref, new ACGTSequence("ACGTGGT"), 2);
+        _logger.debug(SilkLens.toSilk("result", r));
     }
 
     @Test
     public void alignBlocks() throws Exception {
         ACGTSequence ref = new ACGTSequence("ACGTCATA");
-        BitParallelSmithWaterman.alignBlock(ref, ref, 0, 4);
+        BitParallelSmithWaterman.alignBlock(ref, ref, 0);
+    }
 
+    @Test
+    public void alignBlocks2() throws Exception {
+        ACGTSequence ref = new ACGTSequence("ACGTCATAACG");
+        SWResult r = BitParallelSmithWaterman.alignBlock(ref, ref, 1);
+        _logger.debug(SilkLens.toSilk("result", r));
+    }
+
+    @Test
+    public void noMatch() throws Exception {
+        ACGTSequence ref = new ACGTSequence("ACGTCATAACG");
+        //BitParallelSmithWaterman.align64(ref, new ACGTSequence("GGTTCC"), 0);
+        SWResult r = BitParallelSmithWaterman.alignBlock(ref, new ACGTSequence("GGTTCC"), 0);
+        assertTrue(r.diff > 0);
+        _logger.debug(SilkLens.toSilk("result", r));
+    }
+
+    @Test
+    public void alignClip() throws Exception {
+        ACGTSequence ref = new ACGTSequence("ACGTCATAACG");
+        SWResult r = BitParallelSmithWaterman.alignBlock(ref, new ACGTSequence("TAACG"), 6);
+        _logger.debug(SilkLens.toSilk("result", r));
     }
 
     @Test

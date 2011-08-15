@@ -121,18 +121,28 @@ public class BitParallelSmithWaterman
         return s.toString();
     }
 
-    public static void alignBlock(ACGTSequence ref, ACGTSequence query, int k) {
+    public static SWResult alignBlock(ACGTSequence ref, ACGTSequence query, int k) {
 
         AlignBlocks a = new AlignBlocks((int) query.textSize(), k);
-        a.align(ref, query);
+        return a.align(ref, query);
 
     }
 
-    public static void alignBlock(ACGTSequence ref, ACGTSequence query, int k, int w) {
+    public static SWResult alignBlock(ACGTSequence ref, ACGTSequence query, int k, int w) {
 
         AlignBlocks a = new AlignBlocks(w, (int) query.textSize(), k);
-        a.align(ref, query);
+        return a.align(ref, query);
+    }
 
+    public static class SWResult
+    {
+        public final int tailPos;
+        public final int diff;
+
+        public SWResult(int tailPos, int diff) {
+            this.tailPos = tailPos;
+            this.diff = diff;
+        }
     }
 
     /**
@@ -152,11 +162,11 @@ public class BitParallelSmithWaterman
         private long[]           vp;
         private long[]           vn;
 
-        private long[][]         peq;                     // [# of block][A, C, G, T]
+        private long[][]         peq;                     // [A, C, G, T][# of block]
         private int[]            D;                       // D[block]
 
         public AlignBlocks(int m, int k) {
-            this(m, k, 64);
+            this(64, m, k);
         }
 
         public AlignBlocks(int w, int m, int k) {
@@ -178,12 +188,12 @@ public class BitParallelSmithWaterman
                     peq[i][j] = 0L;
         }
 
-        public void align(ACGTSequence ref, ACGTSequence query) {
+        public SWResult align(ACGTSequence ref, ACGTSequence query) {
             QueryMask qm = new QueryMask(query);
-            align(ref, qm);
+            return align(ref, qm);
         }
 
-        public void align(ACGTSequence ref, QueryMask qMask) {
+        public SWResult align(ACGTSequence ref, QueryMask qMask) {
             // Peq bit-vector holds flags of the character occurrence positions in the query
             for (ACGT ch : ACGT.exceptN) {
                 for (int i = 0; i < bMax; ++i) {
@@ -195,54 +205,77 @@ public class BitParallelSmithWaterman
             {
                 int f = m % w;
                 long mask = f == 0 ? 0L : (~0L << f);
-                for (int i = 0; i < Z; ++i)
-                    peq[i][bMax - 1] |= mask;
+                for (int i = 0; i < Z; ++i) {
+                    //peq[i][bMax - 1] |= mask;
+                }
             }
             if (_logger.isDebugEnabled()) {
                 _logger.debug("peq:%s", qMask);
             }
-            align(ref);
+            return align(ref);
         }
 
-        private void align(ACGTSequence ref) {
+        private SWResult align(ACGTSequence ref) {
 
-            int b = Math.max(1, (k + w - 1) / w);
+            SWResult bestHit = null;
+
+            final int N = (int) ref.textSize();
+            final int W = w - (int) ref.textSize() % w;
+
+            // Initialize the vertical input
             for (int r = 0; r < bMax; ++r) {
                 vp[r] = ~0L; // all 1s
                 vn[r] = 0L; // all 0s
-                D[r] = w;
             }
+            // Init the score
+            D[0] = w;
 
-            final int N = (int) ref.textSize();
+            int b = Math.max(1, (k + w - 1) / w);
             for (int j = 0; j < N; ++j) {
                 ACGT ch = ref.getACGT(j);
                 int carry = 0;
                 for (int r = 0; r < b; ++r) {
                     int nextScore = alignBlock(j, ch, r, carry);
                     D[r] += nextScore;
-                    //                    if (_logger.isDebugEnabled()) {
-                    //                        _logger.debug("j:%d[%s], block:%d, hin:%2d, hout:%2d, D:%d", j, ref.getACGT(j), r, carry,
-                    //                                nextScore, D[r]);
-                    //                    }
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore, r,
+                                D[r]);
+                    }
                     carry = nextScore;
                 }
 
-                if (D[b - 1] <= k && b < bMax && (((peq[ch.code][b] & 1L) != 0L) | carry < 0)) {
+                if (b < bMax && D[b - 1] - carry <= k && (((peq[ch.code][b] & 1L) != 0L) | carry < 0)) {
                     b++;
                     int nextScore = alignBlock(j, ch, b - 1, carry);
                     D[b - 1] = D[b - 2] + w - carry + nextScore;
-                    //                    if (_logger.isDebugEnabled()) {
-                    //                        _logger.debug("j:%d[%s], block:%d, hin:%2d, hout:%2d, D:%d", j, ref.getACGT(j), b - 1, carry,
-                    //                                nextScore, D[b - 1]);
-                    //                    }
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore,
+                                b - 1, D[b - 1]);
+                    }
                 }
                 else {
                     while (b > 1 && D[b - 1] >= k + w) {
                         --b;
                     }
                 }
-            }
 
+                if (b == bMax) {
+                    if (D[b - 1] <= W + k) {
+                        if (_logger.isDebugEnabled())
+                            _logger.debug("match at %d", j);
+                    }
+
+                    if (bestHit == null) {
+                        bestHit = new SWResult(j, D[b - 1] - W);
+                        continue;
+                    }
+
+                    if (bestHit.diff > D[b - 1] - W) {
+                        bestHit = new SWResult(j, D[b - 1] - W);
+                    }
+                }
+            }
+            return bestHit;
         }
 
         private int alignBlock(int j, ACGT ch, int r, int hin) {
@@ -255,6 +288,7 @@ public class BitParallelSmithWaterman
             long hn = vp & d0;
             long hp = (vn | ~(vp | d0));
             int hout = 0;
+
             hout += (int) ((hp >>> (w - 1)) & 1L);
             hout -= (int) ((hn >>> (w - 1)) & 1L);
 
@@ -268,10 +302,10 @@ public class BitParallelSmithWaterman
             this.vp[r] = mh | ~(ph | d0);
             this.vn[r] = ph & d0;
 
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("[%s] j:%2d, block:%d, hin:%2d, hout:%2d, hp:%s, hn:%s, vp:%s, vn:%s, d0:%s", ch, j, r,
-                        hin, hout, toBinary(hp, m), toBinary(hn, m), toBinary(this.vp[r], m), toBinary(this.vn[r], m),
-                        toBinary(d0, m));
+            if (_logger.isTraceEnabled()) {
+                _logger.trace("[%s] j:%2d, block:%d, hin:%2d, hout:%2d, hp:%s, hn:%s, vp:%s, vn:%s, d0:%s", ch, j, r,
+                        hin, hout, toBinary(hp, w), toBinary(hn, w), toBinary(this.vp[r], w), toBinary(this.vn[r], w),
+                        toBinary(d0, w));
             }
 
             return hout;
