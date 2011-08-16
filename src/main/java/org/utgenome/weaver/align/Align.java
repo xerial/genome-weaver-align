@@ -31,7 +31,6 @@ import org.utgenome.weaver.align.record.Read;
 import org.utgenome.weaver.align.record.ReadReader;
 import org.utgenome.weaver.align.record.ReadReaderFactory;
 import org.utgenome.weaver.align.strategy.BWAState;
-import org.utgenome.weaver.align.strategy.BWAStrategy;
 import org.utgenome.weaver.align.strategy.BidirectionalBWT;
 import org.utgenome.weaver.align.strategy.SuffixFilter;
 import org.utgenome.weaver.parallel.Reporter;
@@ -106,10 +105,11 @@ public class Align extends GenomeWeaverCommand
             aligner = new SuffixFilterAligner(fmIndex, config, reporter);
             break;
         case BWA:
-            aligner = new BWAligner(fmIndex, reporter);
+            aligner = new BWAAligner(fmIndex, config, reporter);
+            ((BWAAligner) aligner).aligner.disableBidirectionalSearch();
             break;
-        case NFA:
-            aligner = new NFAAligner(fmIndex, config, reporter);
+        case BD:
+            aligner = new BWAAligner(fmIndex, config, reporter);
             break;
         }
 
@@ -166,47 +166,18 @@ public class Align extends GenomeWeaverCommand
         }
     }
 
-    public static class BWAligner extends ObjectHandlerBase<Read>
+    public static class BWAAligner extends ObjectHandlerBase<Read>
     {
-
         private final FMIndexOnGenome fmIndex;
-        private final BWAStrategy     aligner;
+        private final AlignmentConfig config;
+        private Reporter              reporter;
+
         private int                   count = 0;
         private StopWatch             timer = new StopWatch();
-        private Reporter              out;
 
-        public BWAligner(FMIndexOnGenome fmIndex, Reporter out) {
-            this.fmIndex = fmIndex;
-            this.aligner = new BWAStrategy(fmIndex, out);
-            this.out = out;
-        }
+        public final BidirectionalBWT aligner;
 
-        @Override
-        public void handle(Read input) throws Exception {
-
-            aligner.align(input);
-            count++;
-            double time = timer.getElapsedTime();
-            if (count % 10000 == 0) {
-                _logger.info(String.format("%,d reads are processed in %.2f sec.", count, time));
-            }
-
-        }
-
-    }
-
-    public static class NFAAligner extends ObjectHandlerBase<Read>
-    {
-        private final FMIndexOnGenome  fmIndex;
-        private final AlignmentConfig  config;
-        private Reporter               reporter;
-
-        private int                    count = 0;
-        private StopWatch              timer = new StopWatch();
-
-        private final BidirectionalBWT aligner;
-
-        public NFAAligner(FMIndexOnGenome fmIndex, AlignmentConfig config, Reporter reporter) {
+        public BWAAligner(FMIndexOnGenome fmIndex, AlignmentConfig config, Reporter reporter) {
             this.fmIndex = fmIndex;
             this.config = config;
             this.reporter = reporter;

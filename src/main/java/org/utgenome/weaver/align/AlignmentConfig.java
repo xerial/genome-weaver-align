@@ -24,6 +24,8 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import java.util.List;
+
 import org.xerial.util.opt.Argument;
 import org.xerial.util.opt.Option;
 
@@ -36,18 +38,18 @@ import org.xerial.util.opt.Option;
 public class AlignmentConfig extends AlignmentScoreConfig
 {
     @Option(symbol = "r", description = "reference sequence")
-    public String   refSeq;
+    public String       refSeq;
 
     @Option(symbol = "q", description = "single query sequence")
-    public String   query;
+    public String       query;
 
     @Argument(name = "read file")
-    public String[] readFiles;
+    public List<String> readFiles;
 
     public static enum Strategy {
-        SF, NFA, BWA
+        SF, BD, BWA
     }
 
-    @Option(symbol = "m", description = "alignment strategy. sf(suffix filter), nfa, bwa (best-hit first)")
+    @Option(symbol = "m", description = "alignment strategy. sf(suffix filter), bd(bidirectinal search), bwa (best-hit first)")
     public Strategy strategy = Strategy.SF;
 }

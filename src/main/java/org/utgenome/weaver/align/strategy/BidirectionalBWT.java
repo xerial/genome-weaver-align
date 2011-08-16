@@ -30,8 +30,8 @@ import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.AlignmentScoreConfig;
 import org.utgenome.weaver.align.FMIndexOnGenome;
+import org.utgenome.weaver.align.SiSet;
 import org.utgenome.weaver.align.Strand;
-import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.AlignmentSA;
 import org.utgenome.weaver.align.record.Read;
@@ -51,18 +51,23 @@ import org.xerial.util.log.Logger;
  */
 public class BidirectionalBWT
 {
-    private static Logger         _logger = Logger.getLogger(BidirectionalBWT.class);
+    private static Logger         _logger                     = Logger.getLogger(BidirectionalBWT.class);
 
     private final FMIndexOnGenome fmIndex;
     private final Reporter        reporter;
     private final long            N;
     private AlignmentScoreConfig  config;
+    private boolean               disableBidirecdtionalSearch = false;
 
     public BidirectionalBWT(FMIndexOnGenome fmIndex, Reporter reporter) {
         this.fmIndex = fmIndex;
         this.reporter = reporter;
         this.N = fmIndex.textSize();
         this.config = new AlignmentScoreConfig();
+    }
+
+    public void disableBidirectionalSearch() {
+        this.disableBidirecdtionalSearch = true;
     }
 
     public void setAlignmentScoreConfig(AlignmentScoreConfig config) {
@@ -100,8 +105,16 @@ public class BidirectionalBWT
     }
 
     public BWAState prepareInitialAlignmentState(ACGTSequence q, FMQuickScan scan, Strand strand) {
-        // Break the read sequence into three parts
+
         int M = (int) q.textSize();
+
+        if (disableBidirecdtionalSearch) {
+            return new BWAState(new Cursor(strand, SearchDirection.Forward, M, 0, 0, null), ExtensionType.MATCH,
+                    Score.initial(), fmIndex.initSet(SearchDirection.Forward));
+        }
+
+        // Break the read sequence into three parts
+
         int s1 = M / 3;
         int s2 = M / 3 * 2;
 
@@ -141,28 +154,38 @@ public class BidirectionalBWT
         }
 
         switch (searchStart) {
+        default:
         case FRONT:
-            return new BWAState(q, strand, SearchDirection.Forward, ExtensionType.MATCH, 0, -1, Score.initial(),
-                    fmIndex.wholeSARange());
+            return new BWAState(new Cursor(strand, SearchDirection.Forward, M, 0, 0, null), ExtensionType.MATCH,
+                    Score.initial(), fmIndex.initSet(SearchDirection.Forward));
         case MIDDLE: {
-            return new BWAState(q, strand, SearchDirection.BidirectionalForward, ExtensionType.MATCH, s1, s1,
-                    Score.initial(), fmIndex.wholeSARange());
+            return new BWAState(new Cursor(strand, SearchDirection.BidirectionalForward, M, s1, s1, null),
+                    ExtensionType.MATCH, Score.initial(), fmIndex.initSet(SearchDirection.BidirectionalForward));
         }
         case TAIL:
-            return new BWAState(q, strand, SearchDirection.Backward, ExtensionType.MATCH, M, M, Score.initial(),
-                    fmIndex.wholeSARange());
+            return new BWAState(new Cursor(strand, SearchDirection.Backward, M, M, M, null), ExtensionType.MATCH,
+                    Score.initial(), fmIndex.initSet(SearchDirection.Backward));
         }
-        return null;
     }
 
-    public BWAState exactMatch(BWAState aln) {
-        while (!aln.isFinished()) {
-            SuffixInterval nextSi = aln.nextSi(fmIndex, aln.nextACGT(), aln.si);
-            if (nextSi.isEmpty())
+    public BWAState exactMatch(BWAState aln, ACGTSequence[] q) {
+
+        Cursor cursor = aln.cursor;
+        final int n = cursor.getRemainingBases();
+        int numExtend = 0;
+
+        SiSet siSet = aln.si;
+        ACGT ch = null;
+        while (numExtend < n) {
+            ch = cursor.nextACGT(q);
+            if (siSet.isEmpty(ch))
                 return null;
-            aln = aln.extendWithMatch(config, nextSi);
+            siSet = cursor.nextSi(fmIndex, siSet, ch);
+            cursor = cursor.next();
+            ++numExtend;
         }
-        return aln;
+
+        return new BWAState(cursor, ExtensionType.MATCH, aln.score.extendWithMatch(config, n), siSet);
     }
 
     public void align(Read r) throws Exception {
@@ -193,9 +216,11 @@ public class BidirectionalBWT
             return;
         }
 
-        if (_logger.isDebugEnabled()) {
-            _logger.debug(SilkLens.toSilk("scanF", scanF));
-            _logger.debug(SilkLens.toSilk("scanR", scanR));
+        ACGTSequence[] q = new ACGTSequence[] { qF, qC };
+
+        if (_logger.isTraceEnabled()) {
+            _logger.trace(SilkLens.toSilk("scanF", scanF));
+            _logger.trace(SilkLens.toSilk("scanR", scanR));
         }
 
         AlignmentQueue queue = new AlignmentQueue(config);
@@ -213,7 +238,6 @@ public class BidirectionalBWT
                 continue;
             }
 
-            SuffixInterval si = c.suffixInterval();
             if (c.isFinished()) {
                 continue;
             }
@@ -228,26 +252,20 @@ public class BidirectionalBWT
             if (remainingDist < 0)
                 continue;
 
-            if (_logger.isDebugEnabled())
-                _logger.debug("[%3d] %s SI:%s ", queue.queue.size(), c, c.suffixInterval());
-
             if (remainingDist == 0) {
                 if (c.extensionType == ExtensionType.MATCH) {
                     // exact match
-                    BWAState a = exactMatch(c);
+                    BWAState a = exactMatch(c, q);
                     if (a != null)
                         queue.add(a);
                 }
                 continue;
             }
 
-            // Compute the next SA ranges for A, C, G, T, N
-            SuffixInterval[] next = new SuffixInterval[ACGT.values().length]; // for A, C, G, T, N
-            {
-                int i = 0;
-                for (ACGT ch : ACGT.values()) {
-                    next[i++] = c.nextSi(fmIndex, ch, si);
-                }
+            // Compute next suffix intervals for A, C, G, T
+            SiSet[] next = new SiSet[ACGT.exceptN.length];
+            for (ACGT ch : ACGT.exceptN) {
+                next[ch.code] = c.nextSi(fmIndex, ch);
             }
 
             // Search for indels
@@ -258,8 +276,9 @@ public class BidirectionalBWT
                     queue.add(c.startInsertion(config));
                     // deletion from reference
                     for (ACGT ch : ACGT.exceptN) {
-                        if (!next[ch.code].isEmpty())
+                        if (!c.si.isEmpty(ch)) {
                             queue.add(c.startDeletion(config, next[ch.code]));
+                        }
                     }
                     break;
                 }
@@ -267,7 +286,7 @@ public class BidirectionalBWT
             case DELETION: { // gap extension
                 if (c.gapExtensionIsAllowed(config) && upperBound - config.gapExtensionPenalty > queue.bestScore) {
                     for (ACGT ch : ACGT.exceptN) {
-                        if (!next[ch.code].isEmpty())
+                        if (!c.si.isEmpty(ch))
                             queue.add(c.extendDeletion(config, next[ch.code]));
                     }
                 }
@@ -282,19 +301,19 @@ public class BidirectionalBWT
             }
 
             // Search for mismatches
-            for (ACGT ch : ACGT.exceptN) {
-                SuffixInterval nextSi = next[ch.code];
-                if (nextSi.isEmpty())
-                    continue;
+            if (remainingDist > 0) {
+                ACGT nextCh = c.nextACGT(q);
+                for (ACGT ch : ACGT.exceptN) {
+                    if (c.si.isEmpty(ch))
+                        continue;
 
-                if (ch == c.nextACGT()) {
-                    // match
-                    queue.add(c.extendWithMatch(config, nextSi));
-                }
-                else {
-                    if (remainingDist > 0) {
+                    if (ch == nextCh) {
+                        // match
+                        queue.add(c.extendWithMatch(config, next[ch.code]));
+                    }
+                    else {
                         // mismatch
-                        queue.add(c.extendWithMisMatch(config, nextSi));
+                        queue.add(c.extendWithMisMatch(config, next[ch.code]));
                     }
                 }
             }

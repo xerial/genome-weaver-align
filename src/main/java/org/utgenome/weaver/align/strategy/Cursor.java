@@ -26,7 +26,10 @@ package org.utgenome.weaver.align.strategy;
 
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
+import org.utgenome.weaver.align.FMIndexOnGenome;
+import org.utgenome.weaver.align.SiSet;
 import org.utgenome.weaver.align.Strand;
+import org.utgenome.weaver.align.SuffixInterval;
 
 /**
  * FM-index cursor for bidirectional search
@@ -37,7 +40,7 @@ import org.utgenome.weaver.align.Strand;
 public class Cursor
 {
     // flag(8bit) :=  strand(1), searchDirection(2), read length(29)
-    private final int  flag;
+    private final int   flag;
     public final int    cursorF;
     public final int    cursorB;
     public final Cursor split;
@@ -54,9 +57,9 @@ public class Cursor
     }
 
     public int getReadLength() {
-    	return flag >>> 3;
+        return flag >>> 3;
     }
-    
+
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
@@ -74,15 +77,16 @@ public class Cursor
     }
 
     private int getCursorRange() {
-    	return cursorF - cursorB;
+        return cursorF - cursorB;
     }
-    
+
     /**
-     * @param m	read length
+     * @param m
+     *            read length
      * @return
      */
     public int getRemainingBases() {
-    	return getReadLength() - getProcessedBases();
+        return getReadLength() - getProcessedBases();
     }
 
     public Strand getStrand() {
@@ -150,7 +154,21 @@ public class Cursor
         }
         return new Cursor(strand, d, getReadLength(), nextF, nextB, split);
     }
+
+    public SiSet nextSi(FMIndexOnGenome fmIndex, SiSet si, ACGT currentBase) {
+        return nextSi(fmIndex, si.getForward(currentBase), si.getBackward(currentBase));
+    }
+
+    public SiSet nextSi(FMIndexOnGenome fmIndex, SuffixInterval siF, SuffixInterval siB) {
+        Strand strand = this.getStrand();
+        SearchDirection d = this.getSearchDirection();
+        switch (d) {
+        case BidirectionalForward:
+            if (this.cursorF >= getReadLength() - 1) {
+                siF = null;
+            }
+        }
+        return fmIndex.bidirectionalSearch(strand, siF, siB);
+    }
+
 }
-
-
-

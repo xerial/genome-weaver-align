@@ -32,7 +32,7 @@ import org.utgenome.weaver.align.AlignmentScoreConfig;
  * @author leo
  * 
  */
-public class Score
+public class Score implements Comparable<Score>
 {
     public final int  score;
     public final byte numMismatches;
@@ -89,6 +89,11 @@ public class Score
 
     public Score extendWithGapExtend(AlignmentScoreConfig config) {
         return new Score(score - config.gapExtensionPenalty, numMismatches, numGapOpens, numGapExtend + 1, numSplit);
+    }
+
+    @Override
+    public int compareTo(Score o) {
+        return this.score - o.score;
     }
 
 }

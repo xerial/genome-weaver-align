@@ -31,6 +31,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import org.utgenome.UTGBErrorCode;
@@ -44,10 +45,10 @@ import org.xerial.util.ObjectHandler;
 
 public class ReadReaderFactory
 {
-    public static ReadReader createReader(String[] inputFiles) throws IOException, UTGBException {
-        switch (inputFiles.length) {
+    public static ReadReader createReader(List<String> inputFiles) throws IOException, UTGBException {
+        switch (inputFiles.size()) {
         case 1:
-            return createReader(inputFiles[0]);
+            return createReader(inputFiles.get(0));
         case 2:
             return createPEReader(inputFiles);
         default:
@@ -56,12 +57,12 @@ public class ReadReaderFactory
         }
     }
 
-    private static ReadReader createPEReader(String[] inputFiles) throws IOException, UTGBException {
+    private static ReadReader createPEReader(List<String> inputFiles) throws IOException, UTGBException {
 
-        assert (inputFiles.length == 2);
+        assert (inputFiles.size() == 2);
 
-        ReadReader r1 = createReader(inputFiles[0]);
-        ReadReader r2 = createReader(inputFiles[1]);
+        ReadReader r1 = createReader(inputFiles.get(0));
+        ReadReader r2 = createReader(inputFiles.get(1));
 
         return new ReadReader() {
             @Override

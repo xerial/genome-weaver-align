@@ -30,7 +30,9 @@ import java.io.PrintWriter;
 
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.parallel.Reporter;
+import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandler;
+import org.xerial.util.log.Logger;
 
 /**
  * {@link AlignmentRecord} to SAM format converter
@@ -40,10 +42,12 @@ import org.xerial.util.ObjectHandler;
  */
 public class SAMOutput implements ObjectHandler<AlignmentRecord>, Reporter
 {
-    FMIndexOnGenome  fmIndex;
-    PrintWriter      out;
-    SequenceBoundary boundary;
-    int              count = 0;
+    private static Logger _logger = Logger.getLogger(SAMOutput.class);
+
+    FMIndexOnGenome       fmIndex;
+    PrintWriter           out;
+    SequenceBoundary      boundary;
+    int                   count   = 0;
 
     public SAMOutput(SequenceBoundary sequenceBoundary, OutputStream out) {
         this.boundary = sequenceBoundary;
@@ -67,6 +71,10 @@ public class SAMOutput implements ObjectHandler<AlignmentRecord>, Reporter
 
     @Override
     public void emit(Object result) throws Exception {
+
+        if (_logger.isDebugEnabled())
+            _logger.debug(SilkLens.toSilk("result", result));
+
         if (result != null && result.getClass().isAssignableFrom(AlignmentRecord.class)) {
             AlignmentRecord r = (AlignmentRecord) result;
             r.toSAMLine();

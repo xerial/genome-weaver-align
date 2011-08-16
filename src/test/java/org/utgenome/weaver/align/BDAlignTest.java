@@ -57,10 +57,10 @@ public class BDAlignTest
         File fastaArchive = TestHelper.createTempFileFrom(BWAlignTest.class, "test2.fa", new File(tmpDir, "test2.fa"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
         String query = "ATCTCATGGGA";
-        GenomeWeaver.execute(String.format("align -m nfa %s -q %s", fastaArchive, query));
+        GenomeWeaver.execute(String.format("align -m bd -r %s -q %s", fastaArchive, query));
 
         String q2 = new ACGTSequence(query).reverseComplement().toString();
-        GenomeWeaver.execute(String.format("align -m nfa %s -q %s", fastaArchive, q2));
+        GenomeWeaver.execute(String.format("align -m bd -r %s -q %s", fastaArchive, q2));
     }
 
     @Test
@@ -69,7 +69,7 @@ public class BDAlignTest
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
 
         String q = "TACTTATACTTTATCTCCT";
-        GenomeWeaver.execute(String.format("align -m nfa %s -q %s", fastaArchive, q));
+        GenomeWeaver.execute(String.format("align -m bd -r %s -q %s", fastaArchive, q));
     }
 
     @Test
@@ -78,7 +78,7 @@ public class BDAlignTest
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
 
         String q = "TCTATACCCCGGTGAA";
-        GenomeWeaver.execute(String.format("align -m nfa %s -q %s", fastaArchive, q));
+        GenomeWeaver.execute(String.format("align -m bd -r %s -q %s", fastaArchive, q));
     }
 
     @Test
@@ -87,7 +87,7 @@ public class BDAlignTest
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
 
         String q = "CCGATCTATACCCCGGGGAA";
-        GenomeWeaver.execute(String.format("align -m nfa %s -q %s", fastaArchive, q));
+        GenomeWeaver.execute(String.format("align -m bd -r %s -q %s", fastaArchive, q));
     }
 
     @Test
@@ -96,14 +96,15 @@ public class BDAlignTest
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
 
         String q = "GGCTTGCGTATACCCCGGGGAAT";
-        GenomeWeaver.execute(String.format("align -m nfa %s -q %s", fastaArchive, q));
+        GenomeWeaver.execute(String.format("align -m bd -r %s -q %s", fastaArchive, q));
     }
 
     @Test
     public void invalidRead() throws Exception {
         File fastaArchive = TestHelper.createTempFileFrom(BWAlignTest.class, "test4.fa", new File(tmpDir, "test3.fa"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
-        String q = "GGTTTAATTACCCAAGTTTGAGGTAAAAATGTCGACATTCGACCTGACTCTGCGTAGTTCGCCTTTTCTCGAT..T";
-        GenomeWeaver.execute(String.format("align -m nfa %s -q %s", fastaArchive, q));
+        // 3Ns (.) in the read 
+        String q = "GGTTTAATTACCCAAGTTTGAGGT.AAAAATGTCGACATTCGACCTGACTCTGCGTAGTTCGCCTTTTCTCGAT..T";
+        GenomeWeaver.execute(String.format("align -m bd -r %s -q %s", fastaArchive, q));
     }
 }

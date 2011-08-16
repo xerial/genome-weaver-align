@@ -34,7 +34,6 @@ import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.QueryMask;
 import org.utgenome.weaver.align.SiSet;
 import org.utgenome.weaver.align.Strand;
-import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.Read;
 import org.utgenome.weaver.align.record.SingleEndRead;
 import org.utgenome.weaver.parallel.Reporter;
@@ -214,7 +213,8 @@ public class SuffixFilter
 
             final int index = cursor.getIndex();
             final int colStart = index - height + 1;
-            final long qeq = queryMask.getPatternMaskIn64bitForBidirectionalSearch(ch, cursor.getNextACGTIndex() - height + 1);
+            final long qeq = queryMask.getPatternMaskIn64bitForBidirectionalSearch(ch, cursor.getNextACGTIndex()
+                    - height + 1);
             // Update the automaton
             // R'_0 = ((R_0 & P[ch]) << 1) & (suffix filter)
             next[0] = ((prev[0] & qeq) << 1) & staircaseFilter.getStairCaseMask64bit(minK, colStart);
@@ -263,16 +263,7 @@ public class SuffixFilter
     }
 
     private SiSet next(SearchState c, ACGT ch) {
-        Strand strand = c.cursor.getStrand();
-        SearchDirection d = c.cursor.getSearchDirection();
-        SuffixInterval siF = c.si.getForward(ch), siB = c.si.getBackward(ch);
-        switch (d) {
-        case BidirectionalForward:
-            if (c.cursor.cursorF >= m - 1) {
-                siF = null;
-            }
-        }
-        return fmIndex.bidirectionalSearch(strand, siF, siB);
+        return c.cursor.nextSi(fmIndex, c.si, ch);
     }
 
     /**
@@ -339,7 +330,7 @@ public class SuffixFilter
     class AlignmentProcess
     {
 
-        private final Read              read;
+        private final Read                 read;
         private ACGTSequence[]             q             = new ACGTSequence[2];
         private QueryMask[]                queryMask     = new QueryMask[2];
         private PriorityQueue<SearchState> queue         = new PriorityQueue<SearchState>(11, new StatePreference());
