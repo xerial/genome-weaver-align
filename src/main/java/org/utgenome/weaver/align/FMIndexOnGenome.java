@@ -91,7 +91,10 @@ public class FMIndexOnGenome
     }
 
     public static FMIndexOnGenome buildFromSequence(String name, String seq) {
-        ACGTSequence refF = new ACGTSequence(seq);
+        return buildFromSequence(name, new ACGTSequence(seq));
+    }
+
+    public static FMIndexOnGenome buildFromSequence(String name, ACGTSequence refF) {
         ACGTSequence refR = refF.reverse();
         BWT bwtF = BWTransform.bwt(refF);
         BWT bwtR = BWTransform.bwt(refR);

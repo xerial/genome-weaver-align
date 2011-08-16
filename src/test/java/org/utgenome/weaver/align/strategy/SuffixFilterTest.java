@@ -38,50 +38,52 @@ public class SuffixFilterTest
     private static FMIndexOnGenome      fmIndex;
     private static AlignmentScoreConfig config  = new AlignmentScoreConfig();
 
+    private static ACGTSequence         ref     = new ACGTSequence("AAGCCTAGTTTCCTTG");
+
     @BeforeClass
     public static void setUp() {
-        fmIndex = FMIndexOnGenome.buildFromSequence("seq", "AAGCCTAGTTTCCTTG");
+        fmIndex = FMIndexOnGenome.buildFromSequence("seq", ref);
     }
 
     @Test
     public void oneMismatch() throws Exception {
         ACGTSequence q = new ACGTSequence("GCGTAG");
-        SuffixFilter f = new SuffixFilter(fmIndex, config, q.textSize());
+        SuffixFilter f = new SuffixFilter(fmIndex, ref, config, q.textSize());
         f.align(q);
     }
 
     @Test
     public void twoMismatch() throws Exception {
         ACGTSequence q = new ACGTSequence("TTGCCTAGTTT");
-        SuffixFilter f = new SuffixFilter(fmIndex, config, q.textSize());
+        SuffixFilter f = new SuffixFilter(fmIndex, ref, config, q.textSize());
         f.align(q);
     }
 
     @Test
     public void forwardExact() throws Exception {
         ACGTSequence q = new ACGTSequence("GCCTAGT");
-        SuffixFilter f = new SuffixFilter(fmIndex, config, q.textSize());
+        SuffixFilter f = new SuffixFilter(fmIndex, ref, config, q.textSize());
         f.align(q);
     }
 
     @Test
     public void reverseExact() throws Exception {
         ACGTSequence q = new ACGTSequence("GCCTAGT").reverseComplement();
-        SuffixFilter f = new SuffixFilter(fmIndex, config, q.textSize());
+        SuffixFilter f = new SuffixFilter(fmIndex, ref, config, q.textSize());
         f.align(q);
     }
 
     @Test
     public void splitExact() throws Exception {
         ACGTSequence q = new ACGTSequence("AAGCCTTCCTTG");
-        SuffixFilter f = new SuffixFilter(fmIndex, config, q.textSize());
+        SuffixFilter f = new SuffixFilter(fmIndex, ref, config, q.textSize());
         f.align(q);
     }
 
     @Test
     public void longRead() throws Exception {
         ACGTSequence q = new ACGTSequence("AAGCCTAGATTCCGTG");
-        SuffixFilter f = new SuffixFilter(fmIndex, config, q.textSize());
+        SuffixFilter f = new SuffixFilter(fmIndex, ref, config, q.textSize());
         f.align(q);
 
     }

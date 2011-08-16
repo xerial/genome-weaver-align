@@ -34,6 +34,7 @@ import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.QueryMask;
 import org.utgenome.weaver.align.SiSet;
 import org.utgenome.weaver.align.Strand;
+import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.Read;
 import org.utgenome.weaver.align.record.SingleEndRead;
 import org.utgenome.weaver.parallel.Reporter;
@@ -148,6 +149,14 @@ public class SuffixFilter
             for (int i = 0; i <= k; ++i) {
                 automaton[i] = 1L << (k + i);
             }
+        }
+
+        public SuffixInterval siF() {
+            return si.getForward(currentACGT());
+        }
+
+        public SuffixInterval siB() {
+            return si.getBackward(currentACGT());
         }
 
         String showNFAState(long[] automaton) {
@@ -281,7 +290,7 @@ public class SuffixFilter
      * @param m
      *            read length
      */
-    public SuffixFilter(FMIndexOnGenome fmIndex, AlignmentScoreConfig config, long m) {
+    public SuffixFilter(FMIndexOnGenome fmIndex, ACGTSequence reference, AlignmentScoreConfig config, long m) {
         this.fmIndex = fmIndex;
         this.config = config;
         this.k = config.maximumEditDistances;
@@ -536,6 +545,8 @@ public class SuffixFilter
         private void reportAlignment(SearchState c) throws Exception {
 
             // TODO add verify phase
+            SuffixInterval siF = c.siF();
+            SuffixInterval siB = c.siB();
 
             if (c.getLowerBoundOfK() < minMismatches) {
                 minMismatches = c.getLowerBoundOfK();

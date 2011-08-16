@@ -91,21 +91,25 @@ public class Align extends GenomeWeaverCommand
 
         FMIndexOnGenome fmIndex = FMIndexOnGenome.load(config.refSeq);
         Reporter reporter = new SAMOutput(fmIndex.getSequenceBoundary(), new StandardOutputStream());
-        query(fmIndex, config, reader, reporter);
+
+        _logger.info("loading reference sequence %s", forwardDB.pac());
+        ACGTSequence reference = ACGTSequence.loadFrom(forwardDB.pac());
+        query(fmIndex, reference, config, reader, reporter);
     }
 
-    public static void querySingle(FMIndexOnGenome fmIndex, String query, Reporter out) throws Exception {
-        query(fmIndex, new AlignmentConfig(), ReadReaderFactory.singleQueryReader(query), out);
-    }
-
-    public static void query(FMIndexOnGenome fmIndex, AlignmentConfig config, ReadReader readReader, Reporter reporter)
+    public static void querySingle(FMIndexOnGenome fmIndex, ACGTSequence reference, String query, Reporter out)
             throws Exception {
+        query(fmIndex, reference, new AlignmentConfig(), ReadReaderFactory.singleQueryReader(query), out);
+    }
+
+    public static void query(FMIndexOnGenome fmIndex, ACGTSequence reference, AlignmentConfig config,
+            ReadReader readReader, Reporter reporter) throws Exception {
 
         ObjectHandler<Read> aligner = null;
         switch (config.strategy) {
         default:
         case SF:
-            aligner = new SuffixFilterAligner(fmIndex, config, reporter);
+            aligner = new SuffixFilterAligner(fmIndex, reference, config, reporter);
             break;
         case BWA:
             aligner = new BWAAligner(fmIndex, config, reporter);
@@ -124,6 +128,7 @@ public class Align extends GenomeWeaverCommand
     {
 
         private final FMIndexOnGenome fmIndex;
+        private final ACGTSequence    reference;
         private final AlignmentConfig config;
         private Reporter              reporter;
 
@@ -131,8 +136,10 @@ public class Align extends GenomeWeaverCommand
         private StopWatch             timer = new StopWatch();
         private SuffixFilter          sf;
 
-        public SuffixFilterAligner(FMIndexOnGenome fmIndex, AlignmentConfig config, Reporter reporter) {
+        public SuffixFilterAligner(FMIndexOnGenome fmIndex, ACGTSequence reference, AlignmentConfig config,
+                Reporter reporter) {
             this.fmIndex = fmIndex;
+            this.reference = reference;
             this.config = config;
             this.reporter = reporter;
         }
@@ -140,7 +147,7 @@ public class Align extends GenomeWeaverCommand
         @Override
         public void handle(Read read) throws Exception {
             if (sf == null)
-                sf = new SuffixFilter(fmIndex, config, read.getRead(0).textSize());
+                sf = new SuffixFilter(fmIndex, reference, config, read.getRead(0).textSize());
             sf.align(read, reporter);
             count++;
             double time = timer.getElapsedTime();
