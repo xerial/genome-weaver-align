@@ -34,7 +34,7 @@ import org.utgenome.weaver.align.ACGTSequence;
  * @author leo
  * 
  */
-public class ReadSequence implements RawRead
+public class SingleEndRead implements Read
 {
     public final String       name;
 
@@ -48,13 +48,13 @@ public class ReadSequence implements RawRead
      */
     public final String       qual;
 
-    public ReadSequence(String name, String seq, String qual) {
+    public SingleEndRead(String name, String seq, String qual) {
         this.name = name;
         this.seq = new ACGTSequence(seq);
         this.qual = qual;
     }
 
-    public ReadSequence(String name, ACGTSequence seq, String qual) {
+    public SingleEndRead(String name, ACGTSequence seq, String qual) {
         this.name = name;
         this.seq = seq;
         this.qual = qual;
@@ -70,12 +70,12 @@ public class ReadSequence implements RawRead
         return String.format("%s\t%s\t%s", name, seq, qual);
     }
 
-    public static ReadSequence createFrom(FASTASequence seq) {
-        return new ReadSequence(seq.getSequenceName(), seq.getSequence(), null);
+    public static SingleEndRead createFrom(FASTASequence seq) {
+        return new SingleEndRead(seq.getSequenceName(), seq.getSequence(), null);
     }
 
-    public static ReadSequence createFrom(FastqRead seq) {
-        return new ReadSequence(seq.seqname, seq.seq, seq.qual);
+    public static SingleEndRead createFrom(FastqRead seq) {
+        return new SingleEndRead(seq.seqname, seq.seq, seq.qual);
     }
 
     @Override

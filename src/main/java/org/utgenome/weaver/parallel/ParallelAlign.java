@@ -27,9 +27,9 @@ package org.utgenome.weaver.parallel;
 import org.utgenome.weaver.align.AlignmentScoreConfig;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.record.AlignmentRecord;
-import org.utgenome.weaver.align.record.ReadSequence;
-import org.utgenome.weaver.align.record.ReadSequenceReader;
-import org.utgenome.weaver.align.record.ReadSequenceReaderFactory;
+import org.utgenome.weaver.align.record.SingleEndRead;
+import org.utgenome.weaver.align.record.ReadReader;
+import org.utgenome.weaver.align.record.ReadReaderFactory;
 
 public class ParallelAlign
 {
@@ -41,8 +41,8 @@ public class ParallelAlign
         this.config = config;
     }
 
-    public void map(Provider<ReadSequence> readSet, Reporter reporter) throws Exception {
-        ReadSequence seq = readSet.get();
+    public void map(Provider<SingleEndRead> readSet, Reporter reporter) throws Exception {
+        SingleEndRead seq = readSet.get();
         // do some alignment
         AlignmentRecord rec = new AlignmentRecord();
         reporter.emit(rec);
@@ -54,7 +54,7 @@ public class ParallelAlign
         AlignmentScoreConfig config = new AlignmentScoreConfig();
 
         ParallelAlign cmd = new ParallelAlign(fmIndex, config);
-        ReadSequenceReader fastq = ReadSequenceReaderFactory.createFASTQReader(fastqFile);
+        ReadReader fastq = ReadReaderFactory.createFASTQReader(fastqFile);
 
     }
 }

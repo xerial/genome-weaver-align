@@ -9,7 +9,7 @@ import org.utgenome.weaver.align.CharacterCount;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
-import org.utgenome.weaver.align.record.RawRead;
+import org.utgenome.weaver.align.record.Read;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.util.log.Logger;
 
@@ -54,7 +54,7 @@ public class BWAStrategy
         return aln;
     }
 
-    public void align(RawRead r) throws Exception {
+    public void align(Read r) throws Exception {
 
         // TODO PE mapping
         ACGTSequence qF = r.getRead(0);

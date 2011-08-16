@@ -27,9 +27,9 @@ package org.utgenome.weaver.align;
 import org.utgenome.UTGBException;
 import org.utgenome.weaver.GenomeWeaverCommand;
 import org.utgenome.weaver.align.record.AlignmentRecord;
-import org.utgenome.weaver.align.record.RawRead;
-import org.utgenome.weaver.align.record.ReadSequenceReader;
-import org.utgenome.weaver.align.record.ReadSequenceReaderFactory;
+import org.utgenome.weaver.align.record.Read;
+import org.utgenome.weaver.align.record.ReadReader;
+import org.utgenome.weaver.align.record.ReadReaderFactory;
 import org.utgenome.weaver.align.strategy.BWAState;
 import org.utgenome.weaver.align.strategy.BWAStrategy;
 import org.utgenome.weaver.align.strategy.BidirectionalBWT;
@@ -42,6 +42,12 @@ import org.xerial.util.StopWatch;
 import org.xerial.util.io.StandardOutputStream;
 import org.xerial.util.log.Logger;
 
+/**
+ * Alignment command
+ * 
+ * @author leo
+ * 
+ */
 public class Align extends GenomeWeaverCommand
 {
     private static Logger _logger = Logger.getLogger(Align.class);
@@ -69,13 +75,13 @@ public class Align extends GenomeWeaverCommand
         if (config.query == null && config.readFiles == null)
             throw new UTGBException("no query is given");
 
-        ReadSequenceReader reader = null;
+        ReadReader reader = null;
         if (config.query != null) {
             _logger.info("query sequence: " + config.query);
-            reader = ReadSequenceReaderFactory.singleQueryReader(config.query);
+            reader = ReadReaderFactory.singleQueryReader(config.query);
         }
         else if (config.readFiles != null) {
-            reader = ReadSequenceReaderFactory.createReader(config.readFiles);
+            reader = ReadReaderFactory.createReader(config.readFiles);
         }
 
         BWTFiles forwardDB = new BWTFiles(config.refSeq, Strand.FORWARD);
@@ -87,13 +93,13 @@ public class Align extends GenomeWeaverCommand
     }
 
     public static void querySingle(FMIndexOnGenome fmIndex, String query, Reporter out) throws Exception {
-        query(fmIndex, new AlignmentConfig(), ReadSequenceReaderFactory.singleQueryReader(query), out);
+        query(fmIndex, new AlignmentConfig(), ReadReaderFactory.singleQueryReader(query), out);
     }
 
-    public static void query(FMIndexOnGenome fmIndex, AlignmentConfig config, ReadSequenceReader readReader,
-            Reporter reporter) throws Exception {
+    public static void query(FMIndexOnGenome fmIndex, AlignmentConfig config, ReadReader readReader, Reporter reporter)
+            throws Exception {
 
-        ObjectHandler<RawRead> aligner = null;
+        ObjectHandler<Read> aligner = null;
         switch (config.strategy) {
         default:
         case SF:
@@ -110,7 +116,7 @@ public class Align extends GenomeWeaverCommand
         readReader.parse(aligner);
     }
 
-    public static class SuffixFilterAligner extends ObjectHandlerBase<RawRead>
+    public static class SuffixFilterAligner extends ObjectHandlerBase<Read>
     {
 
         private final FMIndexOnGenome fmIndex;
@@ -128,7 +134,7 @@ public class Align extends GenomeWeaverCommand
         }
 
         @Override
-        public void handle(RawRead read) throws Exception {
+        public void handle(Read read) throws Exception {
             if (sf == null)
                 sf = new SuffixFilter(fmIndex, config, read.getRead(0).textSize());
             sf.align(read, reporter);
@@ -160,7 +166,7 @@ public class Align extends GenomeWeaverCommand
         }
     }
 
-    public static class BWAligner extends ObjectHandlerBase<RawRead>
+    public static class BWAligner extends ObjectHandlerBase<Read>
     {
 
         private final FMIndexOnGenome fmIndex;
@@ -176,7 +182,7 @@ public class Align extends GenomeWeaverCommand
         }
 
         @Override
-        public void handle(RawRead input) throws Exception {
+        public void handle(Read input) throws Exception {
 
             aligner.align(input);
             count++;
@@ -189,7 +195,7 @@ public class Align extends GenomeWeaverCommand
 
     }
 
-    public static class NFAAligner extends ObjectHandlerBase<RawRead>
+    public static class NFAAligner extends ObjectHandlerBase<Read>
     {
         private final FMIndexOnGenome  fmIndex;
         private final AlignmentConfig  config;
@@ -208,7 +214,7 @@ public class Align extends GenomeWeaverCommand
         }
 
         @Override
-        public void handle(RawRead input) throws Exception {
+        public void handle(Read input) throws Exception {
             aligner.align(input);
             count++;
             double time = timer.getElapsedTime();

@@ -30,6 +30,7 @@ import org.utgenome.UTGBException;
 import org.utgenome.weaver.align.BWTransform.BWT;
 import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.utgenome.weaver.align.record.AlignmentRecord;
+import org.utgenome.weaver.align.record.AlignmentSA;
 import org.utgenome.weaver.align.strategy.SearchDirection;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandler;
@@ -212,43 +213,6 @@ public class FMIndexOnGenome
         }
 
         return nextSiF;
-    }
-
-    /**
-     * Narrow down suffix range via backward-search
-     * 
-     * @param strand
-     * @param nextBase
-     * @param forwardSi
-     * @param backwardSi
-     * @return new backward Si
-     */
-    public BidirectionalSuffixInterval bidirectionalForwardSearch(Strand strand, ACGT nextBase,
-            BidirectionalSuffixInterval si) {
-
-        FMIndex fm;
-        SuffixInterval F = si.forwardSi, B = si.backwardSi;
-        if (strand == Strand.FORWARD) {
-            fm = reverseIndex;
-        }
-        else {
-            fm = forwardIndex;
-        }
-
-        // forward search
-        SuffixInterval nextF = fm.backwardSearch(nextBase, F);
-        if (nextF.isEmpty())
-            return null;
-
-        long x = 0;
-        for (ACGT ch : ACGT.values()) {
-            if (ch.code < nextBase.code) {
-                x += fm.count(ch, F.lowerBound, F.upperBound);
-            }
-        }
-        long y = fm.count(nextBase, F.lowerBound, F.upperBound);
-        SuffixInterval nextB = new SuffixInterval(B.lowerBound + x, B.lowerBound + x + y);
-        return new BidirectionalSuffixInterval(nextF, nextB);
     }
 
     public long toForwardSequenceIndex(long saIndex, Strand strand) {

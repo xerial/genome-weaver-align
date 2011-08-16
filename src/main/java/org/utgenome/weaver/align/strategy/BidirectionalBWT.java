@@ -28,13 +28,13 @@ import java.util.HashMap;
 
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
-import org.utgenome.weaver.align.AlignmentSA;
 import org.utgenome.weaver.align.AlignmentScoreConfig;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.AlignmentRecord;
-import org.utgenome.weaver.align.record.RawRead;
+import org.utgenome.weaver.align.record.AlignmentSA;
+import org.utgenome.weaver.align.record.Read;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandlerBase;
@@ -99,7 +99,7 @@ public class BidirectionalBWT
         searchStrategyTable.put(Integer.parseInt("011", 2), SearchStart.FRONT);
     }
 
-    public BWAState prepareInitialAlignmentState(ACGTSequence q, QuickScanResult scan, Strand strand) {
+    public BWAState prepareInitialAlignmentState(ACGTSequence q, FMQuickScan scan, Strand strand) {
         // Break the read sequence into three parts
         int M = (int) q.textSize();
         int s1 = M / 3;
@@ -165,7 +165,7 @@ public class BidirectionalBWT
         return aln;
     }
 
-    public void align(RawRead r) throws Exception {
+    public void align(Read r) throws Exception {
 
         // TODO PE mapping
         ACGTSequence qF = r.getRead(0);
@@ -177,7 +177,7 @@ public class BidirectionalBWT
         }
 
         // Find potential mismatch positions for forward direction
-        QuickScanResult scanF = QuickScanResult.scanMismatchLocations(fmIndex, qF, Strand.FORWARD);
+        FMQuickScan scanF = FMQuickScan.scanMismatchLocations(fmIndex, qF, Strand.FORWARD);
         if (scanF.numMismatches == 0) {
             // Found an exact match
             report(AlignmentSA.exactMatch(config, r.name(), qF, scanF.si, Strand.FORWARD));
@@ -186,7 +186,7 @@ public class BidirectionalBWT
 
         // Find potential mismatch positions for reverse direction
         ACGTSequence qC = qF.complement();
-        QuickScanResult scanR = QuickScanResult.scanMismatchLocations(fmIndex, qC, Strand.REVERSE);
+        FMQuickScan scanR = FMQuickScan.scanMismatchLocations(fmIndex, qC, Strand.REVERSE);
         if (scanR.numMismatches == 0) {
             // Found an exact match
             report(AlignmentSA.exactMatch(config, r.name(), qC, scanR.si, Strand.REVERSE));

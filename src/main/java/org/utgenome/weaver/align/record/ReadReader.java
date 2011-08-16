@@ -16,7 +16,7 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// RawRead.java
+// ReadSequenceReader.java
 // Since: 2011/04/28
 //
 // $URL$ 
@@ -24,15 +24,22 @@
 //--------------------------------------
 package org.utgenome.weaver.align.record;
 
-import org.utgenome.weaver.align.ACGTSequence;
+import java.io.IOException;
 
-public interface RawRead
+import org.xerial.util.ObjectHandler;
+
+/**
+ * Interface to retrieve read sequences
+ * 
+ * @author leo
+ * 
+ */
+public interface ReadReader
 {
-    public String name();
 
-    public int getNumReadFragment();
+    public Read next() throws Exception;
 
-    public ACGTSequence getRead(int index);
+    public void parse(ObjectHandler<Read> handler) throws Exception;
 
-    public String getQual(int index);
+    public void close() throws IOException;
 }

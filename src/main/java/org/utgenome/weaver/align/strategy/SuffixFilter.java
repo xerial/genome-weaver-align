@@ -35,8 +35,8 @@ import org.utgenome.weaver.align.QueryMask;
 import org.utgenome.weaver.align.SiSet;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
-import org.utgenome.weaver.align.record.RawRead;
-import org.utgenome.weaver.align.record.ReadSequence;
+import org.utgenome.weaver.align.record.Read;
+import org.utgenome.weaver.align.record.SingleEndRead;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.StopWatch;
@@ -294,10 +294,10 @@ public class SuffixFilter
     }
 
     public void align(ACGTSequence seq) throws Exception {
-        align(new ReadSequence("read", seq, null));
+        align(new SingleEndRead("read", seq, null));
     }
 
-    public void align(RawRead read) throws Exception {
+    public void align(Read read) throws Exception {
         new AlignmentProcess(read, new Reporter() {
             @Override
             public void emit(Object result) throws Exception {
@@ -307,7 +307,7 @@ public class SuffixFilter
         }).align();
     }
 
-    public void align(RawRead read, Reporter out) throws Exception {
+    public void align(Read read, Reporter out) throws Exception {
         new AlignmentProcess(read, out).align();
     }
 
@@ -339,7 +339,7 @@ public class SuffixFilter
     class AlignmentProcess
     {
 
-        private final RawRead              read;
+        private final Read              read;
         private ACGTSequence[]             q             = new ACGTSequence[2];
         private QueryMask[]                queryMask     = new QueryMask[2];
         private PriorityQueue<SearchState> queue         = new PriorityQueue<SearchState>(11, new StatePreference());
@@ -348,7 +348,7 @@ public class SuffixFilter
 
         private int                        minMismatches = k + 1;
 
-        public AlignmentProcess(RawRead read, Reporter out) {
+        public AlignmentProcess(Read read, Reporter out) {
             this.read = read;
             this.q[0] = read.getRead(0);
             this.q[1] = q[0].complement();
@@ -387,13 +387,13 @@ public class SuffixFilter
             }
 
             // quick scan for k=0 (exact match)
-            QuickScanResult scanF = QuickScanResult.scanMismatchLocations(fmIndex, q[0], Strand.FORWARD);
+            FMQuickScan scanF = FMQuickScan.scanMismatchLocations(fmIndex, q[0], Strand.FORWARD);
             if (scanF.numMismatches == 0) {
                 minMismatches = 0;
                 out.emit(scanF);
                 return;
             }
-            QuickScanResult scanR = QuickScanResult.scanMismatchLocations(fmIndex, q[1], Strand.REVERSE);
+            FMQuickScan scanR = FMQuickScan.scanMismatchLocations(fmIndex, q[1], Strand.REVERSE);
             if (scanR.numMismatches == 0) {
                 minMismatches = 0;
                 out.emit(scanR);

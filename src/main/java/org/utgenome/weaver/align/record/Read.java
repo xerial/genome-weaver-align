@@ -16,28 +16,23 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// BidirectionalSuffixInterval.java
-// Since: 2011/08/08
+// RawRead.java
+// Since: 2011/04/28
 //
 // $URL$ 
 // $Author$
 //--------------------------------------
-package org.utgenome.weaver.align;
+package org.utgenome.weaver.align.record;
 
-/**
- * Suffix array interval holder for bi-directional search
- * 
- * @author leo
- * 
- */
-public class BidirectionalSuffixInterval
+import org.utgenome.weaver.align.ACGTSequence;
+
+public interface Read
 {
-    public final SuffixInterval forwardSi;
-    public final SuffixInterval backwardSi;
+    public String name();
 
-    public BidirectionalSuffixInterval(SuffixInterval forwardSi, SuffixInterval backwardSi) {
-        this.forwardSi = forwardSi;
-        this.backwardSi = backwardSi;
-    }
+    public int getNumReadFragment();
 
+    public ACGTSequence getRead(int index);
+
+    public String getQual(int index);
 }

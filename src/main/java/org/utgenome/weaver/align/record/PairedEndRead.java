@@ -33,12 +33,12 @@ import org.xerial.util.StringUtil;
  * @author leo
  * 
  */
-public class PairedEndRead implements RawRead
+public class PairedEndRead implements Read
 {
-    public final RawRead first;
-    public final RawRead second;
+    public final Read first;
+    public final Read second;
 
-    public PairedEndRead(RawRead first, RawRead second) {
+    public PairedEndRead(Read first, Read second) {
         this.first = first;
         this.second = second;
     }
@@ -50,7 +50,7 @@ public class PairedEndRead implements RawRead
 
     @Override
     public String toString() {
-        return StringUtil.join(new RawRead[] { first, second }, "\n");
+        return StringUtil.join(new Read[] { first, second }, "\n");
     }
 
     @Override

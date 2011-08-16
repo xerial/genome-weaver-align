@@ -44,7 +44,7 @@ public class PackFasta extends GenomeWeaverCommand
 
     @Override
     public String getOneLineDescription() {
-        return "Create ACGT 3-bit index of FASTA sequences";
+        return "Create ACGT/N 3-bit index of FASTA sequences";
     }
 
     @Argument(index = 0, required = true)

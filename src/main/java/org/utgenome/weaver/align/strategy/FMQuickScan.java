@@ -34,12 +34,12 @@ import org.utgenome.weaver.align.SuffixInterval;
 import org.xerial.lens.SilkLens;
 
 /**
- * For quick lookup of the mismatch locations in a read sequence
+ * For quick lookup of the mismatch locations in a read sequence using FM-index
  * 
  * @author leo
  * 
  */
-public class QuickScanResult
+public class FMQuickScan
 {
     public final SuffixInterval si;
     public final BitVector      breakPoint;
@@ -47,7 +47,7 @@ public class QuickScanResult
     public final Range          longestMatch;
     public final SuffixInterval longestMatchSi;
 
-    public QuickScanResult(SuffixInterval si, BitVector breakPoint, int numMismatches, Range longestMatch,
+    public FMQuickScan(SuffixInterval si, BitVector breakPoint, int numMismatches, Range longestMatch,
             SuffixInterval longestMatchSi) {
         this.si = si;
         this.breakPoint = breakPoint;
@@ -61,7 +61,7 @@ public class QuickScanResult
         return SilkLens.toSilk(this);
     }
 
-    public static QuickScanResult scanMismatchLocations(FMIndexOnGenome fmIndex, ACGTSequence query, Strand strand) {
+    public static FMQuickScan scanMismatchLocations(FMIndexOnGenome fmIndex, ACGTSequence query, Strand strand) {
         int qLen = (int) query.textSize();
         int numMismatches = 0;
         BitVector breakPoint = new BitVector(qLen);
@@ -89,6 +89,6 @@ public class QuickScanResult
             longestMatch = new Range(mark, i);
         }
 
-        return new QuickScanResult(si, breakPoint, numMismatches, longestMatch, longestMatchSi);
+        return new FMQuickScan(si, breakPoint, numMismatches, longestMatch, longestMatchSi);
     }
 }

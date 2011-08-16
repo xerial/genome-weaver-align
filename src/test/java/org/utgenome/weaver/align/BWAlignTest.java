@@ -37,6 +37,7 @@ import org.utgenome.format.fasta.FASTASequence;
 import org.utgenome.util.TestHelper;
 import org.utgenome.weaver.GenomeWeaver;
 import org.utgenome.weaver.align.record.AlignmentRecord;
+import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandlerBase;
 import org.xerial.util.log.Logger;
@@ -81,12 +82,13 @@ public class BWAlignTest
     public void align3() throws Exception {
 
         File fastaArchive = TestHelper.createTempFileFrom(BWAlignTest.class, "test2.fa", new File(tmpDir, "test2.fa"));
-
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+        FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaArchive.getPath());
 
-        BWAlign.querySingle(fastaArchive.getPath(), "TAAAGTAT", new ObjectHandlerBase<AlignmentRecord>() {
+        Align.querySingle(fmIndex, "TAAAGTAT", new Reporter() {
             @Override
-            public void handle(AlignmentRecord input) throws Exception {
+            public void emit(Object result) throws Exception {
+                AlignmentRecord input = (AlignmentRecord) result;
                 _logger.debug(SilkLens.toSilk(input));
                 assertEquals("seq2", input.chr);
                 assertEquals(Strand.REVERSE, input.strand);
@@ -102,8 +104,9 @@ public class BWAlignTest
 
         File fastaArchive = TestHelper.createTempFileFrom(BWAlignTest.class, "test2.fa", new File(tmpDir, "test2.fa"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
+        FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaArchive.getPath());
 
-        BWAlign.querySingle(fastaArchive.getPath(), "ATACTTTA", new ObjectHandlerBase<AlignmentRecord>() {
+        Align.querySingle(fastaArchive.getPath(), "ATACTTTA", new ObjectHandlerBase<AlignmentRecord>() {
             @Override
             public void handle(AlignmentRecord input) throws Exception {
                 _logger.debug(SilkLens.toSilk(input));

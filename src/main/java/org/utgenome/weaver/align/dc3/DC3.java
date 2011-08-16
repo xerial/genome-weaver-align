@@ -32,7 +32,7 @@ import org.utgenome.weaver.align.sais.UInt32Array;
 import org.xerial.util.StringUtil;
 
 /**
- * DC3 Suffix array building algorithm
+ * DC3 Suffix array building algorithm. TODO impl
  * 
  * @author leo
  * 

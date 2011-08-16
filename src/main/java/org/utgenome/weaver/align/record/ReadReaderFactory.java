@@ -42,9 +42,9 @@ import org.utgenome.format.fastq.FastqReader;
 import org.xerial.snappy.SnappyInputStream;
 import org.xerial.util.ObjectHandler;
 
-public class ReadSequenceReaderFactory
+public class ReadReaderFactory
 {
-    public static ReadSequenceReader createReader(String[] inputFiles) throws IOException, UTGBException {
+    public static ReadReader createReader(String[] inputFiles) throws IOException, UTGBException {
         switch (inputFiles.length) {
         case 1:
             return createReader(inputFiles[0]);
@@ -56,23 +56,23 @@ public class ReadSequenceReaderFactory
         }
     }
 
-    private static ReadSequenceReader createPEReader(String[] inputFiles) throws IOException, UTGBException {
+    private static ReadReader createPEReader(String[] inputFiles) throws IOException, UTGBException {
 
         assert (inputFiles.length == 2);
 
-        ReadSequenceReader r1 = createReader(inputFiles[0]);
-        ReadSequenceReader r2 = createReader(inputFiles[1]);
+        ReadReader r1 = createReader(inputFiles[0]);
+        ReadReader r2 = createReader(inputFiles[1]);
 
-        return new ReadSequenceReader() {
+        return new ReadReader() {
             @Override
-            public RawRead next() throws Exception {
+            public Read next() throws Exception {
 
                 // TODO Auto-generated method stub
                 return null;
             }
 
             @Override
-            public void parse(ObjectHandler<RawRead> handler) throws Exception {
+            public void parse(ObjectHandler<Read> handler) throws Exception {
                 // TODO Auto-generated method stub
 
             }
@@ -85,20 +85,20 @@ public class ReadSequenceReaderFactory
         };
     }
 
-    public static class PairedReadReader implements ReadSequenceReader
+    public static class PairedReadReader implements ReadReader
     {
-        private final ReadSequenceReader p1;
-        private final ReadSequenceReader p2;
+        private final ReadReader p1;
+        private final ReadReader p2;
 
-        public PairedReadReader(ReadSequenceReader p1, ReadSequenceReader p2) {
+        public PairedReadReader(ReadReader p1, ReadReader p2) {
             this.p1 = p1;
             this.p2 = p2;
         }
 
         @Override
-        public RawRead next() throws Exception {
-            RawRead r1 = p1.next();
-            RawRead r2 = p2.next();
+        public Read next() throws Exception {
+            Read r1 = p1.next();
+            Read r2 = p2.next();
             if (r1 != null && r2 != null)
                 return new PairedEndRead(r1, r2);
             else
@@ -106,9 +106,9 @@ public class ReadSequenceReaderFactory
         }
 
         @Override
-        public void parse(ObjectHandler<RawRead> handler) throws Exception {
+        public void parse(ObjectHandler<Read> handler) throws Exception {
             handler.init();
-            for (RawRead r1, r2; (r1 = p1.next()) != null && (r2 = p2.next()) != null;) {
+            for (Read r1, r2; (r1 = p1.next()) != null && (r2 = p2.next()) != null;) {
                 handler.handle(new PairedEndRead(r1, r2));
             }
             handler.finish();
@@ -122,7 +122,7 @@ public class ReadSequenceReaderFactory
 
     }
 
-    public static ReadSequenceReader createReader(String inputFile) throws IOException, UTGBException {
+    public static ReadReader createReader(String inputFile) throws IOException, UTGBException {
 
         boolean gzipped = inputFile.endsWith(".gz");
         boolean snapped = inputFile.endsWith(".snap");
@@ -151,25 +151,25 @@ public class ReadSequenceReaderFactory
         throw new UTGBException("Unsupported file type: " + inputFile);
     }
 
-    public static ReadSequenceReader createFASTQReader(BufferedReader input) {
+    public static ReadReader createFASTQReader(BufferedReader input) {
         return new FASTQReadReader(input);
     }
 
-    public static ReadSequenceReader createFASTQReader(String fastqFile) throws FileNotFoundException {
+    public static ReadReader createFASTQReader(String fastqFile) throws FileNotFoundException {
         return new FASTQReadReader(new BufferedReader(new FileReader(fastqFile)));
     }
 
-    public static ReadSequenceReader createFASTAReader(BufferedReader input) {
+    public static ReadReader createFASTAReader(BufferedReader input) {
         return new FASTAReadReader(input);
     }
 
-    public static ReadSequenceReader singleQueryReader(final String query) {
-        return new ReadSequenceReader() {
+    public static ReadReader singleQueryReader(final String query) {
+        return new ReadReader() {
             int count = 0;
 
             @Override
-            public void parse(ObjectHandler<RawRead> handler) throws Exception {
-                handler.handle(new ReadSequence(query, query, null));
+            public void parse(ObjectHandler<Read> handler) throws Exception {
+                handler.handle(new SingleEndRead(query, query, null));
                 count++;
             }
 
@@ -179,15 +179,15 @@ public class ReadSequenceReaderFactory
             }
 
             @Override
-            public RawRead next() throws Exception {
+            public Read next() throws Exception {
                 if (count++ == 0)
-                    return new ReadSequence(query, query, null);
+                    return new SingleEndRead(query, query, null);
                 return null;
             }
         };
     }
 
-    private static class FASTAReadReader implements ReadSequenceReader
+    private static class FASTAReadReader implements ReadReader
     {
         FASTAPullParser input;
 
@@ -196,10 +196,10 @@ public class ReadSequenceReaderFactory
         }
 
         @Override
-        public void parse(ObjectHandler<RawRead> handler) throws Exception {
+        public void parse(ObjectHandler<Read> handler) throws Exception {
             handler.init();
             for (FASTASequence seq; (seq = input.nextSequence()) != null;) {
-                ReadSequence read = ReadSequence.createFrom(seq);
+                SingleEndRead read = SingleEndRead.createFrom(seq);
                 handler.handle(read);
             }
             handler.finish();
@@ -211,16 +211,16 @@ public class ReadSequenceReaderFactory
         }
 
         @Override
-        public RawRead next() throws Exception {
+        public Read next() throws Exception {
             FASTASequence seq = input.nextSequence();
             if (seq == null)
                 return null;
             else
-                return ReadSequence.createFrom(seq);
+                return SingleEndRead.createFrom(seq);
         }
     }
 
-    private static class FASTQReadReader implements ReadSequenceReader
+    private static class FASTQReadReader implements ReadReader
     {
         FastqReader reader;
 
@@ -229,10 +229,10 @@ public class ReadSequenceReaderFactory
         }
 
         @Override
-        public void parse(ObjectHandler<RawRead> handler) throws Exception {
+        public void parse(ObjectHandler<Read> handler) throws Exception {
             handler.init();
             for (FastqRead read; (read = reader.next()) != null;) {
-                handler.handle(ReadSequence.createFrom(read));
+                handler.handle(SingleEndRead.createFrom(read));
             }
             handler.finish();
         }
@@ -243,10 +243,10 @@ public class ReadSequenceReaderFactory
         }
 
         @Override
-        public RawRead next() throws Exception {
+        public Read next() throws Exception {
             FastqRead read = reader.next();
             if (read != null)
-                return ReadSequence.createFrom(read);
+                return SingleEndRead.createFrom(read);
             else
                 return null;
         }

@@ -37,13 +37,13 @@ public class ReadSequenceReaderTest
 
     @Test
     public void read() throws Exception {
-        ReadSequenceReader r = ReadSequenceReaderFactory.createFASTQReader(FileResource.open(
+        ReadReader r = ReadReaderFactory.createFASTQReader(FileResource.open(
                 ReadSequenceReaderTest.class, "sample.fastq"));
-        r.parse(new ObjectHandlerBase<RawRead>() {
+        r.parse(new ObjectHandlerBase<Read>() {
             int readCount = 0;
 
             @Override
-            public void handle(RawRead input) throws Exception {
+            public void handle(Read input) throws Exception {
                 _logger.info(input);
                 readCount++;
             }
@@ -57,13 +57,13 @@ public class ReadSequenceReaderTest
 
     @Test
     public void readFASTA() throws Exception {
-        ReadSequenceReader r = ReadSequenceReaderFactory.createFASTAReader(FileResource.open(
+        ReadReader r = ReadReaderFactory.createFASTAReader(FileResource.open(
                 ReadSequenceReaderTest.class, "sample.fa"));
-        r.parse(new ObjectHandlerBase<RawRead>() {
+        r.parse(new ObjectHandlerBase<Read>() {
             int readCount = 0;
 
             @Override
-            public void handle(RawRead input) throws Exception {
+            public void handle(Read input) throws Exception {
                 _logger.info(input);
                 readCount++;
             }

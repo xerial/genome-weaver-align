@@ -22,12 +22,16 @@
 // $URL$ 
 // $Author$
 //--------------------------------------
-package org.utgenome.weaver.align;
+package org.utgenome.weaver.align.record;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.utgenome.gwt.utgb.client.bio.CIGAR;
+import org.utgenome.weaver.align.ACGTSequence;
+import org.utgenome.weaver.align.AlignmentScoreConfig;
+import org.utgenome.weaver.align.Strand;
+import org.utgenome.weaver.align.SuffixInterval;
 
 /**
  * Alignment state in a suffix array

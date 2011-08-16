@@ -171,6 +171,12 @@ public class BitVector
         return new BitVector(this)._xor(other);
     }
 
+    /**
+     * Self-modifying left shift
+     * 
+     * @param len
+     * @return
+     */
     public BitVector _lshift(int len) {
         int blockOffset = len / B;
         long offset = len % B;

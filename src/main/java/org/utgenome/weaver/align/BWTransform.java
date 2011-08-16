@@ -76,13 +76,13 @@ public class BWTransform extends GenomeWeaverCommand
 
         StopWatch timer = new StopWatch();
 
-        // Create IUPAC sequences (forward/reverse) from the given FASTA file
+        // Create packed sequences (forward/reverse) from the given FASTA file
         PackFasta.encode(fastaFile);
 
         BWTFiles forwardDB = new BWTFiles(fastaFile, Strand.FORWARD);
         BWTFiles reverseDB = new BWTFiles(fastaFile, Strand.REVERSE);
 
-        // Create a suffix array and BWT string of the forward/reverse IUPAC sequence
+        // Create a suffix array and BWT string of the forward/reverse ACGT sequence
         buildBWT(forwardDB);
         buildBWT(reverseDB);
 
