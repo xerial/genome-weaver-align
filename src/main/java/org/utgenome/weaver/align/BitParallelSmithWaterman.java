@@ -292,15 +292,15 @@ public class BitParallelSmithWaterman
             hout += (int) ((hp >>> (w - 1)) & 1L);
             hout -= (int) ((hn >>> (w - 1)) & 1L);
 
-            long ph = (hp << 1);
-            long mh = (hn << 1);
+            long hp2 = (hp << 1);
+            long hn2 = (hn << 1);
             if (hin < 0)
-                mh |= 1L;
+                hn2 |= 1L;
             if (hin > 0)
-                ph |= 1L;
+                hp2 |= 1L;
 
-            this.vp[r] = mh | ~(ph | d0);
-            this.vn[r] = ph & d0;
+            this.vp[r] = hn2 | ~(hp2 | d0);
+            this.vn[r] = hp2 & d0;
 
             if (_logger.isTraceEnabled()) {
                 _logger.trace("[%s] j:%2d, block:%d, hin:%2d, hout:%2d, hp:%s, hn:%s, vp:%s, vn:%s, d0:%s", ch, j, r,

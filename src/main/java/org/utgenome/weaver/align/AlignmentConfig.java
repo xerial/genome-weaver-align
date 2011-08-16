@@ -16,24 +16,31 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// ReadSequenceReader.java
-// Since: 2011/04/28
+// AlignmentConfig.java
+// Since: 2011/08/16
 //
 // $URL$ 
 // $Author$
 //--------------------------------------
-package org.utgenome.weaver.align.record;
+package org.utgenome.weaver.align;
 
-import java.io.IOException;
+import org.xerial.util.opt.Argument;
+import org.xerial.util.opt.Option;
 
-import org.xerial.util.ObjectHandler;
-
-public interface ReadSequenceReader
+/**
+ * Alignment command configuration
+ * 
+ * @author leo
+ * 
+ */
+public class AlignmentConfig extends AlignmentScoreConfig
 {
+    @Option(symbol = "r", description = "reference sequence")
+    public String   refSeq;
 
-    public RawRead next() throws Exception;
+    @Option(symbol = "q", description = "single query sequence")
+    public String   query;
 
-    public void parse(ObjectHandler<RawRead> handler) throws Exception;
-
-    public void close() throws IOException;
+    @Argument(name = "read file")
+    public String[] readFiles;
 }

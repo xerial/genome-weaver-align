@@ -35,8 +35,6 @@ import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandlerBase;
 import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
-import org.xerial.util.opt.Argument;
-import org.xerial.util.opt.Option;
 
 public class SFAlign extends GenomeWeaverCommand
 {
@@ -47,44 +45,32 @@ public class SFAlign extends GenomeWeaverCommand
         return "suffix filter alignment";
     }
 
-    @Argument(index = 0)
-    private String fastaFilePrefix;
+    @Override
+    public Object getOptionHolder() {
+        return config;
+    }
 
-    @Argument(index = 1)
-    private String readFile;
-
-    @Option(symbol = "q", description = "query sequence")
-    private String query;
-
-    @Option(symbol = "k", description = "maximum edit distances")
-    private int    maximumEditDistances = 2;
-
-    @Option(symbol = "s", description = "# of read split")
-    private int    numSplitAllowed      = 1;
+    private AlignmentConfig config = new AlignmentConfig();
 
     @Override
     public void execute(String[] args) throws Exception {
 
-        if (query == null && readFile == null)
+        if (config.query == null && config.readFiles == null)
             throw new UTGBException("no query is given");
 
         ReadSequenceReader reader = null;
-        if (query != null) {
-            _logger.info("query sequence: " + query);
-            reader = ReadSequenceReaderFactory.singleQueryReader(query);
+        if (config.query != null) {
+            _logger.info("query sequence: " + config.query);
+            reader = ReadSequenceReaderFactory.singleQueryReader(config.query);
         }
-        else if (readFile != null) {
-            reader = ReadSequenceReaderFactory.createReader(readFile);
+        else if (config.readFiles != null) {
+            reader = ReadSequenceReaderFactory.createReader(config.readFiles);
         }
 
-        BWTFiles forwardDB = new BWTFiles(fastaFilePrefix, Strand.FORWARD);
+        BWTFiles forwardDB = new BWTFiles(config.refSeq, Strand.FORWARD);
         SequenceBoundary b = SequenceBoundary.loadSilk(forwardDB.pacIndex());
 
-        AlignmentScoreConfig config = new AlignmentScoreConfig();
-        config.maximumEditDistances = maximumEditDistances;
-        config.numSplitAlowed = numSplitAllowed;
-
-        query(fastaFilePrefix, reader, config, new Reporter() {
+        query(config, reader, new Reporter() {
             @Override
             public void emit(Object result) {
                 if (_logger.isTraceEnabled())
@@ -94,9 +80,9 @@ public class SFAlign extends GenomeWeaverCommand
 
     }
 
-    public void query(String fastaFilePrefix, ReadSequenceReader readReader, final AlignmentScoreConfig config,
-            final Reporter reporter) throws Exception {
-        final FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaFilePrefix);
+    public void query(final AlignmentConfig config, ReadSequenceReader readReader, final Reporter reporter)
+            throws Exception {
+        final FMIndexOnGenome fmIndex = new FMIndexOnGenome(config.refSeq);
 
         readReader.parse(new ObjectHandlerBase<RawRead>() {
             int          count = 0;

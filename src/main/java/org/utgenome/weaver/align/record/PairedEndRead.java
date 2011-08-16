@@ -35,22 +35,22 @@ import org.xerial.util.StringUtil;
  */
 public class PairedEndRead implements RawRead
 {
-    public final ReadSequence first;
-    public final ReadSequence second;
+    public final RawRead first;
+    public final RawRead second;
 
-    public PairedEndRead(ReadSequence first, ReadSequence second) {
+    public PairedEndRead(RawRead first, RawRead second) {
         this.first = first;
         this.second = second;
     }
 
     @Override
     public String name() {
-        return first.name;
+        return first.name();
     }
 
     @Override
     public String toString() {
-        return StringUtil.join(new ReadSequence[] { first, second }, "\n");
+        return StringUtil.join(new RawRead[] { first, second }, "\n");
     }
 
     @Override

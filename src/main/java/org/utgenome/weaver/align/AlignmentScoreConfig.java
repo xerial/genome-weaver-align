@@ -24,6 +24,8 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import org.xerial.util.opt.Option;
+
 /**
  * Alignment scoring configuration
  * 
@@ -32,18 +34,27 @@ package org.utgenome.weaver.align;
  */
 public class AlignmentScoreConfig
 {
+    @Option(symbol = "k", description = "maximum edit distances")
     public int maximumEditDistances   = 2;
-
-    public int matchScore             = 1;
-    public int mismatchPenalty        = 3;
-    public int gapOpenPenalty         = 11;
-    public int gapExtensionPenalty    = 4;
-    public int splitOpenPenalty       = 5;
-
+    @Option(symbol = "g", description = "# of gap open allowed. default=1")
     public int numGapOpenAllowed      = 1;
+    @Option(symbol = "e", description = "# of gap extension allowed. default=4")
     public int numGapExtensionAllowed = 4;
+    @Option(symbol = "s", description = "# of read split allowed. default=1")
     public int numSplitAlowed         = 1;
 
+    @Option(symbol = "M", description = "match score. default=1")
+    public int matchScore             = 1;
+    @Option(symbol = "N", description = "mismatch penalty. default=3")
+    public int mismatchPenalty        = 3;
+    @Option(symbol = "G", description = "gap open penalty. default=11")
+    public int gapOpenPenalty         = 11;
+    @Option(symbol = "E", description = "gap extension penalty. default=4")
+    public int gapExtensionPenalty    = 4;
+    @Option(symbol = "S", description = "split open penalty. default=5")
+    public int splitOpenPenalty       = 5;
+
+    @Option(symbol = "P", description = "skip indels within P bases from read head and tail")
     public int indelEndSkip           = 5;
 
 }
