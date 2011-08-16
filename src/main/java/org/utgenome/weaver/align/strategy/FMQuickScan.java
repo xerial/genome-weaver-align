@@ -41,14 +41,16 @@ import org.xerial.lens.SilkLens;
  */
 public class FMQuickScan
 {
+    public final Strand         strand;
     public final SuffixInterval si;
     public final BitVector      breakPoint;
     public final int            numMismatches;
     public final Range          longestMatch;
     public final SuffixInterval longestMatchSi;
 
-    public FMQuickScan(SuffixInterval si, BitVector breakPoint, int numMismatches, Range longestMatch,
+    public FMQuickScan(Strand strand, SuffixInterval si, BitVector breakPoint, int numMismatches, Range longestMatch,
             SuffixInterval longestMatchSi) {
+        this.strand = strand;
         this.si = si;
         this.breakPoint = breakPoint;
         this.numMismatches = numMismatches;
@@ -89,6 +91,6 @@ public class FMQuickScan
             longestMatch = new Range(mark, i);
         }
 
-        return new FMQuickScan(si, breakPoint, numMismatches, longestMatch, longestMatchSi);
+        return new FMQuickScan(strand, si, breakPoint, numMismatches, longestMatch, longestMatchSi);
     }
 }

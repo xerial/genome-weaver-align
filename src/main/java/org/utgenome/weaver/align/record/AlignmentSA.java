@@ -36,9 +36,11 @@ import org.utgenome.weaver.align.SuffixInterval;
 /**
  * Alignment state in a suffix array
  * 
+ * @deprecated
  * @author leo
  * 
  */
+@Deprecated
 public class AlignmentSA implements Comparable<AlignmentSA>
 {
     public static enum IndelState {

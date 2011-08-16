@@ -32,12 +32,9 @@ import org.utgenome.weaver.align.AlignmentScoreConfig;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.SiSet;
 import org.utgenome.weaver.align.Strand;
-import org.utgenome.weaver.align.record.AlignmentRecord;
-import org.utgenome.weaver.align.record.AlignmentSA;
 import org.utgenome.weaver.align.record.Read;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
-import org.xerial.util.ObjectHandlerBase;
 import org.xerial.util.log.Logger;
 
 /**
@@ -74,19 +71,8 @@ public class BidirectionalBWT
         this.config = config;
     }
 
-    void report(AlignmentSA result) throws Exception {
-        fmIndex.toGenomeCoordinate(result, new ObjectHandlerBase<AlignmentRecord>() {
-            @Override
-            public void handle(AlignmentRecord r) throws Exception {
-                reporter.emit(r);
-            }
-        });
-    }
-
     void report(BWAState result) throws Exception {
-
         reporter.emit(result);
-
     }
 
     private static enum SearchStart {
@@ -203,7 +189,7 @@ public class BidirectionalBWT
         FMQuickScan scanF = FMQuickScan.scanMismatchLocations(fmIndex, qF, Strand.FORWARD);
         if (scanF.numMismatches == 0) {
             // Found an exact match
-            report(AlignmentSA.exactMatch(config, r.name(), qF, scanF.si, Strand.FORWARD));
+            reporter.emit(scanF);
             return;
         }
 
@@ -212,7 +198,7 @@ public class BidirectionalBWT
         FMQuickScan scanR = FMQuickScan.scanMismatchLocations(fmIndex, qC, Strand.REVERSE);
         if (scanR.numMismatches == 0) {
             // Found an exact match
-            report(AlignmentSA.exactMatch(config, r.name(), qC, scanR.si, Strand.REVERSE));
+            reporter.emit(scanR);
             return;
         }
 
