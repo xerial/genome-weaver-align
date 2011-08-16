@@ -10,8 +10,7 @@ import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.RawRead;
-import org.utgenome.weaver.align.record.ReadSequence;
-import org.xerial.util.ObjectHandler;
+import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.util.log.Logger;
 
 /**
@@ -31,24 +30,17 @@ public class BWAStrategy
     private final int                  numMismatchesAllowed = 1;
     private final AlignmentScoreConfig config               = new AlignmentScoreConfig();
     private final ArrayList<ACGT>      lettersInGenome      = new ArrayList<ACGT>();
-    private ObjectHandler<BWAState>   out;
+    private Reporter                   out;
 
-    public BWAStrategy(FMIndexOnGenome fmIndex) {
+    public BWAStrategy(FMIndexOnGenome fmIndex, Reporter out) {
         this.fmIndex = fmIndex;
+        this.out = out;
 
         CharacterCount C = fmIndex.forwardIndex.getCharacterCount();
         for (ACGT base : ACGT.values()) {
             if (C.getCount(base) > 0) {
                 lettersInGenome.add(base);
             }
-        }
-    }
-
-    public void align(RawRead read, ObjectHandler<BWAState> out) throws Exception {
-        this.out = out;
-        if (ReadSequence.class.isAssignableFrom(read.getClass())) {
-            ReadSequence s = ReadSequence.class.cast(read);
-            align(s);
         }
     }
 
@@ -76,10 +68,10 @@ public class BWAStrategy
 
         AlignmentQueue queue = new AlignmentQueue(config);
         // Set the initial search states
-        queue.add(new BWAState(qF, Strand.FORWARD, SearchDirection.Forward, ExtensionType.MATCH, 0, 0,
-                Score.initial(), fmIndex.wholeSARange()));
-        queue.add(new BWAState(qC, Strand.REVERSE, SearchDirection.Forward, ExtensionType.MATCH, 0, 0,
-                Score.initial(), fmIndex.wholeSARange()));
+        queue.add(new BWAState(qF, Strand.FORWARD, SearchDirection.Forward, ExtensionType.MATCH, 0, 0, Score.initial(),
+                fmIndex.wholeSARange()));
+        queue.add(new BWAState(qC, Strand.REVERSE, SearchDirection.Forward, ExtensionType.MATCH, 0, 0, Score.initial(),
+                fmIndex.wholeSARange()));
 
         // Search iteration
         while (!queue.isEmpty()) {
@@ -184,7 +176,7 @@ public class BWAStrategy
     }
 
     void report(BWAState result) throws Exception {
-        out.handle(result);
+        out.emit(result);
     }
 
 }

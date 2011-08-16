@@ -37,22 +37,21 @@ import org.xerial.util.log.Logger;
 
 public class FMIndexOnGenome
 {
-    private static Logger                     _logger    = Logger.getLogger(FMIndexOnGenome.class);
+    private static Logger           _logger    = Logger.getLogger(FMIndexOnGenome.class);
 
-    private static final int                  windowSize = 64;                                     // Occ table window size 
+    private static final int        windowSize = 64;                                     // Occ table window size 
 
-    public final FMIndex                      forwardIndex;
-    public final FMIndex                      reverseIndex;
-    private final SparseSuffixArray           forwardSA;
-    private final SparseSuffixArray           backwardSA;
-    private final SequenceBoundary            index;
+    public final FMIndex            forwardIndex;
+    public final FMIndex            reverseIndex;
+    private final SparseSuffixArray forwardSA;
+    private final SparseSuffixArray backwardSA;
+    private final SequenceBoundary  index;
 
-    private final long                        N;
-    private final int                         K;
+    private final long              N;
+    private final int               K;
 
-    private final SuffixInterval              wholeRange;
-    private final BidirectionalSuffixInterval wholeRangeBi;
-    private final SuffixInterval[]            initRange;
+    private final SuffixInterval    wholeRange;
+    private final SuffixInterval[]  initRange;
 
     public FMIndexOnGenome(String fastaFilePrefix) throws UTGBException, IOException {
 
@@ -79,7 +78,6 @@ public class FMIndexOnGenome
         reverseIndex = new FMIndexOnOccTable(seqR, windowSize);
         _logger.info("done.");
         this.wholeRange = new SuffixInterval(0L, N);
-        this.wholeRangeBi = new BidirectionalSuffixInterval(wholeRange, wholeRange);
         this.initRange = forwardSearch(Strand.FORWARD, wholeRange);
     }
 
@@ -93,7 +91,6 @@ public class FMIndexOnGenome
         N = n;
         K = k;
         this.wholeRange = new SuffixInterval(0L, N);
-        this.wholeRangeBi = new BidirectionalSuffixInterval(wholeRange, wholeRange);
         this.initRange = forwardSearch(Strand.FORWARD, wholeRange);
     }
 
@@ -112,10 +109,6 @@ public class FMIndexOnGenome
 
     public SuffixInterval wholeSARange() {
         return wholeRange;
-    }
-
-    public BidirectionalSuffixInterval wholeBidirectionalSARange() {
-        return wholeRangeBi;
     }
 
     public SiSet initSet(SearchDirection d) {
@@ -316,4 +309,7 @@ public class FMIndexOnGenome
 
     }
 
+    public SequenceBoundary getSequenceBoundary() {
+        return index;
+    }
 }

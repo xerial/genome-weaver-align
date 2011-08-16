@@ -43,4 +43,11 @@ public class AlignmentConfig extends AlignmentScoreConfig
 
     @Argument(name = "read file")
     public String[] readFiles;
+
+    public static enum Strategy {
+        SF, NFA, BWA
+    }
+
+    @Option(symbol = "m", description = "alignment strategy. sf(suffix filter), nfa, bwa (best-hit first)")
+    public Strategy strategy = Strategy.SF;
 }

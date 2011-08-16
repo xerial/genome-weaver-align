@@ -66,7 +66,7 @@ public class BWAlignTest
 
         File fastaArchive = TestHelper.createTempFileFrom(BWAlignTest.class, "test.fa", new File(tmpDir, "test.fa"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
-        GenomeWeaver.execute(String.format("align %s -q TATAA", fastaArchive.getPath()));
+        GenomeWeaver.execute(String.format("align -m bwa %s -q TATAA", fastaArchive.getPath()));
 
     }
 
@@ -74,12 +74,14 @@ public class BWAlignTest
     public void align2() throws Exception {
         File fastaArchive = TestHelper.createTempFileFrom(BWAlignTest.class, "test2.fa", new File(tmpDir, "test.fa"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
-        GenomeWeaver.execute(String.format("align %s -q ATCTCATGGGA", fastaArchive.getPath()));
+        GenomeWeaver.execute(String.format("align -m bwa %s -q ATCTCATGGGA", fastaArchive.getPath()));
     }
 
     @Test
     public void align3() throws Exception {
+
         File fastaArchive = TestHelper.createTempFileFrom(BWAlignTest.class, "test2.fa", new File(tmpDir, "test2.fa"));
+
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
 
         BWAlign.querySingle(fastaArchive.getPath(), "TAAAGTAT", new ObjectHandlerBase<AlignmentRecord>() {
@@ -119,7 +121,7 @@ public class BWAlignTest
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
         File fastqArchive = TestHelper.createTempFileFrom(BWAlignTest.class, "record/sample.fastq.gz", new File(tmpDir,
                 "sample.fastq.gz"));
-        GenomeWeaver.execute(String.format("align %s %s", fastaArchive, fastqArchive));
+        GenomeWeaver.execute(String.format("align -m bwa %s %s", fastaArchive, fastqArchive));
     }
 
     @Test
