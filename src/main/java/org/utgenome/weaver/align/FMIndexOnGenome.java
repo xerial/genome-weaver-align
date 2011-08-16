@@ -29,11 +29,7 @@ import java.io.IOException;
 import org.utgenome.UTGBException;
 import org.utgenome.weaver.align.BWTransform.BWT;
 import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
-import org.utgenome.weaver.align.record.AlignmentRecord;
-import org.utgenome.weaver.align.record.AlignmentSA;
 import org.utgenome.weaver.align.strategy.SearchDirection;
-import org.xerial.lens.SilkLens;
-import org.xerial.util.ObjectHandler;
 import org.xerial.util.log.Logger;
 
 public class FMIndexOnGenome
@@ -54,32 +50,31 @@ public class FMIndexOnGenome
     private final SuffixInterval    wholeRange;
     private final SuffixInterval[]  initRange;
 
-    public FMIndexOnGenome(String fastaFilePrefix) throws UTGBException, IOException {
+    public static FMIndexOnGenome load(String fastaFilePrefix) throws UTGBException, IOException {
 
         _logger.info("Preparing FM-indexes");
         BWTFiles forwardDB = new BWTFiles(fastaFilePrefix, Strand.FORWARD);
         BWTFiles backwardDB = new BWTFiles(fastaFilePrefix, Strand.REVERSE);
 
         // Load the boundary information of the concatenated chr sequences 
-        index = SequenceBoundary.loadSilk(forwardDB.pacIndex());
-        N = index.totalSize;
-        K = ACGT.values().length;
+        SequenceBoundary index = SequenceBoundary.loadSilk(forwardDB.pacIndex());
+        long N = index.totalSize;
+        int K = ACGT.values().length;
 
         // Load sparse suffix arrays
         _logger.debug("Loading sparse suffix arrays");
-        forwardSA = SparseSuffixArray.loadFrom(forwardDB.sparseSuffixArray());
-        backwardSA = SparseSuffixArray.loadFrom(backwardDB.sparseSuffixArray());
+        SparseSuffixArray forwardSA = SparseSuffixArray.loadFrom(forwardDB.sparseSuffixArray());
+        SparseSuffixArray backwardSA = SparseSuffixArray.loadFrom(backwardDB.sparseSuffixArray());
 
         _logger.debug("Loading BWT files");
         ACGTSequence seqF = ACGTSequence.loadFrom(forwardDB.bwt());
         ACGTSequence seqR = ACGTSequence.loadFrom(backwardDB.bwt());
 
         _logger.debug("Constructing Occ Tables");
-        forwardIndex = new FMIndexOnOccTable(seqF, windowSize);
-        reverseIndex = new FMIndexOnOccTable(seqR, windowSize);
+        FMIndex forwardIndex = new FMIndexOnOccTable(seqF, windowSize);
+        FMIndex reverseIndex = new FMIndexOnOccTable(seqR, windowSize);
         _logger.info("done.");
-        this.wholeRange = new SuffixInterval(0L, N);
-        this.initRange = forwardSearch(Strand.FORWARD, wholeRange);
+        return new FMIndexOnGenome(forwardIndex, reverseIndex, forwardSA, backwardSA, index, N, K);
     }
 
     private FMIndexOnGenome(FMIndex forwardIndex, FMIndex reverseIndex, SparseSuffixArray forwardSA,
@@ -244,33 +239,6 @@ public class FMIndexOnGenome
             return p;
         }
         return null;
-    }
-
-    public void toGenomeCoordinate(AlignmentSA result, ObjectHandler<AlignmentRecord> reporter) throws Exception {
-        if (_logger.isTraceEnabled())
-            _logger.info(SilkLens.toSilk("alignment", result));
-
-        final long querySize = result.common.query.textSize();
-
-        for (long i = result.suffixInterval.lowerBound; i < result.suffixInterval.upperBound; ++i) {
-            PosOnGenome p = toGenomeCoordinate(i, querySize, result.strand);
-            if (p != null) {
-                AlignmentRecord rec = new AlignmentRecord();
-                rec.chr = p.chr;
-                rec.start = p.pos;
-                rec.strand = result.strand;
-                rec.score = result.alignmentScore;
-                rec.numMismatches = result.numMismatches;
-                // workaround for Picard tools, which cannot accept base character other than ACGT 
-                rec.querySeq = result.strand == Strand.FORWARD ? result.common.query.toString() : result.common.query
-                        .reverse().toString();
-                rec.readName = result.common.queryName;
-                rec.end = p.pos + result.wordIndex;
-                rec.setCIGAR(result.cigar().toCIGARString());
-                reporter.handle(rec);
-            }
-        }
-
     }
 
     public SequenceBoundary getSequenceBoundary() {

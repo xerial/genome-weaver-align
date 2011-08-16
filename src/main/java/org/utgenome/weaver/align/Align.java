@@ -86,7 +86,7 @@ public class Align extends GenomeWeaverCommand
         BWTFiles forwardDB = new BWTFiles(config.refSeq, Strand.FORWARD);
         SequenceBoundary b = SequenceBoundary.loadSilk(forwardDB.pacIndex());
 
-        FMIndexOnGenome fmIndex = new FMIndexOnGenome(config.refSeq);
+        FMIndexOnGenome fmIndex = FMIndexOnGenome.load(config.refSeq);
         Reporter reporter = new SAMOutput(fmIndex.getSequenceBoundary(), new StandardOutputStream());
         query(fmIndex, config, reader, reporter);
     }

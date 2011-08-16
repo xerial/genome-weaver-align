@@ -79,7 +79,7 @@ public class BWAlignTest
 
         File fastaArchive = TestHelper.createTempFileFrom(BWAlignTest.class, "test2.fa", new File(tmpDir, "test2.fa"));
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
-        FMIndexOnGenome fmIndex = new FMIndexOnGenome(fastaArchive.getPath());
+        FMIndexOnGenome fmIndex = FMIndexOnGenome.load(fastaArchive.getPath());
 
         Align.querySingle(fmIndex, "TAAAGTAT", new Reporter() {
             @Override
