@@ -72,8 +72,8 @@ public class SAMOutput implements ObjectHandler<AlignmentRecord>, Reporter
     @Override
     public void emit(Object result) throws Exception {
 
-        if (_logger.isDebugEnabled())
-            _logger.debug(SilkLens.toSilk("result", result));
+        if (_logger.isTraceEnabled())
+            _logger.trace(SilkLens.toSilk("result", result));
 
         if (result != null && result.getClass().isAssignableFrom(AlignmentRecord.class)) {
             AlignmentRecord r = (AlignmentRecord) result;

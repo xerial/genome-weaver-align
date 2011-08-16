@@ -47,7 +47,12 @@ public class AlignmentConfig extends AlignmentScoreConfig
     public List<String> readFiles;
 
     public static enum Strategy {
-        SF, BD, BWA
+        SF("suffix filter"), BD("bi-directional search"), BWA("bwa");
+        public final String description;
+
+        private Strategy(String description) {
+            this.description = description;
+        }
     }
 
     @Option(symbol = "m", description = "alignment strategy. sf(suffix filter), bd(bidirectinal search), bwa (best-hit first)")

@@ -178,7 +178,8 @@ public class BidirectionalBWT
 
         // TODO PE mapping
         ACGTSequence qF = r.getRead(0);
-        _logger.debug("query: " + qF);
+        if (_logger.isTraceEnabled())
+            _logger.trace("query: " + qF);
 
         if (qF.fastCount(ACGT.N, 0, qF.textSize()) > config.maximumEditDistances) {
             // too many Ns in the query sequence
@@ -214,6 +215,8 @@ public class BidirectionalBWT
         queue.add(prepareInitialAlignmentState(qF, scanF, Strand.FORWARD));
         queue.add(prepareInitialAlignmentState(qC, scanR, Strand.REVERSE));
 
+        int numFMIndexSearches = 0;
+        final int m = (int) qF.textSize();
         // Search iteration
         while (!queue.isEmpty()) {
             BWAState c = queue.poll(); // current 
@@ -224,14 +227,12 @@ public class BidirectionalBWT
                 continue;
             }
 
-            if (c.isFinished()) {
-                continue;
-            }
-
             int upperBound = c.getUpperBoundOfScore(config);
 
             if (upperBound < queue.bestScore)
                 continue; // no need to proceed
+
+            int posInRead = c.cursor.getIndex();
 
             int remainingDist = config.maximumEditDistances
                     - (c.score.numMismatches + c.score.numGapOpens + c.score.numGapExtend);
@@ -252,12 +253,13 @@ public class BidirectionalBWT
             SiSet[] next = new SiSet[ACGT.exceptN.length];
             for (ACGT ch : ACGT.exceptN) {
                 next[ch.code] = c.nextSi(fmIndex, ch);
+                ++numFMIndexSearches;
             }
 
             // Search for indels
             switch (c.extensionType) {
             case MATCH: { // gap open
-                if (c.gapOpenIsAllowed(config) && upperBound - config.gapOpenPenalty > queue.bestScore) {
+                if (c.gapOpenIsAllowed(config, posInRead, m) && upperBound - config.gapOpenPenalty > queue.bestScore) {
                     // insertion to reference
                     queue.add(c.startInsertion(config));
                     // deletion from reference
@@ -306,7 +308,7 @@ public class BidirectionalBWT
 
         }
         if (_logger.isDebugEnabled())
-            _logger.debug("push count: %,d", queue.pushCount);
+            _logger.debug("FM Search:%d, push count: %,d", numFMIndexSearches, queue.pushCount);
 
     }
 

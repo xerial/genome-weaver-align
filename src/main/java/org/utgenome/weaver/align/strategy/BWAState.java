@@ -35,8 +35,9 @@ public class BWAState
         this.si = other.si;
     }
 
-    public boolean gapOpenIsAllowed(AlignmentScoreConfig config) {
-        return score.numGapOpens < config.numGapOpenAllowed;
+    public boolean gapOpenIsAllowed(AlignmentScoreConfig config, int posInRead, int m) {
+        return score.numGapOpens < config.numGapOpenAllowed && posInRead > config.indelEndSkip
+                && (m - posInRead) > config.indelEndSkip;
     }
 
     public boolean gapExtensionIsAllowed(AlignmentScoreConfig config) {

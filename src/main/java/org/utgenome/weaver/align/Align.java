@@ -79,8 +79,11 @@ public class Align extends GenomeWeaverCommand
             _logger.info("query sequence: " + config.query);
             reader = ReadReaderFactory.singleQueryReader(config.query);
         }
-        else if (config.readFiles != null) {
+        else if (config.readFiles != null && !config.readFiles.isEmpty()) {
             reader = ReadReaderFactory.createReader(config.readFiles);
+        }
+        else {
+            throw new UTGBException("no query is given");
         }
 
         BWTFiles forwardDB = new BWTFiles(config.refSeq, Strand.FORWARD);
@@ -112,6 +115,7 @@ public class Align extends GenomeWeaverCommand
             aligner = new BWAAligner(fmIndex, config, reporter);
             break;
         }
+        _logger.debug("Alignment mode: %s", config.strategy.description);
 
         readReader.parse(aligner);
     }

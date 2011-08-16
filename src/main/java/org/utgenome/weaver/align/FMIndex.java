@@ -55,7 +55,7 @@ public interface FMIndex
      * Follow the suffix link using the equation: SA[x] - 1 = C(x) + Rank(c, x).
      * 
      * @param index
-     *            index x in the suffix array
+     *            x index x in the suffix array
      * @return index p in the suffix array that satisfies SA[p] = SA[x] - 1.
      */
     public long suffixLink(long index);
