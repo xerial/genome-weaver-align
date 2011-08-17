@@ -97,6 +97,13 @@ public class Cursor
         return flag & 1;
     }
 
+    public int getOffsetFromSearchHead() {
+        int offset = isForwardSearch() ? cursorF : cursorB;
+        if (getStrand() == Strand.REVERSE)
+            offset = getReadLength() - offset;
+        return offset;
+    }
+
     public ACGT nextACGT(ACGTSequence[] q) {
         int strand = flag & 1;
         return q[strand].getACGT(getNextACGTIndex());
@@ -115,6 +122,10 @@ public class Cursor
 
     public SearchDirection getSearchDirection() {
         return SearchDirection.decode((flag >>> 1) & 0x03);
+    }
+
+    public boolean isForwardSearch() {
+        return getSearchDirection().isForward;
     }
 
     Cursor split() {

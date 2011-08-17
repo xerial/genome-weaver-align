@@ -209,8 +209,8 @@ public class BitParallelSmithWaterman
                     //peq[i][bMax - 1] |= mask;
                 }
             }
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("peq:%s", qMask);
+            if (_logger.isTraceEnabled()) {
+                _logger.trace("peq:%s", qMask);
             }
             return align(ref);
         }
@@ -237,8 +237,8 @@ public class BitParallelSmithWaterman
                 for (int r = 0; r < b; ++r) {
                     int nextScore = alignBlock(j, ch, r, carry);
                     D[r] += nextScore;
-                    if (_logger.isDebugEnabled()) {
-                        _logger.debug("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore, r,
+                    if (_logger.isTraceEnabled()) {
+                        _logger.trace("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore, r,
                                 D[r]);
                     }
                     carry = nextScore;
@@ -248,8 +248,8 @@ public class BitParallelSmithWaterman
                     b++;
                     int nextScore = alignBlock(j, ch, b - 1, carry);
                     D[b - 1] = D[b - 2] + w - carry + nextScore;
-                    if (_logger.isDebugEnabled()) {
-                        _logger.debug("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore,
+                    if (_logger.isTraceEnabled()) {
+                        _logger.trace("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore,
                                 b - 1, D[b - 1]);
                     }
                 }
@@ -261,8 +261,8 @@ public class BitParallelSmithWaterman
 
                 if (b == bMax) {
                     if (D[b - 1] <= W + k) {
-                        if (_logger.isDebugEnabled())
-                            _logger.debug("match at %d", j);
+                        if (_logger.isTraceEnabled())
+                            _logger.trace("match at %d", j);
                     }
 
                     if (bestHit == null) {

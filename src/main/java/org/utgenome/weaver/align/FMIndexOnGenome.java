@@ -32,6 +32,12 @@ import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.utgenome.weaver.align.strategy.SearchDirection;
 import org.xerial.util.log.Logger;
 
+/**
+ * FM indexes for forward/reverse genome sequences
+ * 
+ * @author leo
+ * 
+ */
 public class FMIndexOnGenome
 {
     private static Logger           _logger    = Logger.getLogger(FMIndexOnGenome.class);
@@ -41,7 +47,7 @@ public class FMIndexOnGenome
     public final FMIndex            forwardIndex;
     public final FMIndex            reverseIndex;
     private final SparseSuffixArray forwardSA;
-    private final SparseSuffixArray backwardSA;
+    private final SparseSuffixArray reverseSA;
     private final SequenceBoundary  index;
 
     private final long              N;
@@ -82,7 +88,7 @@ public class FMIndexOnGenome
         this.forwardIndex = forwardIndex;
         this.reverseIndex = reverseIndex;
         this.forwardSA = forwardSA;
-        this.backwardSA = backwardSA;
+        this.reverseSA = backwardSA;
         this.index = index;
         N = n;
         K = k;
@@ -213,11 +219,24 @@ public class FMIndexOnGenome
         return nextSiF;
     }
 
-    public long toForwardSequenceIndex(long saIndex, Strand strand) {
+    public long toCoordinate(long saIndex, Strand strand, SearchDirection searchDirection) {
+        //  strand/search direction -> fmIndex
+        //  0/0 -> 1
+        //  0/1 -> 0
+        //  1/0 -> 0
+        //  1/1 -> 1
+        int fm = ~(strand.index ^ searchDirection.index) & 1;
+        if (fm == 0)
+            return forwardSA.get(saIndex, forwardIndex);
+        else
+            return reverseIndex.textSize() - reverseSA.get(saIndex, reverseIndex);
+    }
+
+    public long toCoordinate(long saIndex, Strand strand) {
         long pos = -1;
         switch (strand) {
         case FORWARD:
-            long sa = backwardSA.get(saIndex, reverseIndex);
+            long sa = reverseSA.get(saIndex, reverseIndex);
             pos = reverseIndex.textSize() - sa;
             break;
         case REVERSE:
@@ -232,7 +251,7 @@ public class FMIndexOnGenome
     }
 
     public PosOnGenome toGenomeCoordinate(long saIndex, long querySize, Strand strand) throws UTGBException {
-        long pos = toForwardSequenceIndex(saIndex, strand);
+        long pos = toCoordinate(saIndex, strand);
         if (strand == Strand.FORWARD) {
             pos -= querySize;
         }

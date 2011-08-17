@@ -25,7 +25,9 @@
 package org.utgenome.weaver.align.strategy;
 
 /**
- * Search direction of alignment
+ * Search direction of a read. For a read [0, m), forward and
+ * bidirectional-forward search traces the read from 0 to m, and backward search
+ * traces the read from m-1 to 0.
  * 
  * @author leo
  * 

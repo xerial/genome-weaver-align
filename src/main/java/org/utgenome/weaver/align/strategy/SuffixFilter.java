@@ -30,6 +30,8 @@ import java.util.PriorityQueue;
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.AlignmentScoreConfig;
+import org.utgenome.weaver.align.BitParallelSmithWaterman;
+import org.utgenome.weaver.align.BitParallelSmithWaterman.SWResult;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.QueryMask;
 import org.utgenome.weaver.align.SiSet;
@@ -63,6 +65,7 @@ public class SuffixFilter
 
     private final FMIndexOnGenome      fmIndex;
     private final AlignmentScoreConfig config;
+    private final ACGTSequence         reference;
     private final int                  k;
     private final int                  m;
 
@@ -82,15 +85,21 @@ public class SuffixFilter
      */
     public class SearchState
     {
-        public final Cursor  cursor;
-        public final SiSet   si;
+        private final SearchState prev;
+        public final Cursor       cursor;
+        public final SiSet        si;
         // bit flags holding states at column [index - k, index + k + 1], where k is # of allowed mismatches 
-        private final long[] automaton;
+        private final long[]      automaton;
         // 32 bit = searchFlag(5) + currentBase(3) + hasHit(1) + minK (8) + expectedK(8) 
-        private int          state;
+        private int               state;
 
         public int getLowerBoundOfK() {
             return (state >>> 9) & 0xFF;
+        }
+
+        public void setLowerBoundOfK(int diff) {
+            state &= ~(0xFF << 9);
+            state |= (diff & 0xFF) << 9;
         }
 
         public int getExpectedK() {
@@ -129,7 +138,9 @@ public class SuffixFilter
             return (state & (1 << ch.code)) != 0;
         }
 
-        SearchState(ACGT ch, Cursor cursor, SiSet si, long[] automaton, int minK, boolean hasHit, int expectedK) {
+        SearchState(SearchState prev, ACGT ch, Cursor cursor, SiSet si, long[] automaton, int minK, boolean hasHit,
+                int expectedK) {
+            this.prev = prev;
             this.cursor = cursor;
             this.si = si;
             this.automaton = automaton;
@@ -143,8 +154,9 @@ public class SuffixFilter
          * @param strand
          * @param searchDirection
          */
-        public SearchState(Cursor cursor, int expectedK) {
-            this(ACGT.N, cursor, fmIndex.initSet(cursor.getSearchDirection()), new long[k + 1], 0, false, expectedK);
+        public SearchState(SearchState prev, Cursor cursor, int expectedK) {
+            this(prev, ACGT.N, cursor, fmIndex.initSet(cursor.getSearchDirection()), new long[k + 1], 0, false,
+                    expectedK);
             // Activate the diagonal states 
             for (int i = 0; i <= k; ++i) {
                 automaton[i] = 1L << (k + i);
@@ -152,11 +164,11 @@ public class SuffixFilter
         }
 
         public SuffixInterval siF() {
-            return si.getForward(currentACGT());
+            return prev == null ? null : prev.si.getForward(currentACGT());
         }
 
         public SuffixInterval siB() {
-            return si.getBackward(currentACGT());
+            return prev == null ? null : prev.si.getBackward(currentACGT());
         }
 
         String showNFAState(long[] automaton) {
@@ -210,8 +222,8 @@ public class SuffixFilter
                 for (int i = 0; i < height; ++i) {
                     nextAutomaton[i] = 1L << (height + i - 1);
                 }
-                return new SearchState(ch, cursor.split(), fmIndex.initSet(cursor.getSearchDirection()), nextAutomaton,
-                        minK, hasHit(), getExpectedK());
+                return new SearchState(this, ch, cursor.split(), fmIndex.initSet(cursor.getSearchDirection()),
+                        nextAutomaton, minK, hasHit(), getExpectedK());
             }
             else
                 return null;
@@ -271,7 +283,8 @@ public class SuffixFilter
                 trimmed[i] = nextAutomaton[i + nm] >>> 1;
             }
             //_logger.debug("\n" + showNFAState(trimmed));
-            return new SearchState(ch, nextCursor, nextSi, trimmed, getLowerBoundOfK() + nm, foundMatch, getExpectedK());
+            return new SearchState(this, ch, nextCursor, nextSi, trimmed, getLowerBoundOfK() + nm, foundMatch,
+                    getExpectedK());
         }
 
     }
@@ -292,6 +305,7 @@ public class SuffixFilter
      */
     public SuffixFilter(FMIndexOnGenome fmIndex, ACGTSequence reference, AlignmentScoreConfig config, long m) {
         this.fmIndex = fmIndex;
+        this.reference = reference;
         this.config = config;
         this.k = config.maximumEditDistances;
         this.m = (int) m;
@@ -387,6 +401,12 @@ public class SuffixFilter
             }
         }
 
+        /**
+         * @throws Exception
+         */
+        /**
+         * @throws Exception
+         */
         public void align_internal() throws Exception {
 
             if (q[0].fastCount(ACGT.N, 0, m) > config.maximumEditDistances) {
@@ -422,11 +442,11 @@ public class SuffixFilter
             if (scanF.numMismatches <= k) {
                 if (scanF.longestMatch.start != 0 && scanF.longestMatch.start < m) {
                     // add bidirectional search state
-                    queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.BidirectionalForward, m,
+                    queue.add(new SearchState(null, new Cursor(Strand.FORWARD, SearchDirection.BidirectionalForward, m,
                             scanF.longestMatch.start, scanF.longestMatch.start, null), scanF.numMismatches));
                 }
                 else {
-                    queue.add(new SearchState(new Cursor(Strand.FORWARD, SearchDirection.Forward, m, 0, 0, null),
+                    queue.add(new SearchState(null, new Cursor(Strand.FORWARD, SearchDirection.Forward, m, 0, 0, null),
                             scanF.numMismatches));
                 }
             }
@@ -435,12 +455,13 @@ public class SuffixFilter
                 if (scanF.numMismatches > scanR.numMismatches) {
                     if (scanR.longestMatch.start != 0 && scanR.longestMatch.start < m) {
                         // add bidirectional search state
-                        queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward, m,
-                                scanR.longestMatch.start, scanR.longestMatch.start, null), scanR.numMismatches));
+                        queue.add(new SearchState(null, new Cursor(Strand.REVERSE,
+                                SearchDirection.BidirectionalForward, m, scanR.longestMatch.start,
+                                scanR.longestMatch.start, null), scanR.numMismatches));
                     }
                 }
                 else {
-                    queue.add(new SearchState(new Cursor(Strand.REVERSE, SearchDirection.Forward, m, 0, 0, null),
+                    queue.add(new SearchState(null, new Cursor(Strand.REVERSE, SearchDirection.Forward, m, 0, 0, null),
                             scanR.numMismatches));
                 }
             }
@@ -448,7 +469,7 @@ public class SuffixFilter
             while (!queue.isEmpty()) {
                 SearchState c = queue.poll();
                 if (_logger.isTraceEnabled()) {
-                    _logger.trace("cursor: %s", c);
+                    _logger.trace("state: %s", c);
                 }
 
                 if (c.isFinished())
@@ -544,15 +565,41 @@ public class SuffixFilter
 
         private void reportAlignment(SearchState c) throws Exception {
 
-            // TODO add verify phase
-            SuffixInterval siF = c.siF();
-            SuffixInterval siB = c.siB();
+            // Verification phase
+            SuffixInterval si = c.cursor.isForwardSearch() ? c.siF() : c.siB();
+            if (si != null && si.isUniqueHit()) {
+                long seqIndex = fmIndex
+                        .toCoordinate(si.lowerBound, c.cursor.getStrand(), c.cursor.getSearchDirection());
+                int offset = c.cursor.getOffsetFromSearchHead();
+                seqIndex -= offset;
 
-            if (c.getLowerBoundOfK() < minMismatches) {
-                minMismatches = c.getLowerBoundOfK();
+                if (seqIndex < 0) {
+                    return; // ignore the match at cycle boundary
+                }
+
+                int nm = c.getLowerBoundOfK();
+                ACGTSequence ref = reference.subSequence(seqIndex, seqIndex + c.cursor.getReadLength());
+                ACGTSequence query = q[c.cursor.getStrandIndex()];
+                if (c.cursor.getStrand() == Strand.REVERSE)
+                    query = query.reverse();
+
+                SWResult alignment = BitParallelSmithWaterman.alignBlock(ref, query, nm);
+                _logger.debug(SilkLens.toSilk("sw", alignment));
+
+                if (alignment == null)
+                    return; // no match
+
+                if (alignment.diff < nm) {
+                    c.setLowerBoundOfK(alignment.diff);
+                }
+
+                if (c.getLowerBoundOfK() < minMismatches) {
+                    minMismatches = c.getLowerBoundOfK();
+                }
+
+                out.emit(c);
             }
 
-            out.emit(c);
         }
 
         private int numFMIndexSearches  = 0;
@@ -578,7 +625,7 @@ public class SuffixFilter
                 cursor = cursor.next();
                 ++numExtend;
             }
-            return new SearchState(ch, cursor, siSet, null, c.getLowerBoundOfK(), true, c.getExpectedK());
+            return new SearchState(null, ch, cursor, siSet, null, c.getLowerBoundOfK(), true, c.getExpectedK());
         }
 
     }

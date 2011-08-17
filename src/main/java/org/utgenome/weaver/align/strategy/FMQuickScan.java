@@ -93,4 +93,5 @@ public class FMQuickScan
 
         return new FMQuickScan(strand, si, breakPoint, numMismatches, longestMatch, longestMatchSi);
     }
+
 }
