@@ -27,7 +27,6 @@ package org.utgenome.weaver.align;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
-import org.utgenome.weaver.align.BitParallelSmithWaterman.SWResult;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.log.Logger;
 

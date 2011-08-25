@@ -26,6 +26,7 @@ package org.utgenome.weaver.align;
 
 import java.util.Arrays;
 
+import org.utgenome.weaver.align.record.SWResult;
 import org.xerial.util.log.Logger;
 
 /**
@@ -132,17 +133,6 @@ public class BitParallelSmithWaterman
 
         AlignBlocks a = new AlignBlocks(w, (int) query.textSize(), k);
         return a.align(ref, query);
-    }
-
-    public static class SWResult
-    {
-        public final int tailPos;
-        public final int diff;
-
-        public SWResult(int tailPos, int diff) {
-            this.tailPos = tailPos;
-            this.diff = diff;
-        }
     }
 
     /**

@@ -76,7 +76,7 @@ public class Cursor
         return p;
     }
 
-    private int getCursorRange() {
+    public int getCursorRange() {
         return cursorF - cursorB;
     }
 
@@ -97,10 +97,10 @@ public class Cursor
         return flag & 1;
     }
 
-    public int getOffsetFromSearchHead() {
+    public int getOffsetFromSearchHead(int fragmentLength) {
         int offset = isForwardSearch() ? cursorF : cursorB;
         if (getStrand() == Strand.REVERSE)
-            offset = getReadLength() - offset;
+            offset = fragmentLength - offset;
         return offset;
     }
 
@@ -129,11 +129,9 @@ public class Cursor
     }
 
     Cursor split() {
-        int cursor = cursorF;
-        if (getSearchDirection() == SearchDirection.Backward)
-            cursor = cursorB;
-
-        return new Cursor(flag, cursor, cursor, this);
+        int cursor = isForwardSearch() ? cursorF : cursorB;
+        Cursor s = new Cursor(flag, cursor, cursor, this);
+        return s;
     }
 
     public boolean hasSplit() {
@@ -141,7 +139,6 @@ public class Cursor
     }
 
     public Cursor next() {
-        Strand strand = getStrand();
         int nextF = cursorF;
         int nextB = cursorB;
         SearchDirection d = getSearchDirection();
@@ -163,7 +160,7 @@ public class Cursor
             }
             break;
         }
-        return new Cursor(strand, d, getReadLength(), nextF, nextB, split);
+        return new Cursor(getStrand(), d, getReadLength(), nextF, nextB, split);
     }
 
     public SiSet nextSi(FMIndexOnGenome fmIndex, SiSet si, ACGT currentBase) {

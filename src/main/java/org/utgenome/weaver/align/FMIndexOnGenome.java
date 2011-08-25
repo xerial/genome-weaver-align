@@ -229,7 +229,7 @@ public class FMIndexOnGenome
         if (fm == 0)
             return forwardSA.get(saIndex, forwardIndex);
         else
-            return reverseIndex.textSize() - reverseSA.get(saIndex, reverseIndex);
+            return N - reverseSA.get(saIndex, reverseIndex);
     }
 
     public long toCoordinate(long saIndex, Strand strand) {

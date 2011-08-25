@@ -88,4 +88,12 @@ public class SuffixFilterTest
 
     }
 
+    @Test
+    public void clip() throws Exception {
+        ACGTSequence q = new ACGTSequence("AAGCCTAGGGTCTTT");
+        SuffixFilter f = new SuffixFilter(fmIndex, ref, config, q.textSize());
+        f.align(q);
+
+    }
+
 }
