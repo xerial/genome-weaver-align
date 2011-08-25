@@ -416,13 +416,6 @@ public class SuffixFilter
                     }
                 }
 
-                if (scanF.numMismatches != scanR.numMismatches) {
-                    if (sR != null && scanF.numMismatches < scanR.numMismatches)
-                        sR.lowerThePrioity(m);
-                    else if (sF != null)
-                        sF.lowerThePrioity(m);
-                }
-
                 if (sF != null)
                     queue.add(sF);
                 if (sR != null)
@@ -586,7 +579,8 @@ public class SuffixFilter
                     query = query.reverse();
 
                 SWResult alignment = BitParallelSmithWaterman.alignBlock(ref, query, nm);
-                hit = new ReadHit(x, fragmentLength, alignment.diff, cursor.getStrand(), null);
+                if (alignment != null)
+                    hit = new ReadHit(x, fragmentLength, alignment.diff, cursor.getStrand(), null);
             }
             else {
                 // TODO multiple hits
@@ -598,7 +592,7 @@ public class SuffixFilter
 
         private void reportAlignment(SearchState c) throws Exception {
 
-            // TODO split alignment. Issue 18
+            // Verification phase
             if (c.split != null) {
                 // split alignment
                 int splitLen = c.split.cursor.getProcessedBases();
@@ -606,9 +600,11 @@ public class SuffixFilter
                 ReadHit alignment = verify(c, m1, true);
                 ReadHit splitAlignment = verify(c.split, splitLen, true);
                 if (alignment == null || splitAlignment == null)
-                    return;
+                    return; // no match within k mismaches
 
                 int diff = alignment.diff + splitAlignment.diff + 1;
+
+                // update the lower bound of mismaches
                 c.setLowerBoundOfK(diff);
                 if (c.getLowerBoundOfK() < minMismatches)
                     minMismatches = c.getLowerBoundOfK();
@@ -619,10 +615,10 @@ public class SuffixFilter
                     out.emit(splitAlignment.addSplit(alignment));
             }
             else {
-                // Verification phase
+                // single hit
                 ReadHit alignment = verify(c, c.cursor.getFragmentLength(), false);
                 if (alignment == null)
-                    return; // no match
+                    return; // no match within k mismatches
 
                 // update the lower bound of mismatches
                 c.setLowerBoundOfK(alignment.diff);
@@ -669,43 +665,6 @@ public class SuffixFilter
         for (int i = s.length() - 1; i >= 0; --i)
             out.append(s.charAt(i));
         return out.toString();
-    }
-
-    /**
-     * Candidate genome position of the alignment
-     * 
-     * @author leo
-     * 
-     */
-    private static class CandidatePos
-    {
-
-        public final long         pos;
-        public final int          k;
-        public final CandidatePos chain;
-
-        public CandidatePos(long pos, int k, CandidatePos chain) {
-            this.pos = pos;
-            this.k = k;
-            this.chain = chain;
-        }
-
-        public static CandidatePos createFrom(SearchState s, FMIndexOnGenome fmIndex) {
-            SuffixInterval si = s.currentSi;
-            Cursor cursor = s.cursor;
-
-            long seqIndex = fmIndex.toCoordinate(si.lowerBound, cursor.getStrand(), cursor.getSearchDirection());
-            int offset = cursor.getCursorRange();
-            long x = seqIndex - offset;
-
-            return null;
-        }
-
-    }
-
-    private static class Verifier
-    {
-
     }
 
 }
