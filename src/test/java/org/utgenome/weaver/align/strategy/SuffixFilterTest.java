@@ -46,8 +46,15 @@ public class SuffixFilterTest
     }
 
     @Test
+    public void oneMismatchAtTail() throws Exception {
+        ACGTSequence q = new ACGTSequence("GCCTAA");
+        SuffixFilter f = new SuffixFilter(fmIndex, ref, config, q.textSize());
+        f.align(q);
+    }
+
+    @Test
     public void oneMismatch() throws Exception {
-        ACGTSequence q = new ACGTSequence("GCGTAG");
+        ACGTSequence q = new ACGTSequence("GCGTAGTT");
         SuffixFilter f = new SuffixFilter(fmIndex, ref, config, q.textSize());
         f.align(q);
     }

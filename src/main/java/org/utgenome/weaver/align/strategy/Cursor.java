@@ -60,6 +60,10 @@ public class Cursor
         return flag >>> 3;
     }
 
+    public int getFragmentLength() {
+        return isForwardSearch() ? getReadLength() - cursorB : cursorF;
+    }
+
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
@@ -97,10 +101,14 @@ public class Cursor
         return flag & 1;
     }
 
-    public int getOffsetFromSearchHead(int fragmentLength) {
+    public int getOffsetFromSearchHead(boolean isSplit) {
+        // read:   |   |------|       |
+        //         0   cB     cF      read length
         int offset = isForwardSearch() ? cursorF : cursorB;
+        if (isSplit)
+            offset -= cursorB;
         if (getStrand() == Strand.REVERSE)
-            offset = fragmentLength - offset;
+            offset = getFragmentLength() - offset;
         return offset;
     }
 

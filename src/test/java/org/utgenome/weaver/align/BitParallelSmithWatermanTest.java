@@ -24,9 +24,10 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
+import org.utgenome.weaver.align.record.SWResult;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.log.Logger;
 

@@ -40,11 +40,14 @@ import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.Read;
+import org.utgenome.weaver.align.record.ReadHit;
 import org.utgenome.weaver.align.record.SWResult;
 import org.utgenome.weaver.align.record.SingleEndRead;
+import org.utgenome.weaver.align.strategy.FMSearchNFA.NextState;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.StopWatch;
+import org.xerial.util.StringUtil;
 import org.xerial.util.log.Logger;
 
 /**
@@ -91,27 +94,37 @@ public class SuffixFilter
         public final Cursor         cursor;
         public final SuffixInterval currentSi;
         public final SiSet          siTable;
-        // bit flags holding states at column [index - k, index + k + 1], where k is # of allowed mismatches 
-        private final long[]        automaton;
-        // 32 bit = searchFlag(5) + currentBase(3) + hasHit(1) + minK (8) + expectedK(8) 
+        private FMSearchNFA         automaton;
+        // 32 bit = searchFlag(5) + currentBase(3) + minK (8) + priority(8) + hasHit(1) 
         private int                 state;
         public final SearchState    split;
 
         public int getLowerBoundOfK() {
-            return (state >>> 9) & 0xFF;
+            return (state >>> 8) & 0xFF;
         }
 
         public void setLowerBoundOfK(int diff) {
-            state &= ~(0xFF << 9);
-            state |= (diff & 0xFF) << 9;
+            state &= ~(0xFF << 8);
+            state |= (diff & 0xFF) << 8;
         }
 
-        public int getExpectedK() {
-            return (state >>> 17) & 0xFF;
+        /**
+         * Lower value has higher priority
+         * 
+         * @return
+         */
+        public int getPriority() {
+            return (state >>> 16) & 0xFF;
+        }
+
+        public void lowerThePrioity(int margin) {
+            int priority = getPriority() + margin;
+            state &= ~(0xFF << 16);
+            state |= (priority & 0xFF) << 16;
         }
 
         public boolean hasHit() {
-            return ((state >>> 8) & 0x01) == 1L;
+            return ((state >>> 24) & 1L) != 0;
         }
 
         public boolean isFinished() {
@@ -142,14 +155,14 @@ public class SuffixFilter
             return (state & (1 << ch.code)) != 0;
         }
 
-        SearchState(SuffixInterval currentSi, ACGT ch, Cursor cursor, SiSet si, long[] automaton, int minK,
-                boolean hasHit, int expectedK, SearchState split) {
+        SearchState(SuffixInterval currentSi, ACGT ch, Cursor cursor, SiSet si, FMSearchNFA automaton,
+                boolean hasMatch, int minK, int expectedK, SearchState split) {
             this.currentSi = currentSi;
             this.cursor = cursor;
             this.siTable = si;
             this.automaton = automaton;
-            this.state = ((ch.code & 0x7) << 5) | ((hasHit ? 1 : 0) << 8) | ((minK & 0xFF) << 9)
-                    | ((expectedK & 0xFF) << 17);
+            this.state = ((ch.code & 0x7) << 5) | ((minK & 0xFF) << 8) | ((expectedK & 0xFF) << 16)
+                    | ((hasMatch ? 1 : 0) << 24);
             this.split = split;
         }
 
@@ -160,32 +173,9 @@ public class SuffixFilter
          * @param searchDirection
          */
         public SearchState(SuffixInterval currentSi, Cursor cursor, int expectedK) {
-            this(currentSi, ACGT.N, cursor, fmIndex.initSet(cursor.getSearchDirection()), new long[k + 1], 0, false,
+            this(currentSi, ACGT.N, cursor, fmIndex.initSet(cursor.getSearchDirection()), new FMSearchNFA(k), false, 0,
                     expectedK, null);
-            // Activate the diagonal states 
-            for (int i = 0; i <= k; ++i) {
-                automaton[i] = 1L << (k + i);
-            }
-        }
-
-        String showNFAState(long[] automaton) {
-            int w = (k - getLowerBoundOfK()) * 2 + 1;
-            StringBuilder s = new StringBuilder();
-            for (int j = 0; j < automaton.length; ++j) {
-                s.append(toBinary(automaton[j], w));
-                if (j != automaton.length - 1) {
-                    s.append(" \n");
-                }
-            }
-            return s.toString();
-        }
-
-        String toBinary(long val, int w) {
-            StringBuilder s = new StringBuilder();
-            for (int i = 0; i < w; ++i) {
-                s.append(((val >>> i) & 1L) == 0 ? "0" : "1");
-            }
-            return s.toString();
+            automaton.activateDiagonalStates();
         }
 
         String getUpdateFlag() {
@@ -200,8 +190,8 @@ public class SuffixFilter
 
         @Override
         public String toString() {
-            return String.format("%sk%d%s %s%s", hasHit() ? "*" : "", getLowerBoundOfK(), cursor, getUpdateFlag(),
-                    siTable);
+            return String.format("%sk%dp%d%s %s%s", hasHit() ? "*" : "", getLowerBoundOfK(), getPriority(), cursor,
+                    getUpdateFlag(), siTable);
         }
 
         public int score() {
@@ -213,15 +203,10 @@ public class SuffixFilter
         public SearchState nextStateAfterSplit(ACGT ch) {
             updateSplitFlag();
             // use the same automaton state
-            if (getLowerBoundOfK() < k) {
-                int minK = getLowerBoundOfK() + 1;
-                int height = k - minK + 1;
-                long[] nextAutomaton = new long[height];
-                for (int i = 0; i < height; ++i) {
-                    nextAutomaton[i] = 1L << (height + i - 1);
-                }
+            int minK = getLowerBoundOfK();
+            if (minK < k) {
                 return new SearchState(fmIndex.wholeSARange(), ch, cursor.split(), fmIndex.initSet(cursor
-                        .getSearchDirection()), nextAutomaton, minK, hasHit(), getExpectedK(), this);
+                        .getSearchDirection()), automaton.nextStateAfterSplit(k), false, minK, getPriority(), this);
             }
             else
                 return null;
@@ -229,61 +214,16 @@ public class SuffixFilter
 
         public SearchState nextState(ACGT ch, SiSet nextSi, QueryMask queryMask) {
 
-            final int minK = getLowerBoundOfK();
-            final int height = k - minK + 1;
+            NextState next = automaton.nextState(cursor, ch, queryMask, staircaseFilter);
+            if (next == null)
+                return null; // no match
 
-            long[] prev = automaton;
-            long[] next = new long[height];
-
-            final int index = cursor.getIndex();
-            final int colStart = index - height + 1;
-            final long qeq = queryMask.getPatternMaskIn64bitForBidirectionalSearch(ch, cursor.getNextACGTIndex()
-                    - height + 1);
-            // Update the automaton
-            // R'_0 = ((R_0 & P[ch]) << 1) & (suffix filter)
-            next[0] = ((prev[0] & qeq) << 1) & staircaseFilter.getStairCaseMask64bit(minK, colStart);
-            for (int i = 1; i < height; ++i) {
-                // R'_{i+1} = ((R_{i+1} & P[ch]) << 1) | R_i | (R_i << 1) | (R'_i << 1)   
-                next[i] = ((prev[i] & qeq) << 1) | prev[i - 1] | (prev[i - 1] << 1) | (next[i - 1] << 1);
-                // Apply a suffix filter (staircase mask)
-                next[i] &= staircaseFilter.getStairCaseMask64bit(minK + i, colStart);
-            }
-
-            // Find a match at query position m 
-            boolean foundMatch = false;
-            final int mPos = height + m - index - 1;
-            if (mPos < 64) {
-                for (int i = 0; i < height; ++i) {
-                    if ((next[i] & (1L << mPos)) != 0L) {
-                        foundMatch = true;
-                        break;
-                    }
-                }
-            }
-            // Find a match at next step 
-            final int nextIndex = height;
-            for (int i = 0; i < height; ++i) {
-                if ((next[i] & (1L << nextIndex)) != 0L) {
-                    return createNextState(ch, nextSi, next, i, foundMatch);
-                }
-            }
-
-            // no match
-            return null;
-        }
-
-        private SearchState createNextState(ACGT ch, SiSet nextSi, long[] nextAutomaton, int nm, boolean foundMatch) {
             int index = cursor.getIndex();
-            int nextHeight = automaton.length - nm;
-            long[] trimmed = new long[nextHeight];
-            for (int i = 0; i < nextHeight; ++i) {
-                trimmed[i] = nextAutomaton[i + nm] >>> 1;
-            }
-            //_logger.debug("\n" + showNFAState(trimmed));
+            int nextMinK = next.nextState.kOffset;
 
             SuffixInterval si = cursor.isForwardSearch() ? this.siTable.getForward(ch) : this.siTable.getBackward(ch);
-            return new SearchState(si, ch, cursor.next(), nextSi, trimmed, getLowerBoundOfK() + nm, foundMatch,
-                    getExpectedK(), split);
+            return new SearchState(si, ch, cursor.next(), nextSi, next.nextState, next.hasMatch, nextMinK,
+                    getPriority(), split);
         }
 
     }
@@ -329,24 +269,30 @@ public class SuffixFilter
         new AlignmentProcess(read, out).align();
     }
 
-    /**
-     * Comparator for selecting next target state to search
-     * 
-     * @author leo
-     * 
-     */
-    private static class StatePreference implements Comparator<SearchState>
+    private static class StateQueue extends PriorityQueue<SearchState>
     {
-        @Override
-        public int compare(SearchState o1, SearchState o2) {
-            int diff = -(o1.score() - o2.score());
-            if (diff == 0)
-                diff = o1.getExpectedK() - o2.getExpectedK();
-            //int diff = o1.getLowerBoundOfK() - o2.getLowerBoundOfK();
-            if (diff == 0)
-                diff = -(o1.cursor.getIndex() - o2.cursor.getIndex());
+        private static final long serialVersionUID = 1L;
 
-            return diff;
+        public StateQueue() {
+            super(11, new Comparator<SearchState>() {
+                // Comparator for selecting next target state to search
+                @Override
+                public int compare(SearchState o1, SearchState o2) {
+                    int diff = 0;
+                    diff = o1.getPriority() - o2.getPriority();
+                    if (diff == 0)
+                        diff = -(o1.score() - o2.score());
+                    if (diff == 0)
+                        diff = -(o1.cursor.getIndex() - o2.cursor.getIndex());
+
+                    return diff;
+                }
+            });
+        }
+
+        @Override
+        public String toString() {
+            return StringUtil.join(this, "\n");
         }
     }
 
@@ -359,14 +305,14 @@ public class SuffixFilter
     class AlignmentProcess
     {
 
-        private final Read                 read;
-        private ACGTSequence[]             q             = new ACGTSequence[2];
-        private QueryMask[]                queryMask     = new QueryMask[2];
-        private PriorityQueue<SearchState> queue         = new PriorityQueue<SearchState>(11, new StatePreference());
+        private final Read     read;
+        private ACGTSequence[] q             = new ACGTSequence[2];
+        private QueryMask[]    queryMask     = new QueryMask[2];
+        private StateQueue     queue         = new StateQueue();
 
-        private Reporter                   out;
+        private Reporter       out;
 
-        private int                        minMismatches = k + 1;
+        private int            minMismatches = k + 1;
 
         public AlignmentProcess(Read read, Reporter out) {
             this.read = read;
@@ -441,17 +387,18 @@ public class SuffixFilter
                 this.queryMask[0] = new QueryMask(q[0]);
                 this.queryMask[1] = new QueryMask(q[1]);
 
+                SearchState sF = null;
+                SearchState sR = null;
                 // Add states for both strands
                 if (scanF.numMismatches <= k) {
                     if (scanF.longestMatch.start != 0 && scanF.longestMatch.start < m) {
                         // add bidirectional search state
-                        queue.add(new SearchState(null, new Cursor(Strand.FORWARD,
-                                SearchDirection.BidirectionalForward, m, scanF.longestMatch.start,
-                                scanF.longestMatch.start, null), scanF.numMismatches));
+                        sF = new SearchState(null, new Cursor(Strand.FORWARD, SearchDirection.BidirectionalForward, m,
+                                scanF.longestMatch.start, scanF.longestMatch.start, null), scanF.numMismatches);
                     }
                     else {
-                        queue.add(new SearchState(null, new Cursor(Strand.FORWARD, SearchDirection.Forward, m, 0, 0,
-                                null), scanF.numMismatches));
+                        sF = new SearchState(null, new Cursor(Strand.FORWARD, SearchDirection.Forward, m, 0, 0, null),
+                                scanF.numMismatches);
                     }
                 }
 
@@ -459,16 +406,27 @@ public class SuffixFilter
                     if (scanF.numMismatches > scanR.numMismatches) {
                         if (scanR.longestMatch.start != 0 && scanR.longestMatch.start < m) {
                             // add bidirectional search state
-                            queue.add(new SearchState(null, new Cursor(Strand.REVERSE,
-                                    SearchDirection.BidirectionalForward, m, scanR.longestMatch.start,
-                                    scanR.longestMatch.start, null), scanR.numMismatches));
+                            sR = new SearchState(null, new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward,
+                                    m, scanR.longestMatch.start, scanR.longestMatch.start, null), scanR.numMismatches);
                         }
                     }
                     else {
-                        queue.add(new SearchState(null, new Cursor(Strand.REVERSE, SearchDirection.Forward, m, 0, 0,
-                                null), scanR.numMismatches));
+                        sR = new SearchState(null, new Cursor(Strand.REVERSE, SearchDirection.Forward, m, 0, 0, null),
+                                scanR.numMismatches);
                     }
                 }
+
+                if (scanF.numMismatches != scanR.numMismatches) {
+                    if (sR != null && scanF.numMismatches < scanR.numMismatches)
+                        sR.lowerThePrioity(m);
+                    else if (sF != null)
+                        sF.lowerThePrioity(m);
+                }
+
+                if (sF != null)
+                    queue.add(sF);
+                if (sR != null)
+                    queue.add(sR);
             }
 
             while (!queue.isEmpty()) {
@@ -513,17 +471,29 @@ public class SuffixFilter
                     if (!c.isChecked(nextBase)) {
                         c.updateFlag(nextBase);
                         if (!c.siTable.isEmpty(nextBase)) {
+
                             SiSet nextSi = next(c, nextBase);
                             ++numFMIndexSearches;
                             SearchState nextState = c.nextState(nextBase, nextSi, queryMask[strandIndex]);
-                            if (nextState != null)
-                                queue.add(nextState);
+                            if (nextState != null) {
+                                if (nextState.hasHit()) {
+                                    reportAlignment(nextState);
+                                }
+                                else
+                                    queue.add(nextState);
+                            }
                             else
                                 ++numFiltered;
-
                             continue; // A match is found. Proceed to the next base 
                         }
-                        queue.add(c); // preserve the state for back-tracking
+                        if (staircaseFilter.getStaircaseMask(nm + 1).get(c.cursor.getNextACGTIndex())) {
+                            // mismatch is allowed at this position
+                            c.lowerThePrioity(1);
+                            queue.add(c); // preserve the state for back-tracking, but with lower priority
+                        }
+                        else {
+                            numFiltered++;
+                        }
                     }
                 }
 
@@ -587,7 +557,7 @@ public class SuffixFilter
             }
         }
 
-        public SWResult verify(SearchState s, int fragmentLength) {
+        public ReadHit verify(SearchState s, int fragmentLength, boolean isSplit) {
 
             SuffixInterval si = s.currentSi;
             int nm = s.getLowerBoundOfK();
@@ -597,10 +567,10 @@ public class SuffixFilter
             if (si == null)
                 return null;
 
-            SWResult alignment = null;
+            ReadHit hit = null;
             if (si.isUniqueHit()) {
                 long seqIndex = fmIndex.toCoordinate(si.lowerBound, cursor.getStrand(), cursor.getSearchDirection());
-                int offset = cursor.getCursorRange();
+                int offset = cursor.getOffsetFromSearchHead(isSplit);
                 long x = seqIndex - offset;
 
                 if (x < 0 || x + fragmentLength > fmIndex.textSize()) {
@@ -608,20 +578,22 @@ public class SuffixFilter
                 }
 
                 ACGTSequence ref = reference.subSequence(x, x + fragmentLength);
-                ACGTSequence query = q[cursor.getStrandIndex()].subSequence(cursor.cursorB, cursor.cursorB
-                        + fragmentLength);
+                ACGTSequence query = q[cursor.getStrandIndex()];
+                if (isSplit) {
+                    query = query.subSequence(cursor.cursorB, cursor.cursorB + fragmentLength);
+                }
                 if (cursor.getStrand() == Strand.REVERSE)
                     query = query.reverse();
 
-                alignment = BitParallelSmithWaterman.alignBlock(ref, query, nm);
-
+                SWResult alignment = BitParallelSmithWaterman.alignBlock(ref, query, nm);
+                hit = new ReadHit(x, fragmentLength, alignment.diff, cursor.getStrand(), null);
             }
             else {
                 // TODO multiple hits
 
             }
 
-            return alignment;
+            return hit;
         }
 
         private void reportAlignment(SearchState c) throws Exception {
@@ -631,14 +603,24 @@ public class SuffixFilter
                 // split alignment
                 int splitLen = c.split.cursor.getProcessedBases();
                 int m1 = Math.max(c.cursor.getProcessedBases(), m) - splitLen;
-                SWResult alignment = verify(c, m1);
-                SWResult splitAlignment = verify(c.split, splitLen);
+                ReadHit alignment = verify(c, m1, true);
+                ReadHit splitAlignment = verify(c.split, splitLen, true);
+                if (alignment == null || splitAlignment == null)
+                    return;
 
-                out.emit(new SWResult(alignment, splitAlignment));
+                int diff = alignment.diff + splitAlignment.diff + 1;
+                c.setLowerBoundOfK(diff);
+                if (c.getLowerBoundOfK() < minMismatches)
+                    minMismatches = c.getLowerBoundOfK();
+
+                if (alignment.pos < splitLen)
+                    out.emit(alignment.addSplit(splitAlignment));
+                else
+                    out.emit(splitAlignment.addSplit(alignment));
             }
             else {
                 // Verification phase
-                SWResult alignment = verify(c, m);
+                ReadHit alignment = verify(c, c.cursor.getFragmentLength(), false);
                 if (alignment == null)
                     return; // no match
 
@@ -675,7 +657,7 @@ public class SuffixFilter
                 cursor = cursor.next();
                 ++numExtend;
             }
-            return new SearchState(null, ch, cursor, siSet, null, c.getLowerBoundOfK(), true, c.getExpectedK(), c.split);
+            return new SearchState(null, ch, cursor, siSet, null, true, c.getLowerBoundOfK(), c.getPriority(), c.split);
         }
 
     }
@@ -687,6 +669,43 @@ public class SuffixFilter
         for (int i = s.length() - 1; i >= 0; --i)
             out.append(s.charAt(i));
         return out.toString();
+    }
+
+    /**
+     * Candidate genome position of the alignment
+     * 
+     * @author leo
+     * 
+     */
+    private static class CandidatePos
+    {
+
+        public final long         pos;
+        public final int          k;
+        public final CandidatePos chain;
+
+        public CandidatePos(long pos, int k, CandidatePos chain) {
+            this.pos = pos;
+            this.k = k;
+            this.chain = chain;
+        }
+
+        public static CandidatePos createFrom(SearchState s, FMIndexOnGenome fmIndex) {
+            SuffixInterval si = s.currentSi;
+            Cursor cursor = s.cursor;
+
+            long seqIndex = fmIndex.toCoordinate(si.lowerBound, cursor.getStrand(), cursor.getSearchDirection());
+            int offset = cursor.getCursorRange();
+            long x = seqIndex - offset;
+
+            return null;
+        }
+
+    }
+
+    private static class Verifier
+    {
+
     }
 
 }

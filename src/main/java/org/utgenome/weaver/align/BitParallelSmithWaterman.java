@@ -125,11 +125,11 @@ public class BitParallelSmithWaterman
     public static SWResult alignBlock(ACGTSequence ref, ACGTSequence query, int k) {
 
         AlignBlocks a = new AlignBlocks((int) query.textSize(), k);
-        return a.align(ref, query);
-
+        SWResult sw = a.align(ref, query);
+        return sw;
     }
 
-    public static SWResult alignBlock(ACGTSequence ref, ACGTSequence query, int k, int w) {
+    static SWResult alignBlock(ACGTSequence ref, ACGTSequence query, int k, int w) {
 
         AlignBlocks a = new AlignBlocks(w, (int) query.textSize(), k);
         return a.align(ref, query);

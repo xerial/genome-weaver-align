@@ -16,34 +16,52 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// SWResult.java
-// Since: 2011/08/22
+// ReadHit.java
+// Since: 2011/08/25
 //
 // $URL$ 
 // $Author$
 //--------------------------------------
 package org.utgenome.weaver.align.record;
 
-import org.xerial.lens.JSONLens;
+import org.utgenome.weaver.align.Strand;
+import org.xerial.lens.SilkLens;
 
 /**
- * bit-parallel smith-waterman alignment result
+ * Candidate position of read hit
  * 
  * @author leo
  * 
  */
-public class SWResult
+public class ReadHit
 {
-    public final int tailPos;
-    public final int diff;
+    public final long    pos;
+    public final int     matchLength;
+    public final int     diff;
+    public final Strand  strand;
+    public final ReadHit nextSplit;
 
-    public SWResult(int tailPos, int diff) {
-        this.tailPos = tailPos;
+    public ReadHit(long pos, int matchLength, int diff, Strand strand, ReadHit nextSplit) {
+        this.pos = pos;
+        this.matchLength = matchLength;
         this.diff = diff;
+        this.strand = strand;
+        this.nextSplit = nextSplit;
+    }
+
+    public int getK() {
+        if (nextSplit == null)
+            return diff;
+        else
+            return diff + nextSplit.getK();
+    }
+
+    public ReadHit addSplit(ReadHit split) {
+        return new ReadHit(pos, matchLength, diff, strand, split);
     }
 
     @Override
     public String toString() {
-        return JSONLens.toJSON(this);
+        return SilkLens.toSilk(this);
     }
 }
