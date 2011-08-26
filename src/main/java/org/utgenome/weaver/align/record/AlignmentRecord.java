@@ -92,9 +92,13 @@ public class AlignmentRecord
         rec.add(0); // pair start
         rec.add(0); // insert size
         rec.add(querySeq);
-        rec.add("*"); // quality value
+        rec.add(qual == null ? "*" : qual); // quality value
         rec.add("NM:i:" + numMismatches);
-        return StringUtil.join(rec, "\t");
+        String line = StringUtil.join(rec, "\t");
+        if (split != null)
+            line += "\n" + split.toSAMLine();
+
+        return line;
     }
 
 }

@@ -53,6 +53,10 @@ public class ReadHit
         this.nextSplit = nextSplit;
     }
 
+    public boolean isUnique() {
+        return numHits == 1;
+    }
+
     public int getK() {
         if (nextSplit == null)
             return diff;

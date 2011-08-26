@@ -77,7 +77,7 @@ public class SAMOutput implements ObjectHandler<AlignmentRecord>, Reporter
 
         if (result != null && result.getClass().isAssignableFrom(AlignmentRecord.class)) {
             AlignmentRecord r = (AlignmentRecord) result;
-            r.toSAMLine();
+            out.println(r.toSAMLine());
         }
     }
 }
