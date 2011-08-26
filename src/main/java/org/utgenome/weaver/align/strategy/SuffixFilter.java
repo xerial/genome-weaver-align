@@ -527,23 +527,26 @@ public class SuffixFilter
                             if (nextState != null) {
                                 if (nextState.hasHit()) {
                                     reportAlignment(nextState);
+                                    continue;
                                 }
                                 else
                                     queue.add(nextState);
                             }
                             else
                                 ++numFiltered;
+
                         }
 
                         if (nm < k && staircaseFilter.getStaircaseMask(nm + 1).get(c.cursor.getNextACGTIndex())) {
                             // mismatch is allowed at this position
-                            c.lowerThePrioity(1);
-                            queue.add(c); // preserve the state for back-tracking, but with lower priority
+                            if (hasMatch)
+                                c.lowerThePrioity(1); // lower the priority of searching mismatches since next match is found
+                            queue.add(c); // preserve the state for back-tracking
                         }
                         else {
                             numFiltered++;
                         }
-                        continue; // A match is found. Proceed to the next base first
+                        continue;
                     }
                 }
 

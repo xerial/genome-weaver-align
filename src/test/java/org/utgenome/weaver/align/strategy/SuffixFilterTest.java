@@ -101,7 +101,7 @@ public class SuffixFilterTest
 
     @Test
     public void clip() throws Exception {
-        align("AAGCCTAGGGTCTTT");
+        align("AAGCCTAGGGTCTTT"); // 7S
     }
 
 }

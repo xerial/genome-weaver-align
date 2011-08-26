@@ -51,8 +51,8 @@ public class AlignmentScoreConfig
     public int gapOpenPenalty         = 11;
     @Option(symbol = "E", description = "gap extension penalty. default=4")
     public int gapExtensionPenalty    = 4;
-    @Option(symbol = "S", description = "split open penalty. default=5")
-    public int splitOpenPenalty       = 5;
+    @Option(symbol = "S", description = "split open penalty. default=11")
+    public int splitOpenPenalty       = 11;
 
     @Option(symbol = "P", description = "skip indels within P bases from read head and tail. default=5")
     public int indelEndSkip           = 5;
