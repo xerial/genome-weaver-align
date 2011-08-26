@@ -362,9 +362,10 @@ public class SuffixFilter
 
                 if (_logger.isDebugEnabled()) {
                     _logger.debug(
-                            "query:%s - %2s k:%d, FM Search:%,d, SW:%d, Exact:%d, CutOff:%d, Filtered:%d, %.5f sec.",
-                            read.name(), hasHit ? besthit.getAlignmentState() : " ", minMismatches, numFMIndexSearches,
-                            numSW, numExactSearchCount, numCutOff, numFiltered, s.getElapsedTime());
+                            "query:%s %s %2s k:%d, FM Search:%,d, SW:%d, Exact:%d, CutOff:%d, Filtered:%d, %.5f sec.",
+                            read.name(), hasHit ? besthit.strand.symbol : " ", hasHit ? besthit.getAlignmentState()
+                                    : " ", minMismatches, numFMIndexSearches, numSW, numExactSearchCount, numCutOff,
+                            numFiltered, s.getElapsedTime());
 
                     if (minMismatches > k || numFMIndexSearches > 500) {
                         _logger.debug("query:%s", q[0]);
@@ -466,14 +467,9 @@ public class SuffixFilter
                     }
                 }
 
-                if (scanF.numMismatches == scanR.numMismatches) {
-                    queue.add(sF);
-                    queue.add(sR);
-                }
-                else if (scanF.numMismatches < scanR.numMismatches)
-                    queue.add(sF);
-                else
-                    queue.add(sR);
+                queue.add(sF);
+                queue.add(sR);
+
             }
 
             while (!queue.isEmpty()) {
@@ -537,14 +533,14 @@ public class SuffixFilter
                             else
                                 ++numFiltered;
 
-                            if (nm < k && staircaseFilter.getStaircaseMask(nm + 1).get(c.cursor.getNextACGTIndex())) {
-                                // mismatch is allowed at this position
-                                c.lowerThePrioity(1); // lower the priority of searching mismatches
-                                queue.add(c); // preserve the state for back-tracking
-                            }
-                            else {
-                                numFiltered++;
-                            }
+                            //                            if (nm < k && staircaseFilter.getStaircaseMask(nm + 1).get(c.cursor.getNextACGTIndex())) {
+                            //                                // mismatch is allowed at this position
+                            //                                c.lowerThePrioity(1); // lower the priority of searching mismatches
+                            //                                queue.add(c); // preserve the state for back-tracking
+                            //                            }
+                            //                            else {
+                            //                                numFiltered++;
+                            //                            }
                             continue;
                         }
                     }
@@ -579,7 +575,7 @@ public class SuffixFilter
                 c.updateSplitFlag();
                 if (!c.cursor.hasSplit() && config.numSplitAlowed > 0 && nm + 1 <= minMismatches) {
                     int index = c.cursor.getIndex();
-                    if (index > config.indelEndSkip && m - index > config.indelEndSkip) {
+                    if (index > config.indelEndSkip && m - index >= config.indelEndSkip) {
                         SearchState nextState = c.nextStateAfterSplit(nextBase);
                         if (nextState != null)
                             queue.add(nextState);
