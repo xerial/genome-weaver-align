@@ -116,4 +116,11 @@ public class SuffixFilterTest
         align("AAGCCTGTTT");
     }
 
+    @Test
+    public void oneInsertion() throws Exception {
+        //     AAGCCT-AGTTT 
+        //     AAGCCTTAGTTT  6M1I5M
+        align("AAGCCTTAGTTT");
+    }
+
 }
