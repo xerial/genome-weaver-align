@@ -136,7 +136,7 @@ public class FMSearchNFA
 
         // Find a match at query position m
         final int m = cursor.getReadLength();
-        final int mPos = k + m - index + 1;
+        final int mPos = k + m - index;
         if (mPos < 64) {
             for (int nm = 0; nm < height; ++nm) {
                 if ((next[nm] & (1L << mPos)) != 0L) {
