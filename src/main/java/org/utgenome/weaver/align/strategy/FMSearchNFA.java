@@ -35,6 +35,7 @@ import org.utgenome.weaver.align.QueryMask;
  */
 public class FMSearchNFA
 {
+
     // bit flags holding states at column [index - k, index + k + 1], where k is # of allowed mismatches 
     private final long[] automaton;
     public final int     kOffset;
@@ -110,25 +111,32 @@ public class FMSearchNFA
 
         final int index = cursor.getIndex();
         final int colStart = index - height + 1;
-        final long qeq = queryMask.getPatternMaskIn64bitForBidirectionalSearch(ch, cursor.getNextACGTIndex() - height
-                + 1);
+        final int k = kOffset + height - 1;
+        final int qStart = cursor.getNextACGTIndex() - k;
+        final long qeq = queryMask.getPatternMaskIn64bitForBidirectionalSearch(ch, qStart);
 
+        int minK = -1;
         // Update the automaton
         // R'_0 = ((R_0 & P[ch]) << 1) & (suffix filter)
-        next[0] = ((prev[0] & qeq) << 1);
-        if (staircaseFilter != null)
-            next[0] &= staircaseFilter.getStairCaseMask64bit(kOffset, colStart);
+        String qeqStr = toBinary(qeq, 10);
+        next[0] = (prev[0] & qeq) << 1;
+        if (next[0] != 0)
+            minK = 0;
+        next[0] &= staircaseFilter.getStairCaseMask64bit(kOffset, colStart);
         for (int i = 1; i < height; ++i) {
-            // R'_{i+1} = ((R_{i+1} & P[ch]) << 1) | R_i | (R_i << 1) | (R'_i << 1)   
-            next[i] = ((prev[i] & qeq) << 1) | prev[i - 1] | (prev[i - 1] << 1) | (next[i - 1] << 1);
+            // R'_{i+1} = ((R_{i+1} & P[ch]) << 1) | R_i | (R_i << 1) | (R'_i << 1) 
+            next[i] = (prev[i] & qeq) << 1;
+            if (minK == -1 && next[i] != 0) {
+                minK = i;
+            }
+            next[i] |= prev[i - 1] | (prev[i - 1] << 1) | (next[i - 1] << 1);
             // Apply a suffix filter (staircase mask)
-            if (staircaseFilter != null)
-                next[i] &= staircaseFilter.getStairCaseMask64bit(kOffset + i, colStart);
+            next[i] &= staircaseFilter.getStairCaseMask64bit(kOffset + i, colStart);
         }
 
         // Find a match at query position m
         final int m = cursor.getReadLength();
-        final int mPos = height + m - index - 1;
+        final int mPos = k + m - index + 1;
         if (mPos < 64) {
             for (int nm = 0; nm < height; ++nm) {
                 if ((next[nm] & (1L << mPos)) != 0L) {
@@ -138,10 +146,15 @@ public class FMSearchNFA
         }
 
         // Find a match at next step 
-        final int nextIndex = height;
-        for (int nm = 0; nm < height; ++nm) {
-            if ((next[nm] & (1L << nextIndex)) != 0L) { // If the next state is activated
-                return new NextState(new FMSearchNFA(removeLayersFromAutomaton(next, nm), kOffset + nm), false);
+        if (minK != -1) {
+            return new NextState(new FMSearchNFA(removeLayersFromAutomaton(next, minK), kOffset + minK), false);
+        }
+        else {
+            final int nextIndex = height;
+            for (int nm = 0; nm < height; ++nm) {
+                if ((next[nm] & (1L << nextIndex)) != 0L) { // If the next state is activated
+                    return new NextState(new FMSearchNFA(removeLayersFromAutomaton(next, nm), kOffset + nm), false);
+                }
             }
         }
 

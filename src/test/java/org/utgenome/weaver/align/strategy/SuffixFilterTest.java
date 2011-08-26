@@ -111,7 +111,9 @@ public class SuffixFilterTest
 
     @Test
     public void oneDeletion() throws Exception {
-        align("AGCCTGTTTC");
+        //     AAGCCTAGTTT 
+        //     AAGCCT-GTTT  6M1D4M
+        align("AAGCCTGTTT");
     }
 
 }

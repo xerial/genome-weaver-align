@@ -262,7 +262,7 @@ public class SuffixFilter
             public void emit(Object result) throws Exception {
                 if (AlignmentRecord.class.isInstance(result)) {
                     AlignmentRecord r = (AlignmentRecord) result;
-                    _logger.debug(r.toSAMLine());
+                    _logger.debug("\n" + r.toSAMLine());
                 }
 
             }
