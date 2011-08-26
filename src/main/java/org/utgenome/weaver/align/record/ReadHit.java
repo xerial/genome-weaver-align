@@ -64,6 +64,14 @@ public class ReadHit
         return new ReadHit(chr, pos, matchLength, diff, strand, numHits, split);
     }
 
+    public String getAlignmentState() {
+        String prefix = (numHits == 1) ? "U" : "R";
+        if (nextSplit == null)
+            return prefix;
+        else
+            return prefix + nextSplit.getAlignmentState();
+    }
+
     @Override
     public String toString() {
         return SilkLens.toSilk(this);

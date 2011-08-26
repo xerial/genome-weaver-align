@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.PriorityQueue;
 
 import org.utgenome.UTGBException;
-import org.utgenome.gwt.utgb.client.bio.CIGAR;
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.AlignmentConfig;
@@ -41,7 +40,6 @@ import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.utgenome.weaver.align.SiSet;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
-import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.Read;
 import org.utgenome.weaver.align.record.ReadHit;
 import org.utgenome.weaver.align.record.SWResult;
@@ -342,12 +340,15 @@ public class SuffixFilter
             try {
                 align_internal();
                 boolean hasHit = minMismatches <= k || !resultHolder.hitList.isEmpty();
+                ReadHit hit = null;
+                if (hasHit)
+                    hit = resultHolder.hitList.get(0);
                 boolean isUnique = resultHolder.isUnique();
 
                 if (_logger.isDebugEnabled()) {
                     _logger.debug(
-                            "query:%s - %s k:%d, FM Search:%,d, SW:%d, Exact:%d, CutOff:%d, Filtered:%d, %.5f sec.",
-                            read.name(), hasHit ? (isUnique ? "U" : "R") : " ", minMismatches, numFMIndexSearches,
+                            "query:%s - %2s k:%d, FM Search:%,d, SW:%d, Exact:%d, CutOff:%d, Filtered:%d, %.5f sec.",
+                            read.name(), hasHit ? hit.getAlignmentState() : " ", minMismatches, numFMIndexSearches,
                             numSW, numExactSearchCount, numCutOff, numFiltered, s.getElapsedTime());
 
                     if (minMismatches > k || numFMIndexSearches > 500) {
@@ -549,26 +550,24 @@ public class SuffixFilter
         }
 
         private void reportExactMatchAlignment(FMQuickScan f) throws Exception {
-            if (f.si.isUniqueHit()) {
-                PosOnGenome pos = fmIndex.toGenomeCoordinate(f.si.lowerBound, m, f.strand);
-                CIGAR cigar = new CIGAR();
-                cigar.add(m, CIGAR.Type.Matches);
-                // TODO paired-end support
-                ACGTSequence r = read.getRead(0);
-                String qual = read.getQual(0);
-                if (!f.strand.isForward()) {
-                    r = r.reverseComplement();
-                    qual = reverse(qual);
-                }
 
-                AlignmentRecord rec = new AlignmentRecord(read.name(), pos.chr, f.strand, pos.pos, pos.pos + m, 0,
-                        cigar, r.toString(), qual, m * config.matchScore, null);
-                out.emit(rec);
-            }
-            else {
-                // multiple hits
+            PosOnGenome pos = fmIndex.toGenomeCoordinate(f.si.lowerBound, m, f.strand);
+            resultHolder.add(new ReadHit(pos.chr, pos.pos, m, 0, f.strand, (int) f.si.range(), null));
+            //                
+            //                CIGAR cigar = new CIGAR();
+            //                cigar.add(m, CIGAR.Type.Matches);
+            //                // TODO paired-end support
+            //                ACGTSequence r = read.getRead(0);
+            //                String qual = read.getQual(0);
+            //                if (!f.strand.isForward()) {
+            //                    r = r.reverseComplement();
+            //                    qual = reverse(qual);
+            //                }
+            //
+            //                AlignmentRecord rec = new AlignmentRecord(read.name(), pos.chr, f.strand, pos.pos, pos.pos + m, 0,
+            //                        cigar, r.toString(), qual, m * config.matchScore, null);
+            //                out.emit(rec);
 
-            }
         }
 
         public ReadHit verify(SearchState s, int fragmentLength, boolean isSplit) {
