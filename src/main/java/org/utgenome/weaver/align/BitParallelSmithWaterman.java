@@ -199,9 +199,9 @@ public class BitParallelSmithWaterman
                     //peq[i][bMax - 1] |= mask;
                 }
             }
-            if (_logger.isTraceEnabled()) {
-                _logger.trace("peq:%s", qMask);
-            }
+            //            if (_logger.isTraceEnabled()) {
+            //                _logger.trace("peq:%s", qMask);
+            //            }
             return align(ref);
         }
 
@@ -227,10 +227,10 @@ public class BitParallelSmithWaterman
                 for (int r = 0; r < b; ++r) {
                     int nextScore = alignBlock(j, ch, r, carry);
                     D[r] += nextScore;
-                    if (_logger.isTraceEnabled()) {
-                        _logger.trace("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore, r,
-                                D[r]);
-                    }
+                    //                    if (_logger.isTraceEnabled()) {
+                    //                        _logger.trace("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore, r,
+                    //                                D[r]);
+                    //                    }
                     carry = nextScore;
                 }
 
@@ -238,10 +238,10 @@ public class BitParallelSmithWaterman
                     b++;
                     int nextScore = alignBlock(j, ch, b - 1, carry);
                     D[b - 1] = D[b - 2] + w - carry + nextScore;
-                    if (_logger.isTraceEnabled()) {
-                        _logger.trace("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore,
-                                b - 1, D[b - 1]);
-                    }
+                    //                    if (_logger.isTraceEnabled()) {
+                    //                        _logger.trace("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore,
+                    //                                b - 1, D[b - 1]);
+                    //                    }
                 }
                 else {
                     while (b > 1 && D[b - 1] >= k + w) {
@@ -250,10 +250,10 @@ public class BitParallelSmithWaterman
                 }
 
                 if (b == bMax) {
-                    if (D[b - 1] <= W + k) {
-                        if (_logger.isTraceEnabled())
-                            _logger.trace("match at %d", j);
-                    }
+                    //                    if (D[b - 1] <= W + k) {
+                    //                        if (_logger.isTraceEnabled())
+                    //                            _logger.trace("match at %d", j);
+                    //                    }
 
                     if (bestHit == null) {
                         bestHit = new SWResult(j, D[b - 1] - W);
@@ -292,11 +292,11 @@ public class BitParallelSmithWaterman
             this.vp[r] = hn2 | ~(hp2 | d0);
             this.vn[r] = hp2 & d0;
 
-            if (_logger.isTraceEnabled()) {
-                _logger.trace("[%s] j:%2d, block:%d, hin:%2d, hout:%2d, hp:%s, hn:%s, vp:%s, vn:%s, d0:%s", ch, j, r,
-                        hin, hout, toBinary(hp, w), toBinary(hn, w), toBinary(this.vp[r], w), toBinary(this.vn[r], w),
-                        toBinary(d0, w));
-            }
+            //            if (_logger.isTraceEnabled()) {
+            //                _logger.trace("[%s] j:%2d, block:%d, hin:%2d, hout:%2d, hp:%s, hn:%s, vp:%s, vn:%s, d0:%s", ch, j, r,
+            //                        hin, hout, toBinary(hp, w), toBinary(hn, w), toBinary(this.vp[r], w), toBinary(this.vn[r], w),
+            //                        toBinary(d0, w));
+            //            }
 
             return hout;
         }

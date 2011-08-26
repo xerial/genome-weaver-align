@@ -27,18 +27,18 @@ package org.utgenome.weaver.align.strategy;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.utgenome.weaver.align.ACGTSequence;
-import org.utgenome.weaver.align.AlignmentScoreConfig;
+import org.utgenome.weaver.align.AlignmentConfig;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.xerial.util.log.Logger;
 
 public class SuffixFilterTest
 {
-    private static Logger               _logger = Logger.getLogger(SuffixFilterTest.class);
+    private static Logger          _logger = Logger.getLogger(SuffixFilterTest.class);
 
-    private static FMIndexOnGenome      fmIndex;
-    private static AlignmentScoreConfig config  = new AlignmentScoreConfig();
+    private static FMIndexOnGenome fmIndex;
+    private static AlignmentConfig config  = new AlignmentConfig();
 
-    private static ACGTSequence         ref     = new ACGTSequence("AAGCCTAGTTTCCTTG");
+    private static ACGTSequence    ref     = new ACGTSequence("AAGCCTAGTTTCCTTG");
 
     @BeforeClass
     public static void setUp() {

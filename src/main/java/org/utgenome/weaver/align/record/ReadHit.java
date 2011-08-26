@@ -35,19 +35,21 @@ import org.xerial.lens.SilkLens;
  */
 public class ReadHit
 {
+    public final String  chr;
     public final long    pos;
     public final int     matchLength;
     public final int     diff;
     public final Strand  strand;
-    public final boolean isUnique;
+    public final int     numHits;
     public final ReadHit nextSplit;
 
-    public ReadHit(long pos, int matchLength, int diff, Strand strand, boolean isUnique, ReadHit nextSplit) {
+    public ReadHit(String chr, long pos, int matchLength, int diff, Strand strand, int numHits, ReadHit nextSplit) {
+        this.chr = chr;
         this.pos = pos;
         this.matchLength = matchLength;
         this.diff = diff;
         this.strand = strand;
-        this.isUnique = isUnique;
+        this.numHits = numHits;
         this.nextSplit = nextSplit;
     }
 
@@ -55,11 +57,11 @@ public class ReadHit
         if (nextSplit == null)
             return diff;
         else
-            return diff + nextSplit.getK();
+            return diff + 1 + nextSplit.getK();
     }
 
     public ReadHit addSplit(ReadHit split) {
-        return new ReadHit(pos, matchLength, diff, strand, isUnique, split);
+        return new ReadHit(chr, pos, matchLength, diff, strand, numHits, split);
     }
 
     @Override

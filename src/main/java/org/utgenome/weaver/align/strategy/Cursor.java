@@ -101,14 +101,14 @@ public class Cursor
         return flag & 1;
     }
 
-    public int getOffsetFromSearchHead(boolean isSplit) {
+    public int getOffsetOfSearchHead(boolean isSplit, int fragmentLength) {
         // read:   |   |------|       |
         //         0   cB     cF      read length
         int offset = isForwardSearch() ? cursorF : cursorB;
         if (isSplit)
             offset -= cursorB;
         if (getStrand() == Strand.REVERSE)
-            offset = getFragmentLength() - offset;
+            offset = fragmentLength - offset;
         return offset;
     }
 
