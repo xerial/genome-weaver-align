@@ -351,6 +351,8 @@ public class SuffixFilter
 
             ACGTSequence query = q[0];
             String qual = read.getQual(0);
+            if (qual == null)
+                qual = "";
             if (!hit.strand.isForward()) {
                 query = query.reverseComplement();
                 qual = reverse(qual);
@@ -368,8 +370,10 @@ public class SuffixFilter
                 ReadHit split = hit.nextSplit;
                 ACGTSequence s1 = query.subSequence(0, hit.matchLength);
                 ACGTSequence s2 = query.subSequence(hit.matchLength, m);
-                String q1 = qual.substring(0, hit.matchLength);
-                String q2 = qual.substring(hit.matchLength, m);
+                int b1 = Math.min(qual.length(), hit.matchLength);
+                int b2 = Math.min(qual.length(), m);
+                String q1 = qual.substring(0, b1);
+                String q2 = qual.substring(b1, b2);
 
                 if (hit.isUnique()) {
                     if (split.isUnique()) {
@@ -463,6 +467,7 @@ public class SuffixFilter
                 if (_logger.isTraceEnabled())
                     _logger.trace("qual :%s", read.getQual(0));
 
+                // Issue 28 
                 if (hasHit) {
                     switch (config.reportType) {
                     case ALLHITS:
@@ -581,25 +586,6 @@ public class SuffixFilter
                 int allowedMismatches = minMismatches - nm;
                 if (allowedMismatches < 0)
                     continue;
-
-                int upperBoundOfScore = config.matchScore
-                        * (c.cursor.getProcessedBases() + c.cursor.getRemainingBases() - nm);
-                if (c.cursor.hasSplit()) {
-                    upperBoundOfScore -= config.splitOpenPenalty + config.mismatchPenalty * (nm - 1);
-                }
-                else {
-                    upperBoundOfScore -= config.mismatchPenalty * nm;
-                }
-                if (upperBoundOfScore < bestScore) {
-                    ++numCutOff;
-                    continue;
-                }
-
-                //                if (allowedMismatches == 0) {
-                //                    // do exact match
-                //                    reportExactMatch(c);
-                //                    continue;
-                //                }
 
                 final int strandIndex = c.cursor.getStrand().index;
 

@@ -95,6 +95,11 @@ public class SuffixFilterTest
     }
 
     @Test
+    public void split2() throws Exception {
+        align("AGCCTATTCCTT");
+    }
+
+    @Test
     public void longRead() throws Exception {
         align("AAGCCTAGATTCCGTG");
     }
@@ -102,6 +107,11 @@ public class SuffixFilterTest
     @Test
     public void clip() throws Exception {
         align("AAGCCTAGGGTCTTT"); // 7S
+    }
+
+    @Test
+    public void oneDeletion() throws Exception {
+        align("AGCCTGTTTC");
     }
 
 }
