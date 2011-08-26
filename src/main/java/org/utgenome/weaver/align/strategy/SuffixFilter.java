@@ -290,6 +290,13 @@ public class SuffixFilter
         }
 
         @Override
+        public boolean add(SearchState e) {
+            if (e == null)
+                return false;
+            return super.add(e);
+        }
+
+        @Override
         public String toString() {
             return StringUtil.join(this, "\n");
         }
@@ -459,9 +466,13 @@ public class SuffixFilter
                     }
                 }
 
-                if (sF != null)
+                if (scanF.numMismatches == scanR.numMismatches) {
                     queue.add(sF);
-                if (sR != null)
+                    queue.add(sR);
+                }
+                else if (scanF.numMismatches < scanR.numMismatches)
+                    queue.add(sF);
+                else
                     queue.add(sR);
             }
 
@@ -477,11 +488,6 @@ public class SuffixFilter
                 int nm = c.getLowerBoundOfK();
                 if (nm > minMismatches) {
                     ++numCutOff;
-                    continue;
-                }
-
-                if (c.hasHit() || c.cursor.getRemainingBases() == 0) {
-                    reportAlignment(c);
                     continue;
                 }
 
@@ -514,12 +520,9 @@ public class SuffixFilter
                 // Match 
                 ACGT nextBase = c.cursor.nextACGT(q);
                 {
-
                     if (!c.isChecked(nextBase)) {
-                        boolean hasMatch = false;
                         c.updateFlag(nextBase);
                         if (!c.siTable.isEmpty(nextBase)) {
-                            hasMatch = true;
                             SiSet nextSi = next(c, nextBase);
                             ++numFMIndexSearches;
                             SearchState nextState = c.nextState(nextBase, nextSi, queryMask[strandIndex],
@@ -527,7 +530,6 @@ public class SuffixFilter
                             if (nextState != null) {
                                 if (nextState.hasHit()) {
                                     reportAlignment(nextState);
-                                    continue;
                                 }
                                 else
                                     queue.add(nextState);
@@ -535,18 +537,16 @@ public class SuffixFilter
                             else
                                 ++numFiltered;
 
+                            if (nm < k && staircaseFilter.getStaircaseMask(nm + 1).get(c.cursor.getNextACGTIndex())) {
+                                // mismatch is allowed at this position
+                                c.lowerThePrioity(1); // lower the priority of searching mismatches
+                                queue.add(c); // preserve the state for back-tracking
+                            }
+                            else {
+                                numFiltered++;
+                            }
+                            continue;
                         }
-
-                        if (nm < k && staircaseFilter.getStaircaseMask(nm + 1).get(c.cursor.getNextACGTIndex())) {
-                            // mismatch is allowed at this position
-                            if (hasMatch)
-                                c.lowerThePrioity(1); // lower the priority of searching mismatches since next match is found
-                            queue.add(c); // preserve the state for back-tracking
-                        }
-                        else {
-                            numFiltered++;
-                        }
-                        continue;
                     }
                 }
 
@@ -563,8 +563,12 @@ public class SuffixFilter
                             SiSet nextSi = next(c, ch);
                             ++numFMIndexSearches;
                             SearchState nextState = c.nextState(ch, nextSi, queryMask[strandIndex], staircaseFilter);
-                            if (nextState != null)
-                                queue.add(nextState);
+                            if (nextState != null) {
+                                if (nextState.hasHit())
+                                    reportAlignment(nextState);
+                                else
+                                    queue.add(nextState);
+                            }
                             else
                                 ++numFiltered;
                         }
