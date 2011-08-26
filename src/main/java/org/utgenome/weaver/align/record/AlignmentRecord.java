@@ -46,6 +46,10 @@ public class AlignmentRecord
     public int             score;
     public AlignmentRecord split         = null;
 
+    public AlignmentRecord() {
+
+    }
+
     public AlignmentRecord(String readName, String chr, Strand strand, int start, int end, int numMismatches,
             CIGAR cigar, String querySeq, String qual, int score, AlignmentRecord split) {
         this.readName = readName;

@@ -81,7 +81,7 @@ public class BWAlignTest
         GenomeWeaver.execute(String.format("bwt %s", fastaArchive));
         FMIndexOnGenome fmIndex = FMIndexOnGenome.load(fastaArchive.getPath());
 
-        Align.querySingle(fmIndex, "TAAAGTAT", new Reporter() {
+        Align.querySingle(fmIndex, null, "TAAAGTAT", new Reporter() {
             @Override
             public void emit(Object result) throws Exception {
                 AlignmentRecord input = (AlignmentRecord) result;
