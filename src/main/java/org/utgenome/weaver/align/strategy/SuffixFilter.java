@@ -341,13 +341,14 @@ public class SuffixFilter
             StopWatch s = new StopWatch();
             try {
                 align_internal();
-                boolean hasHit = !resultHolder.hitList.isEmpty();
+                boolean hasHit = minMismatches <= k || !resultHolder.hitList.isEmpty();
+                boolean isUnique = resultHolder.isUnique();
 
                 if (_logger.isDebugEnabled()) {
                     _logger.debug(
                             "query:%s - %s k:%d, FM Search:%,d, SW:%d, Exact:%d, CutOff:%d, Filtered:%d, %.5f sec.",
-                            read.name(), hasHit ? "(*)" : "   ", minMismatches, numFMIndexSearches, numSW,
-                            numExactSearchCount, numCutOff, numFiltered, s.getElapsedTime());
+                            read.name(), hasHit ? (isUnique ? "U" : "R") : " ", minMismatches, numFMIndexSearches,
+                            numSW, numExactSearchCount, numCutOff, numFiltered, s.getElapsedTime());
 
                     if (minMismatches > k || numFMIndexSearches > 500) {
                         _logger.debug("query:%s", q[0]);
@@ -495,6 +496,8 @@ public class SuffixFilter
                             }
                             else
                                 ++numFiltered;
+
+                            continue; // A match is found. Proceed to the next base first
                         }
 
                         if (nm < k && staircaseFilter.getStaircaseMask(nm + 1).get(c.cursor.getNextACGTIndex())) {
@@ -505,8 +508,6 @@ public class SuffixFilter
                         else {
                             numFiltered++;
                         }
-                        if (hasMatch)
-                            continue; // A match is found. Proceed to the next base first
                     }
                 }
 
@@ -704,7 +705,7 @@ public class SuffixFilter
 
             public void add(ReadHit hit) {
                 int k = hit.getK();
-                if (k < minMismatches) {
+                if (k >= 0 && k < minMismatches) {
                     minMismatches = k;
                 }
 
@@ -716,6 +717,13 @@ public class SuffixFilter
                 }
                 newList.add(hit);
                 hitList = newList;
+            }
+
+            public boolean isUnique() {
+                if (hitList.size() == 1) {
+                    return hitList.get(0).numHits == 1;
+                }
+                return false;
             }
 
         }
