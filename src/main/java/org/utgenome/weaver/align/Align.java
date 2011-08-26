@@ -147,7 +147,7 @@ public class Align extends GenomeWeaverCommand
         @Override
         public void handle(Read read) throws Exception {
             if (sf == null)
-                sf = new SuffixFilter(fmIndex, reference, config, read.getRead(0).textSize());
+                sf = new SuffixFilter(fmIndex, reference, config);
             sf.align(read, reporter);
             count++;
             double time = timer.getElapsedTime();

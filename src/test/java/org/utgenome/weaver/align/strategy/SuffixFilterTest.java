@@ -45,62 +45,58 @@ public class SuffixFilterTest
         fmIndex = FMIndexOnGenome.buildFromSequence("seq", ref);
     }
 
+    public static void align(String query) throws Exception {
+        align(new ACGTSequence(query));
+    }
+
+    public static void align(ACGTSequence q) throws Exception {
+        SuffixFilter f = new SuffixFilter(fmIndex, ref, config);
+        f.align(q);
+    }
+
     @Test
     public void oneMismatchAtTail() throws Exception {
-        ACGTSequence q = new ACGTSequence("GCCTAA");
-        SuffixFilter f = new SuffixFilter(fmIndex, ref, config, q.textSize());
-        f.align(q);
+        align("GCCTAA");
     }
 
     @Test
     public void oneMismatch() throws Exception {
-        ACGTSequence q = new ACGTSequence("GCGTAGTT");
-        SuffixFilter f = new SuffixFilter(fmIndex, ref, config, q.textSize());
-        f.align(q);
+        align("GCGTAGTT");
+    }
+
+    @Test
+    public void oneMismatchReverse() throws Exception {
+        align(new ACGTSequence("GCGTAGTT").reverseComplement());
     }
 
     @Test
     public void twoMismatch() throws Exception {
-        ACGTSequence q = new ACGTSequence("TTGCCTAGTTT");
-        SuffixFilter f = new SuffixFilter(fmIndex, ref, config, q.textSize());
-        f.align(q);
+        align("TTGCCTAGTTT");
     }
 
     @Test
     public void forwardExact() throws Exception {
-        ACGTSequence q = new ACGTSequence("GCCTAGT");
-        SuffixFilter f = new SuffixFilter(fmIndex, ref, config, q.textSize());
-        f.align(q);
+        align("GCCTAGT");
     }
 
     @Test
     public void reverseExact() throws Exception {
-        ACGTSequence q = new ACGTSequence("GCCTAGT").reverseComplement();
-        SuffixFilter f = new SuffixFilter(fmIndex, ref, config, q.textSize());
-        f.align(q);
+        align(new ACGTSequence("GCCTAGT").reverseComplement());
     }
 
     @Test
     public void splitExact() throws Exception {
-        ACGTSequence q = new ACGTSequence("AAGCCTTCCTTG");
-        SuffixFilter f = new SuffixFilter(fmIndex, ref, config, q.textSize());
-        f.align(q);
+        align("AAGCCTTCCTTG");
     }
 
     @Test
     public void longRead() throws Exception {
-        ACGTSequence q = new ACGTSequence("AAGCCTAGATTCCGTG");
-        SuffixFilter f = new SuffixFilter(fmIndex, ref, config, q.textSize());
-        f.align(q);
-
+        align("AAGCCTAGATTCCGTG");
     }
 
     @Test
     public void clip() throws Exception {
-        ACGTSequence q = new ACGTSequence("AAGCCTAGGGTCTTT");
-        SuffixFilter f = new SuffixFilter(fmIndex, ref, config, q.textSize());
-        f.align(q);
-
+        align("AAGCCTAGGGTCTTT");
     }
 
 }

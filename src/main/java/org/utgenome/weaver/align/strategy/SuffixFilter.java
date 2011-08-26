@@ -25,6 +25,7 @@
 package org.utgenome.weaver.align.strategy;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.PriorityQueue;
 
 import org.utgenome.gwt.utgb.client.bio.CIGAR;
@@ -67,15 +68,14 @@ import org.xerial.util.log.Logger;
  */
 public class SuffixFilter
 {
-    private static Logger              _logger = Logger.getLogger(SuffixFilter.class);
+    private static Logger                     _logger               = Logger.getLogger(SuffixFilter.class);
 
-    private final FMIndexOnGenome      fmIndex;
-    private final AlignmentScoreConfig config;
-    private final ACGTSequence         reference;
-    private final int                  k;
-    private final int                  m;
+    private final FMIndexOnGenome             fmIndex;
+    private final AlignmentScoreConfig        config;
+    private final ACGTSequence                reference;
+    private final int                         k;
 
-    private StaircaseFilter            staircaseFilter;
+    private HashMap<Integer, StaircaseFilter> staircaseFilterHolder = new HashMap<Integer, StaircaseFilter>();
 
     public static enum Diff {
         Match, Mismatch, Insertion, Deletion, Split
@@ -212,7 +212,7 @@ public class SuffixFilter
                 return null;
         }
 
-        public SearchState nextState(ACGT ch, SiSet nextSi, QueryMask queryMask) {
+        public SearchState nextState(ACGT ch, SiSet nextSi, QueryMask queryMask, StaircaseFilter staircaseFilter) {
 
             NextState next = automaton.nextState(cursor, ch, queryMask, staircaseFilter);
             if (next == null)
@@ -242,13 +242,11 @@ public class SuffixFilter
      * @param m
      *            read length
      */
-    public SuffixFilter(FMIndexOnGenome fmIndex, ACGTSequence reference, AlignmentScoreConfig config, long m) {
+    public SuffixFilter(FMIndexOnGenome fmIndex, ACGTSequence reference, AlignmentScoreConfig config) {
         this.fmIndex = fmIndex;
         this.reference = reference;
         this.config = config;
         this.k = config.maximumEditDistances;
-        this.m = (int) m;
-        this.staircaseFilter = new StaircaseFilter(this.m, k);
     }
 
     public void align(ACGTSequence seq) throws Exception {
@@ -296,6 +294,15 @@ public class SuffixFilter
         }
     }
 
+    private StaircaseFilter getStairCaseFilter(int queryLength) {
+        if (!staircaseFilterHolder.containsKey(queryLength)) {
+            StaircaseFilter filter = new StaircaseFilter(queryLength, k);
+            staircaseFilterHolder.put(queryLength, filter);
+        }
+
+        return staircaseFilterHolder.get(queryLength);
+    }
+
     /**
      * Alignment procedure
      * 
@@ -305,17 +312,21 @@ public class SuffixFilter
     class AlignmentProcess
     {
 
-        private final Read     read;
-        private ACGTSequence[] q             = new ACGTSequence[2];
-        private QueryMask[]    queryMask     = new QueryMask[2];
-        private StateQueue     queue         = new StateQueue();
+        private final Read            read;
+        private final int             m;
+        private final StaircaseFilter staircaseFilter;
+        private ACGTSequence[]        q             = new ACGTSequence[2];
+        private QueryMask[]           queryMask     = new QueryMask[2];
+        private StateQueue            queue         = new StateQueue();
 
-        private Reporter       out;
+        private Reporter              out;
 
-        private int            minMismatches = k + 1;
+        private int                   minMismatches = k + 1;
 
         public AlignmentProcess(Read read, Reporter out) {
             this.read = read;
+            this.m = (int) read.getRead(0).textSize();
+            this.staircaseFilter = getStairCaseFilter(m);
             this.q[0] = read.getRead(0);
             this.q[1] = q[0].complement();
             this.out = out;
@@ -403,12 +414,10 @@ public class SuffixFilter
                 }
 
                 if (scanR.numMismatches <= k) {
-                    if (scanF.numMismatches > scanR.numMismatches) {
-                        if (scanR.longestMatch.start != 0 && scanR.longestMatch.start < m) {
-                            // add bidirectional search state
-                            sR = new SearchState(null, new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward,
-                                    m, scanR.longestMatch.start, scanR.longestMatch.start, null), scanR.numMismatches);
-                        }
+                    if (scanR.longestMatch.start != 0 && scanR.longestMatch.start < m) {
+                        // add bidirectional search state
+                        sR = new SearchState(null, new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward, m,
+                                scanR.longestMatch.start, scanR.longestMatch.start, null), scanR.numMismatches);
                     }
                     else {
                         sR = new SearchState(null, new Cursor(Strand.REVERSE, SearchDirection.Forward, m, 0, 0, null),
@@ -467,7 +476,8 @@ public class SuffixFilter
 
                             SiSet nextSi = next(c, nextBase);
                             ++numFMIndexSearches;
-                            SearchState nextState = c.nextState(nextBase, nextSi, queryMask[strandIndex]);
+                            SearchState nextState = c.nextState(nextBase, nextSi, queryMask[strandIndex],
+                                    staircaseFilter);
                             if (nextState != null) {
                                 if (nextState.hasHit()) {
                                     reportAlignment(nextState);
@@ -502,7 +512,7 @@ public class SuffixFilter
                         if (!c.siTable.isEmpty(ch)) {
                             SiSet nextSi = next(c, ch);
                             ++numFMIndexSearches;
-                            SearchState nextState = c.nextState(ch, nextSi, queryMask[strandIndex]);
+                            SearchState nextState = c.nextState(ch, nextSi, queryMask[strandIndex], staircaseFilter);
                             if (nextState != null)
                                 queue.add(nextState);
                             else
@@ -665,6 +675,15 @@ public class SuffixFilter
         for (int i = s.length() - 1; i >= 0; --i)
             out.append(s.charAt(i));
         return out.toString();
+    }
+
+    private class AlignmentResultHolder
+    {
+
+        public void add(ReadHit hit) {
+
+        }
+
     }
 
 }

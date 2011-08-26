@@ -54,7 +54,7 @@ public class AlignmentScoreConfig
     @Option(symbol = "S", description = "split open penalty. default=5")
     public int splitOpenPenalty       = 5;
 
-    @Option(symbol = "P", description = "skip indels within P bases from read head and tail")
+    @Option(symbol = "P", description = "skip indels within P bases from read head and tail. default=5")
     public int indelEndSkip           = 5;
 
 }

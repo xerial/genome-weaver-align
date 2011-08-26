@@ -55,7 +55,7 @@ public class AlignmentConfig extends AlignmentScoreConfig
         }
     }
 
-    @Option(symbol = "m", description = "alignment strategy. sf(suffix filter), bd(bidirectinal search), bwa (best-hit first)")
+    @Option(symbol = "m", description = "alignment strategy. sf(suffix filter:default), bd(bidirectinal search), bwa (best-hit first)")
     public Strategy strategy = Strategy.SF;
 
     public static enum ReportType {
