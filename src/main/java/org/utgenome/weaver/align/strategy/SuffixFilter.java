@@ -40,6 +40,7 @@ import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.utgenome.weaver.align.SiSet;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
+import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.Read;
 import org.utgenome.weaver.align.record.ReadHit;
 import org.utgenome.weaver.align.record.SWResult;
@@ -190,8 +191,8 @@ public class SuffixFilter
 
         @Override
         public String toString() {
-            return String.format("%sk%dp%d%s %s%s", hasHit() ? "*" : "", getLowerBoundOfK(), getPriority(), cursor,
-                    getUpdateFlag(), siTable);
+            return String.format("%sk%dp%d%s %s %s%s", hasHit() ? "*" : "", getLowerBoundOfK(), getPriority(), cursor,
+                    currentACGT(), getUpdateFlag(), siTable);
         }
 
         public int score() {
@@ -334,21 +335,28 @@ public class SuffixFilter
             this.out = out;
         }
 
+        public AlignmentRecord convert(ReadHit hit) {
+
+            //AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos, );
+
+            return null;
+        }
+
         public void align() throws Exception {
 
             StopWatch s = new StopWatch();
             try {
                 align_internal();
                 boolean hasHit = minMismatches <= k || !resultHolder.hitList.isEmpty();
-                ReadHit hit = null;
+                ReadHit besthit = null;
                 if (hasHit)
-                    hit = resultHolder.hitList.get(0);
+                    besthit = resultHolder.hitList.get(0);
                 boolean isUnique = resultHolder.isUnique();
 
                 if (_logger.isDebugEnabled()) {
                     _logger.debug(
                             "query:%s - %2s k:%d, FM Search:%,d, SW:%d, Exact:%d, CutOff:%d, Filtered:%d, %.5f sec.",
-                            read.name(), hasHit ? hit.getAlignmentState() : " ", minMismatches, numFMIndexSearches,
+                            read.name(), hasHit ? besthit.getAlignmentState() : " ", minMismatches, numFMIndexSearches,
                             numSW, numExactSearchCount, numCutOff, numFiltered, s.getElapsedTime());
 
                     if (minMismatches > k || numFMIndexSearches > 500) {
@@ -358,9 +366,24 @@ public class SuffixFilter
                 if (_logger.isTraceEnabled())
                     _logger.trace("qual :%s", read.getQual(0));
 
-                for (ReadHit each : resultHolder.hitList) {
-                    out.emit(each);
+                switch (config.reportType) {
+                case ALLHITS:
+                    for (ReadHit each : resultHolder.hitList) {
+                        out.emit(each);
+                    }
+                    break;
+                case BESTHIT:
+                    out.emit(besthit);
+                    break;
+                case TOPL: {
+                    int max = Math.min(config.topL, resultHolder.hitList.size());
+                    for (int i = 0; i < max; ++i) {
+                        out.emit(resultHolder.hitList.get(i));
+                    }
+                    break;
                 }
+                }
+
             }
             catch (Exception e) {
                 _logger.error("error at query: %s", q[0]);
@@ -445,7 +468,7 @@ public class SuffixFilter
             while (!queue.isEmpty()) {
                 SearchState c = queue.poll();
                 if (_logger.isTraceEnabled()) {
-                    _logger.trace("state: %s", c);
+                    _logger.trace("state: %s, FMIndex:%d, CutOff:%d", c, numFMIndexSearches, numCutOff);
                 }
 
                 if (c.isFinished())
@@ -465,6 +488,19 @@ public class SuffixFilter
                 int allowedMismatches = minMismatches - nm;
                 if (allowedMismatches < 0)
                     continue;
+
+                int upperBoundOfScore = config.matchScore
+                        * (c.cursor.getProcessedBases() + c.cursor.getRemainingBases() - nm);
+                if (c.cursor.hasSplit()) {
+                    upperBoundOfScore -= config.splitOpenPenalty + config.mismatchPenalty * (nm - 1);
+                }
+                else {
+                    upperBoundOfScore -= config.mismatchPenalty * nm;
+                }
+                if (upperBoundOfScore < bestScore) {
+                    ++numCutOff;
+                    continue;
+                }
 
                 //                if (allowedMismatches == 0) {
                 //                    // do exact match
@@ -497,8 +533,6 @@ public class SuffixFilter
                             }
                             else
                                 ++numFiltered;
-
-                            continue; // A match is found. Proceed to the next base first
                         }
 
                         if (nm < k && staircaseFilter.getStaircaseMask(nm + 1).get(c.cursor.getNextACGTIndex())) {
@@ -509,6 +543,7 @@ public class SuffixFilter
                         else {
                             numFiltered++;
                         }
+                        continue; // A match is found. Proceed to the next base first
                     }
                 }
 
@@ -706,6 +741,13 @@ public class SuffixFilter
                 int k = hit.getK();
                 if (k >= 0 && k < minMismatches) {
                     minMismatches = k;
+                    if (hit.nextSplit == null) {
+                        bestScore = config.matchScore * (hit.matchLength - k) - config.mismatchPenalty * k;
+                    }
+                    else {
+                        bestScore = config.matchScore * (hit.matchLength - k - 1) - config.mismatchPenalty * (k - 1)
+                                - config.splitOpenPenalty;
+                    }
                 }
 
                 ArrayList<ReadHit> newList = new ArrayList<ReadHit>();

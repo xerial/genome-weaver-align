@@ -63,9 +63,9 @@ public class AlignmentConfig extends AlignmentScoreConfig
     }
 
     @Option(symbol = "R", description = "reporting method. besthit (default), allhits, topL (top-L hits)")
-    public ReportType reportType;
+    public ReportType reportType = ReportType.BESTHIT;
 
     @Option(symbol = "L", description = "number of hits to report (default=5). Used only when -R topL option is set")
-    public int        topL = 5;
+    public int        topL       = 5;
 
 }
