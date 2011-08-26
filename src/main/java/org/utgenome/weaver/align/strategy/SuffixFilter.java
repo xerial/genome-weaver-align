@@ -343,7 +343,7 @@ public class SuffixFilter
                             read.name(), minMismatches <= k ? "(*)" : "   ", minMismatches, numFMIndexSearches,
                             numExactSearchCount, numCutOff, numFiltered, s.getElapsedTime());
 
-                    if (numFMIndexSearches > 500) {
+                    if (minMismatches > k || numFMIndexSearches > 500) {
                         _logger.debug("query:%s", q[0]);
                     }
                 }
@@ -571,31 +571,27 @@ public class SuffixFilter
                 return null;
 
             ReadHit hit = null;
-            if (si.isUniqueHit()) {
-                long seqIndex = fmIndex.toCoordinate(si.lowerBound, cursor.getStrand(), cursor.getSearchDirection());
-                int offset = cursor.getOffsetFromSearchHead(isSplit);
-                long x = seqIndex - offset;
 
-                if (x < 0 || x + fragmentLength > fmIndex.textSize()) {
-                    return null; // ignore the match at cycle boundary
-                }
+            long candidateSi = si.lowerBound;
+            long seqIndex = fmIndex.toCoordinate(candidateSi, cursor.getStrand(), cursor.getSearchDirection());
+            int offset = cursor.getOffsetFromSearchHead(isSplit);
+            long x = seqIndex - offset;
 
-                ACGTSequence ref = reference.subSequence(x, x + fragmentLength);
-                ACGTSequence query = q[cursor.getStrandIndex()];
-                if (isSplit) {
-                    query = query.subSequence(cursor.cursorB, cursor.cursorB + fragmentLength);
-                }
-                if (cursor.getStrand() == Strand.REVERSE)
-                    query = query.reverse();
-
-                SWResult alignment = BitParallelSmithWaterman.alignBlock(ref, query, nm);
-                if (alignment != null)
-                    hit = new ReadHit(x, fragmentLength, alignment.diff, cursor.getStrand(), null);
+            if (x < 0 || x + fragmentLength > fmIndex.textSize()) {
+                return null; // ignore the match at cycle boundary
             }
-            else {
-                // TODO multiple hits
 
+            ACGTSequence ref = reference.subSequence(x, x + fragmentLength);
+            ACGTSequence query = q[cursor.getStrandIndex()];
+            if (isSplit) {
+                query = query.subSequence(cursor.cursorB, cursor.cursorB + fragmentLength);
             }
+            if (cursor.getStrand() == Strand.REVERSE)
+                query = query.reverse();
+
+            SWResult alignment = BitParallelSmithWaterman.alignBlock(ref, query, nm);
+            if (alignment != null)
+                hit = new ReadHit(x, fragmentLength, alignment.diff, cursor.getStrand(), si.isUniqueHit(), null);
 
             return hit;
         }

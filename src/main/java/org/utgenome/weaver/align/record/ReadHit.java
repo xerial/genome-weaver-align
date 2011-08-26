@@ -39,13 +39,15 @@ public class ReadHit
     public final int     matchLength;
     public final int     diff;
     public final Strand  strand;
+    public final boolean isUnique;
     public final ReadHit nextSplit;
 
-    public ReadHit(long pos, int matchLength, int diff, Strand strand, ReadHit nextSplit) {
+    public ReadHit(long pos, int matchLength, int diff, Strand strand, boolean isUnique, ReadHit nextSplit) {
         this.pos = pos;
         this.matchLength = matchLength;
         this.diff = diff;
         this.strand = strand;
+        this.isUnique = isUnique;
         this.nextSplit = nextSplit;
     }
 
@@ -57,7 +59,7 @@ public class ReadHit
     }
 
     public ReadHit addSplit(ReadHit split) {
-        return new ReadHit(pos, matchLength, diff, strand, split);
+        return new ReadHit(pos, matchLength, diff, strand, isUnique, split);
     }
 
     @Override

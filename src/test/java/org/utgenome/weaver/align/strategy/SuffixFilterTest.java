@@ -90,6 +90,11 @@ public class SuffixFilterTest
     }
 
     @Test
+    public void splitExactReverse() throws Exception {
+        align(new ACGTSequence("AAGCCTTCCTTG").reverseComplement());
+    }
+
+    @Test
     public void longRead() throws Exception {
         align("AAGCCTAGATTCCGTG");
     }
