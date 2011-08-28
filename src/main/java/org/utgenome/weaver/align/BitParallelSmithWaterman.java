@@ -303,4 +303,166 @@ public class BitParallelSmithWaterman
 
     }
 
+    public static class AlignBlocksDetailed
+    {
+        private static final int Z = ACGT.values().length; // alphabet size
+
+        private final int        w;                       // word size
+        private final int        k;
+        private final int        m;
+        private final int        bMax;
+        private long[]           vp;
+        private long[]           vn;
+
+        private long[][]         peq;                     // [A, C, G, T][# of block]
+        private int[]            D;                       // D[block]
+
+        public AlignBlocksDetailed(int m, int k) {
+            this(64, m, k);
+        }
+
+        public AlignBlocksDetailed(int w, int m, int k) {
+            this.w = w;
+            this.m = m;
+            this.k = k;
+            bMax = Math.max(1, (m + w - 1) / w);
+            vp = new long[bMax];
+            vn = new long[bMax];
+            peq = new long[Z][bMax];
+            D = new int[bMax];
+        }
+
+        public void clear() {
+            Arrays.fill(vp, 0L);
+            Arrays.fill(vn, 0L);
+            for (int i = 0; i < Z; ++i)
+                for (int j = 0; j < bMax; ++j)
+                    peq[i][j] = 0L;
+        }
+
+        public SWResult align(ACGTSequence ref, ACGTSequence query) {
+            QueryMask qm = new QueryMask(query);
+            return align(ref, qm);
+        }
+
+        public SWResult align(ACGTSequence ref, QueryMask qMask) {
+            // Peq bit-vector holds flags of the character occurrence positions in the query
+            for (ACGT ch : ACGT.exceptN) {
+                for (int i = 0; i < bMax; ++i) {
+                    peq[ch.code][i] = qMask.getPatternMaskIn64bit(ch, i, w);
+                }
+            }
+
+            // Fill the flanking region with 1s
+            {
+                int f = m % w;
+                long mask = f == 0 ? 0L : (~0L << f);
+                for (int i = 0; i < Z; ++i) {
+                    //peq[i][bMax - 1] |= mask;
+                }
+            }
+            //            if (_logger.isTraceEnabled()) {
+            //                _logger.trace("peq:%s", qMask);
+            //            }
+            return align(ref);
+        }
+
+        private SWResult align(ACGTSequence ref) {
+
+            SWResult bestHit = null;
+
+            final int N = (int) ref.textSize();
+            final int W = w - (int) ref.textSize() % w;
+
+            // Initialize the vertical input
+            for (int r = 0; r < bMax; ++r) {
+                vp[r] = ~0L; // all 1s
+                vn[r] = 0L; // all 0s
+            }
+            // Init the score
+            D[0] = w;
+
+            int b = Math.max(1, (k + w - 1) / w);
+            for (int j = 0; j < N; ++j) {
+                ACGT ch = ref.getACGT(j);
+                int carry = 0;
+                for (int r = 0; r < b; ++r) {
+                    int nextScore = alignBlock(j, ch, r, carry);
+                    D[r] += nextScore;
+                    //                    if (_logger.isTraceEnabled()) {
+                    //                        _logger.trace("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore, r,
+                    //                                D[r]);
+                    //                    }
+                    carry = nextScore;
+                }
+
+                if (b < bMax && D[b - 1] - carry <= k && (((peq[ch.code][b] & 1L) != 0L) | carry < 0)) {
+                    b++;
+                    int nextScore = alignBlock(j, ch, b - 1, carry);
+                    D[b - 1] = D[b - 2] + w - carry + nextScore;
+                    //                    if (_logger.isTraceEnabled()) {
+                    //                        _logger.trace("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore,
+                    //                                b - 1, D[b - 1]);
+                    //                    }
+                }
+                else {
+                    while (b > 1 && D[b - 1] >= k + w) {
+                        --b;
+                    }
+                }
+
+                if (b == bMax) {
+                    //                    if (D[b - 1] <= W + k) {
+                    //                        if (_logger.isTraceEnabled())
+                    //                            _logger.trace("match at %d", j);
+                    //                    }
+
+                    if (bestHit == null) {
+                        bestHit = new SWResult(j, D[b - 1] - W);
+                        continue;
+                    }
+
+                    if (bestHit.diff > D[b - 1] - W) {
+                        bestHit = new SWResult(j, D[b - 1] - W);
+                    }
+                }
+            }
+            return bestHit;
+        }
+
+        private int alignBlock(int j, ACGT ch, int r, int hin) {
+            long vp = this.vp[r];
+            long vn = this.vn[r];
+            long x = this.peq[ch.code][r];
+            if (hin < 0)
+                x |= 1L;
+            long d0 = ((vp + (x & vp)) ^ vp) | x | vn;
+            long hn = vp & d0;
+            long hp = (vn | ~(vp | d0));
+            int hout = 0;
+
+            hout += (int) ((hp >>> (w - 1)) & 1L);
+            hout -= (int) ((hn >>> (w - 1)) & 1L);
+
+            long hp2 = (hp << 1);
+            long hn2 = (hn << 1);
+            if (hin < 0)
+                hn2 |= 1L;
+            if (hin > 0)
+                hp2 |= 1L;
+
+            this.vp[r] = hn2 | ~(hp2 | d0);
+            this.vn[r] = hp2 & d0;
+
+            //            if (_logger.isTraceEnabled()) {
+            //                _logger.trace("[%s] j:%2d, block:%d, hin:%2d, hout:%2d, hp:%s, hn:%s, vp:%s, vn:%s, d0:%s", ch, j, r,
+            //                        hin, hout, toBinary(hp, w), toBinary(hn, w), toBinary(this.vp[r], w), toBinary(this.vn[r], w),
+            //                        toBinary(d0, w));
+            //            }
+
+            return hout;
+        }
+
+    }
+
 }

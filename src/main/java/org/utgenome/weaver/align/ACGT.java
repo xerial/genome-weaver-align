@@ -43,6 +43,7 @@ public enum ACGT {
             4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 };
 
     private final static ACGT[] codeTable           = { A, C, G, T, N, N, N, N, N };
+    private final static char[] charTable           = { 'A', 'C', 'G', 'T', 'N' };
     public final byte           code;
     public final static ACGT[]  exceptN             = { A, C, G, T };
 
@@ -52,6 +53,10 @@ public enum ACGT {
 
     public ACGT complement() {
         return complement(code);
+    }
+
+    public char toChar() {
+        return charTable[code];
     }
 
     public static ACGT complement(byte code) {

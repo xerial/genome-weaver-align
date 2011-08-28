@@ -29,6 +29,7 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import org.utgenome.weaver.align.record.SWResult;
 import org.xerial.lens.SilkLens;
+import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
 
 public class BitParallelSmithWatermanTest
@@ -108,4 +109,44 @@ public class BitParallelSmithWatermanTest
 
     }
 
+    @Test
+    public void perfComparison() throws Exception {
+
+        ACGTSequence ref = new ACGTSequence(
+                "ACGTGCGGGTTATATTACCGGTTCGCGGCATAGGAAATTGGATAACCGCTAGCATGCATGCCCGATTCAGTGGTGTCACATTTGCCGATCACCCTTCGGTCAGTT");
+        ACGTSequence query = new ACGTSequence(
+                "TATTACCGGTTCGCGGCATAGGAAATTGGAAAACCGCTAGCATGCATGCCCGATTCAGTGGTGTCACATTTGCCGATC");
+
+        final int K = 10;
+        final int N = 10000;
+        StopWatch s1 = new StopWatch();
+        s1.stop();
+        StopWatch s2 = new StopWatch();
+        s2.stop();
+
+        for (int k = 0; k < K; ++k) {
+            {
+                s1.resume();
+                for (int i = 0; i < N; ++i) {
+                    SmithWatermanAligner.dpOnly(ref, query);
+                }
+                s1.stop();
+            }
+
+            {
+                s2.resume();
+                for (int i = 0; i < N; ++i) {
+                    BitParallelSmithWaterman.alignBlock(ref, query, 10);
+                }
+                s2.stop();
+            }
+        }
+
+        double swTime = s1.getElapsedTime();
+        double bpTime = s2.getElapsedTime();
+        _logger.debug("SW: %.2f", swTime);
+        _logger.debug("BP: %.2f", bpTime);
+        _logger.debug("SW/BP: %.2f speed up", swTime / bpTime);
+
+    }
 }

@@ -34,6 +34,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.utgenome.format.fasta.GenomeSequence;
 import org.xerial.snappy.SnappyInputStream;
 import org.xerial.snappy.SnappyOutputStream;
 import org.xerial.util.log.Logger;
@@ -50,7 +51,7 @@ import org.xerial.util.log.Logger;
  * @author leo
  * 
  */
-public class ACGTSequence implements LSeq
+public class ACGTSequence implements LSeq, GenomeSequence
 {
     private static Logger     _logger        = Logger.getLogger(ACGTSequence.class);
 
@@ -562,6 +563,16 @@ public class ACGTSequence implements LSeq
     @Override
     public long increment(long i, long val) {
         throw new UnsupportedOperationException("update");
+    }
+
+    @Override
+    public int length() {
+        return (int) textSize();
+    }
+
+    @Override
+    public char charAt(int index) {
+        return getACGT(index).toChar();
     }
 
 }

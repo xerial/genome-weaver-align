@@ -54,7 +54,7 @@ import org.xerial.util.StringUtil;
 import org.xerial.util.log.Logger;
 
 /**
- * Suffix filter
+ * Alignment algorithm using suffix filter on NFA and FM index.
  * 
  * <pre>
  *   *---*---*---*
@@ -75,7 +75,7 @@ public class SuffixFilter
     private final FMIndexOnGenome             fmIndex;
     private final AlignmentConfig             config;
     private final ACGTSequence                reference;
-    private final int                         k;
+    private final int                         k;                                                              // maximum number of mismatches allowed
 
     private HashMap<Integer, StaircaseFilter> staircaseFilterHolder = new HashMap<Integer, StaircaseFilter>();
 
@@ -271,6 +271,12 @@ public class SuffixFilter
         new AlignmentProcess(read, out).align();
     }
 
+    /**
+     * Alignment state queue
+     * 
+     * @author leo
+     * 
+     */
     private static class StateQueue extends PriorityQueue<SearchState>
     {
         private static final long serialVersionUID = 1L;
@@ -305,6 +311,12 @@ public class SuffixFilter
         }
     }
 
+    /**
+     * Get the staircase filter of NFA for the specified query length
+     * 
+     * @param queryLength
+     * @return
+     */
     private StaircaseFilter getStairCaseFilter(int queryLength) {
         if (!staircaseFilterHolder.containsKey(queryLength)) {
             StaircaseFilter filter = new StaircaseFilter(queryLength, k);
@@ -409,9 +421,6 @@ public class SuffixFilter
             out.emit(r);
         }
 
-        /**
-         * @throws Exception
-         */
         /**
          * @throws Exception
          */
