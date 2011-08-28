@@ -170,8 +170,10 @@ public class ReadReaderFactory
 
             @Override
             public void parse(ObjectHandler<Read> handler) throws Exception {
-                handler.handle(new SingleEndRead(query, query, null));
+                handler.init();
+                handler.handle(new SingleEndRead("read", query, null));
                 count++;
+                handler.finish();
             }
 
             @Override

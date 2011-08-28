@@ -72,6 +72,7 @@ public class GenomeWeaver
             public void afterReadingGlobalOptions(GlobalCommandOption opt) {
                 if (globalOption.logLevel != null)
                     Logger.getLogger(GenomeWeaver.class.getPackage()).setLogLevel(globalOption.logLevel);
+
             }
         });
 

@@ -25,7 +25,6 @@
 package org.utgenome.weaver.align;
 
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 
 import org.utgenome.weaver.align.record.AlignmentRecord;
@@ -51,7 +50,7 @@ public class SAMOutput implements ObjectHandler<AlignmentRecord>, Reporter
 
     public SAMOutput(SequenceBoundary sequenceBoundary, OutputStream out) {
         this.boundary = sequenceBoundary;
-        this.out = new PrintWriter(new OutputStreamWriter(out));
+        this.out = new PrintWriter(out, true);
     }
 
     @Override
@@ -66,6 +65,7 @@ public class SAMOutput implements ObjectHandler<AlignmentRecord>, Reporter
 
     @Override
     public void finish() throws Exception {
+        out.flush();
         out.close();
     }
 

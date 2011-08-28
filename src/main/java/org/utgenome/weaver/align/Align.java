@@ -24,6 +24,8 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import java.io.OutputStream;
+
 import org.utgenome.UTGBException;
 import org.utgenome.weaver.GenomeWeaverCommand;
 import org.utgenome.weaver.align.record.AlignmentRecord;
@@ -38,6 +40,7 @@ import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandler;
 import org.xerial.util.ObjectHandlerBase;
 import org.xerial.util.StopWatch;
+import org.xerial.util.io.NullOutputStream;
 import org.xerial.util.io.StandardOutputStream;
 import org.xerial.util.log.Logger;
 
@@ -90,11 +93,17 @@ public class Align extends GenomeWeaverCommand
         SequenceBoundary b = SequenceBoundary.loadSilk(forwardDB.pacIndex());
 
         FMIndexOnGenome fmIndex = FMIndexOnGenome.load(config.refSeq);
-        Reporter reporter = new SAMOutput(fmIndex.getSequenceBoundary(), new StandardOutputStream());
-
-        _logger.info("loading reference sequence %s", forwardDB.pac());
-        ACGTSequence reference = ACGTSequence.loadFrom(forwardDB.pac());
-        query(fmIndex, reference, config, reader, reporter);
+        OutputStream out = config.quiet ? new NullOutputStream() : new StandardOutputStream();
+        SAMOutput reporter = new SAMOutput(fmIndex.getSequenceBoundary(), out);
+        try {
+            reporter.init();
+            _logger.info("loading reference sequence %s", forwardDB.pac());
+            ACGTSequence reference = ACGTSequence.loadFrom(forwardDB.pac());
+            query(fmIndex, reference, config, reader, reporter);
+        }
+        finally {
+            reporter.finish();
+        }
     }
 
     public static void querySingle(FMIndexOnGenome fmIndex, ACGTSequence reference, String query, Reporter out)

@@ -46,6 +46,9 @@ public class AlignmentConfig extends AlignmentScoreConfig
     @Argument(name = "read file")
     public List<String> readFiles;
 
+    @Option(longName = "quiet", description = "disable output")
+    public boolean      quiet = false;
+
     public static enum Strategy {
         SF("suffix filter"), BD("bi-directional search"), BWA("bwa");
         public final String description;

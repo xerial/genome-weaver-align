@@ -30,8 +30,6 @@ import java.util.HashMap;
 import java.util.PriorityQueue;
 
 import org.utgenome.UTGBException;
-import org.utgenome.gwt.utgb.client.bio.CIGAR;
-import org.utgenome.gwt.utgb.client.bio.CIGAR.Type;
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.AlignmentConfig;
@@ -49,6 +47,7 @@ import org.utgenome.weaver.align.record.SWResult;
 import org.utgenome.weaver.align.record.SingleEndRead;
 import org.utgenome.weaver.align.strategy.FMSearchNFA.NextState;
 import org.utgenome.weaver.parallel.Reporter;
+import org.xerial.lens.JSONLens;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.StopWatch;
 import org.xerial.util.StringUtil;
@@ -262,9 +261,8 @@ public class SuffixFilter
             public void emit(Object result) throws Exception {
                 if (AlignmentRecord.class.isInstance(result)) {
                     AlignmentRecord r = (AlignmentRecord) result;
-                    _logger.debug("\n" + r.toSAMLine());
+                    _logger.debug(JSONLens.toJSON(r));
                 }
-
             }
         }).align();
     }
@@ -347,101 +345,6 @@ public class SuffixFilter
             this.out = out;
         }
 
-        public AlignmentRecord convert(ReadHit hit) {
-
-            ACGTSequence query = q[0];
-            String qual = read.getQual(0);
-            if (qual == null)
-                qual = "";
-            if (!hit.strand.isForward()) {
-                query = query.reverseComplement();
-                qual = reverse(qual);
-            }
-
-            if (hit.nextSplit == null) {
-                // TODO cigar, alignment score
-                CIGAR cigar = new CIGAR();
-                cigar.add(hit.matchLength, Type.Matches);
-                AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos,
-                        (int) hit.pos + hit.matchLength, hit.getK(), cigar, query.toString(), qual, 1, null);
-                return rec;
-            }
-            else {
-                ReadHit split = hit.nextSplit;
-                ACGTSequence s1 = query.subSequence(0, hit.matchLength);
-                ACGTSequence s2 = query.subSequence(hit.matchLength, m);
-                int b1 = Math.min(qual.length(), hit.matchLength);
-                int b2 = Math.min(qual.length(), m);
-                String q1 = qual.substring(0, b1);
-                String q2 = qual.substring(b1, b2);
-
-                if (hit.isUnique()) {
-                    if (split.isUnique()) {
-                        if (hit.chr.equals(split.chr)) {
-                            // TODO cigar, score, quality value trimming
-                            CIGAR cigar1 = new CIGAR();
-                            cigar1.add(hit.matchLength, Type.Matches);
-                            // cigar1.add(split.matchLength, Type.HardClip);
-                            CIGAR cigar2 = new CIGAR();
-                            //cigar2.add(hit.matchLength, Type.HardClip);
-                            cigar2.add(split.matchLength, Type.Matches);
-                            AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos,
-                                    (int) hit.pos + hit.matchLength, hit.diff, cigar1, s1.toString(), q1, 1, null);
-                            AlignmentRecord splitRec = new AlignmentRecord(read.name(), split.chr, split.strand,
-                                    (int) split.pos, (int) split.pos + split.matchLength, split.diff, cigar2,
-                                    s2.toString(), q2, 1, null);
-                            rec.split = splitRec;
-                            return rec;
-                        }
-                        else {
-                            // use longer alignment as a base
-                            if (hit.matchLength >= split.matchLength) {
-                                CIGAR cigar = new CIGAR();
-                                cigar.add(hit.matchLength, Type.Matches);
-                                cigar.add(split.matchLength, Type.SoftClip);
-                                AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand,
-                                        (int) hit.pos, (int) hit.pos + m, hit.diff, cigar, query.toString(), qual, 1,
-                                        null);
-                                return rec;
-                            }
-                            else {
-                                // TODO Use soft clip to represent split part
-                                CIGAR cigar = new CIGAR();
-                                cigar.add(hit.matchLength, Type.SoftClip);
-                                cigar.add(split.matchLength, Type.Matches);
-                                AlignmentRecord rec = new AlignmentRecord(read.name(), split.chr, split.strand,
-                                        (int) split.pos - hit.matchLength, (int) split.pos - hit.matchLength + m,
-                                        split.diff, cigar, query.toString(), qual, 1, null);
-                                return rec;
-                            }
-                        }
-                    }
-                    else {
-                        CIGAR cigar = new CIGAR();
-                        cigar.add(hit.matchLength, Type.Matches);
-                        cigar.add(split.matchLength, Type.SoftClip);
-                        AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos,
-                                (int) hit.pos + m, hit.diff, cigar, query.toString(), qual, 1, null);
-                        return rec;
-                    }
-                }
-                else {
-                    if (split.isUnique()) {
-                        // TODO Use soft clip to represent split part
-                        CIGAR cigar = new CIGAR();
-                        cigar.add(hit.matchLength, Type.SoftClip);
-                        cigar.add(split.matchLength, Type.Matches);
-                        AlignmentRecord rec = new AlignmentRecord(read.name(), split.chr, split.strand, (int) split.pos
-                                - hit.matchLength, (int) split.pos - hit.matchLength + m, split.diff, cigar,
-                                query.toString(), qual, 1, null);
-                        return rec;
-                    }
-                }
-
-            }
-            return null;
-        }
-
         public void align() throws Exception {
 
             StopWatch s = new StopWatch();
@@ -472,20 +375,24 @@ public class SuffixFilter
                     switch (config.reportType) {
                     case ALLHITS:
                         for (ReadHit each : resultHolder.hitList) {
-                            out.emit(convert(each));
+                            report(each, 0);
                         }
                         break;
                     case BESTHIT:
-                        out.emit(convert(besthit));
+                        report(besthit, 0);
                         break;
                     case TOPL: {
                         int max = Math.min(config.topL, resultHolder.hitList.size());
                         for (int i = 0; i < max; ++i) {
-                            out.emit(convert(resultHolder.hitList.get(i)));
+                            report(resultHolder.hitList.get(i), 0);
                         }
                         break;
                     }
                     }
+                }
+                else {
+                    // report unmapped read
+                    report(new ReadHit("*", 0, 0, -1, Strand.FORWARD, 0, null), 0);
                 }
 
             }
@@ -493,6 +400,13 @@ public class SuffixFilter
                 _logger.error("error at query: %s", q[0]);
                 throw e;
             }
+        }
+
+        public void report(ReadHit hit, int numTotalHits) throws Exception {
+            if (_logger.isTraceEnabled())
+                _logger.trace(SilkLens.toSilk("hit", hit));
+            AlignmentRecord r = AlignmentRecord.convert(hit, read, numTotalHits);
+            out.emit(r);
         }
 
         /**
@@ -568,15 +482,24 @@ public class SuffixFilter
 
             }
 
+            // Iterative search for k>=0
             while (!queue.isEmpty()) {
                 SearchState c = queue.poll();
                 if (_logger.isTraceEnabled()) {
                     _logger.trace("state: %s, FMIndex:%d, CutOff:%d", c, numFMIndexSearches, numCutOff);
                 }
 
+                // When a hit is found, report the alignment
+                if (c.hasHit() || c.cursor.getRemainingBases() == 0) {
+                    reportAlignment(c);
+                    continue;
+                }
+
+                // No more child states
                 if (c.isFinished())
                     continue;
 
+                // lower bound of the number of mismatches
                 int nm = c.getLowerBoundOfK();
                 if (nm > minMismatches) {
                     ++numCutOff;
@@ -588,7 +511,6 @@ public class SuffixFilter
                     continue;
 
                 final int strandIndex = c.cursor.getStrand().index;
-
                 // Step forward the cursor
                 // Match 
                 ACGT nextBase = c.cursor.nextACGT(q);
@@ -600,24 +522,10 @@ public class SuffixFilter
                             ++numFMIndexSearches;
                             SearchState nextState = c.nextState(nextBase, nextSi, queryMask[strandIndex],
                                     staircaseFilter);
-                            if (nextState != null) {
-                                if (nextState.hasHit()) {
-                                    reportAlignment(nextState);
-                                }
-                                else
-                                    queue.add(nextState);
-                            }
+                            if (nextState != null)
+                                queue.add(nextState);
                             else
                                 ++numFiltered;
-
-                            //                            if (nm < k && staircaseFilter.getStaircaseMask(nm + 1).get(c.cursor.getNextACGTIndex())) {
-                            //                                // mismatch is allowed at this position
-                            //                                c.lowerThePrioity(1); // lower the priority of searching mismatches
-                            //                                queue.add(c); // preserve the state for back-tracking
-                            //                            }
-                            //                            else {
-                            //                                numFiltered++;
-                            //                            }
                             continue;
                         }
                     }
@@ -636,12 +544,8 @@ public class SuffixFilter
                             SiSet nextSi = next(c, ch);
                             ++numFMIndexSearches;
                             SearchState nextState = c.nextState(ch, nextSi, queryMask[strandIndex], staircaseFilter);
-                            if (nextState != null) {
-                                if (nextState.hasHit())
-                                    reportAlignment(nextState);
-                                else
-                                    queue.add(nextState);
-                            }
+                            if (nextState != null)
+                                queue.add(nextState);
                             else
                                 ++numFiltered;
                         }
@@ -665,24 +569,8 @@ public class SuffixFilter
         }
 
         private void reportExactMatchAlignment(FMQuickScan f) throws Exception {
-
             PosOnGenome pos = fmIndex.toGenomeCoordinate(f.si.lowerBound, m, f.strand);
             resultHolder.add(new ReadHit(pos.chr, pos.pos, m, 0, f.strand, (int) f.si.range(), null));
-            //                
-            //                CIGAR cigar = new CIGAR();
-            //                cigar.add(m, CIGAR.Type.Matches);
-            //                // TODO paired-end support
-            //                ACGTSequence r = read.getRead(0);
-            //                String qual = read.getQual(0);
-            //                if (!f.strand.isForward()) {
-            //                    r = r.reverseComplement();
-            //                    qual = reverse(qual);
-            //                }
-            //
-            //                AlignmentRecord rec = new AlignmentRecord(read.name(), pos.chr, f.strand, pos.pos, pos.pos + m, 0,
-            //                        cigar, r.toString(), qual, m * config.matchScore, null);
-            //                out.emit(rec);
-
         }
 
         public ReadHit verify(SearchState s, int fragmentLength, boolean isSplit) {
@@ -816,6 +704,14 @@ public class SuffixFilter
         private class AlignmentResultHolder
         {
             ArrayList<ReadHit> hitList = new ArrayList<ReadHit>();
+
+            public int totalHits() {
+                int count = 0;
+                for (ReadHit each : hitList) {
+                    count += each.numHits;
+                }
+                return count;
+            }
 
             public void add(ReadHit hit) {
                 int k = hit.getK();
