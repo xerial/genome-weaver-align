@@ -24,6 +24,8 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import static org.junit.Assert.*;
+
 import org.junit.Test;
 import org.utgenome.weaver.align.SmithWatermanAligner.Alignment;
 import org.xerial.util.log.Logger;
@@ -32,23 +34,27 @@ public class SmithWatermanAlignerTest
 {
     private static Logger _logger = Logger.getLogger(SmithWatermanAlignerTest.class);
 
-    public void bandedAlign(String ref, String query) throws Exception {
+    public Alignment bandedAlign(String ref, String query) throws Exception {
         ACGTSequence r = new ACGTSequence(ref);
         ACGTSequence q = new ACGTSequence(query);
         Alignment alignment = SmithWatermanAligner.bandedAlign(r, q);
         _logger.debug(alignment);
+        return alignment;
     }
 
-    public void bandedAlign(String ref, String query, AlignmentScoreConfig config) throws Exception {
+    public Alignment bandedAlign(String ref, String query, AlignmentScoreConfig config) throws Exception {
         ACGTSequence r = new ACGTSequence(ref);
         ACGTSequence q = new ACGTSequence(query);
         Alignment alignment = SmithWatermanAligner.bandedAlign(r, q, config);
         _logger.debug(alignment);
+        return alignment;
     }
 
     @Test
     public void align() throws Exception {
-        bandedAlign("GATATAGAGATCTGGCCTAG", "TAGAGAT");
+        Alignment alignment = bandedAlign("GATATAGAGATCTGGCCTAG", "TAGAGAT");
+        assertEquals("7M", alignment.cigar);
+        assertEquals(4, alignment.pos);
     }
 
     @Test
@@ -56,7 +62,10 @@ public class SmithWatermanAlignerTest
         AlignmentScoreConfig config = new AlignmentScoreConfig();
         config.gapOpenPenalty = 5;
         config.gapExtensionPenalty = 2;
-        bandedAlign("TATACCAAGATATAGAGATCTGGCAAGTGTGTTAT", "TACCAAGATATAGATCTGGCAAGTGTGTTAT", config);
+        Alignment alignment = bandedAlign("TATACCAAGATATAGAGATCTGGCAAGTGTGTTAT", "TACCAAGATATAGATCTGGCAAGTGTGTTAT",
+                config);
+        assertEquals("11M2I20M", alignment.cigar);
+        assertEquals(2, alignment.pos);
     }
 
     @Test
@@ -64,11 +73,16 @@ public class SmithWatermanAlignerTest
         AlignmentScoreConfig config = new AlignmentScoreConfig();
         config.gapOpenPenalty = 5;
         config.gapExtensionPenalty = 2;
-        bandedAlign("TATACCAAGATATAGAGATCTGGCAAGTGTGTTAT", "TACCAAGATATAGAGAGATCTGGCAAGTGTGTTAT", config);
+        Alignment alignment = bandedAlign("TATACCAAGATATAGAGATCTGGCAAGTGTGTTAT", "TACCAAGATATAGAGAGATCTGGCAAGTGTGTTAT",
+                config);
+        assertEquals("11M2D22M", alignment.cigar);
+        assertEquals(2, alignment.pos);
     }
 
     @Test
     public void clippedAlignment() throws Exception {
-        bandedAlign("ATTTGTATTATACCAAGAT", "ACCGGAAGGACCAAGAT");
+        Alignment alignment = bandedAlign("ATTTGTATTATACCAAGAT", "ACCGGAAGGACCAAGAT");
+        assertEquals("9S8M", alignment.cigar);
+        assertEquals(11, alignment.pos);
     }
 }

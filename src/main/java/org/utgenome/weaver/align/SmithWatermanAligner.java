@@ -41,7 +41,7 @@ public class SmithWatermanAligner
     {
         public final String cigar;
         public final int    score;
-        public final int    pos;  // 1-based leftmost position of the clipped sequence
+        public final int    pos;  // 0-based leftmost position of the clipped sequence
         public final String rseq; // reference sequence
         public final String qseq; // query sequence
 
@@ -114,7 +114,7 @@ public class SmithWatermanAligner
         return sw.traceback();
     }
 
-    private void forwardDP(boolean bandedAlignment) {
+    protected void forwardDP(boolean bandedAlignment) {
         // initialized the matrix
         final int MIN = Integer.MIN_VALUE / 2; // sufficiently small value 
         score[0][0] = 0;
@@ -171,7 +171,7 @@ public class SmithWatermanAligner
      * @author leo
      * 
      */
-    private class DPScore
+    protected class DPScore
     {
         public final int M;
         public final int I;
@@ -228,7 +228,7 @@ public class SmithWatermanAligner
      * 
      * @return
      */
-    private Alignment traceback() {
+    protected Alignment traceback() {
 
         // trace back
         StringBuilder cigar = new StringBuilder();
@@ -360,7 +360,7 @@ public class SmithWatermanAligner
      * @param seq
      * @return
      */
-    public static GenomeSequence wrap(String seq) {
+    private static GenomeSequence wrap(String seq) {
         return new StringWrapper(seq);
     }
 
