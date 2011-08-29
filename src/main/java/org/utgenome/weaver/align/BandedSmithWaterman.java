@@ -46,7 +46,6 @@ public class BandedSmithWaterman
     // for gap-extension (Smith-Waterman Gotoh)
     private final int[][]              Li;
     private final int[][]              Ld;
-    private final Trace[][]            trace;
 
     private int                        maxRow, maxCol, maxScore;
 
@@ -61,7 +60,6 @@ public class BandedSmithWaterman
         score = new int[M][N];
         Li = new int[M][N];
         Ld = new int[M][N];
-        trace = new Trace[M][N];
     }
 
     public static Alignment align(GenomeSequence ref, GenomeSequence query) {
@@ -79,20 +77,17 @@ public class BandedSmithWaterman
         // initialized the matrix
         final int MIN = Integer.MIN_VALUE / 2; // sufficiently small value 
         score[0][0] = 0;
-        trace[0][0] = Trace.NONE;
         Li[0][0] = MIN;
         Ld[0][0] = MIN;
         for (int col = 1; col < N; ++col) {
             score[0][col] = 0; // Set 0 for local-alignment (Alignment can start from any position in the reference sequence)
             Li[0][col] = MIN;
             Ld[0][col] = -config.gapOpenPenalty - config.gapExtensionPenalty * (col - 1);
-            trace[0][col] = Trace.NONE;
         }
         for (int row = 1; row < M; ++row) {
             score[row][0] = 0; // Setting this row to 0 allows clipped-alignment
             Li[row][0] = -config.gapOpenPenalty - config.gapExtensionPenalty * (row - 1);
             Ld[row][0] = MIN;
-            trace[row][0] = Trace.NONE;
         }
 
         // dynamic programming
@@ -100,9 +95,9 @@ public class BandedSmithWaterman
             for (int col = 1; col < N; ++col) {
                 char r = Character.toLowerCase(ref.charAt(col - 1));
                 char q = Character.toLowerCase(query.charAt(row - 1));
+                int scoreDiff = r == q ? config.matchScore : -config.mismatchPenalty;
 
                 int S, I, D; // score
-                int scoreDiff = r == q ? config.matchScore : -config.mismatchPenalty;
                 S = Math.max(score[row - 1][col - 1] + scoreDiff,
                         Math.max(Li[row - 1][col - 1] + scoreDiff, Ld[row - 1][col - 1] + scoreDiff));
                 I = Math.max(score[row][col - 1] - config.gapOpenPenalty, Li[row][col - 1] - config.gapExtensionPenalty);
@@ -112,36 +107,12 @@ public class BandedSmithWaterman
                     score[row][col] = 0;
                     Li[row][col] = 0;
                     Ld[row][col] = 0;
-                    trace[row][col] = Trace.NONE;
                     continue;
                 }
 
                 Li[row][col] = I;
                 Ld[row][col] = D;
-
-                // choose the best score
-                if (S >= I) {
-                    if (S >= D) {
-                        // match
-                        score[row][col] = S;
-                        trace[row][col] = Trace.DIAGONAL;
-                    }
-                    else {
-                        // deletion
-                        score[row][col] = D;
-                        trace[row][col] = Trace.UP;
-                    }
-                }
-                else if (I >= D) {
-                    // insertion
-                    score[row][col] = I;
-                    trace[row][col] = Trace.LEFT;
-                }
-                else {
-                    // deletion
-                    score[row][col] = D;
-                    trace[row][col] = Trace.UP;
-                }
+                score[row][col] = Math.max(S, Math.max(I, D));
 
                 // update max score
                 if (score[row][col] > maxScore) {
@@ -182,11 +153,11 @@ public class BandedSmithWaterman
             row--;
         }
 
-        // Trace back phase
-        boolean toContinue = true;
-        for (col = maxCol, row = maxRow; toContinue;) {
+        // Trace back 
+        traceback: for (col = maxCol, row = maxRow;;) {
 
             Trace path = Trace.NONE;
+            // Recompute the score
             if (col >= 1 && row >= 1) {
                 char r = Character.toLowerCase(ref.charAt(col - 1));
                 char q = Character.toLowerCase(query.charAt(row - 1));
@@ -198,7 +169,7 @@ public class BandedSmithWaterman
                 I = Math.max(score[row][col - 1] - config.gapOpenPenalty, Li[row][col - 1] - config.gapExtensionPenalty);
                 D = Math.max(score[row - 1][col] - config.gapOpenPenalty, Ld[row - 1][col] - config.gapExtensionPenalty);
 
-                if (S > 0 || I > 0 | D > 0) {
+                if (S > 0 || I > 0 || D > 0) {
                     if (S >= I) {
                         if (S >= D)
                             path = Trace.DIAGONAL;
@@ -237,7 +208,6 @@ public class BandedSmithWaterman
                 row--;
                 break;
             case NONE:
-                toContinue = false;
                 while (col >= 1 || row >= 1) {
                     if (row >= 1) {
                         cigar.append("S");
@@ -252,7 +222,7 @@ public class BandedSmithWaterman
                     row--;
                 }
 
-                break;
+                break traceback; // exit the loop
             }
         }
 
