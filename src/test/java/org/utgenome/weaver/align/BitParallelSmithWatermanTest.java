@@ -117,7 +117,7 @@ public class BitParallelSmithWatermanTest
         ACGTSequence query = new ACGTSequence(
                 "TATTACCGGTTCGCGGCATAGGAAATTGGAAAACCGCTAGCATGCATGCCCGATTCAGTGGTGTCACATTTGCCGATC");
 
-        final int K = 5;
+        final int K = 10;
         final int N = 10000;
         StopWatch s1 = new StopWatch();
         s1.stop();
@@ -127,13 +127,13 @@ public class BitParallelSmithWatermanTest
         s3.stop();
 
         for (int k = 0; k < K; ++k) {
-            {
-                s1.resume();
-                for (int i = 0; i < N; ++i) {
-                    SmithWatermanAligner.align(ref, query);
-                }
-                s1.stop();
-            }
+            //            {
+            //                s1.resume();
+            //                for (int i = 0; i < N; ++i) {
+            //                    SmithWatermanAligner.align(ref, query);
+            //                }
+            //                s1.stop();
+            //            }
 
             {
                 s3.resume();
@@ -155,10 +155,10 @@ public class BitParallelSmithWatermanTest
         double swTime = s1.getElapsedTime();
         double bpTime = s2.getElapsedTime();
         double bswTime = s3.getElapsedTime();
-        _logger.debug("SW: %.2f", swTime);
+        //        _logger.debug("SW: %.2f", swTime);
         _logger.debug("Banded SW: %.2f", bswTime);
         _logger.debug("BitParallel: %.2f", bpTime);
-        _logger.debug("SW/BitParallel: %.2f speed up", swTime / bpTime);
+        //        _logger.debug("SW/BitParallel: %.2f speed up", swTime / bpTime);
         _logger.debug("Banded SW/BitParallel: %.2f speed up", bswTime / bpTime);
 
     }

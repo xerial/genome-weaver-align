@@ -27,6 +27,7 @@ package org.utgenome.weaver.align;
 import org.utgenome.format.fasta.GenomeSequence;
 import org.utgenome.weaver.align.SmithWatermanAligner.Alignment;
 import org.utgenome.weaver.align.SmithWatermanAligner.Trace;
+import org.xerial.util.log.Logger;
 
 /**
  * Banded Smith-Waterman Alignment
@@ -36,6 +37,8 @@ import org.utgenome.weaver.align.SmithWatermanAligner.Trace;
  */
 public class BandedSmithWaterman
 {
+    private static Logger              _logger = Logger.getLogger(BandedSmithWaterman.class);
+
     private final GenomeSequence       ref;
     private final GenomeSequence       query;
     private final AlignmentScoreConfig config;
@@ -91,12 +94,17 @@ public class BandedSmithWaterman
         }
 
         // dynamic programming
+        int numProcessedCells = 0;
+        int columnOffset = 1 - config.bandWidth / 2;
         for (int row = 1; row < M; ++row) {
-            for (int col = 1; col < N; ++col) {
+            int colStart = Math.max(1, columnOffset + row - 1);
+            int columnMax = row == 1 ? N : Math.min(N, columnOffset + row - 1 + config.bandWidth);
+            for (int col = colStart; col < columnMax; ++col) {
                 char r = Character.toLowerCase(ref.charAt(col - 1));
                 char q = Character.toLowerCase(query.charAt(row - 1));
                 int scoreDiff = r == q ? config.matchScore : -config.mismatchPenalty;
 
+                numProcessedCells++;
                 int S, I, D; // score
                 S = Math.max(score[row - 1][col - 1] + scoreDiff,
                         Math.max(Li[row - 1][col - 1] + scoreDiff, Ld[row - 1][col - 1] + scoreDiff));
@@ -123,6 +131,9 @@ public class BandedSmithWaterman
             }
 
         }
+
+        //        if (_logger.isTraceEnabled())
+        //            _logger.trace("N:%d, M:%d, NM:%d, num processed cells: %d", N, M, N * M, numProcessedCells);
 
     }
 
