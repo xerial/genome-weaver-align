@@ -117,7 +117,7 @@ public class BitParallelSmithWatermanTest
         ACGTSequence query = new ACGTSequence(
                 "TATTACCGGTTCGCGGCATAGGAAATTGGAAAACCGCTAGCATGCATGCCCGATTCAGTGGTGTCACATTTGCCGATC");
 
-        final int K = 10;
+        final int K = 5;
         final int N = 10000;
         StopWatch s1 = new StopWatch();
         s1.stop();
@@ -128,7 +128,7 @@ public class BitParallelSmithWatermanTest
             {
                 s1.resume();
                 for (int i = 0; i < N; ++i) {
-                    SmithWatermanAligner.dpOnly(ref, query);
+                    SmithWatermanAligner.align(ref, query);
                 }
                 s1.stop();
             }
@@ -136,7 +136,7 @@ public class BitParallelSmithWatermanTest
             {
                 s2.resume();
                 for (int i = 0; i < N; ++i) {
-                    BitParallelSmithWaterman.alignBlock(ref, query, 10);
+                    BitParallelSmithWaterman.alignBlock(ref, query, (int) query.textSize());
                 }
                 s2.stop();
             }

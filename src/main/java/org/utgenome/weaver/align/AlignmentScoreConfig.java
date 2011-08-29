@@ -57,4 +57,7 @@ public class AlignmentScoreConfig
     @Option(symbol = "P", description = "skip indels within P bases from read head and tail. default=5")
     public int indelEndSkip           = 5;
 
+    @Option(symbol = "W", description = "band width for Smith-Waterman alignment. default=32")
+    public int bandWidth              = 32;
+
 }

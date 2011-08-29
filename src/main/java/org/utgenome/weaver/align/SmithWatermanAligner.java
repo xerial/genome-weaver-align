@@ -50,9 +50,14 @@ public class SmithWatermanAligner
             this.rseq = rseq;
             this.qseq = qseq;
         }
+
+        @Override
+        public String toString() {
+            return String.format("cigar:%s, score:%d, pos:%d\nrseq: %s\nqseq: %s", cigar, score, pos, rseq, qseq);
+        }
     }
 
-    private enum Trace {
+    public static enum Trace {
         NONE, DIAGONAL, LEFT, UP
     };
 
@@ -148,7 +153,7 @@ public class SmithWatermanAligner
     }
 
     private void align() {
-        // set the first row and column.  
+        // set the first row and column all 0 for the local alignment 
         for (int x = 1; x < N; ++x) {
             score[x][0] = 0;
             trace[x][0] = Trace.NONE;
