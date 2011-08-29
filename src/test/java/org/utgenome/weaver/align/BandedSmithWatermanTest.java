@@ -69,10 +69,6 @@ public class BandedSmithWatermanTest
 
     @Test
     public void clippedAlignment() throws Exception {
-        AlignmentScoreConfig config = new AlignmentScoreConfig();
-        config.gapOpenPenalty = 5;
-        config.gapExtensionPenalty = 2;
-        align("TATACCAAGATATAGAGATCTGGCAAGTGTGTTAT", "AAGAGCGACCAAGATATAGAGATCTGG", config);
+        align("ATTTGTATTATACCAAGAT", "ACCGGAAGGACCAAGAT");
     }
-
 }

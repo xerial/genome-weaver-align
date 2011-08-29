@@ -83,7 +83,7 @@ public class BandedSmithWaterman
         Li[0][0] = MIN;
         Ld[0][0] = MIN;
         for (int col = 1; col < N; ++col) {
-            score[0][col] = 0; // for local-alignment
+            score[0][col] = 0; // Set 0 for local-alignment (Alignment can start from any position in the reference sequence)
             Li[0][col] = MIN;
             Ld[0][col] = -config.gapOpenPenalty - config.gapExtensionPenalty * (col - 1);
             trace[0][col] = Trace.NONE;
@@ -185,7 +185,34 @@ public class BandedSmithWaterman
         // Trace back phase
         boolean toContinue = true;
         for (col = maxCol, row = maxRow; toContinue;) {
-            switch (trace[row][col]) {
+
+            Trace path = Trace.NONE;
+            if (col >= 1 && row >= 1) {
+                char r = Character.toLowerCase(ref.charAt(col - 1));
+                char q = Character.toLowerCase(query.charAt(row - 1));
+
+                int S, I, D; // score
+                int scoreDiff = r == q ? config.matchScore : -config.mismatchPenalty;
+                S = Math.max(score[row - 1][col - 1] + scoreDiff,
+                        Math.max(Li[row - 1][col - 1] + scoreDiff, Ld[row - 1][col - 1] + scoreDiff));
+                I = Math.max(score[row][col - 1] - config.gapOpenPenalty, Li[row][col - 1] - config.gapExtensionPenalty);
+                D = Math.max(score[row - 1][col] - config.gapOpenPenalty, Ld[row - 1][col] - config.gapExtensionPenalty);
+
+                if (S > 0 || I > 0 | D > 0) {
+                    if (S >= I) {
+                        if (S >= D)
+                            path = Trace.DIAGONAL;
+                        else
+                            path = Trace.UP;
+                    }
+                    else if (I >= D)
+                        path = Trace.LEFT;
+                    else
+                        path = Trace.UP;
+                }
+            }
+
+            switch (path) {
             case DIAGONAL:
                 // match
                 cigar.append("M");

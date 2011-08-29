@@ -157,8 +157,9 @@ public class BitParallelSmithWatermanTest
         double bswTime = s3.getElapsedTime();
         _logger.debug("SW: %.2f", swTime);
         _logger.debug("Banded SW: %.2f", bswTime);
-        _logger.debug("BP: %.2f", bpTime);
-        _logger.debug("SW/BP: %.2f speed up", swTime / bpTime);
+        _logger.debug("BitParallel: %.2f", bpTime);
+        _logger.debug("SW/BitParallel: %.2f speed up", swTime / bpTime);
+        _logger.debug("Banded SW/BitParallel: %.2f speed up", bswTime / bpTime);
 
     }
 }
