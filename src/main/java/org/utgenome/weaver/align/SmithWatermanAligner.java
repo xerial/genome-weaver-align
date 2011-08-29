@@ -25,9 +25,11 @@
 package org.utgenome.weaver.align;
 
 import org.utgenome.format.fasta.GenomeSequence;
+import org.xerial.util.log.Logger;
 
 /**
- * Simple Smith-Waterman aligner
+ * Smith-Waterman based aligner with Affine-gap score. Standard/banded alignment
+ * is provided.
  * 
  * @author leo
  * 
@@ -57,170 +59,176 @@ public class SmithWatermanAligner
         }
     }
 
-    public static enum Trace {
+    private enum Trace {
         NONE, DIAGONAL, LEFT, UP
     };
 
-    public static class Config
-    {
-        public int     MATCH_SCORE             = 1;
-        public int     MISMATCH_PENALTY        = 3;
-        public int     GAPOPEN_PENALTY         = 5;
-        /**
-         * for BSS alignment
-         */
-        public boolean BSS_ALIGNMENT           = true;
-        public int     BSS_CT_MISMATCH_PENALTY = 0;
-    }
+    private static Logger              _logger = Logger.getLogger(SmithWatermanAligner.class);
 
-    private final Config config;
+    private final GenomeSequence       ref;
+    private final GenomeSequence       query;
+    private final AlignmentScoreConfig config;
+    private final int                  N;
+    private final int                  M;
+    private final int                  W;
+    private final int[][]              score;
+    // for gap-extension (Smith-Waterman Gotoh)
+    private final int[][]              Li;
+    private final int[][]              Ld;
 
-    public static class StringWrapper implements GenomeSequence
-    {
+    private int                        maxRow, maxCol, maxScore;
 
-        public final String seq;
-
-        public StringWrapper(String seq) {
-            this.seq = seq;
-        }
-
-        public char charAt(int index) {
-            return seq.charAt(index);
-        }
-
-        public int length() {
-            return seq.length();
-        }
-
-    }
-
-    /**
-     * Wrap the input string as {@link GenomeSequence}
-     * 
-     * @param seq
-     * @return
-     */
-    public static GenomeSequence wrap(String seq) {
-        return new StringWrapper(seq);
-    }
-
-    public Alignment align(String seq1, String seq2) {
-        return align(wrap(seq1), wrap(seq2));
-    }
-
-    private final GenomeSequence seq1;
-    private final GenomeSequence seq2;
-
-    private final int            N;
-    private final int            M;
-
-    // prepare the score matrix
-    private final int            score[][];
-    private final Trace          trace[][];
-
-    // maximum score and its location 
-    private int                  maxScore = 0;
-    private int                  maxX     = 0;
-    private int                  maxY     = 0;
-
-    private SmithWatermanAligner(GenomeSequence seq1, GenomeSequence seq2) {
-        this(new Config(), seq1, seq2);
-    }
-
-    private SmithWatermanAligner(Config config, GenomeSequence seq1, GenomeSequence seq2) {
+    private SmithWatermanAligner(GenomeSequence ref, GenomeSequence query, AlignmentScoreConfig config) {
+        this.ref = ref;
+        this.query = query;
         this.config = config;
-        this.seq1 = seq1;
-        this.seq2 = seq2;
-        this.N = seq1.length() + 1;
-        this.M = seq2.length() + 1;
+        this.N = ref.length() + 1;
+        this.M = query.length() + 1;
+        this.W = config.bandWidth;
 
-        score = new int[N][M];
-        trace = new Trace[N][M];
+        score = new int[M][N];
+        Li = new int[M][N];
+        Ld = new int[M][N];
+    }
 
+    public static Alignment standardAlign(GenomeSequence ref, GenomeSequence query) {
+        return standardAlign(ref, query, new AlignmentScoreConfig());
+    }
+
+    public static Alignment standardAlign(GenomeSequence ref, GenomeSequence query, AlignmentScoreConfig config) {
+        return align(ref, query, config, false);
+    }
+
+    public static Alignment bandedAlign(GenomeSequence ref, GenomeSequence query) {
+        return bandedAlign(ref, query, new AlignmentScoreConfig());
+    }
+
+    public static Alignment bandedAlign(GenomeSequence ref, GenomeSequence query, AlignmentScoreConfig config) {
+        return align(ref, query, config, true);
+    }
+
+    protected static Alignment align(GenomeSequence ref, GenomeSequence query, AlignmentScoreConfig config,
+            boolean banded) {
+        SmithWatermanAligner sw = new SmithWatermanAligner(ref, query, config);
+        sw.forwardDP(banded);
+        return sw.traceback();
+    }
+
+    private void forwardDP(boolean bandedAlignment) {
+        // initialized the matrix
+        final int MIN = Integer.MIN_VALUE / 2; // sufficiently small value 
         score[0][0] = 0;
-        trace[0][0] = Trace.NONE;
-    }
-
-    public static void dpOnly(GenomeSequence seq1, GenomeSequence seq2) {
-        SmithWatermanAligner sw = new SmithWatermanAligner(seq1, seq2);
-        sw.align();
-    }
-
-    public static Alignment align(GenomeSequence seq1, GenomeSequence seq2) {
-        SmithWatermanAligner sw = new SmithWatermanAligner(seq1, seq2);
-        sw.align();
-        return sw.traceBack();
-    }
-
-    private void align() {
-        // set the first row and column all 0 for the local alignment 
-        for (int x = 1; x < N; ++x) {
-            score[x][0] = 0;
-            trace[x][0] = Trace.NONE;
+        Li[0][0] = MIN;
+        Ld[0][0] = MIN;
+        for (int col = 1; col < N; ++col) {
+            score[0][col] = 0; // Set 0 for local-alignment (Alignment can start from any position in the reference sequence)
+            Li[0][col] = MIN;
+            Ld[0][col] = -config.gapOpenPenalty - config.gapExtensionPenalty * (col - 1);
         }
-        for (int y = 1; y < M; ++y) {
-            score[0][y] = 0;
-            trace[0][y] = Trace.NONE;
+        for (int row = 1; row < M; ++row) {
+            score[row][0] = 0; // Setting this row to 0 allows clipped-alignment
+            Li[row][0] = -config.gapOpenPenalty - config.gapExtensionPenalty * (row - 1);
+            Ld[row][0] = MIN;
         }
 
-        // SW loop
-        for (int x = 1; x < N; ++x) {
-            for (int y = 1; y < M; ++y) {
-                char c1 = Character.toLowerCase(seq1.charAt(x - 1));
-                char c2 = Character.toLowerCase(seq2.charAt(y - 1));
-
-                // match(S), insertion(I) to , deletion(D) from the seq1 scores
-                int S, I, D;
-                if (c1 == c2)
-                    S = score[x - 1][y - 1] + config.MATCH_SCORE;
-                else {
-                    if (config.BSS_ALIGNMENT && (c1 == 'c' && c2 == 't')) {
-                        S = score[x - 1][y - 1] - config.BSS_CT_MISMATCH_PENALTY;
-                    }
-                    else
-                        S = score[x - 1][y - 1] - config.MISMATCH_PENALTY;
-                }
-
-                I = score[x][y - 1] - config.GAPOPEN_PENALTY;
-                D = score[x - 1][y] - config.GAPOPEN_PENALTY;
-
-                if (S <= 0 && I <= 0 && D <= 0) {
-                    score[x][y] = 0;
-                    trace[x][y] = Trace.NONE;
+        // dynamic programming
+        int numProcessedCells = 0;
+        int columnOffset = 1 - config.bandWidth / 2;
+        for (int row = 1; row < M; ++row) {
+            int colStart = bandedAlignment ? Math.max(1, columnOffset + row - 1) : 1;
+            int columnMax = bandedAlignment ? (row == 1 ? N : Math.min(N, columnOffset + row - 1 + config.bandWidth))
+                    : N;
+            for (int col = colStart; col < columnMax; ++col) {
+                DPScore s = new DPScore(row, col);
+                if (!s.hasPositiveScore()) {
+                    score[row][col] = 0;
+                    Li[row][col] = 0;
+                    Ld[row][col] = 0;
                     continue;
                 }
 
-                // choose the best score
-                if (S >= I) {
-                    if (S >= D) {
-                        score[x][y] = S;
-                        trace[x][y] = Trace.DIAGONAL;
-                    }
-                    else {
-                        score[x][y] = D;
-                        trace[x][y] = Trace.LEFT;
-                    }
-                }
-                else if (I >= D) {
-                    score[x][y] = I;
-                    trace[x][y] = Trace.UP;
-                }
-                else {
-                    score[x][y] = D;
-                    trace[x][y] = Trace.LEFT;
-                }
+                Li[row][col] = s.I;
+                Ld[row][col] = s.D;
+                score[row][col] = s.maxScore();
 
                 // update max score
-                if (score[x][y] > maxScore) {
-                    maxX = x;
-                    maxY = y;
-                    maxScore = score[x][y];
+                if (score[row][col] > maxScore) {
+                    maxRow = row;
+                    maxCol = col;
+                    maxScore = score[row][col];
                 }
             }
+
+        }
+
+        //        if (_logger.isTraceEnabled())
+        //            _logger.trace("N:%d, M:%d, NM:%d, num processed cells: %d", N, M, N * M, numProcessedCells);
+    }
+
+    /**
+     * DP Score calculator
+     * 
+     * @author leo
+     * 
+     */
+    private class DPScore
+    {
+        public final int M;
+        public final int I;
+        public final int D;
+
+        public DPScore(int row, int col) {
+            ACGT r = ACGT.encode(ref.charAt(col - 1));
+            ACGT q = ACGT.encode(query.charAt(row - 1));
+            int scoreDiff;
+            if (r == q) {
+                scoreDiff = config.matchScore;
+            }
+            else if (config.bssMode && r == ACGT.C && q == ACGT.T) {
+                scoreDiff = -config.bssMismatchPenalty;
+            }
+            else {
+                scoreDiff = -config.mismatchPenalty;
+            }
+
+            M = Math.max(score[row - 1][col - 1] + scoreDiff,
+                    Math.max(Li[row - 1][col - 1] + scoreDiff, Ld[row - 1][col - 1] + scoreDiff));
+            I = Math.max(score[row][col - 1] - config.gapOpenPenalty, Li[row][col - 1] - config.gapExtensionPenalty);
+            D = Math.max(score[row - 1][col] - config.gapOpenPenalty, Ld[row - 1][col] - config.gapExtensionPenalty);
+        }
+
+        public int maxScore() {
+            return Math.max(M, Math.max(I, D));
+        }
+
+        public boolean hasPositiveScore() {
+            return M > 0 || I > 0 || D > 0;
+        }
+
+        public Trace getPath() {
+            if (!hasPositiveScore())
+                return Trace.NONE;
+
+            if (M >= I) {
+                if (M >= D)
+                    return Trace.DIAGONAL;
+                else
+                    return Trace.UP;
+            }
+            else if (I >= D)
+                return Trace.LEFT;
+            else
+                return Trace.UP;
+
         }
     }
 
-    private Alignment traceBack() {
+    /**
+     * Trace back the DP matrix, and obtain the alignment results
+     * 
+     * @return
+     */
+    private Alignment traceback() {
 
         // trace back
         StringBuilder cigar = new StringBuilder();
@@ -229,63 +237,74 @@ public class SmithWatermanAligner
 
         int leftMostPos = 0; // for seq1 
 
-        for (int i = M - 1; i > maxY; --i) {
+        // Append soft-clipped part in the query sequence
+        for (int i = M - 1; i > maxRow; --i) {
             cigar.append("S");
         }
-        boolean toContinue = true;
 
-        int x = N - 1;
-        int y = M - 1;
+        int col = N - 1;
+        int row = M - 1;
 
-        while (x > maxX) {
-            a1.append(seq1.charAt(x - 1));
-            x--;
+        // Append clipped sequences
+        while (col > maxCol) {
+            a1.append(ref.charAt(col - 1));
+            col--;
         }
-        while (y > maxY) {
-            a2.append(Character.toLowerCase(seq2.charAt(y - 1)));
-            y--;
+        while (row > maxRow) {
+            a2.append(Character.toLowerCase(query.charAt(row - 1)));
+            row--;
         }
 
-        for (x = maxX, y = maxY; toContinue;) {
-            switch (trace[x][y]) {
+        // Trace back 
+        traceback: for (col = maxCol, row = maxRow;;) {
+
+            Trace path = Trace.NONE;
+            // Recompute the score
+            if (col >= 1 && row >= 1) {
+                DPScore s = new DPScore(row, col);
+                path = s.getPath();
+            }
+
+            switch (path) {
             case DIAGONAL:
+                // match
                 cigar.append("M");
-                a1.append(seq1.charAt(x - 1));
-                a2.append(seq2.charAt(y - 1));
-                leftMostPos = x - 1;
-                x--;
-                y--;
+                a1.append(ref.charAt(col - 1));
+                a2.append(query.charAt(row - 1));
+                leftMostPos = col - 1;
+                col--;
+                row--;
                 break;
             case LEFT:
-                cigar.append("D");
+                // insertion
+                cigar.append("I");
                 a1.append("-");
-                a2.append(seq2.charAt(y - 1));
-                leftMostPos = x - 1;
-                x--;
+                a2.append(query.charAt(row - 1));
+                leftMostPos = col - 1;
+                col--;
                 break;
             case UP:
-                cigar.append("I");
-                a1.append(seq1.charAt(x - 1));
+                cigar.append("D");
+                a1.append(ref.charAt(col - 1));
                 a2.append("-");
-                y--;
+                row--;
                 break;
             case NONE:
-                toContinue = false;
-                while (x >= 1 || y >= 1) {
-                    if (y >= 1) {
+                while (col >= 1 || row >= 1) {
+                    if (row >= 1) {
                         cigar.append("S");
-                        a1.append(x >= 1 ? seq1.charAt(x - 1) : ' ');
-                        a2.append(Character.toLowerCase(seq2.charAt(y - 1)));
+                        a1.append(col >= 1 ? ref.charAt(col - 1) : ' ');
+                        a2.append(Character.toLowerCase(query.charAt(row - 1)));
                     }
                     else {
-                        a1.append(x >= 1 ? seq1.charAt(x - 1) : ' ');
+                        a1.append(col >= 1 ? ref.charAt(col - 1) : ' ');
                         a2.append(' ');
                     }
-                    x--;
-                    y--;
+                    col--;
+                    row--;
                 }
 
-                break;
+                break traceback; // exit the loop
             }
         }
 
@@ -314,6 +333,35 @@ public class SmithWatermanAligner
 
         return new Alignment(compactCigar.toString(), maxScore, a1.reverse().toString(), leftMostPos, a2.reverse()
                 .toString());
+    }
+
+    public static class StringWrapper implements GenomeSequence
+    {
+
+        public final String seq;
+
+        public StringWrapper(String seq) {
+            this.seq = seq;
+        }
+
+        public char charAt(int index) {
+            return seq.charAt(index);
+        }
+
+        public int length() {
+            return seq.length();
+        }
+
+    }
+
+    /**
+     * Wrap the input string as {@link GenomeSequence}
+     * 
+     * @param seq
+     * @return
+     */
+    public static GenomeSequence wrap(String seq) {
+        return new StringWrapper(seq);
     }
 
 }

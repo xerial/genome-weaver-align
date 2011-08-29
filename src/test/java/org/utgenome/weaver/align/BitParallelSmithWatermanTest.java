@@ -126,19 +126,21 @@ public class BitParallelSmithWatermanTest
         StopWatch s3 = new StopWatch();
         s3.stop();
 
+        final int W = new AlignmentConfig().bandWidth;
+
         for (int k = 0; k < K; ++k) {
-            //            {
-            //                s1.resume();
-            //                for (int i = 0; i < N; ++i) {
-            //                    SmithWatermanAligner.align(ref, query);
-            //                }
-            //                s1.stop();
-            //            }
+            {
+                s1.resume();
+                for (int i = 0; i < N; ++i) {
+                    SmithWatermanAligner.standardAlign(ref, query);
+                }
+                s1.stop();
+            }
 
             {
                 s3.resume();
                 for (int i = 0; i < N; ++i) {
-                    BandedSmithWaterman.align(ref, query);
+                    SmithWatermanAligner.bandedAlign(ref, query);
                 }
                 s3.stop();
             }
@@ -146,7 +148,7 @@ public class BitParallelSmithWatermanTest
             {
                 s2.resume();
                 for (int i = 0; i < N; ++i) {
-                    BitParallelSmithWaterman.alignBlock(ref, query, (int) query.textSize());
+                    BitParallelSmithWaterman.alignBlock(ref, query, W);
                 }
                 s2.stop();
             }
@@ -155,10 +157,10 @@ public class BitParallelSmithWatermanTest
         double swTime = s1.getElapsedTime();
         double bpTime = s2.getElapsedTime();
         double bswTime = s3.getElapsedTime();
-        //        _logger.debug("SW: %.2f", swTime);
+        _logger.debug("SW: %.2f", swTime);
         _logger.debug("Banded SW: %.2f", bswTime);
         _logger.debug("BitParallel: %.2f", bpTime);
-        //        _logger.debug("SW/BitParallel: %.2f speed up", swTime / bpTime);
+        _logger.debug("SW/BitParallel: %.2f speed up", swTime / bpTime);
         _logger.debug("Banded SW/BitParallel: %.2f speed up", bswTime / bpTime);
 
     }

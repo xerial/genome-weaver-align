@@ -28,27 +28,27 @@ import org.junit.Test;
 import org.utgenome.weaver.align.SmithWatermanAligner.Alignment;
 import org.xerial.util.log.Logger;
 
-public class BandedSmithWatermanTest
+public class SmithWatermanAlignerTest
 {
-    private static Logger _logger = Logger.getLogger(BandedSmithWatermanTest.class);
+    private static Logger _logger = Logger.getLogger(SmithWatermanAlignerTest.class);
 
-    public void align(String ref, String query) throws Exception {
+    public void bandedAlign(String ref, String query) throws Exception {
         ACGTSequence r = new ACGTSequence(ref);
         ACGTSequence q = new ACGTSequence(query);
-        Alignment alignment = BandedSmithWaterman.align(r, q);
+        Alignment alignment = SmithWatermanAligner.bandedAlign(r, q);
         _logger.debug(alignment);
     }
 
-    public void align(String ref, String query, AlignmentScoreConfig config) throws Exception {
+    public void bandedAlign(String ref, String query, AlignmentScoreConfig config) throws Exception {
         ACGTSequence r = new ACGTSequence(ref);
         ACGTSequence q = new ACGTSequence(query);
-        Alignment alignment = BandedSmithWaterman.align(r, q, config);
+        Alignment alignment = SmithWatermanAligner.bandedAlign(r, q, config);
         _logger.debug(alignment);
     }
 
     @Test
     public void align() throws Exception {
-        align("GATATAGAGATCTGGCCTAG", "TAGAGAT");
+        bandedAlign("GATATAGAGATCTGGCCTAG", "TAGAGAT");
     }
 
     @Test
@@ -56,7 +56,7 @@ public class BandedSmithWatermanTest
         AlignmentScoreConfig config = new AlignmentScoreConfig();
         config.gapOpenPenalty = 5;
         config.gapExtensionPenalty = 2;
-        align("TATACCAAGATATAGAGATCTGGCAAGTGTGTTAT", "TACCAAGATATAGATCTGGCAAGTGTGTTAT", config);
+        bandedAlign("TATACCAAGATATAGAGATCTGGCAAGTGTGTTAT", "TACCAAGATATAGATCTGGCAAGTGTGTTAT", config);
     }
 
     @Test
@@ -64,11 +64,11 @@ public class BandedSmithWatermanTest
         AlignmentScoreConfig config = new AlignmentScoreConfig();
         config.gapOpenPenalty = 5;
         config.gapExtensionPenalty = 2;
-        align("TATACCAAGATATAGAGATCTGGCAAGTGTGTTAT", "TACCAAGATATAGAGAGATCTGGCAAGTGTGTTAT", config);
+        bandedAlign("TATACCAAGATATAGAGATCTGGCAAGTGTGTTAT", "TACCAAGATATAGAGAGATCTGGCAAGTGTGTTAT", config);
     }
 
     @Test
     public void clippedAlignment() throws Exception {
-        align("ATTTGTATTATACCAAGAT", "ACCGGAAGGACCAAGAT");
+        bandedAlign("ATTTGTATTATACCAAGAT", "ACCGGAAGGACCAAGAT");
     }
 }
