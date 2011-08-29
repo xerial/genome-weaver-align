@@ -52,10 +52,27 @@ public class BandedSmithWatermanTest
     }
 
     @Test
-    public void alignGap() throws Exception {
+    public void alignInsertion() throws Exception {
         AlignmentScoreConfig config = new AlignmentScoreConfig();
-        config.gapOpenPenalty = 3;
-        config.gapExtensionPenalty = 5;
-        align("TATACCAAGATATAGAGATCTGGCAAGTGTGTTAT", "TATACCAAGATATAGATCTGGCAAGTGTGTTAT", config);
+        config.gapOpenPenalty = 5;
+        config.gapExtensionPenalty = 2;
+        align("TATACCAAGATATAGAGATCTGGCAAGTGTGTTAT", "TACCAAGATATAGATCTGGCAAGTGTGTTAT", config);
     }
+
+    @Test
+    public void alignDeletion() throws Exception {
+        AlignmentScoreConfig config = new AlignmentScoreConfig();
+        config.gapOpenPenalty = 5;
+        config.gapExtensionPenalty = 2;
+        align("TATACCAAGATATAGAGATCTGGCAAGTGTGTTAT", "TACCAAGATATAGAGAGATCTGGCAAGTGTGTTAT", config);
+    }
+
+    @Test
+    public void clippedAlignment() throws Exception {
+        AlignmentScoreConfig config = new AlignmentScoreConfig();
+        config.gapOpenPenalty = 5;
+        config.gapExtensionPenalty = 2;
+        align("TATACCAAGATATAGAGATCTGGCAAGTGTGTTAT", "AAGAGCGACCAAGATATAGAGATCTGG", config);
+    }
+
 }

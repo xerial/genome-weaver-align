@@ -77,20 +77,19 @@ public class BandedSmithWaterman
     private void forwardDP() {
 
         // initialized the matrix
-        final int MIN = Integer.MIN_VALUE / 2;
-
+        final int MIN = Integer.MIN_VALUE / 2; // sufficiently small value 
         score[0][0] = 0;
         trace[0][0] = Trace.NONE;
         Li[0][0] = MIN;
         Ld[0][0] = MIN;
         for (int col = 1; col < N; ++col) {
-            score[0][col] = 0;
+            score[0][col] = 0; // for local-alignment
             Li[0][col] = MIN;
             Ld[0][col] = -config.gapOpenPenalty - config.gapExtensionPenalty * (col - 1);
             trace[0][col] = Trace.NONE;
         }
         for (int row = 1; row < M; ++row) {
-            score[row][0] = -config.mismatchPenalty * row;
+            score[row][0] = 0; // Setting this row to 0 allows clipped-alignment
             Li[row][0] = -config.gapOpenPenalty - config.gapExtensionPenalty * (row - 1);
             Ld[row][0] = MIN;
             trace[row][0] = Trace.NONE;

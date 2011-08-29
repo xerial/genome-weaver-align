@@ -123,6 +123,8 @@ public class BitParallelSmithWatermanTest
         s1.stop();
         StopWatch s2 = new StopWatch();
         s2.stop();
+        StopWatch s3 = new StopWatch();
+        s3.stop();
 
         for (int k = 0; k < K; ++k) {
             {
@@ -131,6 +133,14 @@ public class BitParallelSmithWatermanTest
                     SmithWatermanAligner.align(ref, query);
                 }
                 s1.stop();
+            }
+
+            {
+                s3.resume();
+                for (int i = 0; i < N; ++i) {
+                    BandedSmithWaterman.align(ref, query);
+                }
+                s3.stop();
             }
 
             {
@@ -144,7 +154,9 @@ public class BitParallelSmithWatermanTest
 
         double swTime = s1.getElapsedTime();
         double bpTime = s2.getElapsedTime();
+        double bswTime = s3.getElapsedTime();
         _logger.debug("SW: %.2f", swTime);
+        _logger.debug("Banded SW: %.2f", bswTime);
         _logger.debug("BP: %.2f", bpTime);
         _logger.debug("SW/BP: %.2f speed up", swTime / bpTime);
 
