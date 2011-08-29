@@ -190,6 +190,15 @@ public class BitParallelSmithWatermanTest
     }
 
     @Test
+    public void mismatches() throws Exception {
+        Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed("TATACCAAGATCTAGAGATCTGG", "CAAGATTTAGAGAT",
+                31);
+        _logger.debug(alignment);
+        //        assertEquals(2, alignment.pos);
+        //        assertEquals("8M2D11M", alignment.cigar);
+    }
+
+    @Test
     public void insertion() throws Exception {
         Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed("TATACCAAGATCTAGAGATCTGG",
                 "TACCAAGATCTCTAGAGATCTGG", 31);
@@ -209,6 +218,13 @@ public class BitParallelSmithWatermanTest
     public void softClip2() throws Exception {
         Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed("TATACCAAGATCTAGAGATCTGG",
                 "GGCGCACCAAGATCTAGAG", 31);
+        _logger.debug(alignment);
+    }
+
+    @Test
+    public void tailClip() throws Exception {
+        Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed("TATACCAAGATCTAGAGTCTGG",
+                "ACCAAGATCTAGAGAAAA", 31);
         _logger.debug(alignment);
     }
 

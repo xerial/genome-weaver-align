@@ -336,8 +336,8 @@ public class BitParallelSmithWaterman
         private long[][]         peq;                     // [A, C, G, T][# of block]
         private int[]            D;                       // D[block]
 
-        private long[][]         scoreVp;
-        private long[][]         scoreVn;
+        private long[][]         vp;
+        private long[][]         vn;
 
         public AlignBlocksDetailed(int m, int k) {
             this(64, m, k);
@@ -376,13 +376,13 @@ public class BitParallelSmithWaterman
             final int W = w - (int) ref.textSize() % w;
 
             // Prepare the score matrix
-            scoreVp = new long[N + 1][bMax];
-            scoreVn = new long[N + 1][bMax];
+            vp = new long[N + 1][bMax];
+            vn = new long[N + 1][bMax];
 
             // Initialize the vertical input
             for (int r = 0; r < bMax; ++r) {
-                scoreVp[0][r] = ~0L; // all 1s
-                scoreVn[0][r] = 0L; // all 0s
+                vp[0][r] = ~0L; // all 1s
+                vn[0][r] = 0L; // all 0s
             }
             // Init the score
             D[0] = w;
@@ -423,8 +423,8 @@ public class BitParallelSmithWaterman
         }
 
         private int alignBlock(int j, ACGT ch, int r, int hin) {
-            long vp = scoreVp[j][r];
-            long vn = scoreVn[j][r];
+            long vp = this.vp[j][r];
+            long vn = this.vn[j][r];
             long x = this.peq[ch.code][r];
             if (hin < 0)
                 x |= 1L;
@@ -445,8 +445,8 @@ public class BitParallelSmithWaterman
 
             long vp2 = hn2 | ~(hp2 | d0);
             long vn2 = hp2 & d0;
-            scoreVp[j + 1][r] = vp2;
-            scoreVn[j + 1][r] = vn2;
+            this.vp[j + 1][r] = vp2;
+            this.vn[j + 1][r] = vn2;
 
             return hout;
         }
@@ -495,11 +495,11 @@ public class BitParallelSmithWaterman
                     if (ref.getACGT(col) == query.getACGT(row)) {
                         path = Trace.DIAGONAL;
                     }
-                    else if ((scoreVp[col][block] & (1L << offset)) != 0) {
+                    else if ((vp[col][block] & (1L << offset)) != 0) {
                         path = Trace.UP;
                         diff++;
                     }
-                    else if ((scoreVn[col][block] & (1L << offset)) == 0) {
+                    else if ((vn[col][block] & (1L << offset)) == 0) {
                         path = Trace.DIAGONAL;
                         diff++;
                     }
@@ -529,7 +529,7 @@ public class BitParallelSmithWaterman
                     cigar.append("I");
                     a1.append("-");
                     a2.append(query.charAt(row));
-                    leftMostPos = col;
+                    leftMostPos = col + 1;
                     row--;
                     break;
                 case LEFT:
@@ -558,35 +558,35 @@ public class BitParallelSmithWaterman
             }
 
             String cigarStr = cigar.reverse().toString();
-            //            {
-            //                // Remove indels at both of the read ends
-            //                int left = 0, right = cigarStr.length();
-            //                for (int i = 0; i < cigarStr.length(); ++i) {
-            //                    char t = cigarStr.charAt(i);
-            //                    if (t == 'S' || t == 'I' || t == 'D') {
-            //                        left++;
-            //                    }
-            //                    else
-            //                        break;
-            //                }
-            //
-            //                for (int i = cigarStr.length() - 1; i >= left; --i) {
-            //                    char t = cigarStr.charAt(i);
-            //                    if (t == 'S' || t == 'I' || t == 'D') {
-            //                        right++;
-            //                    }
-            //                    else
-            //                        break;
-            //                }
-            //
-            //                StringBuilder newCigar = new StringBuilder();
-            //                for (int i = 0; i < left; ++i)
-            //                    newCigar.append('S');
-            //                newCigar.append(cigarStr.substring(left, right));
-            //                for (int i = 0; i < right; ++i)
-            //                    newCigar.append('S');
-            //                cigarStr = newCigar.toString();
-            //            }
+            {
+                // Remove indels at both of the read ends
+                int left = 0, right = 0;
+                for (int i = 0; i < cigarStr.length(); ++i) {
+                    char t = cigarStr.charAt(i);
+                    if (t == 'S' || t == 'I' || t == 'D') {
+                        left++;
+                    }
+                    else
+                        break;
+                }
+
+                for (int i = cigarStr.length() - 1; i >= left; --i) {
+                    char t = cigarStr.charAt(i);
+                    if (t == 'S' || t == 'I' || t == 'D') {
+                        right++;
+                    }
+                    else
+                        break;
+                }
+
+                StringBuilder newCigar = new StringBuilder();
+                for (int i = 0; i < left; ++i)
+                    newCigar.append('S');
+                newCigar.append(cigarStr.substring(left, cigarStr.length() - right));
+                for (int i = 0; i < right; ++i)
+                    newCigar.append('S');
+                cigarStr = newCigar.toString();
+            }
 
             // create cigar string
             char prev = cigarStr.charAt(0);
