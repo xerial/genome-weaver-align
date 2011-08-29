@@ -26,6 +26,8 @@ package org.utgenome.weaver.align;
 
 import java.util.Arrays;
 
+import org.utgenome.weaver.align.SmithWatermanAligner.Alignment;
+import org.utgenome.weaver.align.SmithWatermanAligner.Trace;
 import org.utgenome.weaver.align.record.SWResult;
 import org.xerial.util.log.Logger;
 
@@ -88,11 +90,11 @@ public class BitParallelSmithWaterman
 
         protected void align(int score, long vp, long vn, int k) {
 
-            if (_logger.isDebugEnabled()) {
-                for (ACGT ch : ACGT.exceptN) {
-                    _logger.debug("peq[%s]:%s", ch, toBinary(pm[ch.code], m));
-                }
-            }
+            //            if (_logger.isDebugEnabled()) {
+            //                for (ACGT ch : ACGT.exceptN) {
+            //                    _logger.debug("peq[%s]:%s", ch, toBinary(pm[ch.code], m));
+            //                }
+            //            }
 
             for (int j = 0; j < n; ++j) {
                 long x = pm[ref.getACGT(j).code];
@@ -105,11 +107,11 @@ public class BitParallelSmithWaterman
                 // diff represents the last row (C[m, j]) of the DP matrix
                 score += (int) ((hp >>> (m - 1)) & 1L);
                 score -= (int) ((hn >>> (m - 1)) & 1L);
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("[%s] j:%2d, score:%2d %1s hp:%s, hn:%s, vp:%s, vn:%s, d0:%s", ref.getACGT(j), j,
-                            score, score <= k ? "*" : "", toBinary(hp, m), toBinary(hn, m), toBinary(vp, m),
-                            toBinary(vn, m), toBinary(d0, m));
-                }
+                //                if (_logger.isDebugEnabled()) {
+                //                    _logger.debug("[%s] j:%2d, score:%2d %1s hp:%s, hn:%s, vp:%s, vn:%s, d0:%s", ref.getACGT(j), j,
+                //                            score, score <= k ? "*" : "", toBinary(hp, m), toBinary(hn, m), toBinary(vp, m),
+                //                            toBinary(vn, m), toBinary(d0, m));
+                //                }
             }
         }
     }
@@ -122,15 +124,27 @@ public class BitParallelSmithWaterman
         return s.toString();
     }
 
-    public static SWResult alignBlock(ACGTSequence ref, ACGTSequence query, int k) {
+    public static SWResult alignBlock(String ref, String query, int k) {
+        return alignBlock(new ACGTSequence(ref), new ACGTSequence(query), k);
+    }
 
+    public static SWResult alignBlock(ACGTSequence ref, ACGTSequence query, int k) {
         AlignBlocks a = new AlignBlocks((int) query.textSize(), k);
         SWResult sw = a.align(ref, query);
         return sw;
     }
 
-    static SWResult alignBlock(ACGTSequence ref, ACGTSequence query, int k, int w) {
+    public static Alignment alignBlockDetailed(String ref, String query, int k) {
+        return alignBlockDetailed(new ACGTSequence(ref), new ACGTSequence(query), k);
+    }
 
+    public static Alignment alignBlockDetailed(ACGTSequence ref, ACGTSequence query, int k) {
+        AlignBlocksDetailed a = new AlignBlocksDetailed((int) query.textSize(), k);
+        SWResult bestHit = a.align(ref, query);
+        return a.traceback(ref, query, bestHit);
+    }
+
+    static SWResult alignBlock(ACGTSequence ref, ACGTSequence query, int k, int w) {
         AlignBlocks a = new AlignBlocks(w, (int) query.textSize(), k);
         return a.align(ref, query);
     }
@@ -303,6 +317,13 @@ public class BitParallelSmithWaterman
 
     }
 
+    /**
+     * Extension of the AlignBlock algorithm to calculate the actual alignment
+     * (CIGAR)
+     * 
+     * @author leo
+     * 
+     */
     public static class AlignBlocksDetailed
     {
         private static final int Z = ACGT.values().length; // alphabet size
@@ -316,6 +337,9 @@ public class BitParallelSmithWaterman
 
         private long[][]         peq;                     // [A, C, G, T][# of block]
         private int[]            D;                       // D[block]
+
+        private long[][]         scoreVp;
+        private long[][]         scoreVn;
 
         public AlignBlocksDetailed(int m, int k) {
             this(64, m, k);
@@ -361,9 +385,7 @@ public class BitParallelSmithWaterman
                     //peq[i][bMax - 1] |= mask;
                 }
             }
-            //            if (_logger.isTraceEnabled()) {
-            //                _logger.trace("peq:%s", qMask);
-            //            }
+
             return align(ref);
         }
 
@@ -374,10 +396,17 @@ public class BitParallelSmithWaterman
             final int N = (int) ref.textSize();
             final int W = w - (int) ref.textSize() % w;
 
+            // Prepare the score matrix
+            scoreVp = new long[N][bMax];
+            scoreVn = new long[N][bMax];
+
             // Initialize the vertical input
             for (int r = 0; r < bMax; ++r) {
                 vp[r] = ~0L; // all 1s
                 vn[r] = 0L; // all 0s
+
+                scoreVp[0][r] = ~0L;
+                scoreVn[0][r] = 0L;
             }
             // Init the score
             D[0] = w;
@@ -389,10 +418,10 @@ public class BitParallelSmithWaterman
                 for (int r = 0; r < b; ++r) {
                     int nextScore = alignBlock(j, ch, r, carry);
                     D[r] += nextScore;
-                    //                    if (_logger.isTraceEnabled()) {
-                    //                        _logger.trace("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore, r,
-                    //                                D[r]);
-                    //                    }
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore, r,
+                                D[r]);
+                    }
                     carry = nextScore;
                 }
 
@@ -400,10 +429,10 @@ public class BitParallelSmithWaterman
                     b++;
                     int nextScore = alignBlock(j, ch, b - 1, carry);
                     D[b - 1] = D[b - 2] + w - carry + nextScore;
-                    //                    if (_logger.isTraceEnabled()) {
-                    //                        _logger.trace("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore,
-                    //                                b - 1, D[b - 1]);
-                    //                    }
+                    if (_logger.isDebugEnabled()) {
+                        _logger.debug("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore,
+                                b - 1, D[b - 1]);
+                    }
                 }
                 else {
                     while (b > 1 && D[b - 1] >= k + w) {
@@ -451,8 +480,13 @@ public class BitParallelSmithWaterman
             if (hin > 0)
                 hp2 |= 1L;
 
-            this.vp[r] = hn2 | ~(hp2 | d0);
-            this.vn[r] = hp2 & d0;
+            long vp2 = hn2 | ~(hp2 | d0);
+            long vn2 = hp2 & d0;
+            this.vp[r] = vp2;
+            this.vn[r] = vn2;
+
+            scoreVp[j][r] = vp2;
+            scoreVn[j][r] = vn2;
 
             //            if (_logger.isTraceEnabled()) {
             //                _logger.trace("[%s] j:%2d, block:%d, hin:%2d, hout:%2d, hp:%s, hn:%s, vp:%s, vn:%s, d0:%s", ch, j, r,
@@ -461,6 +495,133 @@ public class BitParallelSmithWaterman
             //            }
 
             return hout;
+        }
+
+        public Alignment traceback(ACGTSequence ref, ACGTSequence query, SWResult bestHit) {
+            if (bestHit == null)
+                return null;
+
+            final int N = (int) ref.textSize();
+            int maxRow = m - 1;
+            int maxCol = bestHit.tailPos;
+
+            StringBuilder cigar = new StringBuilder();
+            StringBuilder a1 = new StringBuilder();
+            StringBuilder a2 = new StringBuilder();
+
+            int leftMostPos = 0; // in reference seq 
+
+            // Append soft-clipped part in the query sequence
+            for (int i = m - 1; i > maxRow; --i) {
+                cigar.append("S");
+            }
+
+            int row = m - 1;
+            int col = N - 1;
+
+            // Append clipped sequences
+            while (col > maxCol) {
+                a1.append(ref.charAt(col - 1));
+                col--;
+            }
+            while (row > maxRow) {
+                a2.append(query.getACGT(row - 1).toChar());
+                row--;
+            }
+
+            // Trace back 
+            int score = 0;
+            traceback: for (col = maxCol, row = maxRow;;) {
+                Trace path = Trace.NONE;
+                // Calculate path
+                if (col >= 0 && row >= 0) {
+                    int block = row / w;
+                    int offset = row % w;
+                    if (ref.getACGT(col) == query.getACGT(row)) {
+                        path = Trace.DIAGONAL;
+                    }
+                    else if ((scoreVp[col][block] & (1L << offset)) != 0) {
+                        path = Trace.LEFT;
+                    }
+                    else if ((scoreVn[col][block] & (1L << offset)) == 0) {
+                        path = Trace.DIAGONAL;
+                    }
+                    else {
+                        path = Trace.UP;
+                    }
+                }
+
+                switch (path) {
+                case DIAGONAL:
+                    // match
+                    cigar.append("M");
+                    a1.append(ref.charAt(col));
+                    a2.append(query.charAt(row));
+                    leftMostPos = col;
+                    col--;
+                    row--;
+                    score++;
+                    break;
+                case LEFT:
+                    // insertion
+                    cigar.append("I");
+                    a1.append("-");
+                    a2.append(query.charAt(row));
+                    leftMostPos = col;
+                    row--;
+                    score--;
+                    break;
+                case UP:
+                    cigar.append("D");
+                    a1.append(ref.charAt(col));
+                    a2.append("-");
+                    col--;
+                    score--;
+                    break;
+                case NONE:
+                    while (col >= 0 || row >= 0) {
+                        if (row >= 0) {
+                            cigar.append("S");
+                            a1.append(col >= 0 ? ref.charAt(col) : ' ');
+                            a2.append(Character.toLowerCase(query.charAt(row)));
+                        }
+                        else {
+                            a1.append(col >= 0 ? ref.charAt(col) : ' ');
+                            a2.append(' ');
+                        }
+                        col--;
+                        row--;
+                    }
+
+                    break traceback; // exit the loop
+                }
+            }
+
+            // create cigar string
+            String cigarStr = cigar.reverse().toString();
+            char prev = cigarStr.charAt(0);
+            int count = 1;
+            StringBuilder compactCigar = new StringBuilder();
+            for (int i = 1; i < cigarStr.length(); ++i) {
+                char c = cigarStr.charAt(i);
+                if (prev == c) {
+                    count++;
+                }
+                else {
+                    compactCigar.append(Integer.toString(count));
+                    compactCigar.append(prev);
+
+                    prev = c;
+                    count = 1;
+                }
+            }
+            if (count > 0) {
+                compactCigar.append(Integer.toString(count));
+                compactCigar.append(prev);
+            }
+
+            return new Alignment(compactCigar.toString(), score, a1.reverse().toString(), leftMostPos, a2.reverse()
+                    .toString());
         }
 
     }

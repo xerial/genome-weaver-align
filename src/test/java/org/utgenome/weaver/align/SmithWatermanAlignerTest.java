@@ -62,7 +62,7 @@ public class SmithWatermanAlignerTest
         AlignmentScoreConfig config = new AlignmentScoreConfig();
         config.gapOpenPenalty = 5;
         config.gapExtensionPenalty = 2;
-        Alignment alignment = bandedAlign("TATACCAAGATATAGAGATCTGGCAAGTGTGTTAT", "TACCAAGATATAGATCTGGCAAGTGTGTTAT",
+        Alignment alignment = bandedAlign("TATACCAAGATATAGATCTGGCAAGTGTGTTAT", "TACCAAGATATAGAGATCTGGCAAGTGTGTTAT",
                 config);
         assertEquals("11M2I20M", alignment.cigar);
         assertEquals(2, alignment.pos);
@@ -73,9 +73,9 @@ public class SmithWatermanAlignerTest
         AlignmentScoreConfig config = new AlignmentScoreConfig();
         config.gapOpenPenalty = 5;
         config.gapExtensionPenalty = 2;
-        Alignment alignment = bandedAlign("TATACCAAGATATAGAGATCTGGCAAGTGTGTTAT", "TACCAAGATATAGAGAGATCTGGCAAGTGTGTTAT",
+        Alignment alignment = bandedAlign("TATACCAAGATATAGAGATCTGGCAAGTGTGTTAT", "TACCAAGATATAGATCTGGCAAGTGTGTTAT",
                 config);
-        assertEquals("11M2D22M", alignment.cigar);
+        assertEquals("11M2D20M", alignment.cigar);
         assertEquals(2, alignment.pos);
     }
 

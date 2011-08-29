@@ -14,7 +14,7 @@
  *  limitations under the License.
  *--------------------------------------------------------------------------*/
 //--------------------------------------
-// utgb-core Project
+// Genome Weaver Project
 //
 // SmithWatermanAlignment.java
 // Since: Feb 22, 2010
@@ -28,8 +28,9 @@ import org.utgenome.format.fasta.GenomeSequence;
 import org.xerial.util.log.Logger;
 
 /**
- * Smith-Waterman based aligner with Affine-gap score. Standard/banded alignment
- * is provided.
+ * Smith-Waterman based aligner with Affine-gap score. This class implements
+ * Smith-Waterman-Gotoh's local alignment algorithm. Standard/banded alignment
+ * strategies are provided.
  * 
  * @author leo
  * 
@@ -59,7 +60,7 @@ public class SmithWatermanAligner
         }
     }
 
-    private enum Trace {
+    public static enum Trace {
         NONE, DIAGONAL, LEFT, UP
     };
 
@@ -68,15 +69,15 @@ public class SmithWatermanAligner
     private final GenomeSequence       ref;
     private final GenomeSequence       query;
     private final AlignmentScoreConfig config;
-    private final int                  N;
-    private final int                  M;
-    private final int                  W;
-    private final int[][]              score;
+    private final int                  N;                                                     // reference sequence length 
+    private final int                  M;                                                     // query length
+    private final int                  W;                                                     // band widdth
+    private final int[][]              score;                                                 // DP matrix 
     // for gap-extension (Smith-Waterman Gotoh)
     private final int[][]              Li;
     private final int[][]              Ld;
 
-    private int                        maxRow, maxCol, maxScore;
+    private int                        maxRow, maxCol, maxScore;                              // best score 
 
     private SmithWatermanAligner(GenomeSequence ref, GenomeSequence query, AlignmentScoreConfig config) {
         this.ref = ref;
@@ -193,8 +194,8 @@ public class SmithWatermanAligner
 
             M = Math.max(score[row - 1][col - 1] + scoreDiff,
                     Math.max(Li[row - 1][col - 1] + scoreDiff, Ld[row - 1][col - 1] + scoreDiff));
-            I = Math.max(score[row][col - 1] - config.gapOpenPenalty, Li[row][col - 1] - config.gapExtensionPenalty);
-            D = Math.max(score[row - 1][col] - config.gapOpenPenalty, Ld[row - 1][col] - config.gapExtensionPenalty);
+            D = Math.max(score[row][col - 1] - config.gapOpenPenalty, Li[row][col - 1] - config.gapExtensionPenalty);
+            I = Math.max(score[row - 1][col] - config.gapOpenPenalty, Ld[row - 1][col] - config.gapExtensionPenalty);
         }
 
         public int maxScore() {
@@ -281,13 +282,14 @@ public class SmithWatermanAligner
                 a1.append("-");
                 a2.append(query.charAt(row - 1));
                 leftMostPos = col - 1;
-                col--;
+                row--;
                 break;
             case UP:
+                // deletion
                 cigar.append("D");
                 a1.append(ref.charAt(col - 1));
                 a2.append("-");
-                row--;
+                col--;
                 break;
             case NONE:
                 while (col >= 1 || row >= 1) {
