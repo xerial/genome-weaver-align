@@ -619,7 +619,7 @@ public class SuffixFilter
             if (cursor.getStrand() == Strand.REVERSE)
                 query = query.reverse();
 
-            Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(ref, query, nm);
+            Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(ref, query, config.bandWidth);
             ++numSW;
             if (alignment != null && alignment.numMismatches <= nm) {
                 if (_logger.isTraceEnabled())
