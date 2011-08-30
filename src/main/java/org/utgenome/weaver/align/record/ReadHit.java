@@ -40,15 +40,18 @@ public class ReadHit
     public final int     matchLength;
     public final int     diff;
     public final Strand  strand;
+    public final String  cigar;
     public final int     numHits;
     public final ReadHit nextSplit;
 
-    public ReadHit(String chr, long pos, int matchLength, int diff, Strand strand, int numHits, ReadHit nextSplit) {
+    public ReadHit(String chr, long pos, int matchLength, int diff, Strand strand, String cigar, int numHits,
+            ReadHit nextSplit) {
         this.chr = chr;
         this.pos = pos;
         this.matchLength = matchLength;
         this.diff = diff;
         this.strand = strand;
+        this.cigar = cigar;
         this.numHits = numHits;
         this.nextSplit = nextSplit;
     }
@@ -65,7 +68,7 @@ public class ReadHit
     }
 
     public ReadHit addSplit(ReadHit split) {
-        return new ReadHit(chr, pos, matchLength, diff, strand, numHits, split);
+        return new ReadHit(chr, pos, matchLength, diff, strand, cigar, numHits, split);
     }
 
     public String getAlignmentState() {

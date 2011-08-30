@@ -121,7 +121,7 @@ public class AlignmentRecord
         return out.toString();
     }
 
-    public static AlignmentRecord convert(ReadHit hit, Read read, int numOtherBestHits) {
+    public static AlignmentRecord convert(ReadHit hit, Read read, int numOtherBestHits) throws UTGBClientException {
 
         final int numHits = hit.numHits + numOtherBestHits;
         ACGTSequence query = read.getRead(0);
@@ -136,9 +136,9 @@ public class AlignmentRecord
         }
 
         if (hit.nextSplit == null) {
-            // TODO cigar, alignment score
-            CIGAR cigar = new CIGAR();
-            cigar.add(hit.matchLength, Type.Matches);
+            // TODO alignment score
+            CIGAR cigar = new CIGAR(hit.cigar);
+            //cigar.add(hit.matchLength, Type.Matches);
             AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos, (int) hit.pos
                     + hit.matchLength, hit.getK(), cigar, query.toString(), qual, 1, numHits, null);
             return rec;
@@ -156,12 +156,12 @@ public class AlignmentRecord
                 if (split.isUnique()) {
                     if (hit.chr.equals(split.chr)) {
                         // TODO cigar, score, quality value trimming
-                        CIGAR cigar1 = new CIGAR();
-                        cigar1.add(hit.matchLength, Type.Matches);
+                        CIGAR cigar1 = new CIGAR(hit.cigar);
+                        //cigar1.add(hit.matchLength, Type.Matches);
                         // cigar1.add(split.matchLength, Type.HardClip);
-                        CIGAR cigar2 = new CIGAR();
+                        CIGAR cigar2 = new CIGAR(split.cigar);
                         //cigar2.add(hit.matchLength, Type.HardClip);
-                        cigar2.add(split.matchLength, Type.Matches);
+                        //cigar2.add(split.matchLength, Type.Matches);
                         AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos,
                                 (int) hit.pos + hit.matchLength, hit.diff, cigar1, s1.toString(), q1, 1, 1, null);
                         AlignmentRecord splitRec = new AlignmentRecord(read.name(), split.chr, split.strand,
@@ -173,8 +173,8 @@ public class AlignmentRecord
                     else {
                         // use longer alignment as a base
                         if (hit.matchLength >= split.matchLength) {
-                            CIGAR cigar = new CIGAR();
-                            cigar.add(hit.matchLength, Type.Matches);
+                            CIGAR cigar = new CIGAR(hit.cigar);
+                            //cigar.add(hit.matchLength, Type.Matches);
                             cigar.add(split.matchLength, Type.SoftClip);
                             AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos,
                                     (int) hit.pos + m, hit.diff, cigar, query.toString(), qual, 1, numHits, null);
@@ -182,9 +182,9 @@ public class AlignmentRecord
                         }
                         else {
                             // TODO Use soft clip to represent split part
-                            CIGAR cigar = new CIGAR();
-                            cigar.add(hit.matchLength, Type.SoftClip);
-                            cigar.add(split.matchLength, Type.Matches);
+                            CIGAR cigar = new CIGAR(String.format("%dS%s", hit.matchLength, split.cigar));
+                            //cigar.add(hit.matchLength, Type.SoftClip);
+                            //cigar.add(split.matchLength, Type.Matches);
                             AlignmentRecord rec = new AlignmentRecord(read.name(), split.chr, split.strand,
                                     (int) split.pos - hit.matchLength, (int) split.pos - hit.matchLength + m,
                                     split.diff, cigar, query.toString(), qual, 1, numHits, null);
@@ -193,9 +193,9 @@ public class AlignmentRecord
                     }
                 }
                 else {
-                    CIGAR cigar = new CIGAR();
-                    cigar.add(hit.matchLength, Type.Matches);
-                    cigar.add(split.matchLength, Type.SoftClip);
+                    CIGAR cigar = new CIGAR(String.format("%s%dS", hit.cigar, split.matchLength));
+                    //cigar.add(hit.matchLength, Type.Matches);
+                    //cigar.add(split.matchLength, Type.SoftClip);
                     AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos,
                             (int) hit.pos + m, hit.diff, cigar, query.toString(), qual, 1, numHits, null);
                     return rec;
@@ -204,9 +204,9 @@ public class AlignmentRecord
             else {
                 if (split.isUnique()) {
                     // TODO Use soft clip to represent split part
-                    CIGAR cigar = new CIGAR();
-                    cigar.add(hit.matchLength, Type.SoftClip);
-                    cigar.add(split.matchLength, Type.Matches);
+                    CIGAR cigar = new CIGAR(String.format("%dS%s", hit.matchLength, split.cigar));
+                    //cigar.add(hit.matchLength, Type.SoftClip);
+                    //cigar.add(split.matchLength, Type.Matches);
                     AlignmentRecord rec = new AlignmentRecord(read.name(), split.chr, split.strand, (int) split.pos
                             - hit.matchLength, (int) split.pos - hit.matchLength + m, split.diff, cigar,
                             query.toString(), qual, 1, numHits, null);

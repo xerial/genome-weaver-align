@@ -38,12 +38,12 @@ import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.QueryMask;
 import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.utgenome.weaver.align.SiSet;
+import org.utgenome.weaver.align.SmithWatermanAligner.Alignment;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.Read;
 import org.utgenome.weaver.align.record.ReadHit;
-import org.utgenome.weaver.align.record.SWResult;
 import org.utgenome.weaver.align.record.SingleEndRead;
 import org.utgenome.weaver.align.strategy.FMSearchNFA.NextState;
 import org.utgenome.weaver.parallel.Reporter;
@@ -404,7 +404,7 @@ public class SuffixFilter
                 }
                 else {
                     // report unmapped read
-                    report(new ReadHit("*", 0, 0, -1, Strand.FORWARD, 0, null), 0);
+                    report(new ReadHit("*", 0, 0, -1, Strand.FORWARD, "", 0, null), 0);
                 }
 
             }
@@ -579,7 +579,8 @@ public class SuffixFilter
 
         private void reportExactMatchAlignment(FMQuickScan f) throws Exception {
             PosOnGenome pos = fmIndex.toGenomeCoordinate(f.si.lowerBound, m, f.strand);
-            resultHolder.add(new ReadHit(pos.chr, pos.pos, m, 0, f.strand, (int) f.si.range(), null));
+            resultHolder.add(new ReadHit(pos.chr, pos.pos, m, 0, f.strand, String.format("%dM", m), (int) f.si.range(),
+                    null));
         }
 
         public ReadHit verify(SearchState s, int fragmentLength, boolean isSplit) {
@@ -606,7 +607,8 @@ public class SuffixFilter
                 return null; // ignore the match at cycle boundary
             }
 
-            ACGTSequence ref = reference.subSequence(x, x + fragmentLength);
+            long refOffset = Math.max(0, x - nm);
+            ACGTSequence ref = reference.subSequence(refOffset, x + fragmentLength + nm);
             ACGTSequence query = q[cursor.getStrandIndex()];
             if (isSplit) {
                 query = query.subSequence(cursor.cursorB, cursor.cursorB + fragmentLength);
@@ -614,13 +616,14 @@ public class SuffixFilter
             if (cursor.getStrand() == Strand.REVERSE)
                 query = query.reverse();
 
-            SWResult alignment = BitParallelSmithWaterman.alignBlock(ref, query, nm);
+            Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(ref, query, nm);
             ++numSW;
-            if (alignment != null) {
+            if (alignment.numMismatches <= nm) {
                 try {
-                    PosOnGenome p = fmIndex.getSequenceBoundary().translate(x + 1, Strand.FORWARD);
-                    hit = new ReadHit(p.chr, p.pos, fragmentLength, alignment.diff, cursor.getStrand(),
-                            (int) si.range(), null);
+                    PosOnGenome p = fmIndex.getSequenceBoundary().translate(refOffset + alignment.pos + 1,
+                            Strand.FORWARD);
+                    hit = new ReadHit(p.chr, p.pos, fragmentLength, alignment.numMismatches, cursor.getStrand(),
+                            alignment.cigar, (int) si.range(), null);
                 }
                 catch (UTGBException e) {
                     _logger.error(e);
@@ -672,43 +675,43 @@ public class SuffixFilter
         private int numFiltered         = 0;
         private int numExactSearchCount = 0;
 
-        private void reportExactMatch(SearchState c) {
-            ++numExactSearchCount;
-            Cursor cursor = c.cursor;
-            final int n = cursor.getRemainingBases();
-            int numExtend = 0;
-
-            SuffixInterval si = c.currentSi;
-            SiSet siSet = c.siTable;
-            ACGT ch = null;
-            while (numExtend < n) {
-                ch = cursor.nextACGT(q);
-                if (siSet.equals(ch))
-                    return; // no match
-                siSet = cursor.nextSi(fmIndex, siSet, ch);
-                ++numFMIndexSearches;
-                cursor = cursor.next();
-                ++numExtend;
-            }
-
-            long candidateSi = si.lowerBound;
-            long seqIndex = fmIndex.toCoordinate(candidateSi, cursor.getStrand(), cursor.getSearchDirection());
-            int offset = cursor.getOffsetOfSearchHead(cursor.hasSplit(), cursor.getReadLength());
-            long x = seqIndex - offset;
-            if (x < 0 || x + cursor.getFragmentLength() > fmIndex.textSize()) {
-                return; // ignore the match at cycle boundary
-            }
-
-            try {
-                PosOnGenome pos = fmIndex.getSequenceBoundary().translate(x + 1, Strand.FORWARD);
-                ReadHit hit = new ReadHit(pos.chr, pos.pos, cursor.getReadLength(), c.getLowerBoundOfK(),
-                        c.cursor.getStrand(), (int) si.range(), null);
-                resultHolder.add(hit);
-            }
-            catch (UTGBException e) {
-                _logger.error(e);
-            }
-        }
+        //        private void reportExactMatch(SearchState c) {
+        //            ++numExactSearchCount;
+        //            Cursor cursor = c.cursor;
+        //            final int n = cursor.getRemainingBases();
+        //            int numExtend = 0;
+        //
+        //            SuffixInterval si = c.currentSi;
+        //            SiSet siSet = c.siTable;
+        //            ACGT ch = null;
+        //            while (numExtend < n) {
+        //                ch = cursor.nextACGT(q);
+        //                if (siSet.equals(ch))
+        //                    return; // no match
+        //                siSet = cursor.nextSi(fmIndex, siSet, ch);
+        //                ++numFMIndexSearches;
+        //                cursor = cursor.next();
+        //                ++numExtend;
+        //            }
+        //
+        //            long candidateSi = si.lowerBound;
+        //            long seqIndex = fmIndex.toCoordinate(candidateSi, cursor.getStrand(), cursor.getSearchDirection());
+        //            int offset = cursor.getOffsetOfSearchHead(cursor.hasSplit(), cursor.getReadLength());
+        //            long x = seqIndex - offset;
+        //            if (x < 0 || x + cursor.getFragmentLength() > fmIndex.textSize()) {
+        //                return; // ignore the match at cycle boundary
+        //            }
+        //
+        //            try {
+        //                PosOnGenome pos = fmIndex.getSequenceBoundary().translate(x + 1, Strand.FORWARD);
+        //                ReadHit hit = new ReadHit(pos.chr, pos.pos, cursor.getReadLength(), c.getLowerBoundOfK(),
+        //                        c.cursor.getStrand(), (int) si.range(), null);
+        //                resultHolder.add(hit);
+        //            }
+        //            catch (UTGBException e) {
+        //                _logger.error(e);
+        //            }
+        //        }
 
         private class AlignmentResultHolder
         {
