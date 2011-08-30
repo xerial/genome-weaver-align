@@ -86,6 +86,16 @@ public class SequenceBoundary
         return buf.toString();
     }
 
+    public long toIndex(String chr, long pos) {
+
+        for (SequenceIndex each : index) {
+            if (chr.equals(each.name)) {
+                return each.offset + pos - 1;
+            }
+        }
+        return -1;
+    }
+
     /**
      * @param textIndex
      * @return 1-origin index

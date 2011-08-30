@@ -74,6 +74,18 @@ public class ACGTSequence implements LSeq, GenomeSequence
     }
 
     /**
+     * Create a copy of the sequence
+     * 
+     * @param src
+     */
+    public ACGTSequence(ACGTSequence src) {
+        this.seq = src.seq.clone();
+        this.numBases = src.numBases;
+        this.capacity = src.capacity;
+        this.hash = src.hash;
+    }
+
+    /**
      * Create ACGTSequence from the input ACGT(N) sequence
      * 
      * @param s
@@ -157,9 +169,14 @@ public class ACGTSequence implements LSeq, GenomeSequence
         return nFlag == 0 ? code : 4;
     }
 
+    public void set(long index, ACGT ch) {
+        set(index, ch.code);
+    }
+
     @Override
     public void set(long index, long val) {
         // |N0 ... N63|B0 B1 ....  B31|B32 B33 ... B63|
+        hash = 0; // reset the hash
         int pos = (int) (index >> 6);
         int offset = (int) (index & 0x3FL);
         int shift = (offset & 0x1F) << 1;

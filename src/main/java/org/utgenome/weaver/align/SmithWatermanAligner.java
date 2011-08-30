@@ -58,9 +58,34 @@ public class SmithWatermanAligner
 
         @Override
         public String toString() {
-            return String.format("k:%d, cigar:%s, score:%d, pos:%d\nrseq: %s\nqseq: %s", numMismatches, cigar, score,
-                    pos, rseq, qseq);
+            return String.format("k:%d, cigar:%s, score:%d, pos:%d\nrseq: %s\n      %s\nqseq: %s", numMismatches,
+                    cigar, score, pos, rseq, diffString(), qseq);
         }
+
+        public String diffString() {
+            if (rseq == null || qseq == null)
+                return "";
+            int max = Math.min(rseq.length(), qseq.length());
+
+            StringBuilder s = new StringBuilder();
+            for (int i = 0; i < max; ++i) {
+                char r = rseq.charAt(i);
+                char q = qseq.charAt(i);
+                if (r == ' ' || q == ' ')
+                    s.append(" ");
+                else if (Character.isUpperCase(q)) {
+                    if (r == q)
+                        s.append("|");
+                    else
+                        s.append("X");
+                }
+                else {
+                    s.append(" ");
+                }
+            }
+            return s.toString();
+        }
+
     }
 
     public static enum Trace {
@@ -266,7 +291,7 @@ public class SmithWatermanAligner
         }
 
         int diff = 0;
-        
+
         // Trace back 
         traceback: for (col = maxCol, row = maxRow;;) {
 
@@ -286,7 +311,7 @@ public class SmithWatermanAligner
                 a1.append(ref.charAt(col - 1));
                 a2.append(query.charAt(row - 1));
                 leftMostPos = col - 1;
-                if(!isMatch)
+                if (!isMatch)
                     diff++;
                 col--;
                 row--;
@@ -350,8 +375,8 @@ public class SmithWatermanAligner
             compactCigar.append(prev);
         }
 
-        return new Alignment(compactCigar.toString(), maxScore, diff, a1.reverse().toString(), leftMostPos, a2.reverse()
-                .toString());
+        return new Alignment(compactCigar.toString(), maxScore, diff, a1.reverse().toString(), leftMostPos, a2
+                .reverse().toString());
     }
 
     public static class StringWrapper implements GenomeSequence

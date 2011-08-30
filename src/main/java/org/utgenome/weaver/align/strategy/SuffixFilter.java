@@ -421,14 +421,32 @@ public class SuffixFilter
             out.emit(r);
         }
 
+        private ACGTSequence replaceN_withA(ACGTSequence seq) {
+            ACGTSequence newSeq = new ACGTSequence(seq);
+            for (int i = 0; i < seq.length(); ++i) {
+                if (seq.getACGT(i) == ACGT.N) {
+                    newSeq.set(i, ACGT.A);
+                }
+            }
+            return newSeq;
+        }
+
         /**
          * @throws Exception
          */
         public void align_internal() throws Exception {
 
-            // Check whether the read contains too many Ns  
-            if (q[0].fastCount(ACGT.N, 0, m) > config.maximumEditDistances) {
-                return; // skip this alignment
+            // Check whether the read contains too many Ns
+            {
+                long countN = q[0].fastCount(ACGT.N, 0, m);
+                if (countN > config.maximumEditDistances) {
+                    return; // skip this alignment
+                }
+
+                if (countN > 0) {
+                    q[0] = replaceN_withA(q[0]);
+                    q[1] = replaceN_withA(q[1]);
+                }
             }
 
             // quick scan for k=0 (exact match)
