@@ -56,7 +56,7 @@ public class SuffixFilterTest
 
     @Test
     public void oneMismatchAtTail() throws Exception {
-        align("GCCTAA");
+        align("GCCTAC");
     }
 
     @Test
@@ -126,8 +126,8 @@ public class SuffixFilterTest
     @Test
     public void twoInsertion() throws Exception {
         //     AAGCCT--AGTTT 
-        //     AAGCCTTGAGTTT  6M2I5M
-        align("AAGCCTTGAGTTT");
+        //     AAGCCTGGAGTTT  6M2I5M
+        align("AAGCCTGGAGTTT");
     }
 
 }
