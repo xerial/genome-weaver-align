@@ -132,21 +132,21 @@ public class BitParallelSmithWatermanTest
         final int W = new AlignmentConfig().bandWidth;
 
         for (int k = 0; k < K; ++k) {
-            //            {
-            //                s1.resume();
-            //                for (int i = 0; i < N; ++i) {
-            //                    SmithWatermanAligner.standardAlign(ref, query);
-            //                }
-            //                s1.stop();
-            //            }
-            //
-            //            {
-            //                s3.resume();
-            //                for (int i = 0; i < N; ++i) {
-            //                    SmithWatermanAligner.bandedAlign(ref, query);
-            //                }
-            //                s3.stop();
-            //            }
+            {
+                s1.resume();
+                for (int i = 0; i < N; ++i) {
+                    SmithWatermanAligner.standardAlign(ref, query);
+                }
+                s1.stop();
+            }
+
+            {
+                s3.resume();
+                for (int i = 0; i < N; ++i) {
+                    SmithWatermanAligner.bandedAlign(ref, query);
+                }
+                s3.stop();
+            }
 
             {
                 s2.resume();
@@ -191,7 +191,7 @@ public class BitParallelSmithWatermanTest
 
     @Test
     public void mismatches() throws Exception {
-        Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed("CAAGATCTA", "CAAGATATA", 31);
+        Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed("GATCTA", "GATATA", 31);
         _logger.debug(alignment);
         //        assertEquals(2, alignment.pos);
         //        assertEquals("8M2D11M", alignment.cigar);
