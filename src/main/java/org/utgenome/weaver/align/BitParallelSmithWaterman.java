@@ -434,9 +434,9 @@ public class BitParallelSmithWaterman
             long x = this.peq[ch.code][r];
             if (hin < 0)
                 x |= 1L;
-            long d0 = ((vp + (x & vp)) ^ vp) | x | vn;
-            long hn = vp & d0;
-            long hp = (vn | ~(vp | d0));
+            long d0 = (((x & vp) + vp) ^ vp) | x | vn;
+            long hp = vn | ~(d0 | vp);
+            long hn = d0 & vp;
             int hout = 0;
 
             hout += (int) ((hp >>> (w - 1)) & 1L);
@@ -449,8 +449,13 @@ public class BitParallelSmithWaterman
             if (hin > 0)
                 hp2 |= 1L;
 
-            this.vp[r][j + 1] = hn2 | ~(hp2 | d0);
-            this.vn[r][j + 1] = hp2 & d0;
+            this.vp[r][j + 1] = hn2 | ~(d0 | hp2);
+            this.vn[r][j + 1] = d0 & hp2;
+
+            if (_logger.isDebugEnabled()) {
+                _logger.debug("[%s] j:%2d, block:%d, hin:%2d, hout:%2d, vp:%s, vn:%s, d0:%s", ch, j, r, hin, hout,
+                        toBinary(this.vp[r][j + 1], w), toBinary(this.vn[r][j + 1], w), toBinary(d0, w));
+            }
 
             return hout;
         }
@@ -496,8 +501,8 @@ public class BitParallelSmithWaterman
                     int block = row / w;
                     int offset = row % w;
 
-                    long vpf = vp[block][col] & (1L << offset);
-                    long vnf = vn[block][col] & (1L << offset);
+                    long vpf = vp[block][col + 1] & (1L << offset);
+                    long vnf = vn[block][col + 1] & (1L << offset);
 
                     if (ref.getACGT(col) == query.getACGT(row)) {
                         path = Trace.DIAGONAL;
