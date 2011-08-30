@@ -159,7 +159,7 @@ public class BitParallelSmithWatermanTest
             {
                 s4.resume();
                 for (int i = 0; i < N; ++i) {
-                    BitParallelSmithWaterman.alignBlockDetailed(ref, query, W);
+                    BitParallelSmithWaterman.alignBlockDetailedNoTraceBack(ref, query, k);
                 }
                 s4.stop();
             }
@@ -191,8 +191,7 @@ public class BitParallelSmithWatermanTest
 
     @Test
     public void mismatches() throws Exception {
-        Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed("TATACCAAGATCTAGAGATCTGG", "CAAGATTTAGAGAT",
-                31);
+        Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed("CAAGATCTA", "CAAGATATA", 31);
         _logger.debug(alignment);
         //        assertEquals(2, alignment.pos);
         //        assertEquals("8M2D11M", alignment.cigar);
