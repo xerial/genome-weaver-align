@@ -144,6 +144,12 @@ public class BitParallelSmithWaterman
         return a.traceback(ref, query, bestHit);
     }
 
+    public static void alignBlockDetailedNoTraceBack(ACGTSequence ref, ACGTSequence query, int k) {
+        AlignBlocksDetailed a = new AlignBlocksDetailed((int) query.textSize(), k);
+        SWResult bestHit = a.align(ref, query);
+        //return a.traceback(ref, query, bestHit);
+    }
+
     static SWResult alignBlock(ACGTSequence ref, ACGTSequence query, int k, int w) {
         AlignBlocks a = new AlignBlocks(w, (int) query.textSize(), k);
         return a.align(ref, query);
@@ -376,13 +382,13 @@ public class BitParallelSmithWaterman
             final int W = w - (int) ref.textSize() % w;
 
             // Prepare the score matrix
-            vp = new long[N + 1][bMax];
-            vn = new long[N + 1][bMax];
+            vp = new long[bMax][N + 1];
+            vn = new long[bMax][N + 1];
 
             // Initialize the vertical input
             for (int r = 0; r < bMax; ++r) {
-                vp[0][r] = ~0L; // all 1s
-                vn[0][r] = 0L; // all 0s
+                vp[r][0] = ~0L; // all 1s
+                vn[r][0] = 0L; // all 0s
             }
             // Init the score
             D[0] = w;
@@ -423,8 +429,8 @@ public class BitParallelSmithWaterman
         }
 
         private int alignBlock(int j, ACGT ch, int r, int hin) {
-            long vp = this.vp[j][r];
-            long vn = this.vn[j][r];
+            long vp = this.vp[r][j];
+            long vn = this.vn[r][j];
             long x = this.peq[ch.code][r];
             if (hin < 0)
                 x |= 1L;
@@ -443,10 +449,8 @@ public class BitParallelSmithWaterman
             if (hin > 0)
                 hp2 |= 1L;
 
-            long vp2 = hn2 | ~(hp2 | d0);
-            long vn2 = hp2 & d0;
-            this.vp[j + 1][r] = vp2;
-            this.vn[j + 1][r] = vn2;
+            this.vp[r][j + 1] = hn2 | ~(hp2 | d0);
+            this.vn[r][j + 1] = hp2 & d0;
 
             return hout;
         }
@@ -492,14 +496,17 @@ public class BitParallelSmithWaterman
                     int block = row / w;
                     int offset = row % w;
 
+                    long vpf = vp[block][col] & (1L << offset);
+                    long vnf = vn[block][col] & (1L << offset);
+
                     if (ref.getACGT(col) == query.getACGT(row)) {
                         path = Trace.DIAGONAL;
                     }
-                    else if ((vp[col][block] & (1L << offset)) != 0) {
+                    else if (vpf != 0L) {
                         path = Trace.UP;
                         diff++;
                     }
-                    else if ((vn[col][block] & (1L << offset)) == 0) {
+                    else if (vnf == 0L) {
                         path = Trace.DIAGONAL;
                         diff++;
                     }
@@ -507,11 +514,6 @@ public class BitParallelSmithWaterman
                         path = Trace.LEFT;
                         diff++;
                     }
-
-                    //                    // soft clip
-                    //                    if (row - diff < 0) {
-                    //                        path = Trace.NONE;
-                    //                    }
                 }
 
                 switch (path) {
