@@ -141,7 +141,9 @@ public class BitParallelSmithWaterman
     public static Alignment alignBlockDetailed(ACGTSequence ref, ACGTSequence query, int k) {
         AlignBlocksDetailed a = new AlignBlocksDetailed((int) query.textSize(), k);
         SWResult bestHit = a.align(ref, query);
-        return a.traceback(ref, query, bestHit);
+        if (bestHit == null)
+            return null;
+        return a.traceback(ref, query, bestHit.tailPos);
     }
 
     public static void alignBlockDetailedNoTraceBack(ACGTSequence ref, ACGTSequence query, int k) {
@@ -370,6 +372,14 @@ public class BitParallelSmithWaterman
                     peq[ch.code][i] = qMask.getPatternMaskIn64bit(ch, i, w);
                 }
             }
+            //            // Fill the flanking region with 1s
+            //            {
+            //                int f = m % w;
+            //                long mask = f == 0 ? 0L : (~0L << f);
+            //                for (int i = 0; i < Z; ++i) {
+            //                    peq[i][bMax - 1] |= mask;
+            //                }
+            //            }
 
             return align(ref);
         }
@@ -379,7 +389,7 @@ public class BitParallelSmithWaterman
             SWResult bestHit = null;
 
             final int N = (int) ref.textSize();
-            final int W = w - (int) ref.textSize() % w;
+            final int W = w - (m % w);
 
             // Prepare the score matrix
             vp = new long[bMax][N + 1];
@@ -391,7 +401,7 @@ public class BitParallelSmithWaterman
                 vn[r][0] = 0L; // all 0s
             }
             // Init the score
-            D[0] = w;
+            D[0] = m;
 
             int b = Math.max(1, (k + w - 1) / w);
             for (int j = 0; j < N; ++j) {
@@ -400,30 +410,44 @@ public class BitParallelSmithWaterman
                 for (int r = 0; r < b; ++r) {
                     int nextScore = alignBlock(j, ch, r, carry);
                     D[r] += nextScore;
+                    if (_logger.isTraceEnabled()) {
+                        _logger.trace("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore, r,
+                                D[r]);
+                    }
                     carry = nextScore;
                 }
 
                 if (b < bMax && D[b - 1] - carry <= k && (((peq[ch.code][b] & 1L) != 0L) | carry < 0)) {
                     b++;
+                    vp[b - 1][j] = ~0L;
+                    vn[b - 1][j] = 0L;
                     int nextScore = alignBlock(j, ch, b - 1, carry);
-                    D[b - 1] = D[b - 2] + w - carry + nextScore;
+                    D[b - 1] = D[b - 2] - carry + nextScore;
+
+                    if (_logger.isTraceEnabled()) {
+                        _logger.trace("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore,
+                                b - 1, D[b - 1]);
+                    }
                 }
                 else {
-                    while (b > 1 && D[b - 1] >= k + w) {
+                    while (b > 1 && D[b - 1] > k) {
                         --b;
                     }
                 }
 
                 if (b == bMax) {
                     if (bestHit == null) {
-                        bestHit = new SWResult(j, D[b - 1] - W);
+                        _logger.trace("j:%d, b:%d, W:%d, D[b]:%d", j, b - 1, W, D[b - 1]);
+                        bestHit = new SWResult(j, D[b - 1]);
                         continue;
                     }
 
-                    if (bestHit.diff > D[b - 1] - W) {
-                        bestHit = new SWResult(j, D[b - 1] - W);
+                    if (bestHit.diff > D[b - 1]) {
+                        _logger.trace("j:%d, b:%d, W:%d, diff:%d, D[b]:%d", j, b - 1, W, bestHit.diff, D[b - 1]);
+                        bestHit = new SWResult(j, D[b - 1]);
                     }
                 }
+
             }
             return bestHit;
         }
@@ -460,13 +484,11 @@ public class BitParallelSmithWaterman
             return hout;
         }
 
-        public Alignment traceback(ACGTSequence ref, ACGTSequence query, SWResult bestHit) {
-            if (bestHit == null)
-                return null;
+        public Alignment traceback(ACGTSequence ref, ACGTSequence query, int tailPos) {
 
             final int N = (int) ref.textSize();
             int maxRow = m - 1;
-            int maxCol = bestHit.tailPos;
+            int maxCol = tailPos;
 
             StringBuilder cigar = new StringBuilder();
 

@@ -79,12 +79,25 @@ public class ACGTSequence implements LSeq, GenomeSequence
      * @param s
      */
     public ACGTSequence(CharSequence s) {
-        this(s.length());
+        this(countNonWhiteSpaces(s));
 
+        int index = 0;
         for (int i = 0; i < s.length(); ++i) {
-            byte code = ACGT.to3bitCode(s.charAt(i));
-            set(i, code);
+            char ch = s.charAt(i);
+            if (ch == ' ')
+                continue; // skip white space
+            byte code = ACGT.to3bitCode(ch);
+            set(index++, code);
         }
+    }
+
+    private static long countNonWhiteSpaces(CharSequence s) {
+        int count = 0;
+        for (int i = 0; i < s.length(); ++i) {
+            if (s.charAt(i) != ' ')
+                count++;
+        }
+        return count;
     }
 
     /**

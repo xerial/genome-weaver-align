@@ -239,4 +239,27 @@ public class BitParallelSmithWatermanTest
         assertEquals(0, alignment.numMismatches);
     }
 
+    @Test
+    public void test1() throws Exception {
+        //        Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(
+        //                "CTAGTGTATCTCGTTATTGCTGCGGTTAAAAAGCTCGTAGTTGGATCTAGGTTACGTGCCGCAGTTCGCAATTTGCGTCAACTGTGGTCGTGACTT",
+        //                          "GGGTTATTGCTGCGGTTAAAAAGCTCGTAGTTGGATCTAGGTTACGTGCCGCAGTTCGCAATTTGCGTCAACTGTG", 10);
+
+        ACGTSequence r = new ACGTSequence(
+                "CTAGTGTATCTCGTTATTGCTG CGGTTATTGC TGCGGTTAAA AAGCTCGTAG TTGGATCTAG GTTACGTGCC GCAGTTCGCA ATTTGCGTCA ACTGTGGTCG TGACTT");
+
+        ACGTSequence q = new ACGTSequence(
+                "GGGTTATTGC TGCGGTTAAA AAGCTCGTAG TTGGATCTAG GTTACGTGCC GCAGTTCGCA ATTTGCGTCA");
+
+        Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(r, q, 10);
+        _logger.debug(alignment);
+
+        //        AlignBlocksDetailed aln = new BitParallelSmithWaterman.AlignBlocksDetailed((int) q.textSize(), 10);
+        //        SWResult sw = aln.align(r, q);
+        //        _logger.debug("tail pos:%d", sw.tailPos);
+        //        Alignment traceback = aln.traceback(r, q, 69);
+        //        _logger.debug(traceback);
+
+    }
+
 }

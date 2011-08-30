@@ -585,6 +585,9 @@ public class SuffixFilter
 
         public ReadHit verify(SearchState s, int fragmentLength, boolean isSplit) {
 
+            if (_logger.isTraceEnabled())
+                _logger.trace("verify state: %s", s);
+
             SuffixInterval si = s.currentSi;
             int nm = s.getLowerBoundOfK();
             Cursor cursor = s.cursor;
@@ -618,7 +621,10 @@ public class SuffixFilter
 
             Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(ref, query, nm);
             ++numSW;
-            if (alignment.numMismatches <= nm) {
+            if (alignment != null && alignment.numMismatches <= nm) {
+                if (_logger.isTraceEnabled())
+                    _logger.trace("Found an alignment: %s", alignment);
+
                 try {
                     PosOnGenome p = fmIndex.getSequenceBoundary().translate(refOffset + alignment.pos + 1,
                             Strand.FORWARD);
