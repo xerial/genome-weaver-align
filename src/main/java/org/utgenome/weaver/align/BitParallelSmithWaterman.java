@@ -410,10 +410,10 @@ public class BitParallelSmithWaterman
                 for (int r = 0; r < b; ++r) {
                     int nextScore = alignBlock(j, ch, r, carry);
                     D[r] += nextScore;
-                    if (_logger.isTraceEnabled()) {
-                        _logger.trace("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore, r,
-                                D[r]);
-                    }
+                    //                    if (_logger.isTraceEnabled()) {
+                    //                        _logger.trace("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore, r,
+                    //                                D[r]);
+                    //                    }
                     carry = nextScore;
                 }
 
@@ -423,11 +423,11 @@ public class BitParallelSmithWaterman
                     vn[b - 1][j] = 0L;
                     int nextScore = alignBlock(j, ch, b - 1, carry);
                     D[b - 1] = D[b - 2] - carry + nextScore;
-
-                    if (_logger.isTraceEnabled()) {
-                        _logger.trace("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore,
-                                b - 1, D[b - 1]);
-                    }
+                    //
+                    //                    if (_logger.isTraceEnabled()) {
+                    //                        _logger.trace("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore,
+                    //                                b - 1, D[b - 1]);
+                    //                    }
                 }
                 else {
                     while (b > 1 && D[b - 1] > k) {
@@ -437,13 +437,13 @@ public class BitParallelSmithWaterman
 
                 if (b == bMax) {
                     if (bestHit == null) {
-                        _logger.trace("j:%d, b:%d, W:%d, D[b]:%d", j, b - 1, W, D[b - 1]);
+                        //                        _logger.trace("j:%d, b:%d, W:%d, D[b]:%d", j, b - 1, W, D[b - 1]);
                         bestHit = new SWResult(j, D[b - 1]);
                         continue;
                     }
 
                     if (bestHit.diff > D[b - 1]) {
-                        _logger.trace("j:%d, b:%d, W:%d, diff:%d, D[b]:%d", j, b - 1, W, bestHit.diff, D[b - 1]);
+                        //                        _logger.trace("j:%d, b:%d, W:%d, diff:%d, D[b]:%d", j, b - 1, W, bestHit.diff, D[b - 1]);
                         bestHit = new SWResult(j, D[b - 1]);
                     }
                 }
