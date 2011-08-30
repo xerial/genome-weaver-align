@@ -452,10 +452,10 @@ public class BitParallelSmithWaterman
             this.vp[r][j + 1] = hn2 | ~(d0 | hp2);
             this.vn[r][j + 1] = d0 & hp2;
 
-            if (_logger.isDebugEnabled()) {
-                _logger.debug("[%s] j:%2d, block:%d, hin:%2d, hout:%2d, vp:%s, vn:%s, d0:%s", ch, j, r, hin, hout,
-                        toBinary(this.vp[r][j + 1], w), toBinary(this.vn[r][j + 1], w), toBinary(d0, w));
-            }
+            //            if (_logger.isDebugEnabled()) {
+            //                _logger.debug("[%s] j:%2d, block:%d, hin:%2d, hout:%2d, vp:%s, vn:%s, d0:%s", ch, j, r, hin, hout,
+            //                        toBinary(this.vp[r][j + 1], w), toBinary(this.vn[r][j + 1], w), toBinary(d0, w));
+            //            }
 
             return hout;
         }
