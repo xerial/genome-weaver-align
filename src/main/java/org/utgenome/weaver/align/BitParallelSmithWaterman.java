@@ -418,11 +418,11 @@ public class BitParallelSmithWaterman
                 }
 
                 if (b < bMax && D[b - 1] - carry <= k && (((peq[ch.code][b] & 1L) != 0L) | carry < 0)) {
+                    vp[b][j] = ~0L;
+                    vn[b][j] = 0L;
+                    int nextScore = alignBlock(j, ch, b, carry);
+                    D[b] = D[b - 1] - carry + nextScore;
                     b++;
-                    vp[b - 1][j] = ~0L;
-                    vn[b - 1][j] = 0L;
-                    int nextScore = alignBlock(j, ch, b - 1, carry);
-                    D[b - 1] = D[b - 2] - carry + nextScore;
                     //
                     //                    if (_logger.isTraceEnabled()) {
                     //                        _logger.trace("j:%d[%s], hin:%2d, hout:%2d, D%d:%d", j, ref.getACGT(j), carry, nextScore,
