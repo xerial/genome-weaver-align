@@ -507,6 +507,7 @@ public class BitParallelSmithWaterman
                         diff++;
                     }
                     else if (vnf == 0L) {
+                        // TODO no path to this. Fix me
                         path = Trace.DIAGONAL;
                         diff++;
                     }
