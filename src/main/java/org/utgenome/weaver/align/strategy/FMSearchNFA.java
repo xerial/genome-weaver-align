@@ -110,28 +110,27 @@ public class FMSearchNFA
         long[] next = new long[automaton.length];
 
         final int index = cursor.getIndex();
-        final int colStart = index - height + 1;
         final int k = kOffset + height - 1;
         final int qStart = cursor.getNextACGTIndex() - k;
         final long qeq = queryMask.getPatternMaskIn64bitForBidirectionalSearch(ch, qStart);
 
-        int minK = -1;
+        int minKwithMatch = -1;
         // Update the automaton
         // R'_0 = ((R_0 & P[ch]) << 1) & (suffix filter)
-        String qeqStr = toBinary(qeq, 10);
+        // String qeqStr = toBinary(qeq, 10);
         next[0] = (prev[0] & qeq) << 1;
         if (next[0] != 0)
-            minK = 0;
-        next[0] &= staircaseFilter.getStairCaseMask64bit(kOffset, colStart);
+            minKwithMatch = 0;
+        next[0] &= staircaseFilter.getStairCaseMask64bit(kOffset, index - k);
         for (int i = 1; i < height; ++i) {
             // R'_{i+1} = ((R_{i+1} & P[ch]) << 1) | R_i | (R_i << 1) | (R'_i << 1) 
             next[i] = (prev[i] & qeq) << 1;
-            if (minK == -1 && next[i] != 0) {
-                minK = i;
+            if (minKwithMatch == -1 && next[i] != 0) {
+                minKwithMatch = i;
             }
             next[i] |= prev[i - 1] | (prev[i - 1] << 1) | (next[i - 1] << 1);
             // Apply a suffix filter (staircase mask)
-            next[i] &= staircaseFilter.getStairCaseMask64bit(kOffset + i, colStart);
+            next[i] &= staircaseFilter.getStairCaseMask64bit(kOffset + i, index - k);
         }
 
         // Find a match at query position m
@@ -145,18 +144,28 @@ public class FMSearchNFA
             }
         }
 
-        // Find a match at next step 
-        if (minK != -1) {
-            return new NextState(new FMSearchNFA(removeLayersFromAutomaton(next, minK), kOffset + minK), false);
-        }
-        else {
+        int minKwithProgress = -1;
+        {
             final int nextIndex = height;
             for (int nm = 0; nm < height; ++nm) {
                 if ((next[nm] & (1L << nextIndex)) != 0L) { // If the next state is activated
-                    return new NextState(new FMSearchNFA(removeLayersFromAutomaton(next, nm), kOffset + nm), false);
+                    minKwithProgress = nm;
+                    break;
                 }
             }
         }
+
+        // Find a match at next step 
+        if (minKwithMatch != -1) {
+            if (minKwithProgress != -1)
+                if (minKwithMatch < minKwithProgress)
+                    return new NextState(new FMSearchNFA(removeLayersFromAutomaton(next, minKwithMatch), kOffset
+                            + minKwithMatch), false);
+        }
+
+        if (minKwithProgress != -1)
+            return new NextState(new FMSearchNFA(removeLayersFromAutomaton(next, minKwithProgress), kOffset
+                    + minKwithProgress), false);
 
         return null;
     }
