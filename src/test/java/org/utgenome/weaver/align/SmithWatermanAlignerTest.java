@@ -55,6 +55,7 @@ public class SmithWatermanAlignerTest
         Alignment alignment = bandedAlign("GATATAGAGATCTGGCCTAG", "TAGAGAT");
         assertEquals("7M", alignment.cigar);
         assertEquals(4, alignment.pos);
+        assertEquals(0, alignment.numMismatches);
     }
 
     @Test
@@ -66,6 +67,7 @@ public class SmithWatermanAlignerTest
                 config);
         assertEquals("11M2I20M", alignment.cigar);
         assertEquals(2, alignment.pos);
+        assertEquals(2, alignment.numMismatches);
     }
 
     @Test
@@ -77,6 +79,7 @@ public class SmithWatermanAlignerTest
                 config);
         assertEquals("11M2D20M", alignment.cigar);
         assertEquals(2, alignment.pos);
+        assertEquals(2, alignment.numMismatches);
     }
 
     @Test
@@ -84,5 +87,6 @@ public class SmithWatermanAlignerTest
         Alignment alignment = bandedAlign("ATTTGTATTATACCAAGAT", "ACCGGAAGGACCAAGAT");
         assertEquals("9S8M", alignment.cigar);
         assertEquals(11, alignment.pos);
+        assertEquals(0, alignment.numMismatches);
     }
 }

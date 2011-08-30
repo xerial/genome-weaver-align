@@ -42,13 +42,15 @@ public class SmithWatermanAligner
     {
         public final String cigar;
         public final int    score;
-        public final int    pos;  // 0-based leftmost position of the clipped sequence
-        public final String rseq; // reference sequence
-        public final String qseq; // query sequence
+        public final int    numMismatches;
+        public final int    pos;          // 0-based leftmost position of the clipped sequence
+        public final String rseq;         // reference sequence
+        public final String qseq;         // query sequence
 
-        public Alignment(String cigar, int score, String rseq, int pos, String qseq) {
+        public Alignment(String cigar, int score, int numMisamatches, String rseq, int pos, String qseq) {
             this.cigar = cigar;
             this.score = score;
+            this.numMismatches = numMisamatches;
             this.pos = pos;
             this.rseq = rseq;
             this.qseq = qseq;
@@ -56,7 +58,8 @@ public class SmithWatermanAligner
 
         @Override
         public String toString() {
-            return String.format("cigar:%s, score:%d, pos:%d\nrseq: %s\nqseq: %s", cigar, score, pos, rseq, qseq);
+            return String.format("k:%d, cigar:%s, score:%d, pos:%d\nrseq: %s\nqseq: %s", numMismatches, cigar, score,
+                    pos, rseq, qseq);
         }
     }
 
@@ -177,6 +180,7 @@ public class SmithWatermanAligner
         public final int M;
         public final int I;
         public final int D;
+        private boolean  hasMatch;
 
         public DPScore(int row, int col) {
             ACGT r = ACGT.encode(ref.charAt(col - 1));
@@ -184,6 +188,7 @@ public class SmithWatermanAligner
             int scoreDiff;
             if (r == q) {
                 scoreDiff = config.matchScore;
+                hasMatch = true;
             }
             else if (config.bssMode && r == ACGT.C && q == ACGT.T) {
                 scoreDiff = -config.bssMismatchPenalty;
@@ -196,6 +201,10 @@ public class SmithWatermanAligner
                     Math.max(Li[row - 1][col - 1] + scoreDiff, Ld[row - 1][col - 1] + scoreDiff));
             D = Math.max(score[row][col - 1] - config.gapOpenPenalty, Li[row][col - 1] - config.gapExtensionPenalty);
             I = Math.max(score[row - 1][col] - config.gapOpenPenalty, Ld[row - 1][col] - config.gapExtensionPenalty);
+        }
+
+        public boolean isMatch() {
+            return hasMatch;
         }
 
         public int maxScore() {
@@ -256,14 +265,18 @@ public class SmithWatermanAligner
             row--;
         }
 
+        int diff = 0;
+        
         // Trace back 
         traceback: for (col = maxCol, row = maxRow;;) {
 
             Trace path = Trace.NONE;
+            boolean isMatch = false;
             // Recompute the score
             if (col >= 1 && row >= 1) {
                 DPScore s = new DPScore(row, col);
                 path = s.getPath();
+                isMatch = s.isMatch();
             }
 
             switch (path) {
@@ -273,6 +286,8 @@ public class SmithWatermanAligner
                 a1.append(ref.charAt(col - 1));
                 a2.append(query.charAt(row - 1));
                 leftMostPos = col - 1;
+                if(!isMatch)
+                    diff++;
                 col--;
                 row--;
                 break;
@@ -282,6 +297,7 @@ public class SmithWatermanAligner
                 a1.append("-");
                 a2.append(query.charAt(row - 1));
                 leftMostPos = col - 1;
+                diff++;
                 row--;
                 break;
             case UP:
@@ -289,6 +305,7 @@ public class SmithWatermanAligner
                 cigar.append("D");
                 a1.append(ref.charAt(col - 1));
                 a2.append("-");
+                diff++;
                 col--;
                 break;
             case NONE:
@@ -333,7 +350,7 @@ public class SmithWatermanAligner
             compactCigar.append(prev);
         }
 
-        return new Alignment(compactCigar.toString(), maxScore, a1.reverse().toString(), leftMostPos, a2.reverse()
+        return new Alignment(compactCigar.toString(), maxScore, diff, a1.reverse().toString(), leftMostPos, a2.reverse()
                 .toString());
     }
 

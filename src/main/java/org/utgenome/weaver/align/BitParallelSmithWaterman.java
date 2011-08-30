@@ -469,8 +469,6 @@ public class BitParallelSmithWaterman
             int maxCol = bestHit.tailPos;
 
             StringBuilder cigar = new StringBuilder();
-            StringBuilder a1 = new StringBuilder();
-            StringBuilder a2 = new StringBuilder();
 
             int leftMostPos = 0; // in reference seq 
 
@@ -484,11 +482,11 @@ public class BitParallelSmithWaterman
 
             // Append clipped sequences
             while (col > maxCol) {
-                a1.append(ref.charAt(col - 1));
+                //a1.append(ref.charAt(col - 1));
                 col--;
             }
             while (row > maxRow) {
-                a2.append(query.getACGT(row - 1).toChar());
+                //a2.append(query.getACGT(row - 1).toChar());
                 row--;
             }
 
@@ -512,7 +510,6 @@ public class BitParallelSmithWaterman
                         diff++;
                     }
                     else if (vnf == 0L) {
-                        // TODO no path to this. Fix me
                         path = Trace.DIAGONAL;
                         diff++;
                     }
@@ -526,8 +523,8 @@ public class BitParallelSmithWaterman
                 case DIAGONAL:
                     // match
                     cigar.append("M");
-                    a1.append(ref.charAt(col));
-                    a2.append(query.charAt(row));
+                    //a1.append(ref.charAt(col));
+                    //a2.append(query.charAt(row));
                     leftMostPos = col;
                     col--;
                     row--;
@@ -535,27 +532,27 @@ public class BitParallelSmithWaterman
                 case UP:
                     // insertion
                     cigar.append("I");
-                    a1.append("-");
-                    a2.append(query.charAt(row));
+                    //a1.append("-");
+                    //a2.append(query.charAt(row));
                     leftMostPos = col + 1;
                     row--;
                     break;
                 case LEFT:
                     cigar.append("D");
-                    a1.append(ref.charAt(col));
-                    a2.append("-");
+                    //a1.append(ref.charAt(col));
+                    //a2.append("-");
                     col--;
                     break;
                 case NONE:
                     while (col >= 0 || row >= 0) {
                         if (row >= 0) {
                             cigar.append("S");
-                            a1.append(col >= 0 ? ref.charAt(col) : ' ');
-                            a2.append(Character.toLowerCase(query.charAt(row)));
+                            //a1.append(col >= 0 ? ref.charAt(col) : ' ');
+                            //a2.append(Character.toLowerCase(query.charAt(row)));
                         }
                         else {
-                            a1.append(col >= 0 ? ref.charAt(col) : ' ');
-                            a2.append(' ');
+                            //a1.append(col >= 0 ? ref.charAt(col) : ' ');
+                            //a2.append(' ');
                         }
                         col--;
                         row--;
@@ -571,8 +568,12 @@ public class BitParallelSmithWaterman
                 int left = 0, right = 0;
                 for (int i = 0; i < cigarStr.length(); ++i) {
                     char t = cigarStr.charAt(i);
-                    if (t == 'S' || t == 'I' || t == 'D') {
+                    if (t == 'S') {
                         left++;
+                    }
+                    else if (t == 'I' || t == 'D') {
+                        left++;
+                        diff--;
                     }
                     else
                         break;
@@ -580,8 +581,12 @@ public class BitParallelSmithWaterman
 
                 for (int i = cigarStr.length() - 1; i >= left; --i) {
                     char t = cigarStr.charAt(i);
-                    if (t == 'S' || t == 'I' || t == 'D') {
+                    if (t == 'S') {
                         right++;
+                    }
+                    else if (t == 'I' || t == 'D') {
+                        right++;
+                        diff--;
                     }
                     else
                         break;
@@ -618,8 +623,7 @@ public class BitParallelSmithWaterman
                 compactCigar.append(prev);
             }
 
-            return new Alignment(compactCigar.toString(), m - diff, a1.reverse().toString(), leftMostPos, a2.reverse()
-                    .toString());
+            return new Alignment(compactCigar.toString(), m - diff, diff, null, leftMostPos, null);
         }
 
     }
