@@ -33,6 +33,7 @@ import java.io.DataOutputStream;
 import java.util.Random;
 
 import org.junit.Test;
+import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
 
 public class ACGTSequenceTest
@@ -194,6 +195,60 @@ public class ACGTSequenceTest
     public void fastCount2() throws Exception {
         ACGTSequence s = new ACGTSequence("TTTTATTAAAAAAAA");
         assertEquals(9, s.fastCount(ACGT.A, 0, 15));
+    }
+
+    @Test
+    public void perfFastCount() throws Exception {
+        ACGTSequence s = new ACGTSequence(
+                "TTTTATTAAAAAAACGGAGACCGCCTTCCAAAACCGCGCGCTTCNNATTATCCANACTACCCACGCGTCTAAGCATCAGTACGGGTGTGCGCACAGTGTGTGCGCGCTACGACGCGATCTCGCATCTGCTCTAA");
+
+        int K = 100;
+        double t1 = 0, t2 = 0, t3 = 0;
+
+        for (int k = 0; k < K; ++k) {
+            {
+                StopWatch timer = new StopWatch();
+                for (int i = 0; i < s.textSize(); ++i) {
+                    for (int j = i; j < s.textSize(); ++j) {
+                        for (ACGT ch : ACGT.values()) {
+                            long count = s.fastCount(ch, i, j);
+                        }
+                    }
+                }
+                t1 += timer.getElapsedTime();
+            }
+
+            {
+                StopWatch timer = new StopWatch();
+                for (int i = 0; i < s.textSize(); ++i) {
+                    for (int j = i; j < s.textSize(); ++j) {
+                        for (ACGT ch : ACGT.values()) {
+                            long count = s.count(ch, i, j);
+                        }
+                    }
+                }
+                t2 += timer.getElapsedTime();
+            }
+
+            {
+                StopWatch timer = new StopWatch();
+                for (int i = 0; i < s.textSize(); ++i) {
+                    for (int j = i; j < s.textSize(); ++j) {
+                        long[] count = s.fastCountACGTN(i, j);
+                    }
+                }
+                t3 += timer.getElapsedTime();
+            }
+
+        }
+
+        _logger.debug("fast count: %.2f", t1);
+        _logger.debug("simple count: %.2f", t2);
+        _logger.debug("fast count all: %.2f", t3);
+        _logger.debug("simple/fast speedup: %.2fx", t2 / t1);
+        _logger.debug("fast/fast all speedup: %.2fx", t1 / t3);
+        _logger.debug("simple/fast all speedup: %.2fx", t2 / t3);
+
     }
 
     @Test
