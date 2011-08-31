@@ -223,9 +223,11 @@ public class SuffixFilter
             int index = cursor.getIndex();
             int nextMinK = next.nextState.kOffset;
 
-            SuffixInterval si = cursor.isForwardSearch() ? this.siTable.getForward(ch) : this.siTable.getBackward(ch);
-            return new SearchState(si, ch, cursor.next(), nextSi, next.nextState, next.hasMatch, nextMinK,
-                    getPriority(), split);
+            Cursor nextCursor = cursor.next();
+            SuffixInterval si = nextCursor.isForwardSearch() ? this.siTable.getForward(ch) : this.siTable
+                    .getBackward(ch);
+            return new SearchState(si, ch, nextCursor, nextSi, next.nextState, next.hasMatch, nextMinK, getPriority(),
+                    split);
         }
 
     }
@@ -364,16 +366,19 @@ public class SuffixFilter
                 align_internal();
                 boolean hasHit = minMismatches <= k || !resultHolder.hitList.isEmpty();
                 ReadHit besthit = null;
-                if (hasHit)
+                String cigar = "";
+                if (hasHit) {
                     besthit = resultHolder.hitList.get(0);
+                    cigar = besthit.cigar;
+                }
                 boolean isUnique = resultHolder.isUnique();
 
                 if (_logger.isDebugEnabled()) {
                     _logger.debug(
-                            "query:%s %s %2s k:%d, FM Search:%,d, SW:%d, Exact:%d, CutOff:%d, Filtered:%d, %.5f sec.",
+                            "query:%s %s %2s %s k:%d, FM Search:%,d, SW:%d, Exact:%d, CutOff:%d, Filtered:%d, %.5f sec.",
                             read.name(), hasHit ? besthit.strand.symbol : " ", hasHit ? besthit.getAlignmentState()
-                                    : " ", minMismatches, numFMIndexSearches, numSW, numExactSearchCount, numCutOff,
-                            numFiltered, s.getElapsedTime());
+                                    : " ", cigar, minMismatches, numFMIndexSearches, numSW, numExactSearchCount,
+                            numCutOff, numFiltered, s.getElapsedTime());
 
                     if (minMismatches > k || numFMIndexSearches > 500) {
                         _logger.debug("query:%s", q[0]);
@@ -582,7 +587,7 @@ public class SuffixFilter
                 // Split alignment
                 c.updateSplitFlag();
                 if (!c.cursor.hasSplit() && config.numSplitAlowed > 0 && nm + 1 <= minMismatches) {
-                    int index = c.cursor.getIndex();
+                    int index = c.cursor.getNextACGTIndex();
                     if (index > config.indelEndSkip && m - index >= config.indelEndSkip) {
                         SearchState nextState = c.nextStateAfterSplit();
                         if (nextState != null)
@@ -633,7 +638,16 @@ public class SuffixFilter
             ACGTSequence ref = reference.subSequence(refStart, refEnd);
             ACGTSequence query = q[cursor.getStrandIndex()];
             if (isSplit) {
-                query = query.subSequence(cursor.cursorB, cursor.cursorB + fragmentLength);
+                int splitStart, splitEnd;
+                if (cursor.isForwardSearch()) {
+                    splitStart = cursor.cursorB;
+                    splitEnd = cursor.cursorB + fragmentLength;
+                }
+                else {
+                    splitStart = 0;
+                    splitEnd = cursor.cursorF;
+                }
+                query = query.subSequence(splitStart, splitEnd);
             }
             if (cursor.getStrand() == Strand.REVERSE)
                 query = query.reverse();

@@ -326,6 +326,23 @@ public class BitVector
         return v;
     }
 
+    public static BitVector parseStringRev(String binaryString) {
+        int n = binaryString.length();
+        BitVector v = new BitVector(n);
+        for (int i = 0; i < n; ++i) {
+            v.set(i, binaryString.charAt(i) == '1');
+        }
+        return v;
+    }
+
+    public static BitVector parseLong(long val, int n) {
+        BitVector v = new BitVector(n);
+        for (int i = 0; i < n; ++i) {
+            v.set(i, ((val & (1L << i)) != 0));
+        }
+        return v;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof BitVector))
@@ -353,7 +370,7 @@ public class BitVector
     }
 
     /**
-     * Return string representation of this bit vector. LSB is left
+     * Return string representation of this bit vector. LSB is right
      * 
      * @see java.lang.Object#toString()
      */
@@ -361,6 +378,13 @@ public class BitVector
     public String toString() {
         StringBuilder buf = new StringBuilder();
         for (long i = size - 1; i >= 0; --i)
+            buf.append(get(i) ? "1" : "0");
+        return buf.toString();
+    }
+
+    public String toStringReverse() {
+        StringBuilder buf = new StringBuilder();
+        for (long i = 0; i < size; ++i)
             buf.append(get(i) ? "1" : "0");
         return buf.toString();
     }

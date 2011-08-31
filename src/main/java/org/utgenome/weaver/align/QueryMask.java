@@ -68,15 +68,17 @@ public class QueryMask
      * @param start
      * @return
      */
-    public long getPatternMaskIn64bitForBidirectionalSearch(ACGT ch, int start) {
-        if (start < 0) {
-            long p = patternMaskF[ch.code].substring64(0, 64);
-            return p << (-start);
+    public long getPatternMaskIn64bitForBidirectionalSearch(ACGT ch, int offset, int searchBoundary) {
+        long p;
+        if (offset < 0) {
+            p = patternMaskF[ch.code].substring64(0, 64);
+            p <<= (-offset);
         }
-        long p = patternMaskF[ch.code].substring64(start, m);
-        if (start + 64 >= m) {
+        else
+            p = patternMaskF[ch.code].substring64(offset, m);
+        if (offset + 64 >= m) {
             // combine forward and reverse pattern mask
-            p |= (patternMaskR[ch.code].substring64(0, start + 64 - m)) << (m - start);
+            p |= (patternMaskR[ch.code].substring64(m - searchBoundary, m - searchBoundary + 64)) << (m - offset);
         }
         return p;
     }
@@ -100,8 +102,9 @@ public class QueryMask
         for (; i < ACGT.exceptN.length; ++i) {
             if (i > 0)
                 s.append(", ");
-            s.append(String.format("%s:%s", ACGT.exceptN[i], patternMaskF[i]));
+            s.append(String.format("%s:%s", ACGT.exceptN[i], patternMaskF[i].toStringReverse()));
         }
         return s.toString();
     }
+
 }

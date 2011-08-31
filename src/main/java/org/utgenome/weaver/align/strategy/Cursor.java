@@ -128,6 +128,11 @@ public class Cursor
             return cursorF - cursorB + (split.cursorF - split.cursorB);
     }
 
+    /**
+     * Read search direction 0 -> m (forward), m -> 0 (backward)
+     * 
+     * @return
+     */
     public SearchDirection getSearchDirection() {
         return SearchDirection.decode((flag >>> 1) & 0x03);
     }
@@ -135,6 +140,11 @@ public class Cursor
     public boolean isForwardSearch() {
         return getSearchDirection().isForward;
     }
+
+    //    public Strand fmIndexDirection() {
+    //        int fm = ~(getStrandIndex() ^ (getSearchDirection().isForward ? 0 : 1)) & 1;
+    //        return fm == 0 ? Strand.FORWARD : Strand.REVERSE;
+    //    }
 
     Cursor split() {
         SearchDirection d = getSearchDirection();

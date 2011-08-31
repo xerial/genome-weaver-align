@@ -93,7 +93,7 @@ public class Align extends GenomeWeaverCommand
         SequenceBoundary b = SequenceBoundary.loadSilk(forwardDB.pacIndex());
 
         FMIndexOnGenome fmIndex = FMIndexOnGenome.load(config.refSeq);
-        OutputStream out = config.quiet ? new NullOutputStream() : new StandardOutputStream();
+        OutputStream out = config.silent ? new NullOutputStream() : new StandardOutputStream();
         SAMOutput reporter = new SAMOutput(fmIndex.getSequenceBoundary(), out);
         try {
             reporter.init();

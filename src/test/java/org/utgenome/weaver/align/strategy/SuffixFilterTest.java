@@ -70,6 +70,11 @@ public class SuffixFilterTest
     }
 
     @Test
+    public void bidirectionalSearch() throws Exception {
+        align("AACCCTAGTTTCGTT");
+    }
+
+    @Test
     public void twoMismatchAtHead() throws Exception {
         align("TTGCCTAGTTT");
     }

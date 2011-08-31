@@ -220,12 +220,12 @@ public class FMIndexOnGenome
     }
 
     public long toCoordinate(long saIndex, Strand strand, SearchDirection searchDirection) {
-        //  strand/search direction -> fmIndex
-        //  0/0 -> 1
-        //  0/1 -> 0
-        //  1/0 -> 0
-        //  1/1 -> 1
-        int fm = ~(strand.index ^ searchDirection.index) & 1;
+        //  strand(+:0,-:1)/search direction(F:0,B:1) -> fmIndex
+        //  0/0 -> 1 (reverse index)
+        //  0/1 -> 0 (forward index)
+        //  1/0 -> 0 (forward index)
+        //  1/1 -> 1 (reverse index)
+        int fm = ~(strand.index ^ (searchDirection.isForward ? 0 : 1)) & 1;
         if (fm == 0)
             return forwardSA.get(saIndex, forwardIndex);
         else

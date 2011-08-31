@@ -24,7 +24,6 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-
 /**
  * Various types of suffix intervals for forward, backward, bidirectional
  * searches.
@@ -59,7 +58,7 @@ public abstract class SiSet
 
         @Override
         public String toString() {
-            return toString(siF);
+            return "F" + toString(siF);
         }
     }
 
@@ -106,7 +105,7 @@ public abstract class SiSet
 
         @Override
         public String toString() {
-            return toString(siB);
+            return "B" + toString(siB);
         }
     }
 
@@ -137,7 +136,7 @@ public abstract class SiSet
 
         @Override
         public String toString() {
-            return String.format("%s:%s", toString(siF), toString(siB));
+            return String.format("F%s:B%s", toString(siF), toString(siB));
         }
     }
 
