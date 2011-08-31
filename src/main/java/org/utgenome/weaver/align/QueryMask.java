@@ -78,7 +78,11 @@ public class QueryMask
             p = patternMaskF[ch.code].substring64(offset, m);
         if (offset + 64 >= m) {
             // combine forward and reverse pattern mask
-            p |= (patternMaskR[ch.code].substring64(m - searchBoundary, m - searchBoundary + 64)) << (m - offset);
+            int shift = m - offset;
+            if (shift >= 0)
+                p |= (patternMaskR[ch.code].substring64(m - searchBoundary, m - searchBoundary + 64)) << shift;
+            else
+                p |= (patternMaskR[ch.code].substring64(m - searchBoundary, m - searchBoundary + 64)) >>> -shift;
         }
         return p;
     }

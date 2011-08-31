@@ -24,7 +24,7 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.util.List;
 
@@ -57,10 +57,10 @@ public class SuffixFilterTest
     public static AlignmentRecord align(ACGTSequence q) throws Exception {
         SuffixFilter f = new SuffixFilter(fmIndex, ref, config);
         List<AlignmentRecord> result = f.align(q);
-        if(result.size() == 0)
-        	return null;
+        if (result.size() == 0)
+            return null;
         else
-        	return result.get(0);
+            return result.get(0);
     }
 
     @Test
@@ -70,12 +70,12 @@ public class SuffixFilterTest
 
     @Test
     public void oneMismatch() throws Exception {
-    	// GCCTAGTT
-    	// |||X||||
-    	// GCCAAGTT
+        // GCCTAGTT
+        // |||X||||
+        // GCCAAGTT
         AlignmentRecord a = align("GCCAAGTT");
         assertEquals("8M", a.cigar.toCIGARString());
-        assertEquals(2, a.start);
+        assertEquals(3, a.start);
     }
 
     @Test

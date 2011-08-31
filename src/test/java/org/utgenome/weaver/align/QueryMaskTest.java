@@ -33,8 +33,7 @@ public class QueryMaskTest
 {
     private static Logger _logger = Logger.getLogger(QueryMaskTest.class);
 
-    public void check(String answer, ACGT ch, int offset, int boundary) {
-        ACGTSequence query = new ACGTSequence("AAGATTGC");
+    public void check(ACGTSequence query, String answer, ACGT ch, int offset, int boundary) {
         int m = query.length();
         QueryMask qm = new QueryMask(query);
         _logger.debug("ans:%s, offset:%d, boundary:%d", answer, offset, boundary);
@@ -45,14 +44,28 @@ public class QueryMaskTest
     @Test
     public void mask64() throws Exception {
 
+        ACGTSequence query = new ACGTSequence("AAGATTGC");
         // AAG|ATTGC
         //     ATTGC|GAA
         //      TTGC|GAA
         //       TGC|GAA
-        check("00001011", ACGT.A, 0, 0);
-        check("00000101", ACGT.A, 1, 0);
-        check("11000001", ACGT.A, 3, 3);
-        check("01100000", ACGT.A, 4, 3);
-        check("00110000", ACGT.A, 5, 3);
+        check(query, "00001011", ACGT.A, 0, 0);
+        check(query, "00000101", ACGT.A, 1, 0);
+        check(query, "11000001", ACGT.A, 3, 3);
+        check(query, "01100000", ACGT.A, 4, 3);
+        check(query, "00110000", ACGT.A, 5, 3);
     }
+
+    @Test
+    public void backwardMask() throws Exception {
+        ACGTSequence query = new ACGTSequence("GCCAAGTT");
+        //        check(query, "01100000", ACGT.C, 4, 4);
+        //        check(query, "00110000", ACGT.C, 5, 4);
+        //        check(query, "00011000", ACGT.C, 6, 4);
+        //        check(query, "00001100", ACGT.C, 7, 4);
+        //        check(query, "00000110", ACGT.C, 8, 4);
+        check(query, "00000011", ACGT.C, 9, 4);
+        check(query, "00000001", ACGT.C, 10, 4);
+    }
+
 }
