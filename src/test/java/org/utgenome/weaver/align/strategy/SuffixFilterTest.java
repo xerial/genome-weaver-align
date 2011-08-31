@@ -24,11 +24,16 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
+import static org.junit.Assert.assertEquals;
+
+import java.util.List;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.AlignmentConfig;
 import org.utgenome.weaver.align.FMIndexOnGenome;
+import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.xerial.util.log.Logger;
 
 public class SuffixFilterTest
@@ -45,13 +50,17 @@ public class SuffixFilterTest
         fmIndex = FMIndexOnGenome.buildFromSequence("seq", ref);
     }
 
-    public static void align(String query) throws Exception {
-        align(new ACGTSequence(query));
+    public static AlignmentRecord align(String query) throws Exception {
+        return align(new ACGTSequence(query));
     }
 
-    public static void align(ACGTSequence q) throws Exception {
+    public static AlignmentRecord align(ACGTSequence q) throws Exception {
         SuffixFilter f = new SuffixFilter(fmIndex, ref, config);
-        f.align(q);
+        List<AlignmentRecord> result = f.align(q);
+        if(result.size() == 0)
+        	return null;
+        else
+        	return result.get(0);
     }
 
     @Test
@@ -61,7 +70,12 @@ public class SuffixFilterTest
 
     @Test
     public void oneMismatch() throws Exception {
-        align("GCCAAGTT");
+    	// GCCTAGTT
+    	// |||X||||
+    	// GCCAAGTT
+        AlignmentRecord a = align("GCCAAGTT");
+        assertEquals("8M", a.cigar.toCIGARString());
+        assertEquals(2, a.start);
     }
 
     @Test

@@ -27,6 +27,7 @@ package org.utgenome.weaver.align.strategy;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.PriorityQueue;
 
 import org.utgenome.UTGBException;
@@ -220,7 +221,6 @@ public class SuffixFilter
             if (next == null)
                 return null; // no match
 
-            int index = cursor.getIndex();
             int nextMinK = next.nextState.kOffset;
 
             Cursor nextCursor = cursor.next();
@@ -232,10 +232,16 @@ public class SuffixFilter
 
     }
 
+    /**
+     * Compute next suffix intervals 
+     * @param c
+     * @param ch
+     * @return
+     */
     private SiSet next(SearchState c, ACGT ch) {
         return c.cursor.nextSi(fmIndex, c.siTable, ch);
     }
-
+ 
     /**
      * Prepare a suffix filter
      * 
@@ -253,20 +259,23 @@ public class SuffixFilter
         this.k = config.maximumEditDistances;
     }
 
-    public void align(ACGTSequence seq) throws Exception {
-        align(new SingleEndRead("read", seq, null));
+    public List<AlignmentRecord> align(ACGTSequence seq) throws Exception {
+        return align(new SingleEndRead("read", seq, null));
     }
 
-    public void align(Read read) throws Exception {
+    public List<AlignmentRecord> align(Read read) throws Exception {
+    	final List<AlignmentRecord> alignmentResult = new ArrayList<AlignmentRecord>();
         new AlignmentProcess(read, new Reporter() {
             @Override
             public void emit(Object result) throws Exception {
                 if (AlignmentRecord.class.isInstance(result)) {
                     AlignmentRecord r = (AlignmentRecord) result;
                     _logger.debug(SilkLens.toSilk("alignment", r));
+                    alignmentResult.add(r);
                 }
             }
         }).align();
+        return alignmentResult;
     }
 
     public void align(Read read, Reporter out) throws Exception {
@@ -336,7 +345,6 @@ public class SuffixFilter
      */
     class AlignmentProcess
     {
-
         private final Read            read;
         private final int             m;
         private final StaircaseFilter staircaseFilter;

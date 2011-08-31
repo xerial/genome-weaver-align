@@ -48,7 +48,7 @@ public class AlignmentRecord
     public int             start;
     public int             end;
     public int             numMismatches = 0;
-    private CIGAR          cigar;
+    public CIGAR          cigar;
     public String          querySeq;
     public String          qual;
     public int             score;

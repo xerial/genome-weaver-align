@@ -68,7 +68,6 @@ public class FMQuickScan
         int numMismatches = 0;
         BitVector breakPoint = new BitVector(qLen);
         SuffixInterval si = fmIndex.wholeSARange();
-        int longestMatchLength = 0;
         int mark = 0;
         Range longestMatch = null;
         SuffixInterval longestMatchSi = null;
