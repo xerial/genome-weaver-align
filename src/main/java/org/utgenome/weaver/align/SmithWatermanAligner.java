@@ -74,7 +74,7 @@ public class SmithWatermanAligner
                 if (r == ' ' || q == ' ')
                     s.append(" ");
                 else if (Character.isUpperCase(q)) {
-                    if (r == q)
+                    if (ACGT.encode(r).match(ACGT.encode(q)))
                         s.append("|");
                     else
                         s.append("X");
@@ -211,7 +211,7 @@ public class SmithWatermanAligner
             ACGT r = ACGT.encode(ref.charAt(col - 1));
             ACGT q = ACGT.encode(query.charAt(row - 1));
             int scoreDiff;
-            if (r == q) {
+            if (r.match(q)) {
                 scoreDiff = config.matchScore;
                 hasMatch = true;
             }

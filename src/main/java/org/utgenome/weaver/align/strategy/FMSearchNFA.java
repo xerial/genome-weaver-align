@@ -121,6 +121,7 @@ public class FMSearchNFA
         next[0] = (prev[0] & qeq) << 1;
         if (next[0] != 0)
             minKwithMatch = 0;
+        next[0] |= prev[0];
         next[0] &= staircaseFilter.getStairCaseMask64bit(kOffset, index - k);
         for (int i = 1; i < height; ++i) {
             // R'_{i+1} = ((R_{i+1} & P[ch]) << 1) | R_i | (R_i << 1) | (R'_i << 1) 

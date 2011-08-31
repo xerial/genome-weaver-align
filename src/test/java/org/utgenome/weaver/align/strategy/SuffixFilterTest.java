@@ -70,7 +70,7 @@ public class SuffixFilterTest
     }
 
     @Test
-    public void twoMismatch() throws Exception {
+    public void twoMismatchAtHead() throws Exception {
         align("TTGCCTAGTTT");
     }
 

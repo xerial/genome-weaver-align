@@ -47,7 +47,6 @@ import org.utgenome.weaver.align.record.ReadHit;
 import org.utgenome.weaver.align.record.SingleEndRead;
 import org.utgenome.weaver.align.strategy.FMSearchNFA.NextState;
 import org.utgenome.weaver.parallel.Reporter;
-import org.xerial.lens.JSONLens;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.StopWatch;
 import org.xerial.util.StringUtil;
@@ -261,7 +260,7 @@ public class SuffixFilter
             public void emit(Object result) throws Exception {
                 if (AlignmentRecord.class.isInstance(result)) {
                     AlignmentRecord r = (AlignmentRecord) result;
-                    _logger.debug(JSONLens.toJSON(r));
+                    _logger.debug(SilkLens.toSilk("alignment", r));
                 }
             }
         }).align();
@@ -628,14 +627,18 @@ public class SuffixFilter
                 return null; // ignore the match at cycle boundary
             }
 
-            long refOffset = Math.max(0, x - nm);
-            ACGTSequence ref = reference.subSequence(refOffset, x + fragmentLength + nm);
+            long refStart = Math.max(0, x - nm);
+            long refEnd = x + fragmentLength + nm;
+            ACGTSequence ref = reference.subSequence(refStart, refEnd);
             ACGTSequence query = q[cursor.getStrandIndex()];
             if (isSplit) {
                 query = query.subSequence(cursor.cursorB, cursor.cursorB + fragmentLength);
             }
             if (cursor.getStrand() == Strand.REVERSE)
                 query = query.reverse();
+
+            if (_logger.isTraceEnabled())
+                _logger.trace("Bit-parallel alignment:\n%s\n%s", ref, query);
 
             Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(ref, query, config.bandWidth);
             ++numSW;
@@ -644,7 +647,7 @@ public class SuffixFilter
                     _logger.trace("Found an alignment: %s", alignment);
 
                 try {
-                    PosOnGenome p = fmIndex.getSequenceBoundary().translate(refOffset + alignment.pos + 1,
+                    PosOnGenome p = fmIndex.getSequenceBoundary().translate(refStart + alignment.pos + 1,
                             Strand.FORWARD);
                     hit = new ReadHit(p.chr, p.pos, fragmentLength, alignment.numMismatches, cursor.getStrand(),
                             alignment.cigar, (int) si.range(), null);

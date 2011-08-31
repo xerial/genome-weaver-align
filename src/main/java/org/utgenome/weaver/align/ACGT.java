@@ -31,7 +31,7 @@ package org.utgenome.weaver.align;
  * 
  */
 public enum ACGT {
-    A(0x00), C(0x01), G(0x02), T(0x03), N(0x04);
+    A(0x00, 1), C(0x01, 1 << 1), G(0x02, 1 << 2), T(0x03, 1 << 3), N(0x04, 0x0F);
 
     private final static byte[] charToACGTCodeTable = { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
             4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
@@ -45,10 +45,13 @@ public enum ACGT {
     private final static ACGT[] codeTable           = { A, C, G, T, N, N, N, N, N };
     private final static char[] charTable           = { 'A', 'C', 'G', 'T', 'N' };
     public final byte           code;
+    public final int            bitFlag;
     public final static ACGT[]  exceptN             = { A, C, G, T };
 
-    private ACGT(int code) {
+    private ACGT(int code, int bitFlag) {
         this.code = (byte) code;
+        this.bitFlag = bitFlag;
+
     }
 
     public ACGT complement() {
@@ -77,6 +80,10 @@ public enum ACGT {
 
     public static byte to3bitCode(char ch) {
         return charToACGTCodeTable[ch & 0xFF];
+    }
+
+    public boolean match(ACGT ch) {
+        return (this.bitFlag & ch.bitFlag) != 0;
     }
 
 }

@@ -137,8 +137,31 @@ public class Cursor
     }
 
     Cursor split() {
-        int cursor = isForwardSearch() ? cursorF : cursorB;
-        Cursor s = new Cursor(flag, cursor, cursor, this);
+        SearchDirection d = getSearchDirection();
+        int nextF, nextB;
+        switch (d) {
+        case Forward:
+            nextF = cursorF;
+            nextB = cursorF;
+            break;
+        case Backward:
+            nextF = cursorB;
+            nextB = cursorB;
+            break;
+        default:
+        case BidirectionalForward:
+            if (cursorF + 1 < getReadLength()) {
+                nextF = cursorF;
+                nextB = cursorF;
+            }
+            else {
+                nextF = cursorB;
+                nextB = cursorB;
+                d = SearchDirection.Backward;
+            }
+            break;
+        }
+        Cursor s = new Cursor(getStrand(), d, getReadLength(), nextF, nextB, this);
         return s;
     }
 
