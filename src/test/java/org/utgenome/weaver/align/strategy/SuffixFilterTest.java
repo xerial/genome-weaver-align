@@ -61,7 +61,7 @@ public class SuffixFilterTest
 
     @Test
     public void oneMismatch() throws Exception {
-        align("GCGTAGTT");
+        align("GCCAAGTT");
     }
 
     @Test

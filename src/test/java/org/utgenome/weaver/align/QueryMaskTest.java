@@ -53,5 +53,6 @@ public class QueryMaskTest
         check("00000101", ACGT.A, 1, 0);
         check("11000001", ACGT.A, 3, 3);
         check("01100000", ACGT.A, 4, 3);
+        check("00110000", ACGT.A, 5, 3);
     }
 }

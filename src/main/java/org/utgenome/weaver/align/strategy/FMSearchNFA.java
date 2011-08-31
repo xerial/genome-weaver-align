@@ -111,9 +111,9 @@ public class FMSearchNFA
 
         final int index = cursor.getIndex();
         final int k = kOffset + height - 1;
-        final int qStart = cursor.getNextACGTIndex() - (k - kOffset);
-        final long qeq = queryMask.getPatternMaskIn64bitForBidirectionalSearch(ch, qStart,
-                cursor.isForwardSearch() ? cursor.cursorB : cursor.cursorF);
+        final int qStart = cursor.isForwardSearch() ? cursor.cursorB : cursor.cursorF;
+        final int qOffset = qStart + index - (k - kOffset);
+        final long qeq = queryMask.getPatternMaskIn64bitForBidirectionalSearch(ch, qOffset, qStart);
 
         int minKwithMatch = k + 1;
         int minKwithProgress = k + 1;
@@ -136,7 +136,7 @@ public class FMSearchNFA
             // Apply a suffix filter (staircase mask)
             next[i] &= staircaseFilter.getStairCaseMask64bit(kOffset + i, index - k);
             if (minKwithProgress > k && (next[i] & (1L << height)) != 0L) {
-                minKwithMatch = i;
+                minKwithProgress = i;
             }
         }
 
