@@ -191,8 +191,8 @@ public class SuffixFilter
 
         @Override
         public String toString() {
-            return String.format("%sk%dp%d%s %s %s%s", hasHit() ? "*" : "", getLowerBoundOfK(), getPriority(), cursor,
-                    currentACGT(), getUpdateFlag(), siTable);
+            return String.format("%sk%dp%d%s %s %s %s %s", hasHit() ? "*" : "", getLowerBoundOfK(), getPriority(),
+                    cursor, currentACGT(), currentSi, getUpdateFlag(), siTable);
         }
 
         public int score() {
@@ -201,13 +201,14 @@ public class SuffixFilter
             return mm * config.matchScore - nm * config.mismatchPenalty;
         }
 
-        public SearchState nextStateAfterSplit(ACGT ch) {
+        public SearchState nextStateAfterSplit() {
             updateSplitFlag();
             // use the same automaton state
             int minK = getLowerBoundOfK();
             if (minK < k) {
-                return new SearchState(fmIndex.wholeSARange(), ch, cursor.split(), fmIndex.initSet(cursor
-                        .getSearchDirection()), automaton.nextStateAfterSplit(k), false, minK, getPriority(), this);
+                Cursor newCursor = cursor.split();
+                return new SearchState(null, ACGT.N, newCursor, fmIndex.initSet(newCursor.getSearchDirection()),
+                        automaton.nextStateAfterSplit(k), false, minK, getPriority(), this);
             }
             else
                 return null;
@@ -583,7 +584,7 @@ public class SuffixFilter
                 if (!c.cursor.hasSplit() && config.numSplitAlowed > 0 && nm + 1 <= minMismatches) {
                     int index = c.cursor.getIndex();
                     if (index > config.indelEndSkip && m - index >= config.indelEndSkip) {
-                        SearchState nextState = c.nextStateAfterSplit(nextBase);
+                        SearchState nextState = c.nextStateAfterSplit();
                         if (nextState != null)
                             queue.add(nextState);
                         else
@@ -638,7 +639,7 @@ public class SuffixFilter
                 query = query.reverse();
 
             if (_logger.isTraceEnabled())
-                _logger.trace("Bit-parallel alignment:\n%s\n%s", ref, query);
+                _logger.trace("Bit-parallel alignment:\n%10d %s\n           %s", refStart, ref, query);
 
             Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(ref, query, config.bandWidth);
             ++numSW;
