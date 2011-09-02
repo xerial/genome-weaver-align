@@ -112,9 +112,8 @@ public class FMSearchNFA
         final int index = cursor.getProcessedBases();
         final int k = kOffset + height - 1;
         // TODO fix me
-        final int qStart = cursor.getNextACGTIndex();
-        final int qOffset = qStart + index - (k - kOffset);
-        final long qeq = queryMask.getPatternMaskIn64bitForBidirectionalSearch(ch, qOffset, qStart);
+        final int qOffset = cursor.getNextACGTIndex() - (k - kOffset);
+        final long qeq = queryMask.getPatternMaskIn64bitForBidirectionalSearch(ch, qOffset, cursor.pivot);
 
         int minKwithMatch = k + 1;
         int minKwithProgress = k + 1;

@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.AlignmentConfig;
 import org.utgenome.weaver.align.FMIndexOnGenome;
+import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.xerial.util.log.Logger;
 
@@ -65,7 +66,11 @@ public class SuffixFilterTest
 
     @Test
     public void oneMismatchAtTail() throws Exception {
-        align("GCCTAC");
+        AlignmentRecord a = align("GCCTAC");
+        assertEquals("5M1S", a.cigar.toCIGARString());
+        assertEquals(3, a.start);
+        assertEquals(Strand.FORWARD, a.strand);
+        assertEquals(0, a.numMismatches);
     }
 
     @Test
@@ -76,21 +81,35 @@ public class SuffixFilterTest
         AlignmentRecord a = align("GCCAAGTT");
         assertEquals("8M", a.cigar.toCIGARString());
         assertEquals(3, a.start);
+        assertEquals(Strand.FORWARD, a.strand);
+        assertEquals(1, a.numMismatches);
     }
 
     @Test
     public void oneMismatchReverse() throws Exception {
-        align(new ACGTSequence("GCGTAGTT").reverseComplement());
+        AlignmentRecord a = align(new ACGTSequence("GCGTAGTT").reverseComplement());
+        assertEquals("8M", a.cigar.toCIGARString());
+        assertEquals(3, a.start);
+        assertEquals(Strand.REVERSE, a.strand);
+        assertEquals(1, a.numMismatches);
     }
 
     @Test
     public void bidirectionalSearch() throws Exception {
-        align("AACCCTAGTTTCGTT");
+        AlignmentRecord a = align("AACCCTAGTTTCGTT");
+        assertEquals("15M", a.cigar.toCIGARString());
+        assertEquals(1, a.start);
+        assertEquals(Strand.FORWARD, a.strand);
+        assertEquals(2, a.numMismatches);
     }
 
     @Test
     public void twoMismatchAtHead() throws Exception {
-        align("TTGCCTAGTTT");
+        AlignmentRecord a = align("TTGCCTAGTTT");
+        assertEquals("2S9M", a.cigar.toCIGARString());
+        assertEquals(3, a.start);
+        assertEquals(Strand.FORWARD, a.strand);
+        assertEquals(0, a.numMismatches);
     }
 
     @Test
