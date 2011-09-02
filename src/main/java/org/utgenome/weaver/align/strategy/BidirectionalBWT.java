@@ -95,7 +95,7 @@ public class BidirectionalBWT
         int M = (int) q.textSize();
 
         if (disableBidirecdtionalSearch) {
-            return new BWAState(new Cursor(strand, SearchDirection.Forward, M, 0, 0, null), ExtensionType.MATCH,
+            return new BWAState(new Cursor(strand, SearchDirection.Forward, 0, M, 0, 0, null), ExtensionType.MATCH,
                     Score.initial(), fmIndex.initSet(SearchDirection.Forward));
         }
 
@@ -142,14 +142,14 @@ public class BidirectionalBWT
         switch (searchStart) {
         default:
         case FRONT:
-            return new BWAState(new Cursor(strand, SearchDirection.Forward, M, 0, 0, null), ExtensionType.MATCH,
+            return new BWAState(new Cursor(strand, SearchDirection.Forward, 0, M, 0, 0, null), ExtensionType.MATCH,
                     Score.initial(), fmIndex.initSet(SearchDirection.Forward));
         case MIDDLE: {
-            return new BWAState(new Cursor(strand, SearchDirection.BidirectionalForward, M, s1, s1, null),
+            return new BWAState(new Cursor(strand, SearchDirection.BidirectionalForward, 0, M, s1, s1, null),
                     ExtensionType.MATCH, Score.initial(), fmIndex.initSet(SearchDirection.BidirectionalForward));
         }
         case TAIL:
-            return new BWAState(new Cursor(strand, SearchDirection.Backward, M, M, M, null), ExtensionType.MATCH,
+            return new BWAState(new Cursor(strand, SearchDirection.Backward, 0, M, M, M, null), ExtensionType.MATCH,
                     Score.initial(), fmIndex.initSet(SearchDirection.Backward));
         }
     }
@@ -232,7 +232,7 @@ public class BidirectionalBWT
             if (upperBound < queue.bestScore)
                 continue; // no need to proceed
 
-            int posInRead = c.cursor.getIndex();
+            int posInRead = c.cursor.getProcessedBases();
 
             int remainingDist = config.maximumEditDistances
                     - (c.score.numMismatches + c.score.numGapOpens + c.score.numGapExtend);

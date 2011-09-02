@@ -109,9 +109,10 @@ public class FMSearchNFA
         long[] prev = automaton;
         long[] next = new long[automaton.length];
 
-        final int index = cursor.getIndex();
+        final int index = cursor.getProcessedBases();
         final int k = kOffset + height - 1;
-        final int qStart = cursor.isForwardSearch() ? cursor.cursorB : cursor.cursorF;
+        // TODO fix me
+        final int qStart = cursor.getNextACGTIndex();
         final int qOffset = qStart + index - (k - kOffset);
         final long qeq = queryMask.getPatternMaskIn64bitForBidirectionalSearch(ch, qOffset, qStart);
 
@@ -141,7 +142,7 @@ public class FMSearchNFA
         }
 
         // Find a match at query position m
-        final int m = cursor.getReadLength();
+        final int m = cursor.getFragmentLength();
         final int mPos = k + m - index;
         if (mPos < 64) {
             for (int nm = 0; nm < height; ++nm) {

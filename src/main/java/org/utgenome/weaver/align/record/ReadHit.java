@@ -71,8 +71,12 @@ public class ReadHit
         return new ReadHit(chr, pos, matchLength, diff, strand, cigar, numHits, split);
     }
 
+    public String getAlignmentStateSingle() {
+        return numHits > 0 ? ((numHits == 1) ? "U" : "R") : "N";
+    }
+
     public String getAlignmentState() {
-        String prefix = (numHits == 1) ? "U" : "R";
+        String prefix = getAlignmentStateSingle();
         if (nextSplit == null)
             return prefix;
         else

@@ -48,11 +48,12 @@ public class AlignmentRecord
     public int             start;
     public int             end;
     public int             numMismatches = 0;
-    public CIGAR          cigar;
+    public CIGAR           cigar;
     public String          querySeq;
     public String          qual;
     public int             score;
     public int             numBestHits;
+    public String          alignmentState;
     public AlignmentRecord split         = null;
 
     public AlignmentRecord() {
@@ -60,7 +61,8 @@ public class AlignmentRecord
     }
 
     public AlignmentRecord(String readName, String chr, Strand strand, int start, int end, int numMismatches,
-            CIGAR cigar, String querySeq, String qual, int score, int numBestHists, AlignmentRecord split) {
+            CIGAR cigar, String querySeq, String qual, int score, int numBestHists, String alignmentState,
+            AlignmentRecord split) {
         this.readName = readName;
         this.chr = chr;
         this.strand = strand;
@@ -72,6 +74,7 @@ public class AlignmentRecord
         this.qual = qual;
         this.score = score;
         this.numBestHits = numBestHists;
+        this.alignmentState = alignmentState;
         this.split = split;
     }
 
@@ -105,6 +108,8 @@ public class AlignmentRecord
         column.add(qual == null ? "*" : qual); // quality value
         if (numMismatches >= 0)
             column.add("NM:i:" + numMismatches);
+        if (alignmentState != null)
+            column.add("XT:z:" + alignmentState);
         String line = StringUtil.join(column, "\t");
         if (split != null)
             line += "\n" + split.toSAMLine();
@@ -140,7 +145,8 @@ public class AlignmentRecord
             CIGAR cigar = new CIGAR(hit.cigar);
             //cigar.add(hit.matchLength, Type.Matches);
             AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos, (int) hit.pos
-                    + hit.matchLength, hit.getK(), cigar, query.toString(), qual, 1, numHits, null);
+                    + hit.matchLength, hit.getK(), cigar, query.toString(), qual, 1, numHits, hit.getAlignmentState(),
+                    null);
             return rec;
         }
         else {
@@ -163,10 +169,11 @@ public class AlignmentRecord
                         //cigar2.add(hit.matchLength, Type.HardClip);
                         //cigar2.add(split.matchLength, Type.Matches);
                         AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos,
-                                (int) hit.pos + hit.matchLength, hit.diff, cigar1, s1.toString(), q1, 1, 1, null);
+                                (int) hit.pos + hit.matchLength, hit.diff, cigar1, s1.toString(), q1, 1, 1,
+                                hit.getAlignmentState(), null);
                         AlignmentRecord splitRec = new AlignmentRecord(read.name(), split.chr, split.strand,
                                 (int) split.pos, (int) split.pos + split.matchLength, split.diff, cigar2,
-                                s2.toString(), q2, 1, 1, null);
+                                s2.toString(), q2, 1, 1, split.getAlignmentState(), null);
                         rec.split = splitRec;
                         return rec;
                     }
@@ -177,7 +184,8 @@ public class AlignmentRecord
                             //cigar.add(hit.matchLength, Type.Matches);
                             cigar.add(split.matchLength, Type.SoftClip);
                             AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos,
-                                    (int) hit.pos + m, hit.diff, cigar, query.toString(), qual, 1, numHits, null);
+                                    (int) hit.pos + m, hit.diff, cigar, query.toString(), qual, 1, numHits,
+                                    hit.getAlignmentState(), null);
                             return rec;
                         }
                         else {
@@ -187,7 +195,8 @@ public class AlignmentRecord
                             //cigar.add(split.matchLength, Type.Matches);
                             AlignmentRecord rec = new AlignmentRecord(read.name(), split.chr, split.strand,
                                     (int) split.pos - hit.matchLength, (int) split.pos - hit.matchLength + m,
-                                    split.diff, cigar, query.toString(), qual, 1, numHits, null);
+                                    split.diff, cigar, query.toString(), qual, 1, numHits, hit.getAlignmentState(),
+                                    null);
                             return rec;
                         }
                     }
@@ -197,7 +206,8 @@ public class AlignmentRecord
                     //cigar.add(hit.matchLength, Type.Matches);
                     //cigar.add(split.matchLength, Type.SoftClip);
                     AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos,
-                            (int) hit.pos + m, hit.diff, cigar, query.toString(), qual, 1, numHits, null);
+                            (int) hit.pos + m, hit.diff, cigar, query.toString(), qual, 1, numHits,
+                            hit.getAlignmentState(), null);
                     return rec;
                 }
             }
@@ -209,7 +219,7 @@ public class AlignmentRecord
                     //cigar.add(split.matchLength, Type.Matches);
                     AlignmentRecord rec = new AlignmentRecord(read.name(), split.chr, split.strand, (int) split.pos
                             - hit.matchLength, (int) split.pos - hit.matchLength + m, split.diff, cigar,
-                            query.toString(), qual, 1, numHits, null);
+                            query.toString(), qual, 1, numHits, hit.getAlignmentState(), null);
                     return rec;
                 }
 

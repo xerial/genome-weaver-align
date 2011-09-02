@@ -198,7 +198,7 @@ public class SuffixFilter
 
         public int score() {
             int nm = getLowerBoundOfK();
-            int mm = cursor.getIndex() - nm;
+            int mm = cursor.getProcessedBases() - nm;
             return mm * config.matchScore - nm * config.mismatchPenalty;
         }
 
@@ -233,7 +233,8 @@ public class SuffixFilter
     }
 
     /**
-     * Compute next suffix intervals 
+     * Compute next suffix intervals
+     * 
      * @param c
      * @param ch
      * @return
@@ -241,7 +242,7 @@ public class SuffixFilter
     private SiSet next(SearchState c, ACGT ch) {
         return c.cursor.nextSi(fmIndex, c.siTable, ch);
     }
- 
+
     /**
      * Prepare a suffix filter
      * 
@@ -264,7 +265,7 @@ public class SuffixFilter
     }
 
     public List<AlignmentRecord> align(Read read) throws Exception {
-    	final List<AlignmentRecord> alignmentResult = new ArrayList<AlignmentRecord>();
+        final List<AlignmentRecord> alignmentResult = new ArrayList<AlignmentRecord>();
         new AlignmentProcess(read, new Reporter() {
             @Override
             public void emit(Object result) throws Exception {
@@ -302,7 +303,7 @@ public class SuffixFilter
                     if (diff == 0)
                         diff = -(o1.score() - o2.score());
                     if (diff == 0)
-                        diff = -(o1.cursor.getIndex() - o2.cursor.getIndex());
+                        diff = -(o1.cursor.getProcessedBases() - o2.cursor.getProcessedBases());
 
                     return diff;
                 }
@@ -496,11 +497,12 @@ public class SuffixFilter
                 if (scanF.numMismatches <= k) {
                     if (scanF.longestMatch.start != 0 && scanF.longestMatch.start < m) {
                         // add bidirectional search state
-                        sF = new SearchState(null, new Cursor(Strand.FORWARD, SearchDirection.BidirectionalForward, m,
-                                scanF.longestMatch.start, scanF.longestMatch.start, null), scanF.numMismatches);
+                        sF = new SearchState(null, new Cursor(Strand.FORWARD, SearchDirection.BidirectionalForward, 0,
+                                m, scanF.longestMatch.start, scanF.longestMatch.start, null), scanF.numMismatches);
                     }
                     else {
-                        sF = new SearchState(null, new Cursor(Strand.FORWARD, SearchDirection.Forward, m, 0, 0, null),
+                        sF = new SearchState(null,
+                                new Cursor(Strand.FORWARD, SearchDirection.Forward, 0, m, 0, 0, null),
                                 scanF.numMismatches);
                     }
                 }
@@ -508,11 +510,12 @@ public class SuffixFilter
                 if (scanR.numMismatches <= k) {
                     if (scanR.longestMatch.start != 0 && scanR.longestMatch.start < m) {
                         // add bidirectional search state
-                        sR = new SearchState(null, new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward, m,
-                                scanR.longestMatch.start, scanR.longestMatch.start, null), scanR.numMismatches);
+                        sR = new SearchState(null, new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward, 0,
+                                m, scanR.longestMatch.start, scanR.longestMatch.start, null), scanR.numMismatches);
                     }
                     else {
-                        sR = new SearchState(null, new Cursor(Strand.REVERSE, SearchDirection.Forward, m, 0, 0, null),
+                        sR = new SearchState(null,
+                                new Cursor(Strand.REVERSE, SearchDirection.Forward, 0, m, 0, 0, null),
                                 scanR.numMismatches);
                     }
                 }
@@ -614,7 +617,7 @@ public class SuffixFilter
                     null));
         }
 
-        public ReadHit verify(SearchState s, int fragmentLength, boolean isSplit) {
+        public ReadHit verify(SearchState s) {
 
             if (_logger.isTraceEnabled())
                 _logger.trace("verify state: %s", s);
@@ -634,9 +637,10 @@ public class SuffixFilter
 
             long x = seqIndex;
             int offset = 0;
-            offset = cursor.getOffsetOfSearchHead(isSplit, fragmentLength);
+            offset = cursor.getOffsetOfSearchHead();
             x -= offset;
 
+            int fragmentLength = cursor.getFragmentLength();
             if (x < 0 || x + fragmentLength > fmIndex.textSize()) {
                 return null; // ignore the match at cycle boundary
             }
@@ -644,19 +648,7 @@ public class SuffixFilter
             long refStart = Math.max(0, x - nm);
             long refEnd = x + fragmentLength + nm;
             ACGTSequence ref = reference.subSequence(refStart, refEnd);
-            ACGTSequence query = q[cursor.getStrandIndex()];
-            if (isSplit) {
-                int splitStart, splitEnd;
-                if (cursor.isForwardSearch()) {
-                    splitStart = cursor.cursorB;
-                    splitEnd = cursor.cursorB + fragmentLength;
-                }
-                else {
-                    splitStart = 0;
-                    splitEnd = cursor.cursorF;
-                }
-                query = query.subSequence(splitStart, splitEnd);
-            }
+            ACGTSequence query = q[cursor.getStrandIndex()].subSequence(cursor.start, cursor.end);
             if (cursor.getStrand() == Strand.REVERSE)
                 query = query.reverse();
 
@@ -688,15 +680,13 @@ public class SuffixFilter
             // Verification phase
             if (c.split != null) {
                 // split alignment
-                int splitLen = c.split.cursor.getProcessedBases();
-                int m1 = Math.max(c.cursor.getProcessedBases(), m) - splitLen;
-                ReadHit alignment = verify(c, m1, true);
-                ReadHit splitAlignment = verify(c.split, splitLen, true);
+                ReadHit alignment = verify(c);
+                ReadHit splitAlignment = verify(c.split);
+                // TODO allow clipped alignment (issue 40)
                 if (alignment == null || splitAlignment == null)
                     return; // no match within k mismaches
 
                 int diff = alignment.diff + splitAlignment.diff + 1;
-
                 // update the lower bound of mismatches
                 c.setLowerBoundOfK(diff);
 
@@ -707,7 +697,7 @@ public class SuffixFilter
             }
             else {
                 // single hit
-                ReadHit alignment = verify(c, c.cursor.getFragmentLength(), false);
+                ReadHit alignment = verify(c);
                 if (alignment == null)
                     return; // no match within k mismatches
 

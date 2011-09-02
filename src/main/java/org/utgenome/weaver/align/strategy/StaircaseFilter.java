@@ -40,7 +40,7 @@ public class StaircaseFilter
 
     private byte[]      chunkStart;
     private byte[]      chunkLen;
-    private BitVector[] stairMask;
+    private BitVector[] staircaseMask;
 
     public StaircaseFilter(int m, int k) {
         this.m = m;
@@ -64,29 +64,29 @@ public class StaircaseFilter
             chunkLen[i] = (byte) (chunkStart[i + 1] - chunkStart[i]);
         }
 
-        stairMask = new BitVector[k + 1];
-        for (int i = 0; i < stairMask.length; ++i) {
-            stairMask[i] = new BitVector(m)._not()._lshift(chunkStart[i]);
+        staircaseMask = new BitVector[k + 1];
+        for (int i = 0; i < staircaseMask.length; ++i) {
+            staircaseMask[i] = new BitVector(m)._not()._lshift(chunkStart[i]);
         }
     }
 
     public BitVector getStaircaseMask(int k) {
-        return stairMask[k];
+        return staircaseMask[k];
     }
 
     public long getStairCaseMask64bit(int k, int offset) {
         int w = m - offset;
         if (offset >= 0) {
             long base = ~0L << (m - offset);
-            return base | stairMask[k].substring64(offset, offset + 64);
+            return base | staircaseMask[k].substring64(offset, offset + 64);
         }
         else {
-            return stairMask[k].substring64(0, 64) << (-offset);
+            return staircaseMask[k].substring64(0, 64) << (-offset);
         }
     }
 
     @Override
     public String toString() {
-        return StringUtil.join(stairMask, ", ");
+        return StringUtil.join(staircaseMask, ", ");
     }
 }

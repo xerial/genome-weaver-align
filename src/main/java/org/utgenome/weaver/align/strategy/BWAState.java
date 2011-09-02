@@ -108,7 +108,7 @@ public class BWAState
     }
 
     public void toGenomeCoordinate(FMIndexOnGenome fmIndex, ObjectHandler<AlignmentRecord> reporter) throws Exception {
-        final int querySize = cursor.getReadLength();
+        final int querySize = cursor.getFragmentLength();
 
         // TODO report alignment
         //        for (long i = si.lowerBound; i < si.upperBound; ++i) {

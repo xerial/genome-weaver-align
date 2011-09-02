@@ -40,48 +40,42 @@ import org.utgenome.weaver.align.SuffixInterval;
 public class Cursor
 {
     // flag(8bit) :=  strand(1), searchDirection(2), read length(29)
-    private final int   flag;
-    public final int    cursorF;
-    public final int    cursorB;
-    public final Cursor split;
+    private final int flag;
+    public final int  start;
+    public final int  end;
+    public final int  cursor;
+    public final int  pivot; // switch point of forward/backward search
+    public Cursor     split;
 
-    private Cursor(int flag, int cursorF, int cursorB, Cursor split) {
+    private Cursor(int flag, int start, int end, int cursor, int pivot, Cursor split) {
         this.flag = flag;
-        this.cursorF = cursorF;
-        this.cursorB = cursorB;
+        this.start = start;
+        this.end = end;
+        this.cursor = cursor;
+        this.pivot = pivot;
         this.split = split;
     }
 
-    public Cursor(Strand strand, SearchDirection searchDirection, int readLength, int cursorF, int cursorB, Cursor split) {
-        this(strand.index | (searchDirection.index << 1) | (readLength << 3), cursorF, cursorB, split);
-    }
-
-    public int getReadLength() {
-        return flag >>> 3;
+    public Cursor(Strand strand, SearchDirection searchDirection, int start, int end, int cursor, int pivot,
+            Cursor split) {
+        this(strand.index | (searchDirection.index << 1), start, end, cursor, pivot, split);
     }
 
     public int getFragmentLength() {
-        return isForwardSearch() ? getReadLength() - cursorB : cursorF;
+        return end - start;
     }
 
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(String.format("%s%s:%d/%d", getStrand().symbol, getSearchDirection().symbol, cursorF, cursorB));
+        s.append(String.format("%s%s%d/%d", getStrand().symbol, getSearchDirection().symbol, cursor, pivot));
         if (split != null)
             s.append(String.format(" split(%s)", split));
         return s.toString();
     }
 
     public int getProcessedBases() {
-        int p = getCursorRange();
-        if (split != null)
-            p += split.getCursorRange();
-        return p;
-    }
-
-    public int getCursorRange() {
-        return cursorF - cursorB;
+        return isForwardSearch() ? cursor - pivot : end - cursor + 1;
     }
 
     /**
@@ -90,7 +84,7 @@ public class Cursor
      * @return
      */
     public int getRemainingBases() {
-        return getReadLength() - getProcessedBases();
+        return getFragmentLength() - getProcessedBases();
     }
 
     public Strand getStrand() {
@@ -101,14 +95,12 @@ public class Cursor
         return flag & 1;
     }
 
-    public int getOffsetOfSearchHead(boolean isSplit, int fragmentLength) {
+    public int getOffsetOfSearchHead() {
         // read:   |   |------|       |
-        //         0   cB     cF      read length
-        int offset = isForwardSearch() ? cursorF : cursorB;
-        if (isSplit)
-            offset -= cursorB;
+        //         0   pivot  cursor  read length
+        int offset = cursor;
         if (getStrand() == Strand.REVERSE)
-            offset = fragmentLength - offset;
+            offset = getFragmentLength() - offset;
         return offset;
     }
 
@@ -118,14 +110,7 @@ public class Cursor
     }
 
     public int getNextACGTIndex() {
-        return getSearchDirection().isForward && cursorF < getReadLength() ? cursorF : cursorB - 1;
-    }
-
-    public int getIndex() {
-        if (split == null)
-            return cursorF - cursorB;
-        else
-            return cursorF - cursorB + (split.cursorF - split.cursorB);
+        return isForwardSearch() ? cursor : cursor - 1;
     }
 
     /**
@@ -148,31 +133,32 @@ public class Cursor
 
     Cursor split() {
         SearchDirection d = getSearchDirection();
-        int nextF, nextB;
+        Cursor left, right;
         switch (d) {
         case Forward:
-            nextF = cursorF;
-            nextB = cursorF;
+            left = new Cursor(getStrand(), getSearchDirection(), start, cursor, cursor, pivot, null);
+            right = new Cursor(getStrand(), SearchDirection.Forward, cursor, end, cursor, cursor, null);
             break;
         case Backward:
-            nextF = cursorB;
-            nextB = cursorB;
+            left = new Cursor(getStrand(), SearchDirection.Backward, start, cursor, cursor, start, null);
+            right = new Cursor(getStrand(), getSearchDirection(), cursor, end, cursor, pivot, null);
             break;
         default:
         case BidirectionalForward:
-            if (cursorF + 1 < getReadLength()) {
-                nextF = cursorF;
-                nextB = cursorF;
+            if (cursor + 1 < end) {
+                left = new Cursor(getStrand(), getSearchDirection(), start, cursor, cursor, pivot, null);
+                right = new Cursor(getStrand(), getSearchDirection(), cursor, end, cursor, cursor, null);
             }
             else {
-                nextF = cursorB;
-                nextB = cursorB;
-                d = SearchDirection.Backward;
+                left = new Cursor(getStrand(), SearchDirection.Backward, start, cursor, cursor, pivot, null);
+                right = new Cursor(getStrand(), getSearchDirection(), cursor, end, cursor, cursor, null);
             }
             break;
         }
-        Cursor s = new Cursor(getStrand(), d, getReadLength(), nextF, nextB, this);
-        return s;
+
+        left.split = right;
+
+        return left;
     }
 
     public boolean hasSplit() {
@@ -180,28 +166,27 @@ public class Cursor
     }
 
     public Cursor next() {
-        int nextF = cursorF;
-        int nextB = cursorB;
+        int nextCursor = cursor;
         SearchDirection d = getSearchDirection();
         switch (d) {
         case Forward:
-            ++nextF;
+            ++nextCursor;
             break;
         case Backward:
-            --nextB;
+            --nextCursor;
             break;
         case BidirectionalForward:
-            if (nextF < getReadLength()) {
-                ++nextF;
+            if (nextCursor < end) {
+                ++nextCursor;
             }
             else {
                 // switch to backward search
                 d = SearchDirection.Backward;
-                --nextB;
+                nextCursor = pivot - 1;
             }
             break;
         }
-        return new Cursor(getStrand(), d, getReadLength(), nextF, nextB, split);
+        return new Cursor(getStrand(), d, start, end, nextCursor, pivot, split);
     }
 
     public SiSet nextSi(FMIndexOnGenome fmIndex, SiSet si, ACGT currentBase) {
@@ -213,7 +198,7 @@ public class Cursor
         SearchDirection d = this.getSearchDirection();
         switch (d) {
         case BidirectionalForward:
-            if (this.cursorF >= getReadLength() - 1) {
+            if (cursor >= end - 1) {
                 siF = null;
             }
         }
