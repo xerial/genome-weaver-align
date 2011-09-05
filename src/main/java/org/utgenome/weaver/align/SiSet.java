@@ -62,7 +62,7 @@ public abstract class SiSet
         }
     }
 
-    private static String toString(SuffixInterval[] si) {
+    protected static String toString(SuffixInterval[] si) {
         StringBuilder s = new StringBuilder();
         s.append("[");
         int count = 0;
