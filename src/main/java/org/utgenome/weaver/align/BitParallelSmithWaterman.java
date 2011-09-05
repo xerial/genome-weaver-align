@@ -503,13 +503,11 @@ public class BitParallelSmithWaterman
             int row = m - 1;
             int col = N - 1;
 
-            // Append clipped sequences
+            // Skip clipped sequences
             while (col > maxCol) {
-                //a1.append(ref.charAt(col - 1));
                 col--;
             }
             while (row > maxRow) {
-                //a2.append(query.getACGT(row - 1).toChar());
                 row--;
             }
 
@@ -546,8 +544,6 @@ public class BitParallelSmithWaterman
                 case DIAGONAL:
                     // match
                     cigar.append("M");
-                    //a1.append(ref.charAt(col));
-                    //a2.append(query.charAt(row));
                     leftMostPos = col;
                     col--;
                     row--;
@@ -555,27 +551,17 @@ public class BitParallelSmithWaterman
                 case UP:
                     // insertion
                     cigar.append("I");
-                    //a1.append("-");
-                    //a2.append(query.charAt(row));
                     leftMostPos = col + 1;
                     row--;
                     break;
                 case LEFT:
                     cigar.append("D");
-                    //a1.append(ref.charAt(col));
-                    //a2.append("-");
                     col--;
                     break;
                 case NONE:
                     while (col >= 0 || row >= 0) {
                         if (row >= 0) {
                             cigar.append("S");
-                            //a1.append(col >= 0 ? ref.charAt(col) : ' ');
-                            //a2.append(Character.toLowerCase(query.charAt(row)));
-                        }
-                        else {
-                            //a1.append(col >= 0 ? ref.charAt(col) : ' ');
-                            //a2.append(' ');
                         }
                         col--;
                         row--;

@@ -24,6 +24,9 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.QueryMask;
 
@@ -40,8 +43,7 @@ public class FMSearchNFA
     public final int     kOffset;
 
     public FMSearchNFA(int numAllowedMismatches) {
-        this.automaton = new long[numAllowedMismatches + 1];
-        this.kOffset = 0;
+        this(new long[numAllowedMismatches + 1], 0);
     }
 
     private FMSearchNFA(long[] automaton, int kOffset) {
@@ -74,6 +76,7 @@ public class FMSearchNFA
     public String toNFAStateString() {
         int w = (this.automaton.length + 1) * 2 + 1;
         StringBuilder s = new StringBuilder();
+        s.append(String.format("kOffset:%d ", kOffset));
         for (int j = 0; j < automaton.length; ++j) {
             s.append(toBinary(automaton[j], w));
             if (j != automaton.length - 1) {
@@ -109,32 +112,37 @@ public class FMSearchNFA
         long[] prev = automaton;
         long[] next = new long[automaton.length];
 
-        final int index = cursor.getProcessedBases();
+        final int progressIndex = cursor.getProcessedBases();
         final int k = kOffset + height - 1;
-        // TODO fix me
-        final int qOffset = cursor.getNextACGTIndex() - (k - kOffset);
-        final long qeq = queryMask.getPatternMaskIn64bitForBidirectionalSearch(ch, qOffset, cursor.pivot);
+        final int kr = k - kOffset;
+        // TODO fix me 
+        final long qeq = queryMask.getPatternMaskIn64bitForBidirectionalSearch(cursor, ch, kr);
 
         int minKwithMatch = k + 1;
         int minKwithProgress = k + 1;
+
+        String qeqStr = toBinary(qeq, 10);
+
+        List<Integer> nextCandidateIndex = new ArrayList<Integer>();
         // Update the automaton
         // R'_0 = ((R_0 & P[ch]) << 1) & (suffix filter)
-        String qeqStr = toBinary(qeq, 10);
         next[0] = (prev[0] & qeq) << 1;
         if (next[0] != 0) {
             minKwithMatch = 0;
             minKwithProgress = 0;
+            nextCandidateIndex.add(cursor.getNextACGTIndex());
         }
-        next[0] &= staircaseFilter.getStairCaseMask64bit(kOffset, index - k);
+        next[0] &= staircaseFilter.getStairCaseMask64bit(kOffset, progressIndex - k);
         for (int i = 1; i < height; ++i) {
             // R'_{i+1} = ((R_{i+1} & P[ch]) << 1) | R_i | (R_i << 1) | (R'_i << 1) 
             next[i] = (prev[i] & qeq) << 1;
             if (minKwithMatch > k && next[i] != 0) {
                 minKwithMatch = i;
+
             }
             next[i] |= prev[i - 1] | (prev[i - 1] << 1) | (next[i - 1] << 1);
             // Apply a suffix filter (staircase mask)
-            next[i] &= staircaseFilter.getStairCaseMask64bit(kOffset + i, index - k);
+            next[i] &= staircaseFilter.getStairCaseMask64bit(kOffset + i, progressIndex - k);
             if (minKwithProgress > k && (next[i] & (1L << height)) != 0L) {
                 minKwithProgress = i;
             }
@@ -142,7 +150,7 @@ public class FMSearchNFA
 
         // Find a match at query position m
         final int m = cursor.getFragmentLength();
-        final int mPos = k + m - index;
+        final int mPos = k + m - progressIndex;
         if (mPos < 64) {
             for (int nm = 0; nm < height; ++nm) {
                 if ((next[nm] & (1L << mPos)) != 0L) {

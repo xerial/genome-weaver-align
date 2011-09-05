@@ -378,7 +378,8 @@ public class SuffixFilter
                 SearchState init = queue.poll();
                 SearchState c = init;
                 if (_logger.isTraceEnabled()) {
-                    _logger.trace("state: %s, FMIndex:%d, CutOff:%d", c, numFMIndexSearches, numCutOff);
+                    _logger.trace("state: %s, FMSearch:%d, CutOff:%d, Filtered:%d", c, numFMIndexSearches, numCutOff,
+                            numFiltered);
                 }
 
                 // When a hit is found, report the alignment
@@ -441,6 +442,7 @@ public class SuffixFilter
                             SearchState nextState = c.nextState(ch, nextSi, queryMask[strandIndex], staircaseFilter);
                             if (nextState != null) {
                                 queue.add(init.update(c, nextState));
+                                continue queue_loop;
                             }
                             else
                                 ++numFiltered;
@@ -727,9 +729,14 @@ public class SuffixFilter
 
         @Override
         public String toString() {
-            return String.format("%sk%dp%d%s%s%s %s:%,d %s %s", hasHit() ? "*" : "", getLowerBoundOfK(), getPriority(),
-                    cursor, split == null ? " " : String.format(" split(%s) ", split.cursor), currentACGT(), currentSi,
-                    currentSi != null ? currentSi.range() : fmIndex.textSize(), getUpdateFlag(), siTable);
+            return String.format("%s%s %s%s:%,d %s %s", cursorState(),
+                    split == null ? "" : String.format(" split(%s) ", split.cursorState()), currentACGT(),
+                    currentSi != null ? currentSi : "", currentSi != null ? currentSi.range() : fmIndex.textSize(),
+                    getUpdateFlag(), siTable);
+        }
+
+        public String cursorState() {
+            return String.format("%sk%dp%d%s", hasHit() ? "*" : "", getLowerBoundOfK(), getPriority(), cursor);
         }
 
         public int score() {
@@ -763,7 +770,6 @@ public class SuffixFilter
                 return null; // no match
 
             int nextMinK = next.nextState.kOffset;
-
             Cursor nextCursor = cursor.next();
             SuffixInterval si = nextCursor.isForwardSearch() ? this.siTable.getForward(ch) : this.siTable
                     .getBackward(ch);
@@ -771,6 +777,13 @@ public class SuffixFilter
                     split);
         }
 
+        /**
+         * Update with new state
+         * 
+         * @param oldState
+         * @param newState
+         * @return
+         */
         public SearchState update(SearchState oldState, SearchState newState) {
             if (oldState == this) {
                 return newState;

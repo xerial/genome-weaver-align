@@ -65,12 +65,13 @@ public class Cursor
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(String.format("%s%s%d/%d", getStrand().symbol, getSearchDirection().symbol, cursor, pivot));
+        s.append(String.format("%s%s%d/%d[%d,%d)", getStrand().symbol, getSearchDirection().symbol, cursor, pivot,
+                start, end));
         return s.toString();
     }
 
     public int getProcessedBases() {
-        return isForwardSearch() ? cursor - pivot : end - cursor + 1;
+        return isForwardSearch() ? cursor - pivot : end - cursor;
     }
 
     /**
@@ -165,13 +166,13 @@ public class Cursor
             --nextCursor;
             break;
         case BidirectionalForward:
-            if (nextCursor < end) {
+            if (nextCursor + 1 < end) {
                 ++nextCursor;
             }
             else {
                 // switch to backward search
                 d = SearchDirection.Backward;
-                nextCursor = pivot - 1;
+                nextCursor = pivot;
             }
             break;
         }

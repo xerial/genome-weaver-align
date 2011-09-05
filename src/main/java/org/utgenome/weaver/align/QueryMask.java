@@ -24,6 +24,8 @@
 //--------------------------------------package org.utgenome.weaver.align.strategy;
 package org.utgenome.weaver.align;
 
+import org.utgenome.weaver.align.strategy.Cursor;
+
 /**
  * A set of bit flags of ACGT characters in a query sequence
  * 
@@ -68,21 +70,27 @@ public class QueryMask
      * @param start
      * @return
      */
-    public long getPatternMaskIn64bitForBidirectionalSearch(ACGT ch, int offset, int searchBoundary) {
+    public long getPatternMaskIn64bitForBidirectionalSearch(Cursor cursor, ACGT ch, int margin) {
         long p;
-        if (offset < 0) {
-            p = patternMaskF[ch.code].substring64(0, 64);
-            p <<= (-offset);
-        }
-        else
-            p = patternMaskF[ch.code].substring64(offset, m);
-        if (offset + 64 >= m) {
-            // combine forward and reverse pattern mask
-            int shift = m - offset;
-            if (shift >= 0)
-                p |= (patternMaskR[ch.code].substring64(m - searchBoundary, m - searchBoundary + 64)) << shift;
+        if (cursor.isForwardSearch()) {
+            // forward pattern mask
+            int pos = cursor.getNextACGTIndex() - margin;
+            if (pos < 0) {
+                p = patternMaskF[ch.code].substring64(0, 64);
+                p <<= (-pos);
+            }
             else
-                p |= (patternMaskR[ch.code].substring64(m - searchBoundary, m - searchBoundary + 64)) >>> -shift;
+                p = patternMaskF[ch.code].substring64(pos, m);
+        }
+        else {
+            // reverse pattern mask
+            int b = m - cursor.pivot;
+            int rshift = cursor.pivot - cursor.cursor - margin;
+            p = patternMaskR[ch.code].substring64(b, b + 64);
+            if (rshift >= 0)
+                p >>>= rshift;
+            else
+                p <<= -rshift;
         }
         return p;
     }

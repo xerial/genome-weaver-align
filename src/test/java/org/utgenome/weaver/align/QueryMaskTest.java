@@ -27,45 +27,43 @@ package org.utgenome.weaver.align;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
+import org.utgenome.weaver.align.strategy.Cursor;
+import org.utgenome.weaver.align.strategy.SearchDirection;
 import org.xerial.util.log.Logger;
 
 public class QueryMaskTest
 {
     private static Logger _logger = Logger.getLogger(QueryMaskTest.class);
 
-    public void check(ACGTSequence query, String answer, ACGT ch, int offset, int boundary) {
+    public void check(ACGTSequence query, String answer, SearchDirection d, ACGT ch, int offset, int margin,
+            int boundary) {
         int m = query.length();
         QueryMask qm = new QueryMask(query);
         _logger.debug("ans:%s, offset:%d, boundary:%d", answer, offset, boundary);
-        assertEquals(BitVector.parseString(answer),
-                BitVector.parseLong(qm.getPatternMaskIn64bitForBidirectionalSearch(ch, offset, boundary), m));
+        assertEquals(BitVector.parseString(answer), BitVector.parseLong(qm.getPatternMaskIn64bitForBidirectionalSearch(
+                new Cursor(Strand.FORWARD, d, 0, m, offset, boundary), ch, margin), m));
     }
 
     @Test
     public void mask64() throws Exception {
 
         ACGTSequence query = new ACGTSequence("AAGATTGC");
-        // AAG|ATTGC
-        //     ATTGC|GAA
-        //      TTGC|GAA
-        //       TGC|GAA
-        check(query, "00001011", ACGT.A, 0, 0);
-        check(query, "00000101", ACGT.A, 1, 0);
-        check(query, "11000001", ACGT.A, 3, 3);
-        check(query, "01100000", ACGT.A, 4, 3);
-        check(query, "00110000", ACGT.A, 5, 3);
-    }
-
-    @Test
-    public void backwardMask() throws Exception {
-        ACGTSequence query = new ACGTSequence("GCCAAGTT");
-        //        check(query, "01100000", ACGT.C, 4, 4);
-        //        check(query, "00110000", ACGT.C, 5, 4);
-        //        check(query, "00011000", ACGT.C, 6, 4);
-        //        check(query, "00001100", ACGT.C, 7, 4);
-        //        check(query, "00000110", ACGT.C, 8, 4);
-        check(query, "00000011", ACGT.C, 9, 4);
-        check(query, "00000001", ACGT.C, 10, 4);
+        //   765 01234
+        // F:AAG|ATTGC
+        // R:CGTTAGAA
+        //
+        // 
+        // GAA
+        // AA
+        // A
+        check(query, "00001011", SearchDirection.Forward, ACGT.A, 0, 0, 0);
+        check(query, "00000101", SearchDirection.Forward, ACGT.A, 1, 0, 0);
+        check(query, "00000001", SearchDirection.Forward, ACGT.A, 3, 0, 3);
+        check(query, "00011000", SearchDirection.Backward, ACGT.A, 3, 2, 3);
+        check(query, "00000110", SearchDirection.Backward, ACGT.A, 3, 0, 3);
+        check(query, "00000011", SearchDirection.Backward, ACGT.A, 2, 0, 3);
+        check(query, "00000001", SearchDirection.Backward, ACGT.A, 1, 0, 3);
+        check(query, "00000000", SearchDirection.Backward, ACGT.A, 0, 0, 3);
     }
 
 }
