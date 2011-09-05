@@ -106,10 +106,12 @@ public class AlignmentRecord
         column.add(0); // insert size
         column.add(querySeq);
         column.add(qual == null ? "*" : qual); // quality value
-        if (numMismatches >= 0)
-            column.add("NM:i:" + numMismatches);
-        if (alignmentState != null)
-            column.add("XT:Z:" + alignmentState);
+        if (numBestHits > 0) {
+            if (numMismatches >= 0)
+                column.add("NM:i:" + numMismatches);
+            if (alignmentState != null)
+                column.add("XT:Z:" + alignmentState);
+        }
         String line = StringUtil.join(column, "\t");
         if (split != null)
             line += "\n" + split.toSAMLine();

@@ -36,6 +36,7 @@ public class AlignmentScoreConfig
 {
     @Option(symbol = "k", description = "maximum edit distances")
     public int     maximumEditDistances   = 2;
+
     @Option(symbol = "g", description = "# of gap open allowed. default=1")
     public int     numGapOpenAllowed      = 1;
     @Option(symbol = "e", description = "# of gap extension allowed. default=4")

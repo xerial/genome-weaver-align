@@ -75,6 +75,8 @@ public class StaircaseFilter
     }
 
     public long getStairCaseMask64bit(int k, int offset) {
+        if (k >= staircaseMask.length)
+            return 0L;
         int w = m - offset;
         if (offset >= 0) {
             long base = ~0L << (m - offset);

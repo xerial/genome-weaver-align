@@ -216,7 +216,6 @@ public class SuffixFilter
     {
         private final Read            read;
         private final int             m;
-        private final StaircaseFilter staircaseFilter;
         private ACGTSequence[]        q              = new ACGTSequence[2];
         private QueryMask[]           queryMask      = new QueryMask[2];
         private StateQueue            queue          = new StateQueue();
@@ -231,7 +230,6 @@ public class SuffixFilter
         public AlignmentProcess(Read read, Reporter out) {
             this.read = read;
             this.m = (int) read.getRead(0).textSize();
-            this.staircaseFilter = getStairCaseFilter(m);
             this.q[0] = read.getRead(0);
             this.q[1] = q[0].complement();
             this.out = out;
@@ -244,9 +242,10 @@ public class SuffixFilter
          * @return
          */
         private StaircaseFilter getStairCaseFilter(int queryLength) {
-            SFKey key = new SFKey(minMismatches, queryLength);
+            int kk = minMismatches;
+            SFKey key = new SFKey(kk, queryLength);
             if (!staircaseFilterHolder.containsKey(key)) {
-                StaircaseFilter filter = new StaircaseFilter(queryLength, minMismatches);
+                StaircaseFilter filter = new StaircaseFilter(queryLength, kk);
                 staircaseFilterHolder.put(key, filter);
             }
 
@@ -258,7 +257,7 @@ public class SuffixFilter
             StopWatch s = new StopWatch();
             try {
                 align_internal();
-                boolean hasHit = minMismatches <= k || !resultHolder.hitList.isEmpty();
+                boolean hasHit = minMismatches <= k && !resultHolder.hitList.isEmpty();
                 ReadHit besthit = null;
                 String cigar = "";
                 if (hasHit) {
@@ -406,6 +405,7 @@ public class SuffixFilter
                 queue.add(sF);
                 queue.add(sR);
 
+                //minMismatches = Math.min(scanF.numMismatches, Math.min(scanR.numMismatches, k));
             }
 
             final int fmIndexSearchUpperBound = m * 10;
@@ -453,6 +453,7 @@ public class SuffixFilter
                     continue;
 
                 final int strandIndex = c.cursor.getStrand().index;
+
                 // Step forward the cursor
                 // Match 
                 ACGT nextBase = c.cursor.nextACGT(q);
@@ -464,7 +465,8 @@ public class SuffixFilter
                         if (!c.siTable.isEmpty(ch)) {
                             SiSet nextSi = next(c, ch);
                             ++numFMIndexSearches;
-                            SearchState nextState = c.nextState(ch, nextSi, queryMask[strandIndex], staircaseFilter);
+                            SearchState nextState = c.nextState(ch, nextSi, queryMask[strandIndex],
+                                    getStairCaseFilter(m));
                             if (nextState != null) {
                                 queue.add(baseState.update(c, nextState));
                                 continue queue_loop;
@@ -487,14 +489,15 @@ public class SuffixFilter
 
                 // Traverse the suffix arrays for all of A, C, G and T                 
                 // Add states for every bases
+                StaircaseFilter sf = getStairCaseFilter(m);
                 for (ACGT ch : ACGT.exceptN) {
+
                     if (!c.isChecked(ch)) {
                         c.updateFlag(ch);
-
                         if (!c.siTable.isEmpty(ch)) {
                             SiSet nextSi = next(c, ch);
                             ++numFMIndexSearches;
-                            SearchState nextState = c.nextState(ch, nextSi, queryMask[strandIndex], staircaseFilter);
+                            SearchState nextState = c.nextState(ch, nextSi, queryMask[strandIndex], sf);
                             if (nextState != null) {
                                 queue.add(baseState.update(c, nextState));
                             }
