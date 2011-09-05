@@ -106,6 +106,13 @@ public class ReadHit
             return prefix + nextSplit.getAlignmentState();
     }
 
+    public String getCigarConcatenated() {
+        if (nextSplit == null)
+            return cigar;
+        else
+            return cigar + "-" + nextSplit.getCigarConcatenated();
+    }
+
     @Override
     public String toString() {
         return SilkLens.toSilk(this);
