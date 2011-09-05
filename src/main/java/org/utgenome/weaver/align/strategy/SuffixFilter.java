@@ -442,7 +442,8 @@ public class SuffixFilter
                             SearchState nextState = c.nextState(ch, nextSi, queryMask[strandIndex], staircaseFilter);
                             if (nextState != null) {
                                 queue.add(init.update(c, nextState));
-                                continue queue_loop;
+                                if (ch == nextBase)
+                                    continue queue_loop;
                             }
                             else
                                 ++numFiltered;

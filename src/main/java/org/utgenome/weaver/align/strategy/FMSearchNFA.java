@@ -115,7 +115,6 @@ public class FMSearchNFA
         final int progressIndex = cursor.getProcessedBases();
         final int k = kOffset + height - 1;
         final int kr = k - kOffset;
-        // TODO fix me 
         final long qeq = queryMask.getPatternMaskIn64bitForBidirectionalSearch(cursor, ch, kr);
 
         int minKwithMatch = k + 1;
@@ -123,14 +122,14 @@ public class FMSearchNFA
 
         String qeqStr = toBinary(qeq, 10);
 
-        List<Integer> nextCandidateIndex = new ArrayList<Integer>();
+        List<Integer> matchPos = new ArrayList<Integer>();
         // Update the automaton
         // R'_0 = ((R_0 & P[ch]) << 1) & (suffix filter)
         next[0] = (prev[0] & qeq) << 1;
         if (next[0] != 0) {
             minKwithMatch = 0;
             minKwithProgress = 0;
-            nextCandidateIndex.add(cursor.getNextACGTIndex());
+            matchPos.add(cursor.getNextACGTIndex());
         }
         next[0] &= staircaseFilter.getStairCaseMask64bit(kOffset, progressIndex - k);
         for (int i = 1; i < height; ++i) {
