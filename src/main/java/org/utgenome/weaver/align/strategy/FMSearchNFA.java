@@ -35,7 +35,6 @@ import org.utgenome.weaver.align.QueryMask;
  */
 public class FMSearchNFA
 {
-
     // bit flags holding states at column [index - (k-kOffset), index + (k-kOffset) + 1], where k is # of allowed mismatches 
     private final long[] automaton;
     public final int     kOffset;
@@ -55,12 +54,13 @@ public class FMSearchNFA
         return toNFAStateString();
     }
 
-    public void activateDiagonalStates() {
+    public FMSearchNFA activateDiagonalStates() {
         // Activate the diagonal states 
         final int k = automaton.length - 1;
         for (int i = 0; i < automaton.length; ++i) {
             automaton[i] = 1L << (k + i);
         }
+        return this;
     }
 
     private String toBinary(long val, int w) {

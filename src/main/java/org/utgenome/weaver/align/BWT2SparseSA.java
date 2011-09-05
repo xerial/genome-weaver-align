@@ -68,11 +68,15 @@ public class BWT2SparseSA extends GenomeWeaverCommand
 
     public static void bwt2sparseSA(BWTFiles db) throws IOException {
         StopWatch timer = new StopWatch();
-        _logger.info("Loading wavelet array: " + db.bwtWavelet());
-        WaveletArray wv = WaveletArray.loadFrom(db.bwtWavelet());
-        _logger.info("Creating sparse suffix array " + db.sparseSuffixArray());
-        SparseSuffixArray ssa = SparseSuffixArray.createFromWaveletBWT(wv, 32);
-        ssa.saveTo(db.sparseSuffixArray());
+        {
+            _logger.info("Loading bwt string: " + db.bwt());
+            ACGTSequence bwt = ACGTSequence.loadFrom(db.bwt());
+            _logger.info("Creating sparse suffix array " + db.sparseSuffixArray());
+            FMIndex fm = new FMIndexOnOccTable(bwt);
+            _logger.info("Done.");
+            SparseSuffixArray ssa = SparseSuffixArray.createFromBWT(fm, 32);
+            ssa.saveTo(db.sparseSuffixArray());
+        }
         _logger.info(String.format("%.2f sec.", timer.getElapsedTime()));
     }
 

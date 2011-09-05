@@ -275,4 +275,14 @@ public class BitParallelSmithWatermanTest
 
     }
 
+    @Test
+    public void insertion2() throws Exception {
+        ACGTSequence r = new ACGTSequence("AAGCCTAGTTTCCTT");
+        ACGTSequence q = new ACGTSequence("AAGCCTGGAGTTT");
+
+        Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(r, q, 15);
+        _logger.debug(alignment);
+
+    }
+
 }

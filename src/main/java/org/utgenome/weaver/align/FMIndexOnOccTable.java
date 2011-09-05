@@ -30,6 +30,10 @@ public class FMIndexOnOccTable implements FMIndex
     private final OccurrenceCountTable occ;
     private final CharacterCount       C;
 
+    public FMIndexOnOccTable(ACGTSequence seq) {
+        this(seq, 64); // use default window size
+    }
+
     public FMIndexOnOccTable(ACGTSequence seq, int windowSize) {
         this.seq = seq;
         this.occ = new OccurrenceCountTable(seq, windowSize);

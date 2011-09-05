@@ -57,11 +57,11 @@ public class SparseSuffixArray
         this.L = L;
     }
 
-    public static SparseSuffixArray createFromWaveletBWT(WaveletArray W, int suffixInterval) {
-        FMIndex F = new FMIndexOnWaveletArray(W);
+    public static SparseSuffixArray createFromBWT(FMIndex fmIndex, int suffixInterval) {
 
-        final long N = W.textSize();
+        final long N = fmIndex.textSize();
         final long sparseSA_length = (N + suffixInterval - 1) / suffixInterval;
+        // TODO switch int array type according to the text size N
         Int40Array sparseSA = new Int40Array(sparseSA_length);
 
         long sa = N;
@@ -72,7 +72,7 @@ public class SparseSuffixArray
             }
             --sa;
 
-            saIndex = F.suffixLink(saIndex);
+            saIndex = fmIndex.suffixLink(saIndex);
         }
 
         return new SparseSuffixArray(sparseSA, N, suffixInterval);

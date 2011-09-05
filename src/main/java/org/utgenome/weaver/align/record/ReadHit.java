@@ -24,6 +24,7 @@
 //--------------------------------------
 package org.utgenome.weaver.align.record;
 
+import org.utgenome.weaver.align.AlignmentScoreConfig;
 import org.utgenome.weaver.align.Strand;
 import org.xerial.lens.SilkLens;
 
@@ -35,14 +36,18 @@ import org.xerial.lens.SilkLens;
  */
 public class ReadHit
 {
-    public final String  chr;
-    public final long    pos;
-    public final int     matchLength;
-    public final int     diff;
-    public final Strand  strand;
-    public final String  cigar;
-    public final int     numHits;
-    public final ReadHit nextSplit;
+    public final String chr;
+    public final long   pos;
+    public final int    matchLength;
+    public final int    diff;
+    public final Strand strand;
+    public final String cigar;
+    public final int    numHits;
+    public ReadHit      nextSplit;
+
+    public static ReadHit noHit(Strand strand) {
+        return new ReadHit("", 0, 0, 0, strand, null, 0, null);
+    }
 
     public ReadHit(String chr, long pos, int matchLength, int diff, Strand strand, String cigar, int numHits,
             ReadHit nextSplit) {
@@ -56,19 +61,37 @@ public class ReadHit
         this.nextSplit = nextSplit;
     }
 
+    /**
+     * Match length including split alignment
+     * 
+     * @return
+     */
+    public int getTotalMatchLength() {
+        if (nextSplit == null)
+            return matchLength;
+        else
+            return matchLength + nextSplit.getTotalMatchLength();
+    }
+
+    public int getTotalDifferences() {
+        if (nextSplit == null)
+            return diff;
+        else
+            return diff + 1 + nextSplit.getTotalDifferences();
+    }
+
     public boolean isUnique() {
         return numHits == 1;
     }
 
-    public int getK() {
-        if (nextSplit == null)
-            return diff;
-        else
-            return diff + 1 + nextSplit.getK();
-    }
+    public int getTotalScore(AlignmentScoreConfig config) {
+        int fragmentLength = matchLength + diff;
 
-    public ReadHit addSplit(ReadHit split) {
-        return new ReadHit(chr, pos, matchLength, diff, strand, cigar, numHits, split);
+        int score = matchLength * config.matchScore + diff * config.mismatchPenalty;
+        if (nextSplit == null)
+            return score;
+        else
+            return score + config.splitOpenPenalty + nextSplit.getTotalScore(config);
     }
 
     public String getAlignmentStateSingle() {

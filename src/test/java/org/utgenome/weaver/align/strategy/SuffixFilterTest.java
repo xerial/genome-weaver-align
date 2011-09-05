@@ -156,16 +156,16 @@ public class SuffixFilterTest
 
     @Test
     public void oneInsertion() throws Exception {
-        //     AAGCCT-AGTTT 
-        //     AAGCCTTAGTTT  6M1I5M
-        align("AAGCCTTAGTTT");
+        //     AAGCCT-AGTT
+        //     AAGCCTCAGTT  6M1I4M
+        align("AAGCCTCAGTT");
     }
 
     @Test
     public void twoInsertion() throws Exception {
-        //     AAGCCT--AGTTT 
-        //     AAGCCTGGAGTTT  6M2I5M
-        align("AAGCCTGGAGTTT");
+        //     AAGCC--TAGTTT
+        //     AAGCCAATAGTTT  6M2I5M
+        align("AAGCCAATAGTTT");
     }
 
 }

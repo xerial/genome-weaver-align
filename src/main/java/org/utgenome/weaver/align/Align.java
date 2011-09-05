@@ -61,7 +61,7 @@ public class Align extends GenomeWeaverCommand
 
     @Override
     public String getOneLineDescription() {
-        return "suffix filter alignment";
+        return "read alignment";
     }
 
     @Override

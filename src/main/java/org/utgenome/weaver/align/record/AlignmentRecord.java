@@ -26,10 +26,10 @@ package org.utgenome.weaver.align.record;
 
 import java.util.ArrayList;
 
-import org.utgenome.gwt.utgb.client.UTGBClientException;
-import org.utgenome.gwt.utgb.client.bio.CIGAR;
-import org.utgenome.gwt.utgb.client.bio.CIGAR.Type;
+import org.utgenome.UTGBException;
 import org.utgenome.gwt.utgb.client.bio.SAMReadFlag;
+import org.utgenome.weaver.CIGAR;
+import org.utgenome.weaver.CIGAR.Type;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.Strand;
 import org.xerial.util.StringUtil;
@@ -85,7 +85,7 @@ public class AlignmentRecord
             return new CIGAR();
     }
 
-    public void setCIGAR(String cigarStr) throws UTGBClientException {
+    public void setCIGAR(String cigarStr) throws UTGBException {
         this.cigar = new CIGAR(cigarStr);
     }
 
@@ -109,7 +109,7 @@ public class AlignmentRecord
         if (numMismatches >= 0)
             column.add("NM:i:" + numMismatches);
         if (alignmentState != null)
-            column.add("XT:z:" + alignmentState);
+            column.add("XT:Z:" + alignmentState);
         String line = StringUtil.join(column, "\t");
         if (split != null)
             line += "\n" + split.toSAMLine();
@@ -126,7 +126,7 @@ public class AlignmentRecord
         return out.toString();
     }
 
-    public static AlignmentRecord convert(ReadHit hit, Read read, int numOtherBestHits) throws UTGBClientException {
+    public static AlignmentRecord convert(ReadHit hit, Read read, int numOtherBestHits) throws UTGBException {
 
         final int numHits = hit.numHits + numOtherBestHits;
         ACGTSequence query = read.getRead(0);
@@ -145,8 +145,8 @@ public class AlignmentRecord
             CIGAR cigar = new CIGAR(hit.cigar);
             //cigar.add(hit.matchLength, Type.Matches);
             AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos, (int) hit.pos
-                    + hit.matchLength, hit.getK(), cigar, query.toString(), qual, 1, numHits, hit.getAlignmentState(),
-                    null);
+                    + hit.matchLength, hit.getTotalDifferences(), cigar, query.toString(), qual, 1, numHits,
+                    hit.getAlignmentState(), null);
             return rec;
         }
         else {

@@ -45,20 +45,17 @@ public class Cursor
     public final int  end;
     public final int  cursor;
     public final int  pivot; // switch point of forward/backward search
-    public Cursor     split;
 
-    private Cursor(int flag, int start, int end, int cursor, int pivot, Cursor split) {
+    private Cursor(int flag, int start, int end, int cursor, int pivot) {
         this.flag = flag;
         this.start = start;
         this.end = end;
         this.cursor = cursor;
         this.pivot = pivot;
-        this.split = split;
     }
 
-    public Cursor(Strand strand, SearchDirection searchDirection, int start, int end, int cursor, int pivot,
-            Cursor split) {
-        this(strand.index | (searchDirection.index << 1), start, end, cursor, pivot, split);
+    public Cursor(Strand strand, SearchDirection searchDirection, int start, int end, int cursor, int pivot) {
+        this(strand.index | (searchDirection.index << 1), start, end, cursor, pivot);
     }
 
     public int getFragmentLength() {
@@ -69,8 +66,6 @@ public class Cursor
     public String toString() {
         StringBuilder s = new StringBuilder();
         s.append(String.format("%s%s%d/%d", getStrand().symbol, getSearchDirection().symbol, cursor, pivot));
-        if (split != null)
-            s.append(String.format(" split(%s)", split));
         return s.toString();
     }
 
@@ -131,38 +126,32 @@ public class Cursor
     //        return fm == 0 ? Strand.FORWARD : Strand.REVERSE;
     //    }
 
-    Cursor split() {
+    public Cursor[] split() {
         SearchDirection d = getSearchDirection();
         Cursor left, right;
         switch (d) {
         case Forward:
-            left = new Cursor(getStrand(), getSearchDirection(), start, cursor, cursor, pivot, null);
-            right = new Cursor(getStrand(), SearchDirection.Forward, cursor, end, cursor, cursor, null);
+            left = new Cursor(getStrand(), getSearchDirection(), start, cursor, cursor, pivot);
+            right = new Cursor(getStrand(), SearchDirection.Forward, cursor, end, cursor, cursor);
             break;
         case Backward:
-            left = new Cursor(getStrand(), SearchDirection.Backward, start, cursor, cursor, start, null);
-            right = new Cursor(getStrand(), getSearchDirection(), cursor, end, cursor, pivot, null);
+            left = new Cursor(getStrand(), getSearchDirection(), cursor, end, cursor, pivot);
+            right = new Cursor(getStrand(), SearchDirection.Backward, start, cursor, cursor, start);
             break;
         default:
         case BidirectionalForward:
             if (cursor + 1 < end) {
-                left = new Cursor(getStrand(), getSearchDirection(), start, cursor, cursor, pivot, null);
-                right = new Cursor(getStrand(), getSearchDirection(), cursor, end, cursor, cursor, null);
+                left = new Cursor(getStrand(), getSearchDirection(), start, cursor, cursor, pivot);
+                right = new Cursor(getStrand(), getSearchDirection(), cursor, end, cursor, cursor);
             }
             else {
-                left = new Cursor(getStrand(), SearchDirection.Backward, start, cursor, cursor, pivot, null);
-                right = new Cursor(getStrand(), getSearchDirection(), cursor, end, cursor, cursor, null);
+                left = new Cursor(getStrand(), SearchDirection.Backward, start, cursor, cursor, pivot);
+                right = new Cursor(getStrand(), getSearchDirection(), cursor, end, cursor, cursor);
             }
             break;
         }
 
-        left.split = right;
-
-        return left;
-    }
-
-    public boolean hasSplit() {
-        return split != null;
+        return new Cursor[] { left, right };
     }
 
     public Cursor next() {
@@ -186,7 +175,7 @@ public class Cursor
             }
             break;
         }
-        return new Cursor(getStrand(), d, start, end, nextCursor, pivot, split);
+        return new Cursor(getStrand(), d, start, end, nextCursor, pivot);
     }
 
     public SiSet nextSi(FMIndexOnGenome fmIndex, SiSet si, ACGT currentBase) {

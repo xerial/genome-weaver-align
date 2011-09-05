@@ -36,6 +36,7 @@ import org.xerial.util.opt.CommandLauncher;
 import org.xerial.util.opt.CommandLauncherEventHandler;
 import org.xerial.util.opt.GlobalCommandOption;
 import org.xerial.util.opt.Option;
+import org.xerial.util.opt.Usage;
 
 /**
  * Entry point of the Genome Weaver
@@ -51,9 +52,10 @@ public class GenomeWeaver
         execute(StringUtil.tokenizeCommandLineArgument(arg));
     }
 
+    @Usage(command = "genome-weaver")
     public static class GlobalOption extends GlobalCommandOption
     {
-        @Option(symbol = "l", description = "log level: (trace|debug|info|warn|error|fatal)")
+        @Option(symbol = "l", description = "log level: (trace|debug|info|warn|error|fatal) [info]")
         public LogLevel logLevel = null;
     }
 

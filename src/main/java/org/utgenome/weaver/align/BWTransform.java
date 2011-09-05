@@ -54,7 +54,7 @@ public class BWTransform extends GenomeWeaverCommand
 
     @Override
     public String getOneLineDescription() {
-        return "Burrows-Wheeler Transformation (BWT)";
+        return "Create Burrows-Wheeler Transformation (BWT) index";
     }
 
     @Override
@@ -117,14 +117,15 @@ public class BWTransform extends GenomeWeaverCommand
             _logger.info("Creating a suffix array of " + db.pac());
             LSeq SA = null;
             if (seq.textSize() < Integer.MAX_VALUE) {
-                _logger.info("Using int array");
+                _logger.debug("Using int[] array");
                 SA = new LSAIS.IntArray(new int[(int) seq.textSize()], 0);
             }
             else if (seq.textSize() < UInt32Array.MAX_VALUE) {
+                _logger.debug("Using UInt32Array");
                 SA = new UInt32Array(seq.textSize());
             }
             else if (seq.textSize() < Int40Array.MAX_VALUE) {
-                _logger.info("Using Int40Array");
+                _logger.debug("Using Int40Array");
                 SA = new Int40Array(seq.textSize());
             }
             else {
