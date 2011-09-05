@@ -70,7 +70,7 @@ public class QueryMask
      * @param start
      * @return
      */
-    public long getPatternMaskIn64bitForBidirectionalSearch(Cursor cursor, ACGT ch, int margin) {
+    public long getBidirectionalPatternMask64(Cursor cursor, ACGT ch, int margin) {
         long p;
         if (cursor.isForwardSearch()) {
             // forward pattern mask

@@ -47,7 +47,7 @@ import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.Read;
 import org.utgenome.weaver.align.record.ReadHit;
 import org.utgenome.weaver.align.record.SingleEndRead;
-import org.utgenome.weaver.align.strategy.FMSearchNFA.NextState;
+import org.utgenome.weaver.align.strategy.ReadAlignmentNFA.NextState;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.StopWatch;
@@ -215,11 +215,11 @@ public class SuffixFilter
      */
     class AlignmentProcess
     {
-        private final Read            read;
-        private final int             m;
-        private ACGTSequence[]        q              = new ACGTSequence[2];
-        private QueryMask[]           queryMask      = new QueryMask[2];
-        private StateQueue            queue          = new StateQueue();
+        private final Read            read;                                        // original read
+        private final int             m;                                           // read length
+        private ACGTSequence[]        q              = new ACGTSequence[2];        // forward/reverse query sequence
+        private QueryMask[]           queryMask      = new QueryMask[2];           // bit mask of ACGT occurrence positions
+        private StateQueue            queue          = new StateQueue();           // priority queue holding search states
 
         private AlignmentResultHolder resultHolder   = new AlignmentResultHolder();
         private Reporter              out;
@@ -314,8 +314,6 @@ public class SuffixFilter
         }
 
         public void report(ReadHit hit, int numTotalHits) throws Exception {
-            //            if (_logger.isTraceEnabled())
-            //                _logger.trace(SilkLens.toSilk("hit", hit));
             AlignmentRecord r = AlignmentRecord.convert(hit, read, numTotalHits);
             out.emit(r);
         }
@@ -687,7 +685,7 @@ public class SuffixFilter
         public final Cursor         cursor;
         public final SuffixInterval currentSi;
         public final SiSet          siTable;
-        private FMSearchNFA         automaton;
+        private ReadAlignmentNFA    automaton;
         // 32 bit = searchFlag(5) + currentBase(3) + minK (8) + priority(8) + hasHit(1) 
         private int                 state;
         public SearchState          split;
@@ -752,7 +750,7 @@ public class SuffixFilter
             return (state & (1 << ch.code)) != 0;
         }
 
-        SearchState(SuffixInterval currentSi, ACGT ch, Cursor cursor, SiSet si, FMSearchNFA automaton,
+        SearchState(SuffixInterval currentSi, ACGT ch, Cursor cursor, SiSet si, ReadAlignmentNFA automaton,
                 boolean hasMatch, int minK, int priority, SearchState split) {
             this.currentSi = currentSi;
             this.cursor = cursor;
@@ -770,8 +768,8 @@ public class SuffixFilter
          * @param searchDirection
          */
         public SearchState(SuffixInterval currentSi, Cursor cursor, int priority) {
-            this(currentSi, ACGT.N, cursor, fmIndex.initSet(cursor.getSearchDirection()), new FMSearchNFA(k), false, 0,
-                    priority, null);
+            this(currentSi, ACGT.N, cursor, fmIndex.initSet(cursor.getSearchDirection()), new ReadAlignmentNFA(k),
+                    false, 0, priority, null);
             automaton.activateDiagonalStates();
         }
 
@@ -798,9 +796,10 @@ public class SuffixFilter
         }
 
         public int score() {
-            int nm = getLowerBoundOfK();
+            int numSplits = getNumSplit();
+            int nm = getLowerBoundOfK() - numSplits;
             int mm = cursor.getProcessedBases() - nm;
-            return mm * config.matchScore - nm * config.mismatchPenalty;
+            return mm * config.matchScore - nm * config.mismatchPenalty - numSplits * config.splitOpenPenalty;
         }
 
         public SearchState nextStateAfterSplit() {
@@ -813,7 +812,7 @@ public class SuffixFilter
                 SearchState newState = new SearchState(currentSi, currentACGT(), newCursor[0], siTable,
                         automaton.nextStateAfterSplit(k), hasHit(), minK, getPriority(), null);
                 newState.split = new SearchState(null, ACGT.N, newCursor[1], fmIndex.initSet(newCursor[1]
-                        .getSearchDirection()), new FMSearchNFA(k).activateDiagonalStates(), false, minK,
+                        .getSearchDirection()), new ReadAlignmentNFA(k).activateDiagonalStates(), false, minK,
                         getPriority(), null);
                 return newState;
             }

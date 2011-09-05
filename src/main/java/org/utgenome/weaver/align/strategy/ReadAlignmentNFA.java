@@ -31,22 +31,38 @@ import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.QueryMask;
 
 /**
- * NFA holding search states of FM-index
+ * Non-deterministic finite automaton holding search states of FM-index.
+ * 
+ * <pre>
+ *     q0 q1 q2 ... q_{m-1}
+ *  k=0 +--+--+--
+ *      |\ |\ |\
+ *      | \| \| \  ...
+ *  k=1 +--+--+--
+ * 
+ * </pre>
+ * 
+ * <h3>transitions</h3>
+ * <ul>
+ * <li>right:match
+ * <li>down:deletion from reference
+ * <li>right down: insertion to reference (epsilon transition) or mismatch
+ * </ul>
  * 
  * @author leo
  * 
  */
-public class FMSearchNFA
+public class ReadAlignmentNFA
 {
     // bit flags holding states at column [index - (k-kOffset), index + (k-kOffset) + 1], where k is # of allowed mismatches 
     private final long[] automaton;
     public final int     kOffset;
 
-    public FMSearchNFA(int numAllowedMismatches) {
+    public ReadAlignmentNFA(int numAllowedMismatches) {
         this(new long[numAllowedMismatches + 1], 0);
     }
 
-    private FMSearchNFA(long[] automaton, int kOffset) {
+    private ReadAlignmentNFA(long[] automaton, int kOffset) {
         this.automaton = automaton;
         this.kOffset = kOffset;
     }
@@ -56,7 +72,7 @@ public class FMSearchNFA
         return toNFAStateString();
     }
 
-    public FMSearchNFA activateDiagonalStates() {
+    public ReadAlignmentNFA activateDiagonalStates() {
         // Activate the diagonal states 
         final int k = automaton.length - 1;
         for (int i = 0; i < automaton.length; ++i) {
@@ -86,21 +102,21 @@ public class FMSearchNFA
         return s.toString();
     }
 
-    public FMSearchNFA nextStateAfterSplit(int k) {
+    public ReadAlignmentNFA nextStateAfterSplit(int k) {
         int height = automaton.length - 1;
         long[] nextAutomaton = new long[height];
         for (int i = 0; i < height; ++i) {
             nextAutomaton[i] = 1L << (height + i - 1);
         }
-        return new FMSearchNFA(nextAutomaton, kOffset + 1);
+        return new ReadAlignmentNFA(nextAutomaton, kOffset + 1);
     }
 
     public static class NextState
     {
-        public final FMSearchNFA nextState;
-        public final boolean     hasMatch;
+        public final ReadAlignmentNFA nextState;
+        public final boolean          hasMatch;
 
-        public NextState(FMSearchNFA nextState, boolean hasMatch) {
+        public NextState(ReadAlignmentNFA nextState, boolean hasMatch) {
             this.nextState = nextState;
             this.hasMatch = hasMatch;
         }
@@ -115,7 +131,7 @@ public class FMSearchNFA
         final int progressIndex = cursor.getProcessedBases();
         final int k = kOffset + height - 1;
         final int kr = k - kOffset;
-        final long qeq = queryMask.getPatternMaskIn64bitForBidirectionalSearch(cursor, ch, kr);
+        final long qeq = queryMask.getBidirectionalPatternMask64(cursor, ch, kr);
 
         int minKwithMatch = k + 1;
         int minKwithProgress = k + 1;
@@ -153,14 +169,14 @@ public class FMSearchNFA
         if (mPos < 64) {
             for (int nm = 0; nm < height; ++nm) {
                 if ((next[nm] & (1L << mPos)) != 0L) {
-                    return new NextState(new FMSearchNFA(removeLayersFromAutomaton(next, nm), kOffset + nm), true);
+                    return new NextState(new ReadAlignmentNFA(removeLayersFromAutomaton(next, nm), kOffset + nm), true);
                 }
             }
         }
 
         int minK = Math.min(minKwithMatch, minKwithProgress);
         if (minK < k)
-            return new NextState(new FMSearchNFA(removeLayersFromAutomaton(next, minK), kOffset + minK), false);
+            return new NextState(new ReadAlignmentNFA(removeLayersFromAutomaton(next, minK), kOffset + minK), false);
 
         return null;
     }

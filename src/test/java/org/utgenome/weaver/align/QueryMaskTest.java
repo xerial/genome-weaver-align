@@ -40,7 +40,7 @@ public class QueryMaskTest
         int m = query.length();
         QueryMask qm = new QueryMask(query);
         _logger.debug("ans:%s, offset:%d, boundary:%d", answer, offset, boundary);
-        assertEquals(BitVector.parseString(answer), BitVector.parseLong(qm.getPatternMaskIn64bitForBidirectionalSearch(
+        assertEquals(BitVector.parseString(answer), BitVector.parseLong(qm.getBidirectionalPatternMask64(
                 new Cursor(Strand.FORWARD, d, 0, m, offset, boundary), ch, margin), m));
     }
 
