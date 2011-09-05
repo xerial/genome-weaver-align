@@ -104,6 +104,15 @@ public class SuffixFilterTest
     }
 
     @Test
+    public void bidirectionalSearchReverse() throws Exception {
+        AlignmentRecord a = align(new ACGTSequence("AACCCTAGTTTCGTT").reverseComplement());
+        assertEquals("15M", a.cigar.toCIGARString());
+        assertEquals(1, a.start);
+        assertEquals(Strand.REVERSE, a.strand);
+        assertEquals(2, a.numMismatches);
+    }
+
+    @Test
     public void twoMismatchAtHead() throws Exception {
         AlignmentRecord a = align("TTGCCTAGTTT");
         assertEquals("2S9M", a.cigar.toCIGARString());

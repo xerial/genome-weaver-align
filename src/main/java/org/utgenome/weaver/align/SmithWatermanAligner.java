@@ -40,14 +40,14 @@ public class SmithWatermanAligner
 
     public static class Alignment
     {
-        public final String cigar;
+        public final CIGAR  cigar;
         public final int    score;
         public final int    numMismatches;
         public final int    pos;          // 0-based leftmost position of the clipped sequence
         public final String rseq;         // reference sequence
         public final String qseq;         // query sequence
 
-        public Alignment(String cigar, int score, int numMisamatches, String rseq, int pos, String qseq) {
+        public Alignment(CIGAR cigar, int score, int numMisamatches, String rseq, int pos, String qseq) {
             this.cigar = cigar;
             this.score = score;
             this.numMismatches = numMisamatches;
@@ -375,8 +375,8 @@ public class SmithWatermanAligner
             compactCigar.append(prev);
         }
 
-        return new Alignment(compactCigar.toString(), maxScore, diff, a1.reverse().toString(), leftMostPos, a2
-                .reverse().toString());
+        return new Alignment(new CIGAR(compactCigar.toString()), maxScore, diff, a1.reverse().toString(), leftMostPos,
+                a2.reverse().toString());
     }
 
     public static class StringWrapper implements GenomeSequence

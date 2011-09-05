@@ -22,12 +22,12 @@
 // $URL$ 
 // $Author$
 //--------------------------------------
-package org.utgenome.weaver;
+package org.utgenome.weaver.align;
 
 import static org.junit.Assert.*;
 
 import org.junit.Test;
-import org.utgenome.weaver.CIGAR.Type;
+import org.utgenome.weaver.align.CIGAR.Type;
 
 public class CIGARTest
 {

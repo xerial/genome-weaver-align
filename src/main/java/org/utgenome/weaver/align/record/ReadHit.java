@@ -25,6 +25,7 @@
 package org.utgenome.weaver.align.record;
 
 import org.utgenome.weaver.align.AlignmentScoreConfig;
+import org.utgenome.weaver.align.CIGAR;
 import org.utgenome.weaver.align.Strand;
 import org.xerial.lens.SilkLens;
 
@@ -41,7 +42,7 @@ public class ReadHit
     public final int    matchLength;
     public final int    diff;
     public final Strand strand;
-    public final String cigar;
+    public final CIGAR  cigar;
     public final int    numHits;
     public ReadHit      nextSplit;
 
@@ -49,7 +50,7 @@ public class ReadHit
         return new ReadHit("", 0, 0, 0, strand, null, 0, null);
     }
 
-    public ReadHit(String chr, long pos, int matchLength, int diff, Strand strand, String cigar, int numHits,
+    public ReadHit(String chr, long pos, int matchLength, int diff, Strand strand, CIGAR cigar, int numHits,
             ReadHit nextSplit) {
         this.chr = chr;
         this.pos = pos;
@@ -108,9 +109,9 @@ public class ReadHit
 
     public String getCigarConcatenated() {
         if (nextSplit == null)
-            return cigar;
+            return cigar.toCIGARString();
         else
-            return cigar + "-" + nextSplit.getCigarConcatenated();
+            return cigar.toCIGARString() + "-" + nextSplit.getCigarConcatenated();
     }
 
     @Override

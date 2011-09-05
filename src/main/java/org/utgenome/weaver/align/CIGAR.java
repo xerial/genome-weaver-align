@@ -22,13 +22,11 @@
 // $URL$ 
 // $Author$
 //--------------------------------------
-package org.utgenome.weaver;
+package org.utgenome.weaver.align;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.utgenome.UTGBException;
 
 /**
  * A utility for handling CIGAR string in SAM format specification
@@ -115,8 +113,13 @@ public class CIGAR
         cigar = new ArrayList<Element>();
     }
 
-    public CIGAR(String cigarString) throws UTGBException {
+    public CIGAR(String cigarString) {
         this.cigar = parse(cigarString);
+    }
+
+    @SuppressWarnings("unchecked")
+    public CIGAR(CIGAR other) {
+        this.cigar = (ArrayList<Element>) other.cigar.clone();
     }
 
     private CIGAR(ArrayList<Element> cigar) {
@@ -192,11 +195,11 @@ public class CIGAR
         return toCIGARString();
     }
 
-    private static CIGAR parseCIGAR(String cigar) throws UTGBException {
+    private static CIGAR parseCIGAR(String cigar) {
         return new CIGAR(parse(cigar));
     }
 
-    private static ArrayList<Element> parse(String cigarString) throws UTGBException {
+    private static ArrayList<Element> parse(String cigarString) {
 
         ArrayList<Element> result = new ArrayList<Element>();
         int startIndexOfNumber = 0;

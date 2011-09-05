@@ -35,6 +35,7 @@ import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.AlignmentConfig;
 import org.utgenome.weaver.align.BitParallelSmithWaterman;
+import org.utgenome.weaver.align.CIGAR;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.QueryMask;
 import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
@@ -302,7 +303,7 @@ public class SuffixFilter
                 }
                 else {
                     // report unmapped read
-                    report(new ReadHit("*", 0, 0, -1, Strand.FORWARD, "", 0, null), 0);
+                    report(new ReadHit("*", 0, 0, -1, Strand.FORWARD, null, 0, null), 0);
                 }
 
             }
@@ -526,8 +527,8 @@ public class SuffixFilter
 
         private void reportExactMatchAlignment(FMQuickScan f) throws Exception {
             PosOnGenome pos = fmIndex.toGenomeCoordinate(f.si.lowerBound, m, f.strand);
-            resultHolder.add(new ReadHit(pos.chr, pos.pos, m, 0, f.strand, String.format("%dM", m), (int) f.si.range(),
-                    null));
+            resultHolder.add(new ReadHit(pos.chr, pos.pos, m, 0, f.strand, new CIGAR(String.format("%dM", m)),
+                    (int) f.si.range(), null));
         }
 
         public ReadHit verify(SearchState s) {
@@ -536,7 +537,7 @@ public class SuffixFilter
                 _logger.trace("verify state: %s", s);
 
             SuffixInterval si = s.currentSi;
-            int nm = s.getLowerBoundOfK();
+
             Cursor cursor = s.cursor;
 
             // Verification phase

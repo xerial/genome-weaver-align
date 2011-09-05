@@ -26,7 +26,6 @@ package org.utgenome.weaver.align;
 
 import java.util.Arrays;
 
-import org.utgenome.weaver.CIGAR;
 import org.utgenome.weaver.align.SmithWatermanAligner.Alignment;
 import org.utgenome.weaver.align.SmithWatermanAligner.Trace;
 import org.utgenome.weaver.align.record.SWResult;
@@ -616,7 +615,7 @@ public class BitParallelSmithWaterman
                 cig.add(cigarStr.charAt(i));
             }
 
-            return new Alignment(cig.toString(), m - diff, diff, null, leftMostPos, null);
+            return new Alignment(cig, m - diff, diff, null, leftMostPos, null);
         }
 
     }
