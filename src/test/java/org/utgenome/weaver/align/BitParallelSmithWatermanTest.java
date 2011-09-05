@@ -119,7 +119,7 @@ public class BitParallelSmithWatermanTest
                 "TATTACCGGTTCGCGGCATAGGAAATTGGAAAACCGCTAGCATGCATGCCCGATTCAGTGGTGTCACATTTGCCGATC");
 
         final int K = 5;
-        final int N = 10;
+        final int N = 100;
         StopWatch s1 = new StopWatch();
         s1.stop();
         StopWatch s2 = new StopWatch();

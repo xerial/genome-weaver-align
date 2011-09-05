@@ -93,7 +93,7 @@ public class Cursor
     public int getOffsetOfSearchHead() {
         // read:   |   |------|       |
         //         0   pivot  cursor  read length
-        int offset = cursor;
+        int offset = cursor - start;
         if (getStrand() == Strand.REVERSE)
             offset = getFragmentLength() - offset;
         return offset;

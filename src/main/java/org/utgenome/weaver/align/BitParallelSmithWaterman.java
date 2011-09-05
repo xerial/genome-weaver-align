@@ -26,6 +26,7 @@ package org.utgenome.weaver.align;
 
 import java.util.Arrays;
 
+import org.utgenome.weaver.CIGAR;
 import org.utgenome.weaver.align.SmithWatermanAligner.Alignment;
 import org.utgenome.weaver.align.SmithWatermanAligner.Trace;
 import org.utgenome.weaver.align.record.SWResult;
@@ -584,6 +585,7 @@ public class BitParallelSmithWaterman
                 }
             }
 
+            // create cigar string
             String cigarStr = cigar.reverse().toString();
             {
                 // Remove indels at both of the read ends
@@ -623,29 +625,12 @@ public class BitParallelSmithWaterman
                 cigarStr = newCigar.toString();
             }
 
-            // create cigar string
-            char prev = cigarStr.charAt(0);
-            int count = 1;
-            StringBuilder compactCigar = new StringBuilder();
-            for (int i = 1; i < cigarStr.length(); ++i) {
-                char c = cigarStr.charAt(i);
-                if (prev == c) {
-                    count++;
-                }
-                else {
-                    compactCigar.append(Integer.toString(count));
-                    compactCigar.append(prev);
-
-                    prev = c;
-                    count = 1;
-                }
-            }
-            if (count > 0) {
-                compactCigar.append(Integer.toString(count));
-                compactCigar.append(prev);
+            CIGAR cig = new CIGAR();
+            for (int i = 0; i < cigarStr.length(); ++i) {
+                cig.add(cigarStr.charAt(i));
             }
 
-            return new Alignment(compactCigar.toString(), m - diff, diff, null, leftMostPos, null);
+            return new Alignment(cig.toString(), m - diff, diff, null, leftMostPos, null);
         }
 
     }

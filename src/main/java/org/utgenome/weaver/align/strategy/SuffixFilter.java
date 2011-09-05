@@ -79,169 +79,6 @@ public class SuffixFilter
 
     private HashMap<Integer, StaircaseFilter> staircaseFilterHolder = new HashMap<Integer, StaircaseFilter>();
 
-    public static enum Diff {
-        Match, Mismatch, Insertion, Deletion, Split
-    };
-
-    /**
-     * Holder of an NFA state and an alignment cursor
-     * 
-     * This NFA holds 2k+1 columns and k+1 rows
-     * 
-     * @author leo
-     * 
-     */
-    public class SearchState
-    {
-        public final Cursor         cursor;
-        public final SuffixInterval currentSi;
-        public final SiSet          siTable;
-        private FMSearchNFA         automaton;
-        // 32 bit = searchFlag(5) + currentBase(3) + minK (8) + priority(8) + hasHit(1) 
-        private int                 state;
-        public SearchState          split;
-
-        public int getLowerBoundOfK() {
-            return (state >>> 8) & 0xFF;
-        }
-
-        public void setLowerBoundOfK(int diff) {
-            state &= ~(0xFF << 8);
-            state |= (diff & 0xFF) << 8;
-        }
-
-        public int getNumSplit() {
-            return split == null ? 0 : 1 + split.getNumSplit();
-        }
-
-        /**
-         * Lower value has higher priority
-         * 
-         * @return
-         */
-        public int getPriority() {
-            return (state >>> 16) & 0xFF;
-        }
-
-        public void lowerThePrioity(int margin) {
-            int priority = getPriority() + margin;
-            state &= ~(0xFF << 16);
-            state |= (priority & 0xFF) << 16;
-        }
-
-        public boolean hasHit() {
-            return ((state >>> 24) & 1L) != 0;
-        }
-
-        public boolean isFinished() {
-            return (state & 0x1F) == 0x1F; // ACGT + split
-        }
-
-        public ACGT currentACGT() {
-            return ACGT.decode((byte) ((state >>> 5) & 0x7));
-        }
-
-        public void updateFlag(ACGT ch) {
-            this.state |= 1 << ch.code;
-        }
-
-        public void fillSearchFlags() {
-            this.state |= 0x1F;
-        }
-
-        public void updateSplitFlag() {
-            this.state |= 1 << 4;
-        }
-
-        public boolean isSplitChecked() {
-            return (state & (1 << 4)) != 0;
-        }
-
-        public boolean isChecked(ACGT ch) {
-            return (state & (1 << ch.code)) != 0;
-        }
-
-        SearchState(SuffixInterval currentSi, ACGT ch, Cursor cursor, SiSet si, FMSearchNFA automaton,
-                boolean hasMatch, int minK, int priority, SearchState split) {
-            this.currentSi = currentSi;
-            this.cursor = cursor;
-            this.siTable = si;
-            this.automaton = automaton;
-            this.state = ((ch.code & 0x7) << 5) | ((minK & 0xFF) << 8) | ((priority & 0xFF) << 16)
-                    | ((hasMatch ? 1 : 0) << 24);
-            this.split = split;
-        }
-
-        /**
-         * Initial forward search state
-         * 
-         * @param strand
-         * @param searchDirection
-         */
-        public SearchState(SuffixInterval currentSi, Cursor cursor, int priority) {
-            this(currentSi, ACGT.N, cursor, fmIndex.initSet(cursor.getSearchDirection()), new FMSearchNFA(k), false, 0,
-                    priority, null);
-            automaton.activateDiagonalStates();
-        }
-
-        String getUpdateFlag() {
-            StringBuilder s = new StringBuilder();
-            for (ACGT ch : ACGT.exceptN) {
-                s.append(isChecked(ch) ? ch.name() : ch.name().toLowerCase());
-            }
-            if (isSplitChecked())
-                s.append("^");
-            return s.toString();
-        }
-
-        @Override
-        public String toString() {
-            return String.format("%sk%dp%d%s%s%s %s:%,d %s %s", hasHit() ? "*" : "", getLowerBoundOfK(), getPriority(),
-                    cursor, split == null ? " " : String.format(" split(%s) ", split.cursor), currentACGT(), currentSi,
-                    currentSi != null ? currentSi.range() : fmIndex.textSize(), getUpdateFlag(), siTable);
-        }
-
-        public int score() {
-            int nm = getLowerBoundOfK();
-            int mm = cursor.getProcessedBases() - nm;
-            return mm * config.matchScore - nm * config.mismatchPenalty;
-        }
-
-        public SearchState nextStateAfterSplit() {
-            updateSplitFlag();
-            // use the same automaton state
-            int minK = getLowerBoundOfK();
-            if (minK < k) {
-                Cursor[] newCursor = cursor.split();
-
-                SearchState newState = new SearchState(currentSi, currentACGT(), newCursor[0], siTable,
-                        automaton.nextStateAfterSplit(k), hasHit(), minK, getPriority(), null);
-                newState.split = new SearchState(null, ACGT.N, newCursor[1], fmIndex.initSet(newCursor[1]
-                        .getSearchDirection()), new FMSearchNFA(k).activateDiagonalStates(), false, minK,
-                        getPriority(), null);
-                return newState;
-            }
-            else
-                return null;
-        }
-
-        public SearchState nextState(ACGT ch, SiSet nextSi, QueryMask queryMask, StaircaseFilter staircaseFilter) {
-
-            NextState next = automaton.nextState(cursor, ch, queryMask, staircaseFilter);
-            if (next == null)
-                return null; // no match
-
-            int nextMinK = next.nextState.kOffset;
-
-            Cursor nextCursor = cursor.next();
-            SuffixInterval si = nextCursor.isForwardSearch() ? this.siTable.getForward(ch) : this.siTable
-                    .getBackward(ch);
-            return new SearchState(si, ch, nextCursor, nextSi, next.nextState, next.hasMatch, nextMinK, getPriority(),
-                    split);
-        }
-
-    }
-
     /**
      * Compute next suffix intervals
      * 
@@ -440,8 +277,8 @@ public class SuffixFilter
         }
 
         public void report(ReadHit hit, int numTotalHits) throws Exception {
-            if (_logger.isTraceEnabled())
-                _logger.trace(SilkLens.toSilk("hit", hit));
+            //            if (_logger.isTraceEnabled())
+            //                _logger.trace(SilkLens.toSilk("hit", hit));
             AlignmentRecord r = AlignmentRecord.convert(hit, read, numTotalHits);
             out.emit(r);
         }
@@ -535,9 +372,11 @@ public class SuffixFilter
             }
 
             // Iterative search for k>=0
+            queue_loop:
+
             while (!queue.isEmpty()) {
-                SearchState parent = queue.poll();
-                SearchState c = parent;
+                SearchState init = queue.poll();
+                SearchState c = init;
                 if (_logger.isTraceEnabled()) {
                     _logger.trace("state: %s, FMIndex:%d, CutOff:%d", c, numFMIndexSearches, numCutOff);
                 }
@@ -548,18 +387,13 @@ public class SuffixFilter
                     while (next.hasHit() || next.cursor.getRemainingBases() == 0) {
                         if (next.split == null) {
                             reportAlignment(c);
-                            continue;
+                            continue queue_loop;
                         }
                         else {
                             // switch to the next split
                             next = next.split;
                         }
                     }
-
-                    if (_logger.isTraceEnabled() && c != next) {
-                        _logger.trace("search split state: %s", next);
-                    }
-
                     c = next;
                 }
 
@@ -582,37 +416,22 @@ public class SuffixFilter
                 // Step forward the cursor
                 // Match 
                 ACGT nextBase = c.cursor.nextACGT(q);
-                //                {
-                //                    if (!c.isChecked(nextBase)) {
-                //                        c.updateFlag(nextBase);
-                //                        if (!c.siTable.isEmpty(nextBase)) {
-                //                            SiSet nextSi = next(c, nextBase);
-                //                            ++numFMIndexSearches;
-                //                            SearchState nextState = c.nextState(nextBase, nextSi, queryMask[strandIndex],
-                //                                    staircaseFilter);
-                //                            if (nextState != null)
-                //                                queue.add(nextState);
-                //                            else
-                //                                ++numFiltered;
-                //                        }
-                //                    }
-                //                }
 
-                // Traverse the suffix arrays for all of A, C, G and T                 
-                // Add states for every bases
+                // Determin the search order of next base
                 ACGT[] searchOrder = new ACGT[4];
                 {
                     searchOrder[0] = nextBase;
-                    int index = 1;
+                    int i = 1;
                     for (ACGT ch : ACGT.exceptN) {
                         if (ch == nextBase)
                             continue;
-                        searchOrder[index++] = ch;
+                        searchOrder[i++] = ch;
                     }
                 }
 
+                // Traverse the suffix arrays for all of A, C, G and T                 
+                // Add states for every bases
                 for (ACGT ch : searchOrder) {
-
                     if (!c.isChecked(ch)) {
                         c.updateFlag(ch);
 
@@ -620,8 +439,9 @@ public class SuffixFilter
                             SiSet nextSi = next(c, ch);
                             ++numFMIndexSearches;
                             SearchState nextState = c.nextState(ch, nextSi, queryMask[strandIndex], staircaseFilter);
-                            if (nextState != null)
-                                queue.add(nextState);
+                            if (nextState != null) {
+                                queue.add(init.update(c, nextState));
+                            }
                             else
                                 ++numFiltered;
                         }
@@ -630,12 +450,13 @@ public class SuffixFilter
 
                 // Split alignment
                 c.updateSplitFlag();
-                if (c.getNumSplit() < config.numSplitAlowed && nm + 1 <= minMismatches) {
-                    int index = c.cursor.getNextACGTIndex();
+                if (init.getNumSplit() < config.numSplitAlowed && nm + 1 <= minMismatches) {
+                    final int index = c.cursor.getNextACGTIndex();
                     if (index > config.indelEndSkip && m - index >= config.indelEndSkip) {
                         SearchState nextState = c.nextStateAfterSplit();
-                        if (nextState != null)
-                            queue.add(nextState);
+                        if (nextState != null) {
+                            queue.add(init.update(c, nextState));
+                        }
                         else
                             ++numFiltered;
                     }
@@ -661,7 +482,7 @@ public class SuffixFilter
 
             // Verification phase
             if (si == null)
-                return null;
+                return ReadHit.noHit(cursor.getStrand());
 
             ReadHit hit = null;
 
@@ -674,12 +495,12 @@ public class SuffixFilter
             x -= offset;
 
             int fragmentLength = cursor.getFragmentLength();
-            if (x < 0 || x + fragmentLength > fmIndex.textSize()) {
-                return null; // ignore the match at cycle boundary
-            }
+            //            if (x < 0 || x + fragmentLength > fmIndex.textSize()) {
+            //                return ReadHit.noHit(cursor.getStrand()); // ignore the match at cycle boundary
+            //            }
 
             long refStart = Math.max(0, x - k);
-            long refEnd = x + fragmentLength + k;
+            long refEnd = Math.min(refStart + fragmentLength + k, fmIndex.textSize());
             ACGTSequence ref = reference.subSequence(refStart, refEnd);
             ACGTSequence query = q[cursor.getStrandIndex()].subSequence(cursor.start, cursor.end);
             if (cursor.getStrand() == Strand.REVERSE)
@@ -690,7 +511,9 @@ public class SuffixFilter
 
             Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(ref, query, config.bandWidth);
             ++numSW;
-            if (alignment != null && alignment.numMismatches <= k) {
+            if (alignment == null)
+                hit = ReadHit.noHit(cursor.getStrand());
+            else {
                 if (_logger.isTraceEnabled())
                     _logger.trace("Found an alignment: %s", alignment);
 
@@ -704,9 +527,6 @@ public class SuffixFilter
                     _logger.error(e);
                 }
             }
-            else {
-                hit = ReadHit.noHit(cursor.getStrand());
-            }
 
             return hit;
         }
@@ -717,9 +537,9 @@ public class SuffixFilter
             ReadHit alignment = verify(c);
             {
                 ReadHit nextHit = alignment;
-                for (SearchState next = c.split; next != null; next = c.split) {
-                    nextHit.nextSplit = verify(next);
-                    nextHit = nextHit.nextSplit;
+                for (SearchState next = c.split; next != null; next = next.split) {
+                    ReadHit result = verify(next);
+                    nextHit.nextSplit = result;
                 }
             }
             if (alignment.getTotalMatchLength() == 0) {
@@ -740,44 +560,6 @@ public class SuffixFilter
         private int numCutOff           = 0;
         private int numFiltered         = 0;
         private int numExactSearchCount = 0;
-
-        //        private void reportExactMatch(SearchState c) {
-        //            ++numExactSearchCount;
-        //            Cursor cursor = c.cursor;
-        //            final int n = cursor.getRemainingBases();
-        //            int numExtend = 0;
-        //
-        //            SuffixInterval si = c.currentSi;
-        //            SiSet siSet = c.siTable;
-        //            ACGT ch = null;
-        //            while (numExtend < n) {
-        //                ch = cursor.nextACGT(q);
-        //                if (siSet.equals(ch))
-        //                    return; // no match
-        //                siSet = cursor.nextSi(fmIndex, siSet, ch);
-        //                ++numFMIndexSearches;
-        //                cursor = cursor.next();
-        //                ++numExtend;
-        //            }
-        //
-        //            long candidateSi = si.lowerBound;
-        //            long seqIndex = fmIndex.toCoordinate(candidateSi, cursor.getStrand(), cursor.getSearchDirection());
-        //            int offset = cursor.getOffsetOfSearchHead(cursor.hasSplit(), cursor.getReadLength());
-        //            long x = seqIndex - offset;
-        //            if (x < 0 || x + cursor.getFragmentLength() > fmIndex.textSize()) {
-        //                return; // ignore the match at cycle boundary
-        //            }
-        //
-        //            try {
-        //                PosOnGenome pos = fmIndex.getSequenceBoundary().translate(x + 1, Strand.FORWARD);
-        //                ReadHit hit = new ReadHit(pos.chr, pos.pos, cursor.getReadLength(), c.getLowerBoundOfK(),
-        //                        c.cursor.getStrand(), (int) si.range(), null);
-        //                resultHolder.add(hit);
-        //            }
-        //            catch (UTGBException e) {
-        //                _logger.error(e);
-        //            }
-        //        }
 
         private class AlignmentResultHolder
         {
@@ -830,6 +612,181 @@ public class SuffixFilter
         for (int i = s.length() - 1; i >= 0; --i)
             out.append(s.charAt(i));
         return out.toString();
+    }
+
+    /**
+     * Holder of an NFA state and an alignment cursor
+     * 
+     * This NFA holds 2k+1 columns and k+1 rows
+     * 
+     * @author leo
+     * 
+     */
+    public class SearchState
+    {
+        public final Cursor         cursor;
+        public final SuffixInterval currentSi;
+        public final SiSet          siTable;
+        private FMSearchNFA         automaton;
+        // 32 bit = searchFlag(5) + currentBase(3) + minK (8) + priority(8) + hasHit(1) 
+        private int                 state;
+        public SearchState          split;
+
+        public int getLowerBoundOfK() {
+            return (state >>> 8) & 0xFF;
+        }
+
+        public void setLowerBoundOfK(int diff) {
+            state &= ~(0xFF << 8);
+            state |= (diff & 0xFF) << 8;
+        }
+
+        public int getNumSplit() {
+            return split == null ? 0 : 1 + split.getNumSplit();
+        }
+
+        /**
+         * Lower value has higher priority
+         * 
+         * @return
+         */
+        public int getPriority() {
+            return (state >>> 16) & 0xFF;
+        }
+
+        public void lowerThePrioity(int margin) {
+            int priority = getPriority() + margin;
+            state &= ~(0xFF << 16);
+            state |= (priority & 0xFF) << 16;
+        }
+
+        public boolean hasHit() {
+            return ((state >>> 24) & 1L) != 0;
+        }
+
+        public boolean isFinished() {
+            return (state & 0x1F) == 0x1F; // ACGT + split
+        }
+
+        public ACGT currentACGT() {
+            return ACGT.decode((byte) ((state >>> 5) & 0x7));
+        }
+
+        public void updateFlag(ACGT ch) {
+            this.state |= 1 << ch.code;
+        }
+
+        public void fillSearchFlags() {
+            this.state |= 0x1F;
+        }
+
+        public void updateSplitFlag() {
+            this.state |= 1 << 4;
+        }
+
+        public boolean isSplitChecked() {
+            return (state & (1 << 4)) != 0;
+        }
+
+        public boolean isChecked(ACGT ch) {
+            return (state & (1 << ch.code)) != 0;
+        }
+
+        SearchState(SuffixInterval currentSi, ACGT ch, Cursor cursor, SiSet si, FMSearchNFA automaton,
+                boolean hasMatch, int minK, int priority, SearchState split) {
+            this.currentSi = currentSi;
+            this.cursor = cursor;
+            this.siTable = si;
+            this.automaton = automaton;
+            this.state = ((ch.code & 0x7) << 5) | ((minK & 0xFF) << 8) | ((priority & 0xFF) << 16)
+                    | ((hasMatch ? 1 : 0) << 24);
+            this.split = split;
+        }
+
+        /**
+         * Initial forward search state
+         * 
+         * @param strand
+         * @param searchDirection
+         */
+        public SearchState(SuffixInterval currentSi, Cursor cursor, int priority) {
+            this(currentSi, ACGT.N, cursor, fmIndex.initSet(cursor.getSearchDirection()), new FMSearchNFA(k), false, 0,
+                    priority, null);
+            automaton.activateDiagonalStates();
+        }
+
+        String getUpdateFlag() {
+            StringBuilder s = new StringBuilder();
+            for (ACGT ch : ACGT.exceptN) {
+                s.append(isChecked(ch) ? ch.name() : ch.name().toLowerCase());
+            }
+            if (isSplitChecked())
+                s.append("^");
+            return s.toString();
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%sk%dp%d%s%s%s %s:%,d %s %s", hasHit() ? "*" : "", getLowerBoundOfK(), getPriority(),
+                    cursor, split == null ? " " : String.format(" split(%s) ", split.cursor), currentACGT(), currentSi,
+                    currentSi != null ? currentSi.range() : fmIndex.textSize(), getUpdateFlag(), siTable);
+        }
+
+        public int score() {
+            int nm = getLowerBoundOfK();
+            int mm = cursor.getProcessedBases() - nm;
+            return mm * config.matchScore - nm * config.mismatchPenalty;
+        }
+
+        public SearchState nextStateAfterSplit() {
+            updateSplitFlag();
+            // use the same automaton state
+            int minK = getLowerBoundOfK();
+            if (minK < k) {
+                Cursor[] newCursor = cursor.split();
+
+                SearchState newState = new SearchState(currentSi, currentACGT(), newCursor[0], siTable,
+                        automaton.nextStateAfterSplit(k), hasHit(), minK, getPriority(), null);
+                newState.split = new SearchState(null, ACGT.N, newCursor[1], fmIndex.initSet(newCursor[1]
+                        .getSearchDirection()), new FMSearchNFA(k).activateDiagonalStates(), false, minK,
+                        getPriority(), null);
+                return newState;
+            }
+            else
+                return null;
+        }
+
+        public SearchState nextState(ACGT ch, SiSet nextSi, QueryMask queryMask, StaircaseFilter staircaseFilter) {
+
+            NextState next = automaton.nextState(cursor, ch, queryMask, staircaseFilter);
+            if (next == null)
+                return null; // no match
+
+            int nextMinK = next.nextState.kOffset;
+
+            Cursor nextCursor = cursor.next();
+            SuffixInterval si = nextCursor.isForwardSearch() ? this.siTable.getForward(ch) : this.siTable
+                    .getBackward(ch);
+            return new SearchState(si, ch, nextCursor, nextSi, next.nextState, next.hasMatch, nextMinK, getPriority(),
+                    split);
+        }
+
+        public SearchState update(SearchState oldState, SearchState newState) {
+            if (oldState == this) {
+                return newState;
+            }
+            else {
+                SearchState prev = this;
+                while (prev.split != oldState) {
+                    prev = prev.split;
+                    if (prev == null)
+                        return null;
+                }
+                prev.split = newState;
+                return this;
+            }
+        }
+
     }
 
 }

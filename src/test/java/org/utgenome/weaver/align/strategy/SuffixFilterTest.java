@@ -144,7 +144,7 @@ public class SuffixFilterTest
 
     @Test
     public void clip() throws Exception {
-        align("AAGCCTAGGGTCTTT"); // 7S
+        align("AAGCCTAGTTAAAAAA"); // 11S
     }
 
     @Test
@@ -163,9 +163,9 @@ public class SuffixFilterTest
 
     @Test
     public void twoInsertion() throws Exception {
-        //     AAGCC--TAGTTT
-        //     AAGCCAATAGTTT  6M2I5M
-        align("AAGCCAATAGTTT");
+        //     AAGC--CTAGTTT
+        //     AAGCAACTAGTTT  6M2I5M
+        align("AAGCAACTAGTTT");
     }
 
 }
