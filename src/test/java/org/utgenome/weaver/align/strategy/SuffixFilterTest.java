@@ -124,22 +124,52 @@ public class SuffixFilterTest
 
     @Test
     public void forwardExact() throws Exception {
-        align("GCCTAGT");
+        AlignmentRecord a = align("GCCTAGT");
+        assertEquals("7M", a.cigar.toCIGARString());
+        assertEquals(3, a.start);
+        assertEquals(Strand.FORWARD, a.strand);
+        assertEquals(0, a.numMismatches);
     }
 
     @Test
     public void reverseExact() throws Exception {
-        align(new ACGTSequence("GCCTAGT").reverseComplement());
+        AlignmentRecord a = align(new ACGTSequence("GCCTAGT").reverseComplement());
+        assertEquals("7M", a.cigar.toCIGARString());
+        assertEquals(3, a.start);
+        assertEquals(Strand.REVERSE, a.strand);
+        assertEquals(0, a.numMismatches);
     }
 
     @Test
     public void splitExact() throws Exception {
-        align("AAGCCTTCCTTG");
+        AlignmentRecord a = align("AAGCCTATCCTTG");
+        assertEquals("7M", a.cigar.toCIGARString());
+        assertEquals(1, a.start);
+        assertEquals(Strand.FORWARD, a.strand);
+        assertEquals(0, a.numMismatches);
+        AlignmentRecord s = a.split;
+        assertNotNull(s);
+        assertEquals("6M", s.cigar.toCIGARString());
+        assertEquals(11, s.start);
+        assertEquals(Strand.FORWARD, s.strand);
+        assertEquals(0, s.numMismatches);
+
     }
 
     @Test
     public void splitExactReverse() throws Exception {
-        align(new ACGTSequence("AAGCCTTCCTTG").reverseComplement());
+        AlignmentRecord a = align(new ACGTSequence("AAGCCTATCCTTG").reverseComplement());
+        assertEquals("7M", a.cigar.toCIGARString());
+        assertEquals(1, a.start);
+        assertEquals(Strand.REVERSE, a.strand);
+        assertEquals(0, a.numMismatches);
+        AlignmentRecord s = a.split;
+        assertNotNull(s);
+        assertEquals("6M", s.cigar.toCIGARString());
+        assertEquals(11, s.start);
+        assertEquals(Strand.REVERSE, s.strand);
+        assertEquals(0, s.numMismatches);
+
     }
 
     @Test
@@ -149,7 +179,11 @@ public class SuffixFilterTest
 
     @Test
     public void longRead() throws Exception {
-        align("AAGCCTAGATTCCGTG");
+        AlignmentRecord a = align("AAGCCTAGATTCCGTG");
+        assertEquals(1, a.start);
+        assertEquals(Strand.FORWARD, a.strand);
+        assertEquals(2, a.numMismatches);
+        assertEquals("16M", a.cigar.toCIGARString());
     }
 
     @Test
@@ -161,21 +195,33 @@ public class SuffixFilterTest
     public void oneDeletion() throws Exception {
         //     AAGCCTAGTTT 
         //     AAGCCT-GTTT  6M1D4M
-        align("AAGCCTGTTT");
+        AlignmentRecord a = align("AAGCCTGTTT");
+        assertEquals(1, a.start);
+        assertEquals(Strand.FORWARD, a.strand);
+        assertEquals(1, a.numMismatches);
+        assertEquals("6M1D4M", a.cigar.toCIGARString());
     }
 
     @Test
     public void oneInsertion() throws Exception {
         //     AAGCCT-AGTT
         //     AAGCCTCAGTT  6M1I4M
-        align("AAGCCTCAGTT");
+        AlignmentRecord a = align("AAGCCTCAGTT");
+        assertEquals(1, a.start);
+        assertEquals(Strand.FORWARD, a.strand);
+        assertEquals(1, a.numMismatches);
+        assertEquals("6M1I4M", a.cigar.toCIGARString());
     }
 
     @Test
     public void twoInsertion() throws Exception {
         //     AAGC--CTAGTTT
         //     AAGCAACTAGTTT  6M2I5M
-        align("AAGCAACTAGTTT");
+        AlignmentRecord a = align("AAGCAACTAGTTT");
+        assertEquals(1, a.start);
+        assertEquals(Strand.FORWARD, a.strand);
+        assertEquals(1, a.numMismatches);
+        assertEquals("4M2I7M", a.cigar.toCIGARString());
     }
 
 }

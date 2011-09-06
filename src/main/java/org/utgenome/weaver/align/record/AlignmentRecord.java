@@ -139,7 +139,10 @@ public class AlignmentRecord
             column.add(0); // insert size
         }
         else {
-            column.add(split.chr);
+            if (!"*".equals(this.chr) && this.chr.equals(split.chr))
+                column.add("=");
+            else
+                column.add(split.chr);
             column.add(split.start);
             column.add(split.end - start);
         }
