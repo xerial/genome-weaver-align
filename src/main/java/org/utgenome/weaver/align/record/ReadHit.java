@@ -47,7 +47,7 @@ public class ReadHit
     public ReadHit      nextSplit;
 
     public static ReadHit noHit(Strand strand) {
-        return new ReadHit("", 0, 0, 0, strand, null, 0, null);
+        return new ReadHit("", 0, 0, 0, strand, new CIGAR(), 0, null);
     }
 
     public ReadHit(String chr, long pos, int matchLength, int diff, Strand strand, CIGAR cigar, int numHits,
@@ -88,11 +88,11 @@ public class ReadHit
     public int getTotalScore(AlignmentScoreConfig config) {
         int fragmentLength = matchLength + diff;
 
-        int score = matchLength * config.matchScore + diff * config.mismatchPenalty;
+        int score = matchLength * config.matchScore - diff * config.mismatchPenalty;
         if (nextSplit == null)
             return score;
         else
-            return score + config.splitOpenPenalty + nextSplit.getTotalScore(config);
+            return score - config.splitOpenPenalty + nextSplit.getTotalScore(config);
     }
 
     public String getAlignmentStateSingle() {

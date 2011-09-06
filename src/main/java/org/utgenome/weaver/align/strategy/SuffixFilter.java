@@ -303,7 +303,7 @@ public class SuffixFilter
                 }
                 else {
                     // report unmapped read
-                    report(new ReadHit("*", 0, 0, -1, Strand.FORWARD, null, 0, null), 0);
+                    report(new ReadHit("*", 0, 0, -1, Strand.FORWARD, new CIGAR(), 0, null), 0);
                 }
 
             }
@@ -407,7 +407,7 @@ public class SuffixFilter
                 //minMismatches = Math.min(scanF.numMismatches, Math.min(scanR.numMismatches, k));
             }
 
-            final int fmIndexSearchUpperBound = m * 10;
+            final int fmIndexSearchUpperBound = m * 20;
             // Iterative search for k>=0
             queue_loop: while (!queue.isEmpty()) {
                 if (numFMIndexSearches > fmIndexSearchUpperBound)
@@ -440,7 +440,7 @@ public class SuffixFilter
                 if (c.isFinished())
                     continue;
 
-                // lower bound of the number of mismatches
+                // nm: lower bound of the number of mismatches
                 int nm = c.getLowerBoundOfK();
                 if (nm > minMismatches) {
                     ++numCutOff;
@@ -450,6 +450,16 @@ public class SuffixFilter
                 int allowedMismatches = minMismatches - nm;
                 if (allowedMismatches < 0)
                     continue;
+
+                {
+                    int scoreUB = baseState.upperBoundOfScore();
+                    if (scoreUB < bestScore) {
+                        ++numCutOff;
+                        if (_logger.isTraceEnabled())
+                            _logger.trace("cutoff: score upper bound: %d, current best score: %d", scoreUB, bestScore);
+                        continue;
+                    }
+                }
 
                 final int strandIndex = c.cursor.getStrand().index;
 
@@ -488,20 +498,21 @@ public class SuffixFilter
 
                 // Traverse the suffix arrays for all of A, C, G and T                 
                 // Add states for every bases
-                StaircaseFilter sf = getStairCaseFilter(m);
-                for (ACGT ch : ACGT.exceptN) {
-
-                    if (!c.isChecked(ch)) {
-                        c.updateFlag(ch);
-                        if (!c.siTable.isEmpty(ch)) {
-                            SiSet nextSi = next(c, ch);
-                            ++numFMIndexSearches;
-                            SearchState nextState = c.nextState(ch, nextSi, queryMask[strandIndex], sf);
-                            if (nextState != null) {
-                                queue.add(baseState.update(c, nextState));
+                {
+                    StaircaseFilter sf = getStairCaseFilter(m);
+                    for (ACGT ch : ACGT.exceptN) {
+                        if (!c.isChecked(ch)) {
+                            c.updateFlag(ch);
+                            if (!c.siTable.isEmpty(ch)) {
+                                SiSet nextSi = next(c, ch);
+                                ++numFMIndexSearches;
+                                SearchState nextState = c.nextState(ch, nextSi, queryMask[strandIndex], sf);
+                                if (nextState != null) {
+                                    queue.add(baseState.update(c, nextState));
+                                }
+                                else
+                                    ++numFiltered;
                             }
-                            else
-                                ++numFiltered;
                         }
                     }
                 }
@@ -799,7 +810,22 @@ public class SuffixFilter
             int numSplits = getNumSplit();
             int nm = getLowerBoundOfK() - numSplits;
             int mm = cursor.getProcessedBases() - nm;
-            return mm * config.matchScore - nm * config.mismatchPenalty - numSplits * config.splitOpenPenalty;
+            int score = mm * config.matchScore - nm * config.mismatchPenalty - numSplits * config.splitOpenPenalty;
+            if (split == null)
+                return score;
+            else
+                return score + split.score();
+        }
+
+        public int upperBoundOfScore() {
+            int numSplits = getNumSplit();
+            int nm = getLowerBoundOfK() - numSplits;
+            int mm = cursor.getProcessedBases() + cursor.getRemainingBases() - nm;
+            int score = mm * config.matchScore - nm * config.mismatchPenalty - numSplits * config.splitOpenPenalty;
+            if (split == null)
+                return score;
+            else
+                return score + split.upperBoundOfScore();
         }
 
         public SearchState nextStateAfterSplit() {

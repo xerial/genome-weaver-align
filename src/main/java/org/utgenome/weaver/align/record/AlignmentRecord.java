@@ -30,8 +30,8 @@ import org.utgenome.UTGBException;
 import org.utgenome.gwt.utgb.client.bio.SAMReadFlag;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.CIGAR;
-import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.CIGAR.Type;
+import org.utgenome.weaver.align.Strand;
 import org.xerial.util.StringUtil;
 
 /**
@@ -48,7 +48,7 @@ public class AlignmentRecord
     public int             start;
     public int             end;
     public int             numMismatches = 0;
-    public CIGAR           cigar;
+    private CIGAR          cigar;
     public String          querySeq;
     public String          qual;
     public int             score;
@@ -111,6 +111,7 @@ public class AlignmentRecord
                 column.add("NM:i:" + numMismatches);
             if (alignmentState != null)
                 column.add("XT:Z:" + alignmentState);
+            column.add(String.format("X0:i:%d", numBestHits));
         }
         String line = StringUtil.join(column, "\t");
         if (split != null)
@@ -144,13 +145,13 @@ public class AlignmentRecord
 
         if (hit.nextSplit == null) {
             // TODO alignment score
-            //cigar.add(hit.matchLength, Type.Matches);
             AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos, (int) hit.pos
                     + hit.matchLength, hit.getTotalDifferences(), hit.cigar, query.toString(), qual, 1, numHits,
                     hit.getAlignmentState(), null);
             return rec;
         }
         else {
+
             ReadHit split = hit.nextSplit;
             ACGTSequence s1 = query.subSequence(0, hit.matchLength);
             ACGTSequence s2 = query.subSequence(hit.matchLength, m);

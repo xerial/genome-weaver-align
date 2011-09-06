@@ -41,6 +41,11 @@ public class SmithWatermanAlign extends GenomeWeaverCommand
     private static Logger _logger = Logger.getLogger(SmithWatermanAlign.class);
 
     @Override
+    public String name() {
+        return "sw-align";
+    }
+
+    @Override
     public String getOneLineDescription() {
         return "Simple Smith Waterman alignment";
     }
