@@ -345,7 +345,7 @@ public class SuffixFilter
             // Check whether the read contains too many Ns
             {
                 long countN = q[0].fastCount(ACGT.N, 0, m);
-                if (countN > config.maximumEditDistances) {
+                if (countN > k) {
                     return; // skip this alignment
                 }
 
