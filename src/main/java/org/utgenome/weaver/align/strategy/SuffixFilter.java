@@ -76,7 +76,7 @@ public class SuffixFilter
     private final FMIndexOnGenome           fmIndex;
     private final AlignmentConfig           config;
     private final ACGTSequence              reference;
-    private final int                       k;                                                            // maximum number of mismatches allowed
+    //private final int                       k;                                                            // maximum number of mismatches allowed
 
     /**
      * query length -> staircase filter of this query length
@@ -141,7 +141,7 @@ public class SuffixFilter
         this.fmIndex = fmIndex;
         this.reference = reference;
         this.config = config;
-        this.k = config.maximumEditDistances;
+        //this.k = config.maximumEditDistances;
     }
 
     public List<AlignmentRecord> align(ACGTSequence seq) throws Exception {
@@ -224,7 +224,8 @@ public class SuffixFilter
         private AlignmentResultHolder resultHolder   = new AlignmentResultHolder();
         private Reporter              out;
 
-        private int                   minMismatches  = k + 1;
+        private final int             k;
+        private int                   minMismatches;
         private int                   maxMatchLength = 0;
         private int                   bestScore      = -1;
 
@@ -234,6 +235,14 @@ public class SuffixFilter
             this.q[0] = read.getRead(0);
             this.q[1] = q[0].complement();
             this.out = out;
+
+            if (config.maximumEditDistances > 0 && config.maximumEditDistances < 1) {
+                this.k = (int) Math.floor(m * config.maximumEditDistances);
+            }
+            else {
+                this.k = (int) config.maximumEditDistances;
+            }
+            this.minMismatches = k + 1;
         }
 
         /**
@@ -380,11 +389,11 @@ public class SuffixFilter
                 if (scanF.numMismatches <= k) {
                     if (scanF.longestMatch.start != 0 && scanF.longestMatch.start < m) {
                         // add bidirectional search state
-                        sF = new SearchState(null, new Cursor(Strand.FORWARD, SearchDirection.BidirectionalForward, 0,
-                                m, scanF.longestMatch.start, scanF.longestMatch.start), scanF.numMismatches);
+                        sF = new SearchState(k, null, new Cursor(Strand.FORWARD, SearchDirection.BidirectionalForward,
+                                0, m, scanF.longestMatch.start, scanF.longestMatch.start), scanF.numMismatches);
                     }
                     else {
-                        sF = new SearchState(null, new Cursor(Strand.FORWARD, SearchDirection.Forward, 0, m, 0, 0),
+                        sF = new SearchState(k, null, new Cursor(Strand.FORWARD, SearchDirection.Forward, 0, m, 0, 0),
                                 scanF.numMismatches);
                     }
                 }
@@ -392,11 +401,11 @@ public class SuffixFilter
                 if (scanR.numMismatches <= k) {
                     if (scanR.longestMatch.start != 0 && scanR.longestMatch.start < m) {
                         // add bidirectional search state
-                        sR = new SearchState(null, new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward, 0,
-                                m, scanR.longestMatch.start, scanR.longestMatch.start), scanR.numMismatches);
+                        sR = new SearchState(k, null, new Cursor(Strand.REVERSE, SearchDirection.BidirectionalForward,
+                                0, m, scanR.longestMatch.start, scanR.longestMatch.start), scanR.numMismatches);
                     }
                     else {
-                        sR = new SearchState(null, new Cursor(Strand.REVERSE, SearchDirection.Forward, 0, m, 0, 0),
+                        sR = new SearchState(k, null, new Cursor(Strand.REVERSE, SearchDirection.Forward, 0, m, 0, 0),
                                 scanR.numMismatches);
                     }
                 }
@@ -522,7 +531,7 @@ public class SuffixFilter
                 if (baseState.getNumSplit() < config.numSplitAlowed && nm + 1 <= minMismatches) {
                     final int index = c.cursor.getNextACGTIndex();
                     if (index > config.indelEndSkip && m - index >= config.indelEndSkip) {
-                        SearchState nextState = c.nextStateAfterSplit();
+                        SearchState nextState = c.nextStateAfterSplit(k);
                         if (nextState != null) {
                             queue.add(baseState.update(c, nextState));
                         }
@@ -621,7 +630,9 @@ public class SuffixFilter
 
             // TODO allow clipped alignment (issue 40)
             c.setLowerBoundOfK(newK);
-            resultHolder.add(alignment);
+
+            // Reorder splits in ascending order
+            resultHolder.add(alignment.sortSplits());
         }
 
         private int numFMIndexSearches  = 0;
@@ -778,7 +789,7 @@ public class SuffixFilter
          * @param strand
          * @param searchDirection
          */
-        public SearchState(SuffixInterval currentSi, Cursor cursor, int priority) {
+        public SearchState(int k, SuffixInterval currentSi, Cursor cursor, int priority) {
             this(currentSi, ACGT.N, cursor, fmIndex.initSet(cursor.getSearchDirection()), new ReadAlignmentNFA(k),
                     false, 0, priority, null);
             automaton.activateDiagonalStates();
@@ -828,7 +839,7 @@ public class SuffixFilter
                 return score + split.upperBoundOfScore();
         }
 
-        public SearchState nextStateAfterSplit() {
+        public SearchState nextStateAfterSplit(int k) {
             updateSplitFlag();
             // use the same automaton state
             int minK = getLowerBoundOfK();

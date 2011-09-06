@@ -34,8 +34,8 @@ import org.xerial.util.opt.Option;
  */
 public class AlignmentScoreConfig
 {
-    @Option(symbol = "k", description = "maximum edit distances")
-    public int     maximumEditDistances   = 2;
+    @Option(symbol = "k", description = "maximum edit distances. float (percentage of read length) or int(num mismatches). [0.1 (10%)] ")
+    public float   maximumEditDistances   = 0.1f;
 
     @Option(symbol = "g", description = "# of gap open allowed. default=1")
     public int     numGapOpenAllowed      = 1;

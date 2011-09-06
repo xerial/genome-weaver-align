@@ -49,6 +49,7 @@ public class SuffixFilterTest
     @BeforeClass
     public static void setUp() {
         fmIndex = FMIndexOnGenome.buildFromSequence("seq", ref);
+        config.maximumEditDistances = 2;
     }
 
     public static AlignmentRecord align(String query) throws Exception {
