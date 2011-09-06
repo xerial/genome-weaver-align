@@ -41,11 +41,11 @@ public class BWAState
     }
 
     public boolean gapExtensionIsAllowed(AlignmentScoreConfig config) {
-        return score.numMismatches + score.numGapExtend < config.maximumEditDistances;
+        return score.numMismatches + score.numGapExtend < config.getMaximumEditDistances(cursor.getFragmentLength());
     }
 
     public boolean mismatchIsAllowed(AlignmentScoreConfig config) {
-        return score.numMismatches < config.maximumEditDistances;
+        return score.numMismatches < config.getMaximumEditDistances(cursor.getFragmentLength());
     }
 
     @Override

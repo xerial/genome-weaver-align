@@ -181,7 +181,7 @@ public class BidirectionalBWT
         if (_logger.isTraceEnabled())
             _logger.trace("query: " + qF);
 
-        if (qF.fastCount(ACGT.N, 0, qF.textSize()) > config.maximumEditDistances) {
+        if (qF.fastCount(ACGT.N, 0, qF.textSize()) > config.getMaximumEditDistances(qF.length())) {
             // too many Ns in the query sequence
             return;
         }
@@ -234,7 +234,7 @@ public class BidirectionalBWT
 
             int posInRead = c.cursor.getProcessedBases();
 
-            int remainingDist = config.maximumEditDistances
+            int remainingDist = config.getMaximumEditDistances(m)
                     - (c.score.numMismatches + c.score.numGapOpens + c.score.numGapExtend);
             if (remainingDist < 0)
                 continue;

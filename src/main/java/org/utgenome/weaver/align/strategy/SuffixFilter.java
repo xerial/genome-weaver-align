@@ -236,12 +236,7 @@ public class SuffixFilter
             this.q[1] = q[0].complement();
             this.out = out;
 
-            if (config.maximumEditDistances > 0 && config.maximumEditDistances < 1) {
-                this.k = (int) Math.floor(m * config.maximumEditDistances);
-            }
-            else {
-                this.k = (int) config.maximumEditDistances;
-            }
+            this.k = config.getMaximumEditDistances(m);
             this.minMismatches = k + 1;
         }
 
@@ -462,7 +457,7 @@ public class SuffixFilter
 
                 {
                     int scoreUB = baseState.upperBoundOfScore();
-                    if (scoreUB < bestScore) {
+                    if (scoreUB < 0 || scoreUB < bestScore) {
                         ++numCutOff;
                         if (_logger.isTraceEnabled())
                             _logger.trace("cutoff: score upper bound: %d, current best score: %d", scoreUB, bestScore);
