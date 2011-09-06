@@ -24,6 +24,10 @@
 //--------------------------------------
 package org.utgenome.weaver.align.record;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+
 import org.utgenome.weaver.align.AlignmentScoreConfig;
 import org.utgenome.weaver.align.CIGAR;
 import org.utgenome.weaver.align.Strand;
@@ -107,6 +111,18 @@ public class ReadHit
             return prefix + nextSplit.getAlignmentState();
     }
 
+    public String getAlignmentState(ReadHit head) {
+        StringBuilder s = new StringBuilder();
+        for (ReadHit c = head; c != null; c = c.nextSplit) {
+            String state = getAlignmentStateSingle();
+            if (c != this) {
+                state = state.toLowerCase();
+            }
+            s.append(state);
+        }
+        return s.toString();
+    }
+
     public String getCigarConcatenated() {
         if (nextSplit == null)
             return cigar.toCIGARString();
@@ -118,4 +134,32 @@ public class ReadHit
     public String toString() {
         return SilkLens.toSilk(this);
     }
+
+    public ReadHit sortSplits() {
+        if (this.nextSplit == null)
+            return this;
+
+        // Sort hits in the order of (chr, start) 
+        ArrayList<ReadHit> r = new ArrayList<ReadHit>();
+        for (ReadHit h = this; h != null; h = h.nextSplit) {
+            r.add(h);
+        }
+        Collections.sort(r, new Comparator<ReadHit>() {
+            @Override
+            public int compare(ReadHit o1, ReadHit o2) {
+                int diff = o1.chr.compareTo(o2.chr);
+                if (diff == 0)
+                    diff = (int) (o1.pos - o2.pos);
+                return diff;
+            }
+        });
+
+        // Fix split chain
+        for (int i = 0; i < r.size() - 1; ++i) {
+            r.get(i).nextSplit = r.get(i + 1);
+        }
+        r.get(r.size() - 1).nextSplit = null;
+        return r.get(0);
+    }
+
 }

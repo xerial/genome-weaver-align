@@ -48,7 +48,7 @@ public class AlignmentRecord
     public int             start;
     public int             end;
     public int             numMismatches = 0;
-    private CIGAR          cigar;
+    public CIGAR           cigar;
     public String          querySeq;
     public String          qual;
     public int             score;
@@ -90,20 +90,59 @@ public class AlignmentRecord
     }
 
     public String toSAMLine() {
+        return toSAMLine(true, true);
+    }
+
+    protected String toSAMLine(boolean isFirst, boolean eachFragmentIsMapped) {
         ArrayList<Object> column = new ArrayList<Object>();
         column.add(readName);
         int flag = 0;
         if (strand == Strand.REVERSE)
             flag |= SAMReadFlag.FLAG_STRAND_OF_QUERY;
+        if (isFirst) {
+            flag |= SAMReadFlag.FLAG_IS_FIRST_READ;
 
+            for (AlignmentRecord r = this; r != null; r = r.split) {
+                if (r.numBestHits <= 0) {
+                    eachFragmentIsMapped = false;
+                    break;
+                }
+            }
+        }
+        else if (split == null) {
+            // last read
+            flag |= SAMReadFlag.FLAG_IS_SECOND_READ;
+        }
+
+        if (eachFragmentIsMapped)
+            flag |= SAMReadFlag.FLAG_MAPPED_IN_A_PROPER_PAIR;
+
+        // when the next fragment is unmapped
+        {
+            if (numBestHits <= 0) {
+                flag |= SAMReadFlag.FLAG_QUERY_IS_UNMAPPED;
+            }
+            if (split != null && split.numBestHits <= 0) {
+                flag |= SAMReadFlag.FLAG_MATE_IS_UNMAPPED;
+            }
+        }
+
+        // Add SAM format columns
         column.add(flag);
         column.add(chr);
         column.add(start);
         column.add(score);
         column.add(getCigar());
-        column.add("*"); // pair chr
-        column.add(0); // pair start
-        column.add(0); // insert size
+        if (split == null) {
+            column.add("*"); // pair chr
+            column.add(0); // pair start
+            column.add(0); // insert size
+        }
+        else {
+            column.add(split.chr);
+            column.add(split.start);
+            column.add(split.end - start);
+        }
         column.add(querySeq);
         column.add(qual == null ? "*" : qual); // quality value
         if (numBestHits > 0) {
@@ -115,7 +154,7 @@ public class AlignmentRecord
         }
         String line = StringUtil.join(column, "\t");
         if (split != null)
-            line += "\n" + split.toSAMLine();
+            line += "\n" + split.toSAMLine(false, eachFragmentIsMapped);
 
         return line;
     }
@@ -152,6 +191,7 @@ public class AlignmentRecord
         }
         else {
 
+            // TODO generalize this part to two or more fragments
             ReadHit split = hit.nextSplit;
             ACGTSequence s1 = query.subSequence(0, hit.matchLength);
             ACGTSequence s2 = query.subSequence(hit.matchLength, m);
@@ -163,54 +203,59 @@ public class AlignmentRecord
             if (hit.isUnique()) {
                 if (split.isUnique()) {
                     if (hit.chr.equals(split.chr)) {
+                        // Both reads are unique and in the same chromosome
                         // TODO score, quality value trimming
                         AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos,
                                 (int) hit.pos + hit.matchLength, hit.diff, hit.cigar, s1.toString(), q1, 1, 1,
-                                hit.getAlignmentState(), null);
+                                hit.getAlignmentState(hit), null);
                         AlignmentRecord splitRec = new AlignmentRecord(read.name(), split.chr, split.strand,
                                 (int) split.pos, (int) split.pos + split.matchLength, split.diff, split.cigar,
-                                s2.toString(), q2, 1, 1, split.getAlignmentState(), null);
+                                s2.toString(), q2, 1, 1, split.getAlignmentState(hit), null);
                         rec.split = splitRec;
                         return rec;
                     }
                     else {
                         // use longer alignment as a base
                         if (hit.matchLength >= split.matchLength) {
+                            // first split is longer than split
                             CIGAR cigar = new CIGAR(hit.cigar);
                             cigar.add(split.matchLength, Type.SoftClip);
                             AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos,
                                     (int) hit.pos + m, hit.diff, cigar, query.toString(), qual, 1, numHits,
-                                    hit.getAlignmentState(), null);
+                                    hit.getAlignmentState(hit), null);
                             return rec;
                         }
                         else {
+                            // next split is longer then head
                             CIGAR cigar = new CIGAR(hit.cigar);
                             cigar.add(split.cigar);
                             AlignmentRecord rec = new AlignmentRecord(read.name(), split.chr, split.strand,
                                     (int) split.pos - hit.matchLength, (int) split.pos - hit.matchLength + m,
-                                    split.diff, cigar, query.toString(), qual, 1, numHits, hit.getAlignmentState(),
-                                    null);
+                                    split.diff, cigar, query.toString(), qual, 1, numHits,
+                                    split.getAlignmentState(hit), null);
                             return rec;
                         }
                     }
                 }
                 else {
+                    // head is unique but split is repeat
                     CIGAR cigar = new CIGAR(hit.cigar);
                     cigar.add(split.matchLength, Type.SoftClip);
                     AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos,
                             (int) hit.pos + m, hit.diff, cigar, query.toString(), qual, 1, numHits,
-                            hit.getAlignmentState(), null);
+                            hit.getAlignmentState(hit), null);
                     return rec;
                 }
             }
             else {
                 if (split.isUnique()) {
+                    // hed is repeat but split is unique
                     CIGAR cigar = new CIGAR();
                     cigar.add(hit.matchLength, Type.SoftClip);
                     cigar.add(split.cigar);
                     AlignmentRecord rec = new AlignmentRecord(read.name(), split.chr, split.strand, (int) split.pos
                             - hit.matchLength, (int) split.pos - hit.matchLength + m, split.diff, cigar,
-                            query.toString(), qual, 1, numHits, hit.getAlignmentState(), null);
+                            query.toString(), qual, 1, numHits, split.getAlignmentState(hit), null);
                     return rec;
                 }
 
