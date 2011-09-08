@@ -469,7 +469,7 @@ public class ACGTSequence implements LSeq, GenomeSequence
                     long rMask = (eOffset == 0) ? 0L : ~((1L << (64 - eOffset)) - 1);
                     mask &= rMask;
                 }
-                count += countOneBit(seq[sPos * 3] & mask);
+                count += Long.bitCount(seq[sPos * 3] & mask);
             }
         }
         else {
@@ -500,7 +500,7 @@ public class ACGTSequence implements LSeq, GenomeSequence
                 r &= 0x5555555555555555L;
                 r &= ~nFlag;
                 r &= mask;
-                count += countOneBit(r);
+                count += Long.bitCount(r);
             }
         }
 
@@ -540,10 +540,10 @@ public class ACGTSequence implements LSeq, GenomeSequence
                 r &= 0x5555555555555555L;
                 r &= ~nFlag;
                 r &= mask;
-                count[base.code] += countOneBit(r);
+                count[base.code] += Long.bitCount(r);
             }
 
-            count[ACGT.N.code] += countOneBit(nFlag & mask);
+            count[ACGT.N.code] += Long.bitCount(nFlag & mask);
         }
 
         return count;

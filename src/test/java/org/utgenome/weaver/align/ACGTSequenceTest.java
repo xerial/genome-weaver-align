@@ -292,4 +292,34 @@ public class ACGTSequenceTest
 
     }
 
+    final long N = 100000000;
+
+    @Test
+    public void popcount() throws Exception {
+
+        StopWatch s1 = new StopWatch();
+        {
+            s1.reset();
+            for (long i = 0; i < N; ++i) {
+                long l = ACGTSequence.countOneBit(i);
+            }
+        }
+
+        _logger.debug("pop count: %.3f", s1.getElapsedTime());
+    }
+
+    @Test
+    public void bitcount() throws Exception {
+
+        StopWatch s1 = new StopWatch();
+        {
+            s1.reset();
+            for (long i = 0; i < N; ++i) {
+                long l = Long.bitCount(i);
+            }
+        }
+
+        _logger.debug("bit count: %.3f", s1.getElapsedTime());
+    }
+
 }
