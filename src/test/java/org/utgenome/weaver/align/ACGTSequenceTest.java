@@ -292,7 +292,7 @@ public class ACGTSequenceTest
 
     }
 
-    final long N = 100000000;
+    final long N = 1000;
 
     @Test
     public void popcount() throws Exception {
@@ -305,7 +305,7 @@ public class ACGTSequenceTest
             }
         }
 
-        _logger.debug("pop count: %.3f", s1.getElapsedTime());
+        _logger.debug("pop count: %.5f", s1.getElapsedTime());
     }
 
     @Test
@@ -319,7 +319,7 @@ public class ACGTSequenceTest
             }
         }
 
-        _logger.debug("bit count: %.3f", s1.getElapsedTime());
+        _logger.debug("bit count: %.5f", s1.getElapsedTime());
     }
 
 }
