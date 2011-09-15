@@ -41,14 +41,14 @@ public class SmithWatermanAligner
 
     public static class Alignment
     {
-        public final CIGAR        cigar;
-        public final int          score;
-        public final int          numMismatches;
-        public final int          pos;          // 0-based leftmost position of the clipped sequence
-        public final CharSequence rseq;         // reference sequence
-        public final CharSequence qseq;         // query sequence
+        public final CIGAR          cigar;
+        public final int            score;
+        public final int            numMismatches;
+        public final int            pos;          // 0-based leftmost position of the clipped sequence
+        public final GenomeSequence rseq;         // reference sequence
+        public final GenomeSequence qseq;         // query sequence
 
-        public Alignment(CIGAR cigar, int score, int numMisamatches, CharSequence rseq, int pos, CharSequence qseq) {
+        public Alignment(CIGAR cigar, int score, int numMisamatches, GenomeSequence rseq, int pos, GenomeSequence qseq) {
             this.cigar = cigar;
             this.score = score;
             this.numMismatches = numMisamatches;
@@ -142,7 +142,7 @@ public class SmithWatermanAligner
             return String.format("R: %s\n   %s\nQ: %s", r.toString(), s.toString(), q.toString());
         }
 
-        private char getChar(CharSequence seq, int index) {
+        private char getChar(GenomeSequence seq, int index) {
             return (index < seq.length() && index >= 0) ? seq.charAt(index) : ' ';
         }
 
@@ -327,8 +327,6 @@ public class SmithWatermanAligner
 
         // trace back
         StringBuilder cigar = new StringBuilder();
-        StringBuilder a1 = new StringBuilder();
-        StringBuilder a2 = new StringBuilder();
 
         int leftMostPos = 0; // for seq1 
 
@@ -342,11 +340,9 @@ public class SmithWatermanAligner
 
         // Append clipped sequences
         while (col > maxCol) {
-            a1.append(ref.charAt(col - 1));
             col--;
         }
         while (row > maxRow) {
-            a2.append(Character.toLowerCase(query.charAt(row - 1)));
             row--;
         }
 
@@ -367,20 +363,20 @@ public class SmithWatermanAligner
             switch (path) {
             case DIAGONAL:
                 // match
-                cigar.append("M");
-                a1.append(ref.charAt(col - 1));
-                a2.append(query.charAt(row - 1));
                 leftMostPos = col - 1;
-                if (!isMatch)
+                if (!isMatch) {
                     diff++;
+                    cigar.append("X");
+                }
+                else {
+                    cigar.append("M");
+                }
                 col--;
                 row--;
                 break;
             case LEFT:
                 // insertion
                 cigar.append("I");
-                a1.append("-");
-                a2.append(query.charAt(row - 1));
                 leftMostPos = col - 1;
                 diff++;
                 row--;
@@ -388,8 +384,6 @@ public class SmithWatermanAligner
             case UP:
                 // deletion
                 cigar.append("D");
-                a1.append(ref.charAt(col - 1));
-                a2.append("-");
                 diff++;
                 col--;
                 break;
@@ -397,17 +391,10 @@ public class SmithWatermanAligner
                 while (col >= 1 || row >= 1) {
                     if (row >= 1) {
                         cigar.append("S");
-                        a1.append(col >= 1 ? ref.charAt(col - 1) : ' ');
-                        a2.append(Character.toLowerCase(query.charAt(row - 1)));
-                    }
-                    else {
-                        a1.append(col >= 1 ? ref.charAt(col - 1) : ' ');
-                        a2.append(' ');
                     }
                     col--;
                     row--;
                 }
-
                 break traceback; // exit the loop
             }
         }
@@ -435,8 +422,7 @@ public class SmithWatermanAligner
             compactCigar.append(prev);
         }
 
-        return new Alignment(new CIGAR(compactCigar.toString()), maxScore, diff, a1.reverse().toString(), leftMostPos,
-                a2.reverse().toString());
+        return new Alignment(new CIGAR(compactCigar.toString()), maxScore, diff, ref, leftMostPos, query);
     }
 
     public static class StringWrapper implements GenomeSequence

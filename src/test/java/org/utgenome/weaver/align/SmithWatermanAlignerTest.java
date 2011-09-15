@@ -53,9 +53,17 @@ public class SmithWatermanAlignerTest
     @Test
     public void align() throws Exception {
         Alignment alignment = bandedAlign("GATATAGAGATCTGGCCTAG", "TAGAGAT");
-        assertEquals("7M", alignment.cigar);
+        assertEquals("7M", alignment.cigar.toString());
         assertEquals(4, alignment.pos);
         assertEquals(0, alignment.numMismatches);
+    }
+
+    @Test
+    public void alignMismatch() throws Exception {
+        Alignment alignment = bandedAlign("GATATAGAGATCTGGCCTAG", "TATACAGATCTGGCCTAG");
+        assertEquals("4M1X13M", alignment.cigar.toString());
+        assertEquals(2, alignment.pos);
+        assertEquals(1, alignment.numMismatches);
     }
 
     @Test
@@ -65,7 +73,7 @@ public class SmithWatermanAlignerTest
         config.gapExtensionPenalty = 2;
         Alignment alignment = bandedAlign("TATACCAAGATATAGATCTGGCAAGTGTGTTAT", "TACCAAGATATAGAGATCTGGCAAGTGTGTTAT",
                 config);
-        assertEquals("11M2I20M", alignment.cigar);
+        assertEquals("11M2I20M", alignment.cigar.toString());
         assertEquals(2, alignment.pos);
         assertEquals(2, alignment.numMismatches);
     }
@@ -77,7 +85,7 @@ public class SmithWatermanAlignerTest
         config.gapExtensionPenalty = 2;
         Alignment alignment = bandedAlign("TATACCAAGATATAGAGATCTGGCAAGTGTGTTAT", "TACCAAGATATAGATCTGGCAAGTGTGTTAT",
                 config);
-        assertEquals("11M2D20M", alignment.cigar);
+        assertEquals("11M2D20M", alignment.cigar.toString());
         assertEquals(2, alignment.pos);
         assertEquals(2, alignment.numMismatches);
     }
@@ -85,7 +93,7 @@ public class SmithWatermanAlignerTest
     @Test
     public void clippedAlignment() throws Exception {
         Alignment alignment = bandedAlign("ATTTGTATTATACCAAGAT", "ACCGGAAGGACCAAGAT");
-        assertEquals("9S8M", alignment.cigar);
+        assertEquals("9S8M", alignment.cigar.toString());
         assertEquals(11, alignment.pos);
         assertEquals(0, alignment.numMismatches);
     }
