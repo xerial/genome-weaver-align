@@ -28,6 +28,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.utgenome.format.fasta.CompactFASTA;
 import org.utgenome.format.fasta.FASTAPullParser;
@@ -64,16 +66,25 @@ public class PackFasta extends GenomeWeaverCommand
         reverse(forwardDB, reverseDB);
     }
 
-    protected static void encodeFASTA(String fastaFile) throws IOException {
-        BWTFiles forwardDB = new BWTFiles(fastaFile, Strand.FORWARD);
-        _logger.info("input FASTA file: " + fastaFile);
+    public static class PackedFASTA
+    {
+        public final ACGTSequence        sequence;
+        public final List<SequenceIndex> sequenceIndex;
 
+        public PackedFASTA(ACGTSequence sequence, List<SequenceIndex> sequenceIndex) {
+            this.sequence = sequence;
+            this.sequenceIndex = sequenceIndex;
+        }
+
+    }
+
+    public static PackedFASTA encode(FASTAPullParser fasta) throws IOException {
+
+        ACGTSequence packed = new ACGTSequence();
+        List<SequenceIndex> sequenceIndex = new ArrayList<SequenceIndex>();
         long totalSize = -1;
         {
             // Read the input FASTA file, then encode the sequences using the IUPAC code
-            SilkWriter indexOut = new SilkWriter(new BufferedWriter(new FileWriter(forwardDB.pacIndex())));
-            ACGTSequence packed = new ACGTSequence();
-            FASTAPullParser fasta = new FASTAPullParser(new File(fastaFile));
             long lineCount = 1;
             long offset = 0;
             for (String desc; (desc = fasta.nextDescriptionLine()) != null; lineCount++) {
@@ -88,20 +99,34 @@ public class PackFasta extends GenomeWeaverCommand
                 }
                 long pos = packed.textSize();
                 long sequenceSize = pos - offset;
-                SequenceIndex index = new SequenceIndex(seqName, desc, sequenceSize, offset);
+                sequenceIndex.add(new SequenceIndex(seqName, desc, sequenceSize, offset));
+                offset = pos;
+            }
+            _logger.info(String.format("total num bases: %,d", packed.textSize()));
+        }
+        return new PackedFASTA(packed, sequenceIndex);
+    }
+
+    protected static void encodeFASTA(String fastaFile) throws IOException {
+        BWTFiles forwardDB = new BWTFiles(fastaFile, Strand.FORWARD);
+        _logger.info("input FASTA file: " + fastaFile);
+
+        long totalSize = -1;
+        {
+            FASTAPullParser fasta = new FASTAPullParser(new File(fastaFile));
+            PackedFASTA packed = encode(fasta);
+
+            // Read the input FASTA file, then encode the sequences using the IUPAC code
+            SilkWriter indexOut = new SilkWriter(new BufferedWriter(new FileWriter(forwardDB.pacIndex())));
+            for (SequenceIndex index : packed.sequenceIndex) {
                 indexOut.leafObject("index", index);
                 if (_logger.isTraceEnabled())
                     _logger.trace("\n" + SilkLens.toSilk("index", index));
-                offset = pos;
             }
-            totalSize = packed.textSize();
-            _logger.info(String.format("total num bases: %,d", totalSize));
-            indexOut.leaf("total size", totalSize);
+            indexOut.leaf("total size", packed.sequence.textSize());
             indexOut.close();
-
-            packed.saveTo(forwardDB.pac());
+            packed.sequence.saveTo(forwardDB.pac());
         }
-
     }
 
     protected static void reverse(BWTFiles forwardDB, BWTFiles reverseDB) throws IOException {

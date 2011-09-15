@@ -70,6 +70,18 @@ public class StaircaseFilter
         }
     }
 
+    public int getNumChunks() {
+        return chunkLen.length;
+    }
+
+    public int getChunkStart(int chunkIndex) {
+        return chunkStart[chunkIndex];
+    }
+
+    public int getChunkSize(int chunkIndex) {
+        return chunkLen[chunkIndex];
+    }
+
     public BitVector getStaircaseMask(int k) {
         return staircaseMask[k];
     }

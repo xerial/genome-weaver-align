@@ -429,10 +429,10 @@ public class SuffixFilter
                     c = next;
                 }
 
-                if (c.currentSi != null && c.currentSi.isUniqueHit()) {
-                    reportAlignment(c);
-                    continue queue_loop;
-                }
+                //                if (c.currentSi != null && c.currentSi.isUniqueHit()) {
+                //                    reportAlignment(c);
+                //                    continue queue_loop;
+                //                }
 
                 // No more child states
                 if (c.isFinished())
