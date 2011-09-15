@@ -523,17 +523,21 @@ public class BitParallelSmithWaterman
                     long vnf = vn[block][col + 1] & (1L << offset);
 
                     if (ref.getACGT(col) == query.getACGT(row)) {
+                        // match
                         path = Trace.DIAGONAL;
                     }
                     else if (vpf != 0L) {
+                        // insertion
                         path = Trace.UP;
                         diff++;
                     }
                     else if (vnf == 0L) {
-                        path = Trace.DIAGONAL;
+                        // mismatch
+                        path = Trace.DIAGONAL_MISMATCH;
                         diff++;
                     }
                     else {
+                        // deletion
                         path = Trace.LEFT;
                         diff++;
                     }
@@ -543,6 +547,12 @@ public class BitParallelSmithWaterman
                 case DIAGONAL:
                     // match
                     cigar.append("M");
+                    leftMostPos = col;
+                    col--;
+                    row--;
+                    break;
+                case DIAGONAL_MISMATCH:
+                    cigar.append("X");
                     leftMostPos = col;
                     col--;
                     row--;
@@ -615,7 +625,7 @@ public class BitParallelSmithWaterman
                 cig.add(cigarStr.charAt(i));
             }
 
-            return new Alignment(cig, m - diff, diff, null, leftMostPos, null);
+            return new Alignment(cig, m - diff, diff, ref, leftMostPos, query);
         }
 
     }

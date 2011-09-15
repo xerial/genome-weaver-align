@@ -51,7 +51,7 @@ import org.xerial.util.log.Logger;
  * @author leo
  * 
  */
-public class ACGTSequence implements LSeq, GenomeSequence
+public class ACGTSequence implements LSeq, GenomeSequence, CharSequence
 {
     private static Logger     _logger        = Logger.getLogger(ACGTSequence.class);
 
@@ -264,7 +264,7 @@ public class ACGTSequence implements LSeq, GenomeSequence
      * @param end
      * @return
      */
-    public ACGTSequence subSequence(long start, long end) {
+    public ACGTSequence subString(long start, long end) {
         if (start > end)
             throw new IllegalArgumentException(String.format("invalid range [%d, %d)", start, end));
         final long len = end - start;
@@ -605,4 +605,8 @@ public class ACGTSequence implements LSeq, GenomeSequence
         return getACGT(index).toChar();
     }
 
+    @Override
+    public ACGTSequence subSequence(int start, int end) {
+        return subString(start, end);
+    }
 }

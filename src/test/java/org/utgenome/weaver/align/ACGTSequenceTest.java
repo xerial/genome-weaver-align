@@ -271,7 +271,7 @@ public class ACGTSequenceTest
 
         for (int s = 0; s < seq.textSize(); ++s) {
             for (int e = s; e < seq.textSize(); ++e) {
-                ACGTSequence ss = seq.subSequence(s, e);
+                ACGTSequence ss = seq.subString(s, e);
                 assertEquals(String.format("[%d, %d)", s, e), new ACGTSequence(orig.subSequence(s, e)).toString(),
                         ss.toString());
             }
@@ -285,7 +285,7 @@ public class ACGTSequenceTest
 
         for (int s = 0; s < seq.textSize(); ++s) {
             for (int e = s; e < seq.textSize(); ++e) {
-                ACGTSequence ss = seq.subSequence(s, e);
+                ACGTSequence ss = seq.subString(s, e);
                 assertEquals(String.format("[%d, %d)", s, e), new ACGTSequence(orig.subSequence(s, e)), ss);
             }
         }

@@ -43,7 +43,9 @@ public class CIGAR
         SkippedRegion("N", 3),
         SoftClip("S", 4),
         HardClip("H", 5),
-        Padding("P", 6);
+        Padding("P", 6),
+        Mismatches("X", 7);
+
         public final String shortName;
         public final int    code;
 
@@ -66,6 +68,8 @@ public class CIGAR
                 return Type.HardClip;
             case 'P':
                 return Type.Padding;
+            case 'X':
+                return Type.Mismatches;
             default:
             case 'N':
                 return Type.SkippedRegion;
@@ -182,17 +186,13 @@ public class CIGAR
         return cigar;
     }
 
-    public String toCIGARString() {
+    @Override
+    public String toString() {
         StringBuilder buf = new StringBuilder();
         for (Element each : cigar) {
             buf.append(each.length + each.type.shortName);
         }
         return buf.toString();
-    }
-
-    @Override
-    public String toString() {
-        return toCIGARString();
     }
 
     private static CIGAR parseCIGAR(String cigar) {

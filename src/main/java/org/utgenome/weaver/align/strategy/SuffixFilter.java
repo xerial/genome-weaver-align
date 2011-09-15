@@ -117,17 +117,6 @@ public class SuffixFilter
     }
 
     /**
-     * Compute next suffix intervals
-     * 
-     * @param c
-     * @param ch
-     * @return
-     */
-    private SiSet next(SearchState c, ACGT ch) {
-        return c.cursor.nextSi(fmIndex, c.siTable, ch);
-    }
-
-    /**
      * Prepare a suffix filter
      * 
      * @param fmIndex
@@ -440,6 +429,11 @@ public class SuffixFilter
                     c = next;
                 }
 
+                if (c.currentSi != null && c.currentSi.isUniqueHit()) {
+                    reportAlignment(c);
+                    continue queue_loop;
+                }
+
                 // No more child states
                 if (c.isFinished())
                     continue;
@@ -468,7 +462,7 @@ public class SuffixFilter
                 final int strandIndex = c.cursor.getStrand().index;
 
                 // Step forward the cursor
-                // Match 
+                // Search preferentially for the base in the read sequence 
                 ACGT nextBase = c.cursor.nextACGT(q);
                 {
                     ACGT ch = nextBase;
@@ -489,16 +483,6 @@ public class SuffixFilter
                         }
                     }
                 }
-                //                ACGT[] searchOrder = new ACGT[4];
-                //                {
-                //                    searchOrder[0] = nextBase;
-                //                    int i = 1;
-                //                    for (ACGT ch : ACGT.exceptN) {
-                //                        if (ch == nextBase)
-                //                            continue;
-                //                        searchOrder[i++] = ch;
-                //                    }
-                //                }
 
                 // Traverse the suffix arrays for all of A, C, G and T                 
                 // Add states for every bases
@@ -538,6 +522,17 @@ public class SuffixFilter
 
         }
 
+        /**
+         * Compute next suffix intervals
+         * 
+         * @param c
+         * @param ch
+         * @return
+         */
+        private SiSet next(SearchState c, ACGT ch) {
+            return c.cursor.nextSi(fmIndex, c.siTable, ch);
+        }
+
         private void reportExactMatchAlignment(FMQuickScan f) throws Exception {
             PosOnGenome pos = fmIndex.toGenomeCoordinate(f.si.lowerBound, m, f.strand);
             resultHolder.add(new ReadHit(pos.chr, pos.pos, m, 0, f.strand, new CIGAR(String.format("%dM", m)),
@@ -574,8 +569,8 @@ public class SuffixFilter
 
             long refStart = Math.max(0, x - k);
             long refEnd = Math.min(refStart + fragmentLength + k, fmIndex.textSize());
-            ACGTSequence ref = reference.subSequence(refStart, refEnd);
-            ACGTSequence query = q[cursor.getStrandIndex()].subSequence(cursor.start, cursor.end);
+            ACGTSequence ref = reference.subString(refStart, refEnd);
+            ACGTSequence query = q[cursor.getStrandIndex()].subString(cursor.start, cursor.end);
             if (cursor.getStrand() == Strand.REVERSE)
                 query = query.reverse();
 

@@ -118,7 +118,7 @@ public class SmithWatermanAlign extends GenomeWeaverCommand
         ACGTSequence query = new ACGTSequence(config.query);
         int range = Math.max(loc.length(), query.length());
         long offset = boundary.toIndex(loc.chr, loc.start);
-        ACGTSequence target = ref.subSequence(offset, offset + range);
+        ACGTSequence target = ref.subString(offset, offset + range);
         Alignment alignF = SmithWatermanAligner.align(target, query, config, false);
         Alignment alignR = SmithWatermanAligner.align(target, query.reverseComplement(), config, false);
         System.out.println(String.format("query: %s:%,d-%,d", loc.chr, loc.start, loc.start + range));

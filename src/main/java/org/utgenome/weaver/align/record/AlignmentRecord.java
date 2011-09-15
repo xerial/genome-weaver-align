@@ -196,8 +196,8 @@ public class AlignmentRecord
 
             // TODO generalize this part to two or more fragments
             ReadHit split = hit.nextSplit;
-            ACGTSequence s1 = query.subSequence(0, hit.matchLength);
-            ACGTSequence s2 = query.subSequence(hit.matchLength, m);
+            ACGTSequence s1 = query.subString(0, hit.matchLength);
+            ACGTSequence s2 = query.subString(hit.matchLength, m);
             int b1 = Math.min(qual.length(), hit.matchLength);
             int b2 = Math.min(qual.length(), m);
             String q1 = qual.substring(0, b1);

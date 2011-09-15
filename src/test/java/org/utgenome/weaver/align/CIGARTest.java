@@ -36,7 +36,7 @@ public class CIGARTest
         CIGAR c1 = new CIGAR("12S");
         CIGAR c2 = new CIGAR("2S62M");
         c1.add(c2);
-        assertEquals("14S62M", c1.toCIGARString());
+        assertEquals("14S62M", c1.toString());
     }
 
     @Test
@@ -75,7 +75,6 @@ public class CIGARTest
         c.add(134, Type.HardClip);
 
         assertEquals(9, c.size());
-        assertEquals("10S5M10I2M3D43N100M1P134H", c.toCIGARString());
         assertEquals("10S5M10I2M3D43N100M1P134H", c.toString());
     }
 

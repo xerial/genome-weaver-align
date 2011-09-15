@@ -125,9 +125,9 @@ public class ReadHit
 
     public String getCigarConcatenated() {
         if (nextSplit == null)
-            return cigar.toCIGARString();
+            return cigar.toString();
         else
-            return cigar.toCIGARString() + "-" + nextSplit.getCigarConcatenated();
+            return cigar.toString() + "-" + nextSplit.getCigarConcatenated();
     }
 
     @Override

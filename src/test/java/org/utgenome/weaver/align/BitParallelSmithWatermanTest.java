@@ -186,7 +186,7 @@ public class BitParallelSmithWatermanTest
                 "TACCAAGATAGAGATCTGG", 31);
         _logger.debug(alignment);
         assertEquals(2, alignment.pos);
-        assertEquals("8M2D11M", alignment.cigar);
+        assertEquals("8M2D11M", alignment.cigar.toString());
         assertEquals(2, alignment.numMismatches);
     }
 
@@ -195,7 +195,7 @@ public class BitParallelSmithWatermanTest
         Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed("GATCTA", "GCTATA", 31);
         _logger.debug(alignment);
         assertEquals(0, alignment.pos);
-        assertEquals("6M", alignment.cigar);
+        assertEquals("1M1X1M1X2M", alignment.cigar.toString());
         assertEquals(2, alignment.numMismatches);
     }
 
@@ -205,7 +205,7 @@ public class BitParallelSmithWatermanTest
                 "TACCAAGATCTCTAGAGATCTGG", 31);
         _logger.debug(alignment);
         assertEquals(2, alignment.pos);
-        assertEquals("8M2I13M", alignment.cigar);
+        assertEquals("8M2I13M", alignment.cigar.toString());
         assertEquals(2, alignment.numMismatches);
     }
 
@@ -214,7 +214,7 @@ public class BitParallelSmithWatermanTest
         Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed("TATACCAAGATCTAGAGATCTGG", "ACCAAGATCTAGAG",
                 31);
         _logger.debug(alignment);
-        assertEquals("14M", alignment.cigar);
+        assertEquals("14M", alignment.cigar.toString());
         assertEquals(3, alignment.pos);
         assertEquals(0, alignment.numMismatches);
     }
@@ -224,7 +224,7 @@ public class BitParallelSmithWatermanTest
         Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed("TATACCAAGATCTAGAGATCTGG",
                 "GGCGCACCAAGATCTAGAG", 31);
         _logger.debug(alignment);
-        assertEquals("5S14M", alignment.cigar);
+        assertEquals("5S14M", alignment.cigar.toString());
         assertEquals(3, alignment.pos);
         assertEquals(0, alignment.numMismatches);
     }
@@ -234,7 +234,7 @@ public class BitParallelSmithWatermanTest
         Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed("TATACCAAGATCTAGAGTCTGG",
                 "ACCAAGATCTAGAGAAAA", 31);
         _logger.debug(alignment);
-        assertEquals("14M4S", alignment.cigar);
+        assertEquals("14M4S", alignment.cigar.toString());
         assertEquals(3, alignment.pos);
         assertEquals(0, alignment.numMismatches);
     }

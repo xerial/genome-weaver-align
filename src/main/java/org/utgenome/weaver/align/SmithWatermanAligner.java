@@ -25,6 +25,7 @@
 package org.utgenome.weaver.align;
 
 import org.utgenome.format.fasta.GenomeSequence;
+import org.utgenome.weaver.align.CIGAR.Type;
 import org.xerial.util.log.Logger;
 
 /**
@@ -40,14 +41,14 @@ public class SmithWatermanAligner
 
     public static class Alignment
     {
-        public final CIGAR  cigar;
-        public final int    score;
-        public final int    numMismatches;
-        public final int    pos;          // 0-based leftmost position of the clipped sequence
-        public final String rseq;         // reference sequence
-        public final String qseq;         // query sequence
+        public final CIGAR        cigar;
+        public final int          score;
+        public final int          numMismatches;
+        public final int          pos;          // 0-based leftmost position of the clipped sequence
+        public final CharSequence rseq;         // reference sequence
+        public final CharSequence qseq;         // query sequence
 
-        public Alignment(CIGAR cigar, int score, int numMisamatches, String rseq, int pos, String qseq) {
+        public Alignment(CIGAR cigar, int score, int numMisamatches, CharSequence rseq, int pos, CharSequence qseq) {
             this.cigar = cigar;
             this.score = score;
             this.numMismatches = numMisamatches;
@@ -58,38 +59,97 @@ public class SmithWatermanAligner
 
         @Override
         public String toString() {
-            return String.format("k:%d, cigar:%s, score:%d, pos:%d\nrseq: %s\n      %s\nqseq: %s", numMismatches,
-                    cigar, score, pos, rseq, diffString(), qseq);
+            return String.format("k:%d, cigar:%s, score:%d, pos:%d\n%s", numMismatches, cigar, score, pos,
+                    detailedAlignment());
         }
 
-        public String diffString() {
+        public String detailedAlignment() {
             if (rseq == null || qseq == null)
                 return "";
             int max = Math.min(rseq.length(), qseq.length());
 
+            int rCursor = 0;
+            int rStart = pos;
+            int qCursor = 0;
+
+            StringBuilder r = new StringBuilder();
             StringBuilder s = new StringBuilder();
-            for (int i = 0; i < max; ++i) {
-                char r = rseq.charAt(i);
-                char q = qseq.charAt(i);
-                if (r == ' ' || q == ' ')
-                    s.append(" ");
-                else if (Character.isUpperCase(q)) {
-                    if (ACGT.encode(r).match(ACGT.encode(q)))
-                        s.append("|");
-                    else
-                        s.append("X");
-                }
-                else {
-                    s.append(" ");
+            StringBuilder q = new StringBuilder();
+
+            if (cigar.size() > 0) {
+                CIGAR.Element e = cigar.get(0);
+                if (e.type == Type.SoftClip) {
+                    int offset = pos - e.length;
+                    rStart = offset;
                 }
             }
-            return s.toString();
+            rCursor = Math.min(rCursor, rStart);
+            for (; rCursor < rStart;) {
+                r.append(rseq.charAt(rCursor++));
+                s.append(" ");
+                q.append(" ");
+            }
+
+            for (CIGAR.Element e : cigar.element()) {
+                switch (e.type) {
+                case Matches:
+                case Mismatches:
+                    for (int i = 0; i < e.length; ++i) {
+                        ACGT rCh = ACGT.encode(getChar(rseq, rCursor++));
+                        ACGT qCh = ACGT.encode(getChar(qseq, qCursor++));
+                        r.append(rCh);
+                        s.append(rCh.match(qCh) ? "|" : "X");
+                        q.append(qCh);
+                    }
+                    break;
+                case Insertions:
+                    for (int i = 0; i < e.length; ++i) {
+                        r.append("-");
+                        s.append(" ");
+                        q.append(getChar(qseq, qCursor++));
+                    }
+                    break;
+                case Deletions:
+                    for (int i = 0; i < e.length; ++i) {
+                        r.append(getChar(rseq, rCursor++));
+                        s.append(" ");
+                        q.append("-");
+                    }
+                    break;
+                case SoftClip:
+                    for (int i = 0; i < e.length; ++i) {
+                        r.append(getChar(rseq, rCursor++));
+                        s.append(" ");
+                        q.append(Character.toLowerCase(getChar(qseq, qCursor++)));
+                    }
+                    break;
+                case Padding:
+                case SkippedRegion:
+                    for (int i = 0; i < e.length; ++i) {
+                        r.append(getChar(rseq, rCursor++));
+                        s.append(" ");
+                        q.append(".");
+                    }
+                    break;
+                case HardClip:
+                    for (int i = 0; i < e.length; ++i) {
+                        qCursor++;
+                    }
+                    break;
+                }
+            }
+
+            return String.format("R: %s\n   %s\nQ: %s", r.toString(), s.toString(), q.toString());
+        }
+
+        private char getChar(CharSequence seq, int index) {
+            return (index < seq.length() && index >= 0) ? seq.charAt(index) : ' ';
         }
 
     }
 
     public static enum Trace {
-        NONE, DIAGONAL, LEFT, UP
+        NONE, DIAGONAL, DIAGONAL_MISMATCH, LEFT, UP
     };
 
     private static Logger              _logger = Logger.getLogger(SmithWatermanAligner.class);
