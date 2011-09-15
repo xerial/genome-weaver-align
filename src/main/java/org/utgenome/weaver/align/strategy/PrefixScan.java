@@ -39,23 +39,34 @@ public class PrefixScan
 {
     public final Strand               strand;
     public final List<SuffixInterval> si;
-    public final BitVector            matchedChunkFlag;
+    public final BitVector            chunkWithMismatch;
 
     public PrefixScan(Strand strand, List<SuffixInterval> si, BitVector matchedChunkFlag) {
         this.strand = strand;
         this.si = si;
-        this.matchedChunkFlag = matchedChunkFlag;
+        this.chunkWithMismatch = matchedChunkFlag;
+    }
+
+    public List<Long> hitCount() {
+        List<Long> count = new ArrayList<Long>();
+        for (SuffixInterval each : si) {
+            if (each == null)
+                count.add(0L);
+            else
+                count.add(each.range());
+        }
+        return count;
     }
 
     @Override
     public String toString() {
-        return String.format("%s[%s]", matchedChunkFlag, StringUtil.join(si, ", "));
+        return String.format("%s [%s]", chunkWithMismatch.toStringReverse(), StringUtil.join(hitCount(), ", "));
     }
 
     public static PrefixScan scanRead(FMIndexOnGenome fmIndex, ACGTSequence query, Strand strand, StaircaseFilter filter) {
 
         final int s = filter.getNumChunks();
-        BitVector matchedChunk = new BitVector(s);
+        BitVector chunkWithMismatch = new BitVector(s);
         ArrayList<SuffixInterval> siOfChunks = new ArrayList<SuffixInterval>(s);
 
         // for each chunk
@@ -69,13 +80,14 @@ public class PrefixScan
                 si = fmIndex.forwardSearch(strand, ch, si);
                 if (si.isEmpty()) {
                     siOfChunks.add(null);
+                    chunkWithMismatch.set(c);
                     continue chunk_loop;
                 }
             }
             siOfChunks.add(si);
-            matchedChunk.set(c);
+
         }
 
-        return new PrefixScan(strand, siOfChunks, matchedChunk);
+        return new PrefixScan(strand, siOfChunks, chunkWithMismatch);
     }
 }

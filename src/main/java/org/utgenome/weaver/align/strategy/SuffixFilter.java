@@ -397,6 +397,12 @@ public class SuffixFilter
                 queue.add(sF);
                 queue.add(sR);
 
+                if (_logger.isDebugEnabled()) {
+                    PrefixScan psF = PrefixScan.scanRead(fmIndex, q[0], Strand.FORWARD, getStairCaseFilter(m));
+                    PrefixScan psR = PrefixScan.scanRead(fmIndex, q[1], Strand.REVERSE, getStairCaseFilter(m));
+                    _logger.debug("prefix scan: %s\t%s", psF, psR);
+                }
+
                 //minMismatches = Math.min(scanF.numMismatches, Math.min(scanR.numMismatches, k));
             }
 
