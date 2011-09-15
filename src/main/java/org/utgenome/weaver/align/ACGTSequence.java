@@ -103,6 +103,16 @@ public class ACGTSequence implements LSeq, GenomeSequence, CharSequence
         }
     }
 
+    public ACGTSequence replaceN_withA() {
+        ACGTSequence newSeq = new ACGTSequence(this);
+        for (int i = 0; i < this.length(); ++i) {
+            if (this.getACGT(i) == ACGT.N) {
+                newSeq.set(i, ACGT.A);
+            }
+        }
+        return newSeq;
+    }
+
     private static long countNonWhiteSpaces(CharSequence s) {
         int count = 0;
         for (int i = 0; i < s.length(); ++i) {

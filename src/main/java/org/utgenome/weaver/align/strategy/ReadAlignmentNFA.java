@@ -24,9 +24,6 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.QueryMask;
 
@@ -123,30 +120,47 @@ public class ReadAlignmentNFA
     }
 
     public NextState nextState(Cursor cursor, ACGT ch, QueryMask queryMask, StaircaseFilter staircaseFilter) {
-
         final int height = automaton.length;
-        long[] prev = automaton;
-        long[] next = new long[automaton.length];
-
-        final int progressIndex = cursor.getProcessedBases();
         final int k = kOffset + height - 1;
         final int kr = k - kOffset;
-        final long qeq = queryMask.getBidirectionalPatternMask64(cursor, ch, kr);
+        final long qeq = queryMask.getBidirectionalPatternMask64(cursor.getSearchDirection(),
+                cursor.getNextACGTIndex(), cursor.pivot, cursor.cursor, ch, kr);
+        return nextState(qeq, cursor.getProcessedBases(), cursor.getFragmentLength(), ch, queryMask, staircaseFilter);
+    }
+
+    public NextState nextState(int nextIndex, int m, ACGT ch, QueryMask queryMask, StaircaseFilter staircaseFilter) {
+        final int height = automaton.length;
+        final int k = kOffset + height - 1;
+        final int kr = k - kOffset;
+        final long qeq = queryMask.getBidirectionalPatternMask64(SearchDirection.Forward, nextIndex, 0, nextIndex, ch,
+                kr);
+        return nextState(qeq, nextIndex, m, ch, queryMask, staircaseFilter);
+    }
+
+    private NextState nextState(long qeq, int progressIndex, int fragmentLength, ACGT ch, QueryMask queryMask,
+            StaircaseFilter staircaseFilter) {
+        final int height = automaton.length;
+        final int k = kOffset + height - 1;
+        final int kr = k - kOffset;
+
+        long[] prev = automaton;
+        long[] next = new long[automaton.length];
 
         int minKwithMatch = k + 1;
         int minKwithProgress = k + 1;
 
         String qeqStr = toBinary(qeq, 10);
 
-        List<Integer> matchPos = new ArrayList<Integer>();
+        //List<Integer> matchPos = new ArrayList<Integer>();
         // Update the automaton
         // R'_0 = ((R_0 & P[ch]) << 1) & (suffix filter)
         next[0] = (prev[0] & qeq) << 1;
         if (next[0] != 0) {
             minKwithMatch = 0;
             minKwithProgress = 0;
-            matchPos.add(cursor.getNextACGTIndex());
+            //matchPos.add(cursor.getNextACGTIndex());
         }
+
         next[0] &= staircaseFilter.getStairCaseMask64bit(kOffset, progressIndex - k);
         for (int i = 1; i < height; ++i) {
             // R'_{i+1} = ((R_{i+1} & P[ch]) << 1) | R_i | (R_i << 1) | (R'_i << 1) 
@@ -164,7 +178,7 @@ public class ReadAlignmentNFA
         }
 
         // Find a match at query position m
-        final int m = cursor.getFragmentLength();
+        final int m = fragmentLength;
         final int mPos = k + m - progressIndex;
         if (mPos < 64) {
             for (int nm = 0; nm < height; ++nm) {

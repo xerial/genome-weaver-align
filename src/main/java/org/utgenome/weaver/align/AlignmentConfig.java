@@ -50,7 +50,7 @@ public class AlignmentConfig extends AlignmentScoreConfig
     public boolean      silent = false;
 
     public static enum Strategy {
-        SF("suffix filter"), BD("bi-directional search"), BWA("bwa");
+        SF("suffix filter"), BSF("bi-directional suffix filter"), BD("bi-directional search"), BWA("bwa");
         public final String description;
 
         private Strategy(String description) {
@@ -58,8 +58,8 @@ public class AlignmentConfig extends AlignmentScoreConfig
         }
     }
 
-    @Option(symbol = "m", description = "alignment strategy. sf(suffix filter:default), bd(bidirectinal search), bwa (best-hit first)")
-    public Strategy strategy = Strategy.SF;
+    @Option(symbol = "m", description = "alignment strategy. bsf(bi-directional suffix filter:default), sf(suffix filter), bd(bidirectinal search), bwa (best-hit first)")
+    public Strategy strategy = Strategy.BSF;
 
     public static enum ReportType {
         BESTHIT, ALLHITS, TOPL

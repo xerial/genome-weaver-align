@@ -35,6 +35,7 @@ import org.utgenome.weaver.align.record.ReadReaderFactory;
 import org.utgenome.weaver.align.strategy.BWAState;
 import org.utgenome.weaver.align.strategy.BidirectionalBWT;
 import org.utgenome.weaver.align.strategy.BidirectionalSuffixFilter;
+import org.utgenome.weaver.align.strategy.SuffixFilter;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandler;
@@ -117,6 +118,9 @@ public class Align extends GenomeWeaverCommand
         ObjectHandler<Read> aligner = null;
         switch (config.strategy) {
         default:
+        case BSF:
+            aligner = new BidirectionalSuffixFilterAligner(fmIndex, reference, config, reporter);
+            break;
         case SF:
             aligner = new SuffixFilterAligner(fmIndex, reference, config, reporter);
             break;
@@ -133,6 +137,40 @@ public class Align extends GenomeWeaverCommand
         readReader.parse(aligner);
     }
 
+    public static class BidirectionalSuffixFilterAligner extends ObjectHandlerBase<Read>
+    {
+
+        private final FMIndexOnGenome     fmIndex;
+        private final ACGTSequence        reference;
+        private final AlignmentConfig     config;
+        private Reporter                  reporter;
+
+        private int                       count = 0;
+        private StopWatch                 timer = new StopWatch();
+        private BidirectionalSuffixFilter sf;
+
+        public BidirectionalSuffixFilterAligner(FMIndexOnGenome fmIndex, ACGTSequence reference,
+                AlignmentConfig config, Reporter reporter) {
+            this.fmIndex = fmIndex;
+            this.reference = reference;
+            this.config = config;
+            this.reporter = reporter;
+        }
+
+        @Override
+        public void handle(Read read) throws Exception {
+            if (sf == null)
+                sf = new BidirectionalSuffixFilter(fmIndex, reference, config);
+            sf.align(read, reporter);
+            count++;
+            double time = timer.getElapsedTime();
+            if (count % 10000 == 0) {
+                _logger.info("%,d reads are processed in %.2f sec. %,.0f reads/sec.", count, time, count / time);
+            }
+        }
+
+    }
+
     public static class SuffixFilterAligner extends ObjectHandlerBase<Read>
     {
 
@@ -143,7 +181,7 @@ public class Align extends GenomeWeaverCommand
 
         private int                   count = 0;
         private StopWatch             timer = new StopWatch();
-        private BidirectionalSuffixFilter          sf;
+        private SuffixFilter          sf;
 
         public SuffixFilterAligner(FMIndexOnGenome fmIndex, ACGTSequence reference, AlignmentConfig config,
                 Reporter reporter) {
@@ -156,7 +194,7 @@ public class Align extends GenomeWeaverCommand
         @Override
         public void handle(Read read) throws Exception {
             if (sf == null)
-                sf = new BidirectionalSuffixFilter(fmIndex, reference, config);
+                sf = new SuffixFilter(fmIndex, reference, config);
             sf.align(read, reporter);
             count++;
             double time = timer.getElapsedTime();

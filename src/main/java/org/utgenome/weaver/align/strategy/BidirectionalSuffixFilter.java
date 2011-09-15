@@ -83,7 +83,7 @@ public class BidirectionalSuffixFilter
      */
     private HashMap<SFKey, StaircaseFilter> staircaseFilterHolder = new HashMap<SFKey, StaircaseFilter>();
 
-    private static class SFKey
+    public static class SFKey
     {
         public final int numMismatches;
         public final int queryLen;
@@ -311,16 +311,6 @@ public class BidirectionalSuffixFilter
             out.emit(r);
         }
 
-        private ACGTSequence replaceN_withA(ACGTSequence seq) {
-            ACGTSequence newSeq = new ACGTSequence(seq);
-            for (int i = 0; i < seq.length(); ++i) {
-                if (seq.getACGT(i) == ACGT.N) {
-                    newSeq.set(i, ACGT.A);
-                }
-            }
-            return newSeq;
-        }
-
         /**
          * @throws Exception
          */
@@ -334,8 +324,8 @@ public class BidirectionalSuffixFilter
                 }
 
                 if (countN > 0) {
-                    q[0] = replaceN_withA(q[0]);
-                    q[1] = replaceN_withA(q[1]);
+                    q[0] = q[0].replaceN_withA();
+                    q[1] = q[1].replaceN_withA();
                 }
             }
 
@@ -397,13 +387,6 @@ public class BidirectionalSuffixFilter
                 queue.add(sF);
                 queue.add(sR);
 
-                if (_logger.isDebugEnabled()) {
-                    PrefixScan psF = PrefixScan.scanRead(fmIndex, q[0], Strand.FORWARD, getStairCaseFilter(m));
-                    PrefixScan psR = PrefixScan.scanRead(fmIndex, q[1], Strand.REVERSE, getStairCaseFilter(m));
-                    _logger.debug("prefix scan: %s\t%s", psF, psR);
-                }
-
-                //minMismatches = Math.min(scanF.numMismatches, Math.min(scanR.numMismatches, k));
             }
 
             final int fmIndexSearchUpperBound = m * 20;

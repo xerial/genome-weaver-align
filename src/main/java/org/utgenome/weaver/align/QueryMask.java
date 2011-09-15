@@ -24,7 +24,7 @@
 //--------------------------------------package org.utgenome.weaver.align.strategy;
 package org.utgenome.weaver.align;
 
-import org.utgenome.weaver.align.strategy.Cursor;
+import org.utgenome.weaver.align.strategy.SearchDirection;
 
 /**
  * A set of bit flags of ACGT characters in a query sequence
@@ -70,11 +70,12 @@ public class QueryMask
      * @param start
      * @return
      */
-    public long getBidirectionalPatternMask64(Cursor cursor, ACGT ch, int margin) {
+    public long getBidirectionalPatternMask64(SearchDirection d, int nextACGTIndex, int pivot, int cursor, ACGT ch,
+            int margin) {
         long p;
-        if (cursor.isForwardSearch()) {
+        if (d.isForward) {
             // forward pattern mask
-            int pos = cursor.getNextACGTIndex() - margin;
+            int pos = nextACGTIndex - margin;
             if (pos < 0) {
                 p = patternMaskF[ch.code].substring64(0, 64);
                 p <<= (-pos);
@@ -84,8 +85,8 @@ public class QueryMask
         }
         else {
             // reverse pattern mask
-            int b = m - cursor.pivot;
-            int rshift = cursor.pivot - cursor.cursor - margin;
+            int b = m - pivot;
+            int rshift = pivot - cursor - margin;
             p = patternMaskR[ch.code].substring64(b, b + 64);
             if (rshift >= 0)
                 p >>>= rshift;
