@@ -557,7 +557,7 @@ public class BidirectionalSuffixFilter
             //            }
 
             long refStart = Math.max(0, x - k);
-            long refEnd = Math.min(refStart + fragmentLength + k, fmIndex.textSize());
+            long refEnd = Math.min(x + fragmentLength + k, fmIndex.textSize());
             ACGTSequence ref = reference.subString(refStart, refEnd);
             ACGTSequence query = q[cursor.getStrandIndex()].subString(cursor.start, cursor.end);
             if (cursor.getStrand() == Strand.REVERSE)

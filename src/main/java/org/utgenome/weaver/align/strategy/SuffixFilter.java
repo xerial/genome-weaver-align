@@ -28,21 +28,29 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.TreeSet;
 
+import org.utgenome.UTGBException;
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.AlignmentConfig;
+import org.utgenome.weaver.align.BitParallelSmithWaterman;
+import org.utgenome.weaver.align.CIGAR;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.QueryMask;
+import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
+import org.utgenome.weaver.align.SmithWatermanAligner.Alignment;
 import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.SuffixInterval;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.Read;
+import org.utgenome.weaver.align.record.ReadHit;
 import org.utgenome.weaver.align.record.SingleEndRead;
 import org.utgenome.weaver.align.strategy.BidirectionalSuffixFilter.SFKey;
 import org.utgenome.weaver.align.strategy.ReadAlignmentNFA.NextState;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
+import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
 
 public class SuffixFilter
@@ -159,8 +167,73 @@ public class SuffixFilter
         private int numFMIndexSearches = 0;
         private int numCutOff          = 0;
         private int numFiltered        = 0;
+        private int numSW              = 0;
 
-        public void align() {
+        public void align() throws Exception {
+
+            StopWatch s = new StopWatch();
+            try {
+                align_internal();
+                boolean hasHit = minMismatches <= k && !resultHolder.hitList.isEmpty();
+                ReadHit besthit = null;
+                String cigar = "";
+                if (hasHit) {
+                    besthit = resultHolder.hitList.get(0);
+                    cigar = besthit.getCigarConcatenated();
+                }
+                boolean isUnique = resultHolder.isUnique();
+
+                if (_logger.isDebugEnabled()) {
+                    _logger.debug("query:%s %s %2s %s k:%d, FM Search:%,d, SW:%d, CutOff:%d, Filtered:%d, %.5f sec.",
+                            read.name(), hasHit ? besthit.strand.symbol : " ", hasHit ? besthit.getAlignmentState()
+                                    : " ", cigar, minMismatches, numFMIndexSearches, numSW, numCutOff, numFiltered, s
+                                    .getElapsedTime());
+
+                    if (minMismatches > k || numFMIndexSearches > 500) {
+                        _logger.debug("query:%s", q[0]);
+                    }
+                }
+                if (_logger.isTraceEnabled())
+                    _logger.trace("qual :%s", read.getQual(0));
+
+                // Issue 28 
+                if (hasHit) {
+                    switch (config.reportType) {
+                    case ALLHITS:
+                        for (ReadHit each : resultHolder.hitList) {
+                            report(each, 0);
+                        }
+                        break;
+                    case BESTHIT:
+                        report(besthit, 0);
+                        break;
+                    case TOPL: {
+                        int max = Math.min(config.topL, resultHolder.hitList.size());
+                        for (int i = 0; i < max; ++i) {
+                            report(resultHolder.hitList.get(i), 0);
+                        }
+                        break;
+                    }
+                    }
+                }
+                else {
+                    // report unmapped read
+                    report(new ReadHit("*", 0, 0, -1, Strand.FORWARD, new CIGAR(), 0, null), 0);
+                }
+
+            }
+            catch (Exception e) {
+                _logger.error("error at query: %s", q[0]);
+                throw e;
+            }
+        }
+
+        public void report(ReadHit hit, int numTotalHits) throws Exception {
+            AlignmentRecord r = AlignmentRecord.convert(hit, read, numTotalHits);
+            out.emit(r);
+        }
+
+        public void align_internal() {
 
             // Check whether the read contains too many Ns
             {
@@ -177,7 +250,7 @@ public class SuffixFilter
 
             PrefixScan psF = PrefixScan.scanRead(fmIndex, q[0], Strand.FORWARD, getStairCaseFilter(m));
             PrefixScan psR = PrefixScan.scanRead(fmIndex, q[1], Strand.REVERSE, getStairCaseFilter(m));
-            if (_logger.isDebugEnabled())
+            if (_logger.isTraceEnabled())
                 _logger.debug("prefix scan: %s\t%s", psF, psR);
 
             initQueue(psF);
@@ -191,18 +264,19 @@ public class SuffixFilter
             while (!queue.isEmpty()) {
                 SFState c = queue.poll();
 
-                if (_logger.isDebugEnabled()) {
-                    _logger.debug("state: %s, #states:%d, FMSearch:%d, CutOff:%d, Filtered:%d", c, queue.size(),
-                            numFMIndexSearches, numCutOff, numFiltered);
+                if (_logger.isTraceEnabled()) {
+                    _logger.trace("state: %s, #states:%d, FMSearch:%d, SW:%d, CutOff:%d, Filtered:%d", c, queue.size(),
+                            numFMIndexSearches, numSW, numCutOff, numFiltered);
+                }
+
+                int nm = c.nfa.kOffset;
+                if (c.scoreUpperBound(m) < bestScore || nm > minMismatches) {
+                    numCutOff++;
+                    continue;
                 }
 
                 if (c.hasHit || c.index >= m || c.si.isUniqueHit()) {
                     addCandidate(c);
-                    continue;
-                }
-                int nm = c.nfa.kOffset;
-                if (c.scoreUpperBound(m) < bestScore || nm > minMismatches) {
-                    numCutOff++;
                     continue;
                 }
 
@@ -225,14 +299,107 @@ public class SuffixFilter
 
         }
 
-        public void addCandidate(SFState c) {
-            _logger.debug("candidate:%s", c);
-            if (c.si.isUniqueHit()) {
+        @SuppressWarnings("unchecked")
+        private TreeSet<Long>[] candidates = new TreeSet[] { new TreeSet<Long>(), new TreeSet<Long>() };
+        private List<ReadHit>   hitList    = new ArrayList<ReadHit>();
 
+        void addCandidate(SFState c) {
+
+            if (c.si.isUniqueHit()) {
+                long seqIndex = fmIndex.toCoordinate(c.si.lowerBound, c.strand, SearchDirection.Forward);
+                int offsetFromSearchHead = c.strand.isForward() ? c.index : m - c.index;
+                long start = seqIndex - offsetFromSearchHead;
+
+                if (_logger.isTraceEnabled())
+                    _logger.trace("candidate seq index:%d, pos:%d", seqIndex, start);
+
+                if (candidates[c.strand.index].contains(start))
+                    return;
+                else
+                    candidates[c.strand.index].add(start);
+
+                // verify the newly added entry
+                long refStart = Math.max(0, start - k);
+                long refEnd = Math.min(start + m + k, fmIndex.textSize());
+
+                ACGTSequence r = reference.subString(refStart, refEnd);
+                Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(r, q[c.strand.index],
+                        config.bandWidth);
+                numSW++;
+                if (alignment != null) {
+
+                    if (_logger.isTraceEnabled())
+                        _logger.trace("Found an alignment %s", alignment);
+
+                    try {
+                        PosOnGenome p = fmIndex.getSequenceBoundary().translate(refStart + alignment.pos + 1,
+                                Strand.FORWARD);
+                        reportResult(new ReadHit(p.chr, p.pos, m, alignment.numMismatches, c.strand, alignment.cigar,
+                                (int) c.si.range(), null));
+                    }
+                    catch (UTGBException e) {
+                        _logger.error(e);
+                    }
+                }
             }
             else {
+                // multi hit
 
             }
+        }
+
+        void reportResult(ReadHit hit) {
+            if (hit.getTotalMatchLength() == 0)
+                return; // no match
+
+            if (hit.diff > minMismatches)
+                return;
+
+            resultHolder.add(hit);
+        }
+
+        private AlignmentResultHolder resultHolder = new AlignmentResultHolder();
+
+        private class AlignmentResultHolder
+        {
+            ArrayList<ReadHit> hitList = new ArrayList<ReadHit>();
+
+            public int totalHits() {
+                int count = 0;
+                for (ReadHit each : hitList) {
+                    count += each.numHits;
+                }
+                return count;
+            }
+
+            public void add(ReadHit hit) {
+                int newK = hit.getTotalDifferences();
+                int matchLen = hit.getTotalMatchLength();
+                if (matchLen > 0 && newK < minMismatches) {
+                    minMismatches = newK;
+                    bestScore = hit.getTotalScore(config);
+                }
+                if (maxMatchLength < matchLen) {
+                    maxMatchLength = matchLen;
+                }
+
+                ArrayList<ReadHit> newList = new ArrayList<ReadHit>();
+                for (ReadHit each : hitList) {
+                    if (each.getTotalDifferences() <= minMismatches) {
+                        newList.add(each);
+                    }
+                }
+                newList.add(hit);
+                hitList = newList;
+            }
+
+            public boolean isUnique() {
+                if (hitList.size() == 1) {
+                    return hitList.get(0).numHits == 1;
+                }
+                return false;
+            }
+
         }
 
     }
@@ -290,13 +457,13 @@ public class SuffixFilter
                 return null;
 
             int diff = next.nextState.kOffset - nfa.kOffset;
-            int newScore = score + score * config.mismatchPenalty;
+            int newScore = score - diff * config.mismatchPenalty;
             return new SFState(strand, offset, index + 1, newScore, nextSi, next.nextState, next.hasMatch);
         }
 
         @Override
         public int compareTo(SFState other) {
-            return this.score - other.score;
+            return -(this.score - other.score);
         }
     }
 

@@ -46,7 +46,7 @@ public class SuffixFilterTest
 
     @BeforeClass
     public static void setUp() throws Exception {
-        PackedFASTA fasta = PackFasta.encode(new FASTAPullParser(FileResource.open(PackFastaTest.class, "sample.fa")));
+        PackedFASTA fasta = PackFasta.encode(new FASTAPullParser(FileResource.open(PackFastaTest.class, "sample3.fa")));
         ref = fasta.sequence;
         fmIndex = FMIndexOnGenome.buildFromSequence("sample", fasta.sequence);
     }
@@ -66,7 +66,7 @@ public class SuffixFilterTest
 
     @Test
     public void exactMatch() throws Exception {
-        align("ATAGCTAGGGCACTTTTTGTCTGCCCAAATATAGGCAAC");
+        align("CACTTTAGTATAATTGTTTTTAGTTTTTGGCAAAACTATTGTCTAAACAG");
 
     }
 
