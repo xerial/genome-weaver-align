@@ -37,9 +37,9 @@ import org.utgenome.weaver.align.Strand;
 import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.xerial.util.log.Logger;
 
-public class SuffixFilterTest
+public class BidirectionalSuffixFilterTest
 {
-    private static Logger          _logger = Logger.getLogger(SuffixFilterTest.class);
+    private static Logger          _logger = Logger.getLogger(BidirectionalSuffixFilterTest.class);
 
     private static FMIndexOnGenome fmIndex;
     private static AlignmentConfig config  = new AlignmentConfig();
@@ -57,7 +57,7 @@ public class SuffixFilterTest
     }
 
     public static AlignmentRecord align(ACGTSequence q) throws Exception {
-        SuffixFilter f = new SuffixFilter(fmIndex, ref, config);
+        BidirectionalSuffixFilter f = new BidirectionalSuffixFilter(fmIndex, ref, config);
         List<AlignmentRecord> result = f.align(q);
         if (result.size() == 0)
             return null;

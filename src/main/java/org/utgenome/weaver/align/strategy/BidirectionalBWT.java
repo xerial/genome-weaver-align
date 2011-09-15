@@ -40,7 +40,7 @@ import org.xerial.util.log.Logger;
 /**
  * Alignment algorithm using Bi-directional BWT.
  * 
- * @see SuffixFilter for better integration with bidirectional BWT and staircase
+ * @see BidirectionalSuffixFilter for better integration with bidirectional BWT and staircase
  *      NFA
  * 
  * @author leo

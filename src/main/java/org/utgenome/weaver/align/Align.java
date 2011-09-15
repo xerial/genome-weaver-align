@@ -34,7 +34,7 @@ import org.utgenome.weaver.align.record.ReadReader;
 import org.utgenome.weaver.align.record.ReadReaderFactory;
 import org.utgenome.weaver.align.strategy.BWAState;
 import org.utgenome.weaver.align.strategy.BidirectionalBWT;
-import org.utgenome.weaver.align.strategy.SuffixFilter;
+import org.utgenome.weaver.align.strategy.BidirectionalSuffixFilter;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.ObjectHandler;
@@ -143,7 +143,7 @@ public class Align extends GenomeWeaverCommand
 
         private int                   count = 0;
         private StopWatch             timer = new StopWatch();
-        private SuffixFilter          sf;
+        private BidirectionalSuffixFilter          sf;
 
         public SuffixFilterAligner(FMIndexOnGenome fmIndex, ACGTSequence reference, AlignmentConfig config,
                 Reporter reporter) {
@@ -156,7 +156,7 @@ public class Align extends GenomeWeaverCommand
         @Override
         public void handle(Read read) throws Exception {
             if (sf == null)
-                sf = new SuffixFilter(fmIndex, reference, config);
+                sf = new BidirectionalSuffixFilter(fmIndex, reference, config);
             sf.align(read, reporter);
             count++;
             double time = timer.getElapsedTime();

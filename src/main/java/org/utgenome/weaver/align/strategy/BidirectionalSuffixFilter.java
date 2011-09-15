@@ -69,9 +69,9 @@ import org.xerial.util.log.Logger;
  * @author leo
  * 
  */
-public class SuffixFilter
+public class BidirectionalSuffixFilter
 {
-    private static Logger                   _logger               = Logger.getLogger(SuffixFilter.class);
+    private static Logger                   _logger               = Logger.getLogger(BidirectionalSuffixFilter.class);
 
     private final FMIndexOnGenome           fmIndex;
     private final AlignmentConfig           config;
@@ -126,7 +126,7 @@ public class SuffixFilter
      * @param m
      *            read length
      */
-    public SuffixFilter(FMIndexOnGenome fmIndex, ACGTSequence reference, AlignmentConfig config) {
+    public BidirectionalSuffixFilter(FMIndexOnGenome fmIndex, ACGTSequence reference, AlignmentConfig config) {
         this.fmIndex = fmIndex;
         this.reference = reference;
         this.config = config;
