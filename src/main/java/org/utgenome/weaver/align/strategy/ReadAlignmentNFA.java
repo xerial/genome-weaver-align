@@ -128,13 +128,14 @@ public class ReadAlignmentNFA
         return nextState(qeq, cursor.getProcessedBases(), cursor.getFragmentLength(), ch, queryMask, staircaseFilter);
     }
 
-    public NextState nextState(int nextIndex, int m, ACGT ch, QueryMask queryMask, StaircaseFilter staircaseFilter) {
+    public NextState nextState(int nextACGTIndex, int progressIndex, int m, ACGT ch, QueryMask queryMask,
+            StaircaseFilter staircaseFilter) {
         final int height = automaton.length;
         final int k = kOffset + height - 1;
         final int kr = k - kOffset;
-        final long qeq = queryMask.getBidirectionalPatternMask64(SearchDirection.Forward, nextIndex, 0, nextIndex, ch,
-                kr);
-        return nextState(qeq, nextIndex, m, ch, queryMask, staircaseFilter);
+        final long qeq = queryMask.getBidirectionalPatternMask64(SearchDirection.Forward, nextACGTIndex, 0,
+                nextACGTIndex, ch, kr);
+        return nextState(qeq, progressIndex, m, ch, queryMask, staircaseFilter);
     }
 
     private NextState nextState(long qeq, int progressIndex, int fragmentLength, ACGT ch, QueryMask queryMask,

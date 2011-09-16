@@ -264,15 +264,15 @@ public class SuffixFilter
             while (!queue.isEmpty()) {
                 SFState c = queue.poll();
 
+                int nm = c.nfa.kOffset;
+                if (nm > minMismatches || c.scoreUpperBound(m) < bestScore) {
+                    numCutOff++;
+                    continue;
+                }
+
                 if (_logger.isTraceEnabled()) {
                     _logger.trace("state: %s, #states:%d, FMSearch:%d, SW:%d, CutOff:%d, Filtered:%d", c, queue.size(),
                             numFMIndexSearches, numSW, numCutOff, numFiltered);
-                }
-
-                int nm = c.nfa.kOffset;
-                if (c.scoreUpperBound(m) < bestScore || nm > minMismatches) {
-                    numCutOff++;
-                    continue;
                 }
 
                 if (c.hasHit || c.index >= m || c.si.isUniqueHit()) {
@@ -288,11 +288,10 @@ public class SuffixFilter
                     if (si != null) {
                         SFState nextState = c.nextState(ch, m, queryMask[strandIndex], si, getStairCaseFilter(m));
                         if (nextState != null) {
-                            if (nextState.hasHit)
-                                addCandidate(nextState);
-                            else
-                                queue.add(nextState);
+                            queue.add(nextState);
                         }
+                        else
+                            numFiltered++;
                     }
                 }
             }
@@ -310,8 +309,8 @@ public class SuffixFilter
                 int offsetFromSearchHead = c.strand.isForward() ? c.index : m - c.index;
                 long start = seqIndex - offsetFromSearchHead;
 
-                if (_logger.isTraceEnabled())
-                    _logger.trace("candidate seq index:%d, pos:%d", seqIndex, start);
+                //                if (_logger.isTraceEnabled())
+                //                    _logger.trace("candidate seq index:%d, pos:%d", seqIndex, start);
 
                 if (candidates[c.strand.index].contains(start))
                     return;
@@ -322,14 +321,16 @@ public class SuffixFilter
                 long refStart = Math.max(0, start - k);
                 long refEnd = Math.min(start + m + k, fmIndex.textSize());
 
-                ACGTSequence r = reference.subString(refStart, refEnd);
-                Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(r, q[c.strand.index],
-                        config.bandWidth);
+                ACGTSequence ref = reference.subString(refStart, refEnd);
+                ACGTSequence query = q[c.strand.index];
+                if (!c.strand.isForward())
+                    query = query.reverse();
+                Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(ref, query, config.bandWidth);
                 numSW++;
                 if (alignment != null) {
 
-                    if (_logger.isTraceEnabled())
-                        _logger.trace("Found an alignment %s", alignment);
+                    if (_logger.isDebugEnabled() && alignment.numMismatches < minMismatches)
+                        _logger.debug("Found an alignment %s", alignment);
 
                     try {
                         PosOnGenome p = fmIndex.getSequenceBoundary().translate(refStart + alignment.pos + 1,
@@ -377,6 +378,7 @@ public class SuffixFilter
                 int matchLen = hit.getTotalMatchLength();
                 if (matchLen > 0 && newK < minMismatches) {
                     minMismatches = newK;
+                    _logger.trace("min mismatches: %d", minMismatches);
                     bestScore = hit.getTotalScore(config);
                 }
                 if (maxMatchLength < matchLen) {
@@ -442,7 +444,8 @@ public class SuffixFilter
 
         @Override
         public String toString() {
-            return String.format("k%d%s%d/%d score:%s, si:%s", nfa.kOffset, strand.symbol, index, offset, score, si);
+            return String.format("%sk%d%s%d/%d score:%d, si:%s", hasHit ? "*" : " ", nfa.kOffset, strand.symbol, index,
+                    offset, score, si);
         }
 
         public int scoreUpperBound(int queryLen) {
@@ -452,18 +455,24 @@ public class SuffixFilter
         public SFState nextState(ACGT ch, int queryLen, QueryMask queryMask, SuffixInterval nextSi,
                 StaircaseFilter filter) {
             int nextIndex = index + 1;
-            NextState next = nfa.nextState(nextIndex, queryLen, ch, queryMask, filter);
+            NextState next = nfa.nextState(nextIndex, nextIndex - offset, queryLen - offset, ch, queryMask, filter);
             if (next == null)
                 return null;
 
             int diff = next.nextState.kOffset - nfa.kOffset;
             int newScore = score - diff * config.mismatchPenalty;
-            return new SFState(strand, offset, index + 1, newScore, nextSi, next.nextState, next.hasMatch);
+            if (diff == 0)
+                newScore++;
+            return new SFState(strand, offset, nextIndex, newScore, nextSi, next.nextState, next.hasMatch);
         }
 
         @Override
         public int compareTo(SFState other) {
-            return -(this.score - other.score);
+            int diff = (nfa.kOffset - other.nfa.kOffset);
+            if (diff == 0)
+                diff = -(this.score - other.score);
+
+            return diff;
         }
     }
 

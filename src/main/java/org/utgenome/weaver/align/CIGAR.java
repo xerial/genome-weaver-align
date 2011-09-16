@@ -130,11 +130,12 @@ public class CIGAR
         this.cigar = cigar;
     }
 
-    public void add(int length, Type type) {
+    public CIGAR add(int length, Type type) {
         cigar.add(new Element(type, length));
+        return this;
     }
 
-    public void add(char ch) {
+    public CIGAR add(char ch) {
         Type t = Type.convert(ch);
         if (cigar.size() == 0)
             cigar.add(new Element(t, 1));
@@ -147,6 +148,7 @@ public class CIGAR
                 cigar.add(new Element(t, 1));
             }
         }
+        return this;
     }
 
     private void add(Element e) {

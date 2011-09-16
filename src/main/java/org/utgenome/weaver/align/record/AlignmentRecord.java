@@ -152,7 +152,7 @@ public class AlignmentRecord
             if (numMismatches >= 0)
                 column.add("NM:i:" + numMismatches);
             if (alignmentState != null)
-                column.add("XT:Z:" + alignmentState);
+                column.add("XP:Z:" + alignmentState);
             column.add(String.format("X0:i:%d", numBestHits));
         }
         String line = StringUtil.join(column, "\t");
