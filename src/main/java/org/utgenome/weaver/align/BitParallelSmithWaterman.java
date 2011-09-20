@@ -552,7 +552,7 @@ public class BitParallelSmithWaterman
                     row--;
                     break;
                 case DIAGONAL_MISMATCH:
-                    cigar.append("X");
+                    cigar.append("M");
                     leftMostPos = col;
                     col--;
                     row--;

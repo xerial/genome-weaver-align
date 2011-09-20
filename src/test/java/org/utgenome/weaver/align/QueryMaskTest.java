@@ -27,7 +27,6 @@ package org.utgenome.weaver.align;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
-import org.utgenome.weaver.align.strategy.Cursor;
 import org.utgenome.weaver.align.strategy.SearchDirection;
 import org.xerial.util.log.Logger;
 
@@ -40,8 +39,9 @@ public class QueryMaskTest
         int m = query.length();
         QueryMask qm = new QueryMask(query);
         _logger.debug("ans:%s, offset:%d, boundary:%d", answer, offset, boundary);
-        assertEquals(BitVector.parseString(answer), BitVector.parseLong(qm.getBidirectionalPatternMask64(
-                new Cursor(Strand.FORWARD, d, 0, m, offset, boundary), ch, margin), m));
+        assertEquals(BitVector.parseString(answer),
+                BitVector.parseLong(qm.getBidirectionalPatternMask64(d, offset, boundary, offset, ch, margin), m));
+
     }
 
     @Test

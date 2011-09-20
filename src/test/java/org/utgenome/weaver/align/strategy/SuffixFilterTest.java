@@ -70,4 +70,10 @@ public class SuffixFilterTest
 
     }
 
+    @Test
+    public void insertion() throws Exception {
+        align("CACTTTAGTATAATTGTTTTTAGCCTTTTTGGCAAAACTATTGTCTAAACAG");
+
+    }
+
 }

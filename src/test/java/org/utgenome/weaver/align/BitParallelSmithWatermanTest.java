@@ -195,7 +195,7 @@ public class BitParallelSmithWatermanTest
         Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed("GATCTA", "GCTATA", 31);
         _logger.debug(alignment);
         assertEquals(0, alignment.pos);
-        assertEquals("1M1X1M1X2M", alignment.cigar.toString());
+        assertEquals("6M", alignment.cigar.toString());
         assertEquals(2, alignment.numMismatches);
     }
 

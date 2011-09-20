@@ -165,10 +165,11 @@ public class CIGAR
         }
     }
 
-    public void add(CIGAR other) {
+    public CIGAR add(CIGAR other) {
         for (int i = 0; i < other.size(); ++i) {
             add(other.get(i));
         }
+        return this;
     }
 
     /**

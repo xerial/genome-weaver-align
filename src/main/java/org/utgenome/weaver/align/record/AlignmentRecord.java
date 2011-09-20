@@ -209,11 +209,12 @@ public class AlignmentRecord
                         // Both reads are unique and in the same chromosome
                         // TODO score, quality value trimming
                         AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos,
-                                (int) hit.pos + hit.matchLength, hit.diff, hit.cigar, s1.toString(), q1, 1, 1,
-                                hit.getAlignmentState(hit), null);
+                                (int) hit.pos + hit.matchLength, hit.diff, new CIGAR(hit.cigar).add(split.matchLength,
+                                        CIGAR.Type.HardClip), s1.toString(), q1, 1, 1, hit.getAlignmentState(hit), null);
                         AlignmentRecord splitRec = new AlignmentRecord(read.name(), split.chr, split.strand,
-                                (int) split.pos, (int) split.pos + split.matchLength, split.diff, split.cigar,
-                                s2.toString(), q2, 1, 1, split.getAlignmentState(hit), null);
+                                (int) split.pos, (int) split.pos + split.matchLength, split.diff, new CIGAR().add(
+                                        hit.matchLength, CIGAR.Type.HardClip).add(split.cigar), s2.toString(), q2, 1,
+                                1, split.getAlignmentState(hit), null);
                         rec.split = splitRec;
                         return rec;
                     }
