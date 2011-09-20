@@ -90,13 +90,20 @@ public class AlignmentRecord
     }
 
     public String toSAMLine() {
-        return toSAMLine(true, true);
+
+        boolean hasSplit = split != null;
+        return toSAMLine(hasSplit, true, true);
     }
 
-    protected String toSAMLine(boolean isFirst, boolean eachFragmentIsMapped) {
+    protected String toSAMLine(boolean hasSegments, boolean isFirst, boolean eachFragmentIsMapped) {
         ArrayList<Object> column = new ArrayList<Object>();
         column.add(readName);
         int flag = 0;
+
+        if (hasSegments) {
+            flag |= SAMReadFlag.FLAG_PAIRED_READ;
+        }
+
         if (strand == Strand.REVERSE)
             flag |= SAMReadFlag.FLAG_STRAND_OF_QUERY;
         if (isFirst) {
@@ -157,7 +164,7 @@ public class AlignmentRecord
         }
         String line = StringUtil.join(column, "\t");
         if (split != null)
-            line += "\n" + split.toSAMLine(false, eachFragmentIsMapped);
+            line += "\n" + split.toSAMLine(hasSegments, false, eachFragmentIsMapped);
 
         return line;
     }
@@ -209,12 +216,11 @@ public class AlignmentRecord
                         // Both reads are unique and in the same chromosome
                         // TODO score, quality value trimming
                         AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos,
-                                (int) hit.pos + hit.matchLength, hit.diff, new CIGAR(hit.cigar).add(split.matchLength,
-                                        CIGAR.Type.HardClip), s1.toString(), q1, 1, 1, hit.getAlignmentState(hit), null);
+                                (int) hit.pos + hit.matchLength, hit.diff, hit.cigar, s1.toString(), q1, 1, 1,
+                                hit.getAlignmentState(hit), null);
                         AlignmentRecord splitRec = new AlignmentRecord(read.name(), split.chr, split.strand,
-                                (int) split.pos, (int) split.pos + split.matchLength, split.diff, new CIGAR().add(
-                                        hit.matchLength, CIGAR.Type.HardClip).add(split.cigar), s2.toString(), q2, 1,
-                                1, split.getAlignmentState(hit), null);
+                                (int) split.pos, (int) split.pos + split.matchLength, split.diff, split.cigar,
+                                s2.toString(), q2, 1, 1, split.getAlignmentState(hit), null);
                         rec.split = splitRec;
                         return rec;
                     }
@@ -268,5 +274,4 @@ public class AlignmentRecord
         }
         return null;
     }
-
 }
