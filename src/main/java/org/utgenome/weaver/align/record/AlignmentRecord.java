@@ -178,11 +178,10 @@ public class AlignmentRecord
         final int m = (int) query.textSize();
 
         String qual = read.getQual(0);
-        if (qual == null)
-            qual = "";
         if (!hit.strand.isForward()) {
             query = query.reverseComplement();
-            qual = reverse(qual);
+            if (qual != null)
+                qual = reverse(qual);
         }
 
         if (hit.nextSplit == null) {
@@ -195,13 +194,14 @@ public class AlignmentRecord
         else {
 
             // TODO generalize this part to two or more fragments
+            int qualLen = qual != null ? qual.length() : hit.matchLength;
             ReadHit split = hit.nextSplit;
             ACGTSequence s1 = query.subString(0, hit.matchLength);
             ACGTSequence s2 = query.subString(hit.matchLength, m);
-            int b1 = Math.min(qual.length(), hit.matchLength);
-            int b2 = Math.min(qual.length(), m);
-            String q1 = qual.substring(0, b1);
-            String q2 = qual.substring(b1, b2);
+            int b1 = Math.min(qualLen, hit.matchLength);
+            int b2 = Math.min(qualLen, m);
+            String q1 = qual != null ? qual.substring(0, b1) : null;
+            String q2 = qual != null ? qual.substring(b1, b2) : null;
 
             if (hit.isUnique()) {
                 if (split.isUnique()) {
