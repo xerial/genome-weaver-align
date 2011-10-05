@@ -29,7 +29,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.List;
 
-import org.utgenome.format.fasta.FASTAPullParser;
 import org.utgenome.weaver.GenomeWeaverCommand;
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;

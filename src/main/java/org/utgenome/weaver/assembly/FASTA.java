@@ -62,7 +62,7 @@ public class FASTA
         List<String> chrList = new ArrayList<String>(sequenceTable.keySet());
         Collections.sort(chrList, new Comparator4ChrName());
 
-        final int width = 100;
+        final int width = 50;
 
         for (String chr : chrList) {
             ACGTSequence seq = sequenceTable.get(chr);
@@ -86,7 +86,7 @@ public class FASTA
             ACGTSequence seq = new ACGTSequence();
             for (String seqLine; (seqLine = fasta.nextSequenceLine()) != null; lineCount++) {
                 seqLine = seqLine.trim();
-                for (int i = 0; i < seq.length(); ++i) {
+                for (int i = 0; i < seqLine.length(); ++i) {
                     seq.append(seqLine.charAt(i));
                 }
             }
