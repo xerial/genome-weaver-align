@@ -43,6 +43,10 @@ public class VariationData
     public int                   count;
     public List<AlleleFrequency> freq = new ArrayList<AlleleFrequency>();
 
+    public boolean isSinglePointMutation() {
+        return refAllele.length() == 1 && nonRefAllele.length() == 1;
+    }
+
     public static class AlleleFrequency
     {
         public String allele;

@@ -138,6 +138,14 @@ public class SequenceBoundary
 
     }
 
+    public static SequenceBoundary load(String fastaPrefix) throws UTGBException {
+        BWTFiles forwardDB = new BWTFiles(fastaPrefix, Strand.FORWARD);
+
+        // Load the boundary information of the concatenated chr sequences 
+        SequenceBoundary index = SequenceBoundary.loadSilk(forwardDB.pacIndex());
+        return index;
+    }
+
     public static SequenceBoundary createFromSingleSeq(String name, ACGTSequence seq) {
         SequenceBoundary s = new SequenceBoundary();
         s.totalSize = seq.textSize();

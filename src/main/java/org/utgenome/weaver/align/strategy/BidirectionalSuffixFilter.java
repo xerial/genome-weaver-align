@@ -33,6 +33,7 @@ import java.util.PriorityQueue;
 import org.utgenome.UTGBException;
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
+import org.utgenome.weaver.align.Aligner;
 import org.utgenome.weaver.align.AlignmentConfig;
 import org.utgenome.weaver.align.BitParallelSmithWaterman;
 import org.utgenome.weaver.align.CIGAR;
@@ -69,7 +70,7 @@ import org.xerial.util.log.Logger;
  * @author leo
  * 
  */
-public class BidirectionalSuffixFilter
+public class BidirectionalSuffixFilter implements Aligner
 {
     private static Logger                   _logger               = Logger.getLogger(BidirectionalSuffixFilter.class);
 

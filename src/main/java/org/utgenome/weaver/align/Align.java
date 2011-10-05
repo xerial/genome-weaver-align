@@ -90,17 +90,13 @@ public class Align extends GenomeWeaverCommand
             throw new UTGBException("no query is given");
         }
 
-        BWTFiles forwardDB = new BWTFiles(config.refSeq, Strand.FORWARD);
-        SequenceBoundary b = SequenceBoundary.loadSilk(forwardDB.pacIndex());
-
-        FMIndexOnGenome fmIndex = FMIndexOnGenome.load(config.refSeq);
         OutputStream out = config.silent ? new NullOutputStream() : new StandardOutputStream();
-        SAMOutput reporter = new SAMOutput(fmIndex.getSequenceBoundary(), out);
+        SAMOutput reporter = new SAMOutput(SequenceBoundary.load(config.refSeq), out);
+        CommonDataSet common = CommonDataSet.prepare(config, reporter);
+
         try {
             reporter.init();
-            _logger.info("loading reference sequence %s", forwardDB.pac());
-            ACGTSequence reference = ACGTSequence.loadFrom(forwardDB.pac());
-            query(fmIndex, reference, config, reader, reporter);
+            query(common, reader);
         }
         finally {
             reporter.finish();
@@ -109,71 +105,40 @@ public class Align extends GenomeWeaverCommand
 
     public static void querySingle(FMIndexOnGenome fmIndex, ACGTSequence reference, String query, Reporter out)
             throws Exception {
-        query(fmIndex, reference, new AlignmentConfig(), ReadReaderFactory.singleQueryReader(query), out);
+        query(new CommonDataSet(fmIndex, reference, new AlignmentConfig(), out),
+                ReadReaderFactory.singleQueryReader(query));
     }
 
-    public static void query(FMIndexOnGenome fmIndex, ACGTSequence reference, AlignmentConfig config,
-            ReadReader readReader, Reporter reporter) throws Exception {
+    public static void query(CommonDataSet common, ReadReader readReader) throws Exception {
 
-        ObjectHandler<Read> aligner = null;
-        switch (config.strategy) {
-        default:
+        _logger.debug("Alignment mode: %s", common.config.strategy.description);
+        Aligner aligner = null;
+        switch (common.config.strategy) {
         case BSF:
-            aligner = new BidirectionalSuffixFilterAligner(fmIndex, reference, config, reporter);
+            aligner = new BidirectionalSuffixFilter(common.fmIndex, common.reference, common.config);
             break;
         case SF:
-            aligner = new SuffixFilterAligner(fmIndex, reference, config, reporter);
+            aligner = new SuffixFilter(common.fmIndex, common.reference, common.config);
+            break;
+        case BD:
+            aligner = new BidirectionalBWT(common.fmIndex, common.reporter);
             break;
         case BWA:
             aligner = new BWAAligner(fmIndex, config, reporter);
             ((BWAAligner) aligner).aligner.disableBidirectionalSearch();
             break;
-        case BD:
-            aligner = new BWAAligner(fmIndex, config, reporter);
-            break;
+        default:
+            throw new UTGBException(String.format("%s mode is not supported", common.config.strategy));
+            //        case BD:
+            //            aligner = new BWAAligner(fmIndex, config, reporter);
+            //            break;
         }
-        _logger.debug("Alignment mode: %s", config.strategy.description);
 
-        readReader.parse(aligner);
+        readReader.parse(new PassReadToAligner(common, aligner));
     }
 
-    public static class BidirectionalSuffixFilterAligner extends ObjectHandlerBase<Read>
+    public static class CommonDataSet
     {
-
-        private final FMIndexOnGenome     fmIndex;
-        private final ACGTSequence        reference;
-        private final AlignmentConfig     config;
-        private Reporter                  reporter;
-
-        private int                       count = 0;
-        private StopWatch                 timer = new StopWatch();
-        private BidirectionalSuffixFilter sf;
-
-        public BidirectionalSuffixFilterAligner(FMIndexOnGenome fmIndex, ACGTSequence reference,
-                AlignmentConfig config, Reporter reporter) {
-            this.fmIndex = fmIndex;
-            this.reference = reference;
-            this.config = config;
-            this.reporter = reporter;
-        }
-
-        @Override
-        public void handle(Read read) throws Exception {
-            if (sf == null)
-                sf = new BidirectionalSuffixFilter(fmIndex, reference, config);
-            sf.align(read, reporter);
-            count++;
-            double time = timer.getElapsedTime();
-            if (count % 10000 == 0) {
-                _logger.info("%,d reads are processed in %.2f sec. %,.0f reads/sec.", count, time, count / time);
-            }
-        }
-
-    }
-
-    public static class SuffixFilterAligner extends ObjectHandlerBase<Read>
-    {
-
         private final FMIndexOnGenome fmIndex;
         private final ACGTSequence    reference;
         private final AlignmentConfig config;
@@ -181,28 +146,51 @@ public class Align extends GenomeWeaverCommand
 
         private int                   count = 0;
         private StopWatch             timer = new StopWatch();
-        private SuffixFilter          sf;
 
-        public SuffixFilterAligner(FMIndexOnGenome fmIndex, ACGTSequence reference, AlignmentConfig config,
-                Reporter reporter) {
+        public CommonDataSet(FMIndexOnGenome fmIndex, ACGTSequence reference, AlignmentConfig config, Reporter reporter) {
             this.fmIndex = fmIndex;
             this.reference = reference;
             this.config = config;
             this.reporter = reporter;
         }
 
+        public static CommonDataSet prepare(AlignmentConfig config, Reporter out) throws Exception {
+            BWTFiles forwardDB = new BWTFiles(config.refSeq, Strand.FORWARD);
+            SequenceBoundary b = SequenceBoundary.loadSilk(forwardDB.pacIndex());
+
+            FMIndexOnGenome fmIndex = FMIndexOnGenome.load(config.refSeq);
+
+            _logger.info("loading reference sequence %s", forwardDB.pac());
+            ACGTSequence reference = ACGTSequence.loadFrom(forwardDB.pac());
+
+            return new CommonDataSet(fmIndex, reference, config, out);
+
+        }
+
+    }
+
+    protected static class PassReadToAligner extends ObjectHandlerBase<Read>
+    {
+        private final CommonDataSet common;
+        private final Aligner       aligner;
+
+        private int                 count = 0;
+        private StopWatch           timer = new StopWatch();
+
+        public PassReadToAligner(CommonDataSet common, Aligner aligner) {
+            this.common = common;
+            this.aligner = aligner;
+        }
+
         @Override
-        public void handle(Read read) throws Exception {
-            if (sf == null)
-                sf = new SuffixFilter(fmIndex, reference, config);
-            sf.align(read, reporter);
+        public void handle(Read input) throws Exception {
+            aligner.align(input, common.reporter);
             count++;
             double time = timer.getElapsedTime();
             if (count % 10000 == 0) {
                 _logger.info("%,d reads are processed in %.2f sec. %,.0f reads/sec.", count, time, count / time);
             }
         }
-
     }
 
     private static class GenomeCoordinateConverter extends ObjectHandlerBase<BWAState>
@@ -224,33 +212,4 @@ public class Align extends GenomeWeaverCommand
         }
     }
 
-    public static class BWAAligner extends ObjectHandlerBase<Read>
-    {
-        private final FMIndexOnGenome fmIndex;
-        private final AlignmentConfig config;
-        private Reporter              reporter;
-
-        private int                   count = 0;
-        private StopWatch             timer = new StopWatch();
-
-        public final BidirectionalBWT aligner;
-
-        public BWAAligner(FMIndexOnGenome fmIndex, AlignmentConfig config, Reporter reporter) {
-            this.fmIndex = fmIndex;
-            this.config = config;
-            this.reporter = reporter;
-            aligner = new BidirectionalBWT(fmIndex, reporter);
-        }
-
-        @Override
-        public void handle(Read input) throws Exception {
-            aligner.align(input);
-            count++;
-            double time = timer.getElapsedTime();
-            if (count % 10000 == 0) {
-                _logger.info(String.format("%,d reads are processed in %.2f sec.", count, time));
-            }
-        }
-
-    }
 }

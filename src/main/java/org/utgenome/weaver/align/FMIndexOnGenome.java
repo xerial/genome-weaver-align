@@ -63,7 +63,7 @@ public class FMIndexOnGenome
         BWTFiles backwardDB = new BWTFiles(fastaFilePrefix, Strand.REVERSE);
 
         // Load the boundary information of the concatenated chr sequences 
-        SequenceBoundary index = SequenceBoundary.loadSilk(forwardDB.pacIndex());
+        SequenceBoundary index = SequenceBoundary.load(fastaFilePrefix);
         long N = index.totalSize;
         int K = ACGT.values().length;
 

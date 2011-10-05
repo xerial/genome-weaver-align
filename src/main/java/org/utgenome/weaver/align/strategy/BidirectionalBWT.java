@@ -28,6 +28,7 @@ import java.util.HashMap;
 
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
+import org.utgenome.weaver.align.Aligner;
 import org.utgenome.weaver.align.AlignmentScoreConfig;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.SiSet;
@@ -40,18 +41,18 @@ import org.xerial.util.log.Logger;
 /**
  * Alignment algorithm using Bi-directional BWT.
  * 
- * @see BidirectionalSuffixFilter for better integration with bidirectional BWT and staircase
- *      NFA
+ * @see BidirectionalSuffixFilter for better integration with bidirectional BWT
+ *      and staircase NFA
  * 
  * @author leo
  * 
  */
-public class BidirectionalBWT
+public class BidirectionalBWT implements Aligner
 {
     private static Logger         _logger                     = Logger.getLogger(BidirectionalBWT.class);
 
     private final FMIndexOnGenome fmIndex;
-    private final Reporter        reporter;
+    private Reporter              reporter;
     private final long            N;
     private AlignmentScoreConfig  config;
     private boolean               disableBidirecdtionalSearch = false;
@@ -310,6 +311,12 @@ public class BidirectionalBWT
         if (_logger.isDebugEnabled())
             _logger.debug("FM Search:%d, push count: %,d", numFMIndexSearches, queue.pushCount);
 
+    }
+
+    @Override
+    public void align(Read read, Reporter out) throws Exception {
+        this.reporter = out;
+        align(read);
     }
 
 }

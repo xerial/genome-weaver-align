@@ -33,6 +33,7 @@ import java.util.TreeSet;
 import org.utgenome.UTGBException;
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
+import org.utgenome.weaver.align.Aligner;
 import org.utgenome.weaver.align.AlignmentConfig;
 import org.utgenome.weaver.align.BitParallelSmithWaterman;
 import org.utgenome.weaver.align.CIGAR;
@@ -53,7 +54,7 @@ import org.xerial.lens.SilkLens;
 import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
 
-public class SuffixFilter
+public class SuffixFilter implements Aligner
 {
     private static Logger                   _logger               = Logger.getLogger(SuffixFilter.class);
 
