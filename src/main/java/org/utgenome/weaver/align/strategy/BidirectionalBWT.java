@@ -29,6 +29,7 @@ import java.util.HashMap;
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
 import org.utgenome.weaver.align.Aligner;
+import org.utgenome.weaver.align.AlignmentConfig;
 import org.utgenome.weaver.align.AlignmentScoreConfig;
 import org.utgenome.weaver.align.FMIndexOnGenome;
 import org.utgenome.weaver.align.SiSet;
@@ -54,22 +55,18 @@ public class BidirectionalBWT implements Aligner
     private final FMIndexOnGenome fmIndex;
     private Reporter              reporter;
     private final long            N;
-    private AlignmentScoreConfig  config;
+    private AlignmentConfig       config;
     private boolean               disableBidirecdtionalSearch = false;
 
-    public BidirectionalBWT(FMIndexOnGenome fmIndex, Reporter reporter) {
+    public BidirectionalBWT(FMIndexOnGenome fmIndex, Reporter reporter, AlignmentConfig config) {
         this.fmIndex = fmIndex;
         this.reporter = reporter;
         this.N = fmIndex.textSize();
-        this.config = new AlignmentScoreConfig();
+        this.config = config;
     }
 
     public void disableBidirectionalSearch() {
         this.disableBidirecdtionalSearch = true;
-    }
-
-    public void setAlignmentScoreConfig(AlignmentScoreConfig config) {
-        this.config = config;
     }
 
     void report(BWAState result) throws Exception {

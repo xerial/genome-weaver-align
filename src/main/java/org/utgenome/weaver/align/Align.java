@@ -121,12 +121,14 @@ public class Align extends GenomeWeaverCommand
             aligner = new SuffixFilter(common.fmIndex, common.reference, common.config);
             break;
         case BD:
-            aligner = new BidirectionalBWT(common.fmIndex, common.reporter);
+            aligner = new BidirectionalBWT(common.fmIndex, common.reporter, common.config);
             break;
-        case BWA:
-            aligner = new BWAAligner(fmIndex, config, reporter);
-            ((BWAAligner) aligner).aligner.disableBidirectionalSearch();
+        case BWA: {
+            BidirectionalBWT al = new BidirectionalBWT(common.fmIndex, common.reporter, common.config);
+            al.disableBidirectionalSearch();
+            aligner = al;
             break;
+        }
         default:
             throw new UTGBException(String.format("%s mode is not supported", common.config.strategy));
             //        case BD:
