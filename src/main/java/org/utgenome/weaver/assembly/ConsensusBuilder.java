@@ -32,6 +32,7 @@ import java.util.List;
 import org.utgenome.weaver.GenomeWeaverCommand;
 import org.utgenome.weaver.align.ACGT;
 import org.utgenome.weaver.align.ACGTSequence;
+import org.xerial.lens.SilkLens;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Option;
 
@@ -70,7 +71,12 @@ public class ConsensusBuilder extends GenomeWeaverCommand
 
             if (v.isSinglePointMutation()) {
                 // use 0-origin
-                seq.set(v.start - 1, ACGT.encode(v.nonRefAllele.charAt(0)));
+                try {
+                    seq.set(v.start - 1, ACGT.encode(v.nonRefAllele.charAt(0)));
+                }
+                catch (Exception e) {
+                    _logger.error("Failed to apply variation %s\nchr length:%,d", SilkLens.toSilk(v), seq.length());
+                }
             }
         }
 
