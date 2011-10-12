@@ -297,7 +297,7 @@ public class BidirectionalSuffixFilter implements Aligner
                 }
                 else {
                     // report unmapped read
-                    report(new ReadHit("*", 0, 0, -1, Strand.FORWARD, new CIGAR(), 0, null), 0);
+                    report(new ReadHit("*", 0, 0, 0, 0, -1, Strand.FORWARD, new CIGAR(), 0, null), 0);
                 }
 
             }
@@ -525,7 +525,7 @@ public class BidirectionalSuffixFilter implements Aligner
 
         private void reportExactMatchAlignment(FMQuickScan f) throws Exception {
             PosOnGenome pos = fmIndex.toGenomeCoordinate(f.si.lowerBound, m, f.strand);
-            resultHolder.add(new ReadHit(pos.chr, pos.pos, m, 0, f.strand, new CIGAR(String.format("%dM", m)),
+            resultHolder.add(new ReadHit(pos.chr, pos.pos, m, 0, m, 0, f.strand, new CIGAR(String.format("%dM", m)),
                     (int) f.si.range(), null));
         }
 
@@ -578,8 +578,8 @@ public class BidirectionalSuffixFilter implements Aligner
                 try {
                     PosOnGenome p = fmIndex.getSequenceBoundary().translate(refStart + alignment.pos + 1,
                             Strand.FORWARD);
-                    hit = new ReadHit(p.chr, p.pos, fragmentLength, alignment.numMismatches, cursor.getStrand(),
-                            alignment.cigar, (int) si.range(), null);
+                    hit = new ReadHit(p.chr, p.pos, fragmentLength, cursor.start, cursor.end, alignment.numMismatches,
+                            cursor.getStrand(), alignment.cigar, (int) si.range(), null);
                 }
                 catch (UTGBException e) {
                     _logger.error(e);

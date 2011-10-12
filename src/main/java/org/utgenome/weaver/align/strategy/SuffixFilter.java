@@ -219,7 +219,7 @@ public class SuffixFilter implements Aligner
                 }
                 else {
                     // report unmapped read
-                    report(new ReadHit("*", 0, 0, -1, Strand.FORWARD, new CIGAR(), 0, null), 0);
+                    report(new ReadHit("*", 0, 0, 0, 0, -1, Strand.FORWARD, new CIGAR(), 0, null), 0);
                 }
 
             }
@@ -336,8 +336,8 @@ public class SuffixFilter implements Aligner
                     try {
                         PosOnGenome p = fmIndex.getSequenceBoundary().translate(refStart + alignment.pos + 1,
                                 Strand.FORWARD);
-                        reportResult(new ReadHit(p.chr, p.pos, m, alignment.numMismatches, c.strand, alignment.cigar,
-                                (int) c.si.range(), null));
+                        reportResult(new ReadHit(p.chr, p.pos, m, 0, m, alignment.numMismatches, c.strand,
+                                alignment.cigar, (int) c.si.range(), null));
                     }
                     catch (UTGBException e) {
                         _logger.error(e);

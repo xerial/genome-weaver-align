@@ -64,6 +64,10 @@ public class SOLiDColorSequence implements LSeq
         ensureArrayCapacity(numBases);
     }
 
+    public ACGTSequence toACGTSequence() {
+        return null;
+    }
+
     private static int minArraySize(long numBases) {
         long bitSize = numBases * 3L;
         long blockBitSize = LONG_BYTE_SIZE * 3L * 8L;

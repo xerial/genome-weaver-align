@@ -203,8 +203,8 @@ public class AlignmentRecord
             // TODO generalize this part to two or more fragments
             int qualLen = qual != null ? qual.length() : hit.matchLength;
             ReadHit split = hit.nextSplit;
-            ACGTSequence s1 = query.subString(0, hit.matchLength);
-            ACGTSequence s2 = query.subString(hit.matchLength, m);
+            ACGTSequence s1 = query.subString(hit.qStart, hit.qEnd);
+            ACGTSequence s2 = query.subString(split.qStart, split.qEnd);
             int b1 = Math.min(qualLen, hit.matchLength);
             int b2 = Math.min(qualLen, m);
             String q1 = qual != null ? qual.substring(0, b1) : null;

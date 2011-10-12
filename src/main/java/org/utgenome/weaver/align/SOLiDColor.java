@@ -24,6 +24,13 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.xerial.util.CollectionUtil;
+import org.xerial.util.Functor;
+import org.xerial.util.StringUtil;
+
 /**
  * Color code sequence character for SOLiD
  * 
@@ -35,8 +42,22 @@ public enum SOLiDColor {
 
     public final int                  code;
 
-    private final static SOLiDColor[] codeTable = { C0, C1, C2, C3, N, N, N, N, N };
-    private final static String[]     codeName  = { "0", "1", "2", "3", "." };
+    private final static SOLiDColor[] codeTable            = { C0, C1, C2, C3, N, N, N, N, N };
+    private final static String[]     codeName             = { "0", "1", "2", "3", "." };
+
+    private final static SOLiDColor[] charToCode           = { N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N,
+            N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, C0, C1, C2, C3, N,
+            N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N,
+            N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N,
+            N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N,
+            N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N,
+            N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N,
+            N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N };
+
+    private final static ACGT[]       base_color2baseTable = {
+                                                           // A0 A1 A2 A3
+
+                                                           };
 
     private SOLiDColor(int code) {
         this.code = code;
@@ -51,4 +72,33 @@ public enum SOLiDColor {
         return codeTable[value & 0x07];
     }
 
+    public static SOLiDColor encode(char ch) {
+        return charToCode[ch & 0xFF];
+    }
+
+    public static List<SOLiDColor> genCharToColorCodeTable() {
+
+        ArrayList<SOLiDColor> table = new ArrayList<SOLiDColor>();
+        for (int i = 0; i < 255; ++i) {
+            char c = (char) i;
+            SOLiDColor code = SOLiDColor.N;
+            switch (c) {
+            case '0':
+                code = SOLiDColor.C0;
+                break;
+            case '1':
+                code = SOLiDColor.C1;
+                break;
+            case '2':
+                code = SOLiDColor.C2;
+                break;
+            case '3':
+                code = SOLiDColor.C3;
+                break;
+            }
+            table.add(code);
+        }
+
+        return table;
+    }
 }

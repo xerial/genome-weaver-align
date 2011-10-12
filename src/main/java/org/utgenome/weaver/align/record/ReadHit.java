@@ -48,17 +48,21 @@ public class ReadHit
     public final Strand strand;
     public final CIGAR  cigar;
     public final int    numHits;
+    public final int    qStart;
+    public final int    qEnd;
     public ReadHit      nextSplit;
 
     public static ReadHit noHit(Strand strand) {
-        return new ReadHit("", 0, 0, 0, strand, new CIGAR(), 0, null);
+        return new ReadHit("", 0, 0, 0, 0, 0, strand, new CIGAR(), 0, null);
     }
 
-    public ReadHit(String chr, long pos, int matchLength, int diff, Strand strand, CIGAR cigar, int numHits,
-            ReadHit nextSplit) {
+    public ReadHit(String chr, long pos, int matchLength, int qStart, int qEnd, int diff, Strand strand, CIGAR cigar,
+            int numHits, ReadHit nextSplit) {
         this.chr = chr;
         this.pos = pos;
         this.matchLength = matchLength;
+        this.qStart = qStart;
+        this.qEnd = qEnd;
         this.diff = diff;
         this.strand = strand;
         this.cigar = cigar;
