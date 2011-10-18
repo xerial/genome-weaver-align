@@ -102,7 +102,7 @@ public class OccurrenceCountTable
         int blockPos = (int) (index / W);
         // Look up the occurrence count table. 
         // And also count the characters using the original sequence
-        long occ = occTable[blockPos][ch.code] + seq.fastCount(ch, blockPos * W, index);
+        long occ = occTable[blockPos][ch.code] + seq.fastCount(ch, (long) blockPos * W, index);
         return occ;
     }
 
