@@ -38,7 +38,7 @@ public class OccurrenceCountTable
 
     private long[][]           occTable;
     private final ACGTSequence seq;
-    private final int          W;
+    private final long         W;
     private final int          K;
 
     /**
@@ -61,7 +61,7 @@ public class OccurrenceCountTable
             occTable[0][k] = 0;
         }
         for (int i = 1; i < numRows; ++i) {
-            long start = ((long) (i - 1)) * W;
+            long start = ((i - 1)) * W;
             long end = Math.min(start + W, seq.textSize());
             long[] count = seq.fastCountACGTN(start, end);
             for (int k = 0; k < K; ++k) {
@@ -102,7 +102,7 @@ public class OccurrenceCountTable
         int blockPos = (int) (index / W);
         // Look up the occurrence count table. 
         // And also count the characters using the original sequence
-        long occ = occTable[blockPos][ch.code] + seq.fastCount(ch, (long) blockPos * W, index);
+        long occ = occTable[blockPos][ch.code] + seq.fastCount(ch, blockPos * W, index);
         return occ;
     }
 
