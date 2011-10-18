@@ -40,12 +40,12 @@ public class SOLiDColorSequence implements LSeq
     // 2G (max of Java array size) * 8 (long byte size) * 8 / 3 (bit) =  42G  (42G characters)
     private ACGT              leadingBase    = ACGT.T;
     private long[]            seq;
-    private long              numBases;
+    private long              numColorLetters;
     private long              capacity;
 
     public SOLiDColorSequence() {
         ensureArrayCapacity(10);
-        numBases = 0;
+        numColorLetters = 0;
     }
 
     public SOLiDColorSequence(String s) {
@@ -76,15 +76,15 @@ public class SOLiDColorSequence implements LSeq
     }
 
     public SOLiDColorSequence(long numBases) {
-        this.numBases = numBases;
+        this.numColorLetters = numBases;
 
         ensureArrayCapacity(numBases);
     }
 
     public ACGTSequence toACGTSequence() {
-        ACGTSequence acgt = new ACGTSequence(numBases);
+        ACGTSequence acgt = new ACGTSequence(numColorLetters);
         ACGT current = leadingBase;
-        for (long i = 0; i < numBases; ++i) {
+        for (long i = 0; i < numColorLetters; ++i) {
             current = SOLiDColor.decode(current, getColor(i));
             acgt.set(i, current);
         }
@@ -92,8 +92,8 @@ public class SOLiDColorSequence implements LSeq
     }
 
     public String toColorString() {
-        StringBuilder s = new StringBuilder((int) numBases);
-        for (int i = 0; i < numBases; ++i) {
+        StringBuilder s = new StringBuilder((int) numColorLetters);
+        for (int i = 0; i < numColorLetters; ++i) {
             s.append(getColor(i));
         }
         return s.toString();
@@ -101,7 +101,7 @@ public class SOLiDColorSequence implements LSeq
 
     public SOLiDColorSequence reverseComplement() {
         ACGTSequence rc = this.toACGTSequence().reverseComplement();
-        SOLiDColorSequence rev = new SOLiDColorSequence(this.numBases);
+        SOLiDColorSequence rev = new SOLiDColorSequence(this.numColorLetters);
         if (rc.textSize() > 0 && rc.getACGT(0) != ACGT.N) {
             // Use the default leading base
             rev.set(0, SOLiDColor.encode(rev.leadingBase, rc.getACGT(0)));
@@ -110,8 +110,8 @@ public class SOLiDColorSequence implements LSeq
             // Use N when leading base is unknown
             rev.leadingBase = ACGT.N;
         }
-        for (int i = 0; i < this.numBases; ++i) {
-            rev.set(i + 1, getColor(numBases - i - 1));
+        for (int i = 0; i < this.numColorLetters; ++i) {
+            rev.set(i + 1, getColor(numColorLetters - i - 1));
         }
         return rev;
     }
@@ -149,7 +149,7 @@ public class SOLiDColorSequence implements LSeq
 
     private SOLiDColorSequence(long[] rawSeq, long numBases) {
         this.seq = rawSeq;
-        this.numBases = numBases;
+        this.numColorLetters = numBases;
     }
 
     public SOLiDColor getColor(long index) {
@@ -186,7 +186,7 @@ public class SOLiDColorSequence implements LSeq
     }
 
     public void append(SOLiDColor base) {
-        long index = this.numBases++;
+        long index = this.numColorLetters++;
         if (index >= this.capacity) {
             long newCapacity = (index * 3L / 2L) + 64L;
             ensureArrayCapacity(newCapacity);
@@ -196,7 +196,7 @@ public class SOLiDColorSequence implements LSeq
 
     @Override
     public long textSize() {
-        return numBases;
+        return numColorLetters;
     }
 
     @Override
