@@ -27,12 +27,14 @@ package org.utgenome.weaver.align;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.xerial.util.CollectionUtil;
-import org.xerial.util.Functor;
-import org.xerial.util.StringUtil;
-
 /**
- * Color code sequence character for SOLiD
+ * Color code sequence character for SOLiD.
+ * 
+ * 
+ * Color 0 is for no change, 1 for 00 (A) <=> 01 (C), 10 (G) <=> 11 (T) (flip
+ * LSB), 2 for 00 (A) <=> 10 (G), 01 (C) <=> 11 (T) (flip MSB), 3 for complement
+ * 00 (A) <=> 11 (T), 01 (C) <=> 10 (G).
+ * 
  * 
  * @author leo
  * 
@@ -42,25 +44,52 @@ public enum SOLiDColor {
 
     public final int                  code;
 
-    private final static SOLiDColor[] codeTable            = { C0, C1, C2, C3, N, N, N, N, N };
-    private final static String[]     codeName             = { "0", "1", "2", "3", "." };
+    private final static SOLiDColor[] codeTable                = { C0, C1, C2, C3, N, N, N, N, N };
+    private final static String[]     codeName                 = { "0", "1", "2", "3", "." };
 
-    private final static SOLiDColor[] charToCode           = { N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N,
-            N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, C0, C1, C2, C3, N,
+    private final static SOLiDColor[] charToCode               = { N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N,
+            N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, C0, C1, C2,
+            C3, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N,
             N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N,
             N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N,
             N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N,
             N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N,
-            N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N,
-            N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N };
+            N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N, N };
 
-    private final static ACGT[]       base_color2baseTable = {
-                                                           // A0 A1 A2 A3
+    private final static SOLiDColor[] dibaseToColorTable       = {
+                                                               // A C G T
+            C0, C1, C2, C3, // A
+            C1, C0, C3, C2, // C
+            C2, C3, C0, C1, // G
+            C3, C2, C1, C0                                    // T
+                                                               };
 
-                                                           };
+    private final static ACGT[]       baseAndColorToColorTable = {
+                                                               // C0, C1, C2, C3
+            ACGT.A, ACGT.C, ACGT.G, ACGT.T, // A 
+            ACGT.C, ACGT.A, ACGT.T, ACGT.G, // C
+            ACGT.G, ACGT.T, ACGT.A, ACGT.C, // G
+            ACGT.T, ACGT.G, ACGT.C, ACGT.A, // T
+                                                               };
 
     private SOLiDColor(int code) {
         this.code = code;
+    }
+
+    public static ACGT decode(ACGT base, SOLiDColor color) {
+        if (base == ACGT.N || color == SOLiDColor.N) {
+            return ACGT.N;
+        }
+        else {
+            return baseAndColorToColorTable[(base.code << 2) | color.code];
+        }
+    }
+
+    public static SOLiDColor encode(ACGT prev, ACGT next) {
+        if (prev == ACGT.N || next == ACGT.N)
+            return SOLiDColor.N;
+        else
+            return dibaseToColorTable[(prev.code << 2) | next.code];
     }
 
     @Override

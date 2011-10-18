@@ -38,7 +38,7 @@ public class SOLiDColorSequence implements LSeq
     private static final long MAX_SIZE       = (2 * 1024 * 1024 * 1024 * 8 * 8) / 3;
 
     // 2G (max of Java array size) * 8 (long byte size) * 8 / 3 (bit) =  42G  (42G characters)
-    private ACGT              leadingBase;
+    private ACGT              leadingBase    = ACGT.T;
     private long[]            seq;
     private long              numBases;
     private long              capacity;
@@ -49,12 +49,29 @@ public class SOLiDColorSequence implements LSeq
     }
 
     public SOLiDColorSequence(String s) {
-        this(s.length());
+        this(s.length() - 1);
 
-        for (int i = 0; i < s.length(); ++i) {
-            // TODO fix me for color-spaced sequence
-            byte code = ACGT.to3bitCode(s.charAt(i));
+        if (s.length() <= 0) {
+            this.leadingBase = ACGT.N;
+        }
+        else {
+            this.leadingBase = ACGT.encode(s.charAt(0));
+            for (int i = 1; i < s.length(); ++i) {
+                SOLiDColor code = SOLiDColor.encode(s.charAt(i));
+                set(i - 1, code);
+            }
+        }
+    }
+
+    public SOLiDColorSequence(ACGTSequence acgt) {
+        this(acgt.textSize());
+
+        ACGT prev = leadingBase;
+        for (long i = 0; i < acgt.textSize(); ++i) {
+            ACGT next = acgt.getACGT(i);
+            SOLiDColor code = SOLiDColor.encode(prev, next);
             set(i, code);
+            prev = next;
         }
     }
 
@@ -65,7 +82,36 @@ public class SOLiDColorSequence implements LSeq
     }
 
     public ACGTSequence toACGTSequence() {
-        return null;
+        ACGTSequence acgt = new ACGTSequence(numBases);
+        ACGT current = leadingBase;
+        for (long i = 0; i < numBases; ++i) {
+            current = SOLiDColor.decode(current, getColor(i));
+            acgt.set(i, current);
+        }
+        return acgt;
+    }
+
+    public String toColorString() {
+        StringBuilder s = new StringBuilder((int) numBases);
+        for (int i = 0; i < numBases; ++i) {
+            s.append(getColor(i));
+        }
+        return s.toString();
+    }
+
+    public SOLiDColorSequence reverseComplement() {
+        return new SOLiDColorSequence(this.toACGTSequence().reverseComplement());
+        //
+        //        SOLiDColorSequence rev = new SOLiDColorSequence(this.numBases);
+        //        for (int i = 0; i < this.numBases; ++i) {
+        //            rev.set(i, getColor(numBases - i - 1));
+        //        }
+        //        return rev;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s%s", leadingBase, toColorString());
     }
 
     private static int minArraySize(long numBases) {
@@ -112,6 +158,10 @@ public class SOLiDColorSequence implements LSeq
         long nFlag = seq[pos * 3] & (1L << (63 - offset));
         int code = (int) (seq[pos * 3 + (offset >> 5) + 1] >>> shift) & 0x03;
         return nFlag == 0 ? code : 4;
+    }
+
+    public void set(long index, SOLiDColor color) {
+        set(index, color.code);
     }
 
     @Override
