@@ -27,6 +27,7 @@ package org.utgenome.weaver.align.record;
 import org.utgenome.format.fasta.FASTASequence;
 import org.utgenome.format.fastq.FastqRead;
 import org.utgenome.weaver.align.ACGTSequence;
+import org.utgenome.weaver.align.SOLiDColorSequence;
 
 /**
  * 
@@ -97,4 +98,18 @@ public class SingleEndRead implements Read
         return qual;
     }
 
+    @Override
+    public boolean isLetterSpace() {
+        return true;
+    }
+
+    @Override
+    public boolean isColorSpace() {
+        return false;
+    }
+
+    @Override
+    public SOLiDColorSequence getColorRead(int index) {
+        return null;
+    }
 }

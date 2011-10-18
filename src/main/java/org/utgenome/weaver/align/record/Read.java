@@ -25,6 +25,7 @@
 package org.utgenome.weaver.align.record;
 
 import org.utgenome.weaver.align.ACGTSequence;
+import org.utgenome.weaver.align.SOLiDColorSequence;
 
 public interface Read
 {
@@ -33,6 +34,12 @@ public interface Read
     public int getNumReadFragment();
 
     public ACGTSequence getRead(int index);
+
+    public SOLiDColorSequence getColorRead(int index);
+
+    public boolean isLetterSpace();
+
+    public boolean isColorSpace();
 
     public String getQual(int index);
 }

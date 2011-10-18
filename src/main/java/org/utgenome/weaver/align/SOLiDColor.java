@@ -97,8 +97,8 @@ public enum SOLiDColor {
         return codeName[code];
     }
 
-    public static SOLiDColor decode(int value) {
-        return codeTable[value & 0x07];
+    public static SOLiDColor decode(int code) {
+        return codeTable[code & 0x07];
     }
 
     public static SOLiDColor encode(char ch) {

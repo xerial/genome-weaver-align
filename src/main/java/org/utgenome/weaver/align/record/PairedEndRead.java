@@ -25,6 +25,7 @@
 package org.utgenome.weaver.align.record;
 
 import org.utgenome.weaver.align.ACGTSequence;
+import org.utgenome.weaver.align.SOLiDColorSequence;
 import org.xerial.util.StringUtil;
 
 /**
@@ -80,5 +81,20 @@ public class PairedEndRead implements Read
         default:
             throw new ArrayIndexOutOfBoundsException(index);
         }
+    }
+
+    @Override
+    public boolean isLetterSpace() {
+        return true;
+    }
+
+    @Override
+    public boolean isColorSpace() {
+        return false;
+    }
+
+    @Override
+    public SOLiDColorSequence getColorRead(int index) {
+        return null;
     }
 }

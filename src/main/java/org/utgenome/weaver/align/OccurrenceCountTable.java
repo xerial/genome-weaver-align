@@ -61,7 +61,7 @@ public class OccurrenceCountTable
             occTable[0][k] = 0;
         }
         for (int i = 1; i < numRows; ++i) {
-            long start = (i - 1) * W;
+            long start = ((long) (i - 1)) * W;
             long end = Math.min(start + W, seq.textSize());
             long[] count = seq.fastCountACGTN(start, end);
             for (int k = 0; k < K; ++k) {
