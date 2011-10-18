@@ -80,4 +80,25 @@ public class SOLiDColorSequenceTest
 
     }
 
+    @Test
+    public void colorWithN() throws Exception {
+        SOLiDColorSequence c = new SOLiDColorSequence("T0032001032001032001.320010320010320010320010320010");
+        _logger.debug(c.toACGTSequence());
+        _logger.debug(c.reverseComplement());
+        _logger.debug(c.reverseComplement().toACGTSequence());
+        _logger.debug(c.toACGTSequence().reverseComplement());
+
+    }
+
+    @Test
+    public void tag() throws Exception {
+        SOLiDColorSequence c1 = new SOLiDColorSequence(new ACGTSequence(
+                "AACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAA"));
+        SOLiDColorSequence c2 = new SOLiDColorSequence(new ACGTSequence(
+                "GACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAA"));
+
+        _logger.debug(c1);
+        _logger.debug(c2);
+    }
+
 }

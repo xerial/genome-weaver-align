@@ -100,13 +100,20 @@ public class SOLiDColorSequence implements LSeq
     }
 
     public SOLiDColorSequence reverseComplement() {
-        return new SOLiDColorSequence(this.toACGTSequence().reverseComplement());
-        //
-        //        SOLiDColorSequence rev = new SOLiDColorSequence(this.numBases);
-        //        for (int i = 0; i < this.numBases; ++i) {
-        //            rev.set(i, getColor(numBases - i - 1));
-        //        }
-        //        return rev;
+        ACGTSequence rc = this.toACGTSequence().reverseComplement();
+        SOLiDColorSequence rev = new SOLiDColorSequence(this.numBases);
+        if (rc.textSize() > 0 && rc.getACGT(0) != ACGT.N) {
+            // Use the default leading base
+            rev.set(0, SOLiDColor.encode(rev.leadingBase, rc.getACGT(0)));
+        }
+        else {
+            // Use N when leading base is unknown
+            rev.leadingBase = ACGT.N;
+        }
+        for (int i = 0; i < this.numBases; ++i) {
+            rev.set(i + 1, getColor(numBases - i - 1));
+        }
+        return rev;
     }
 
     @Override
