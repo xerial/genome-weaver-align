@@ -49,13 +49,13 @@ public class Client extends GenomeWeaverCommand
     }
 
     @Option(symbol = "p", description = "port number. default=8990")
-    private int    port   = 8990;
+    private int    port     = 8990;
 
     @Option(symbol = "s", description = "server address. default=localhost")
-    private String server = "localhost";
+    private String hostname = "localhost";
 
     @Argument()
-    private String input  = "hello";
+    private String input    = "hello";
 
     @Override
     public void execute(String[] args) throws Exception {
@@ -66,6 +66,10 @@ public class Client extends GenomeWeaverCommand
         //        String message = iface.hello(input);
         //
         //        _logger.info(String.format("Recieved a message: %s", message));
+
+        _logger.info("Connect to the server %s:%d", hostname, port);
+        NettyConnection.connect(hostname, port);
+
     }
 
 }
