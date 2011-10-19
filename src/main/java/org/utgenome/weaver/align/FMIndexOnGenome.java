@@ -30,6 +30,7 @@ import org.utgenome.UTGBException;
 import org.utgenome.weaver.align.BWTransform.BWT;
 import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome;
 import org.utgenome.weaver.align.strategy.SearchDirection;
+import org.xerial.util.StopWatch;
 import org.xerial.util.log.Logger;
 
 /**
@@ -58,6 +59,7 @@ public class FMIndexOnGenome
 
     public static FMIndexOnGenome load(String fastaFilePrefix) throws UTGBException, IOException {
 
+        StopWatch sw = new StopWatch();
         _logger.info("Preparing FM-indexes");
         BWTFiles forwardDB = new BWTFiles(fastaFilePrefix, Strand.FORWARD);
         BWTFiles backwardDB = new BWTFiles(fastaFilePrefix, Strand.REVERSE);
@@ -79,7 +81,7 @@ public class FMIndexOnGenome
         _logger.debug("Constructing Occ Tables");
         FMIndex forwardIndex = new FMIndexOnOccTable(seqF, windowSize);
         FMIndex reverseIndex = new FMIndexOnOccTable(seqR, windowSize);
-        _logger.info("done.");
+        _logger.info("done. %.2 sec.", sw.getElapsedTime());
         return new FMIndexOnGenome(forwardIndex, reverseIndex, forwardSA, backwardSA, index, N, K);
     }
 

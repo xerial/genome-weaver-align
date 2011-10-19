@@ -572,12 +572,13 @@ public class BidirectionalSuffixFilter implements Aligner
             if (alignment == null)
                 hit = ReadHit.noHit(cursor.getStrand());
             else {
-                if (_logger.isTraceEnabled())
-                    _logger.trace("Found an alignment: %s", alignment);
 
                 try {
                     PosOnGenome p = fmIndex.getSequenceBoundary().translate(refStart + alignment.pos + 1,
                             Strand.FORWARD);
+                    if (_logger.isTraceEnabled())
+                        _logger.trace("Found an alignment (%s:%,d): %s", p.chr, p.pos, alignment);
+
                     hit = new ReadHit(p.chr, p.pos, fragmentLength, cursor.start, cursor.end, alignment.numMismatches,
                             cursor.getStrand(), alignment.cigar, (int) si.range(), null);
                 }

@@ -16,8 +16,8 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// ServerTest.java
-// Since: 2011/07/14
+// ActorTest.java
+// Since: 2011/10/19
 //
 // $URL$ 
 // $Author$
@@ -25,12 +25,26 @@
 package org.utgenome.weaver.parallel;
 
 import org.junit.Test;
+import org.utgenome.weaver.parallel.Actor.RemoteActor;
+import org.utgenome.weaver.parallel.Actor.RemoteServer;
+import org.xerial.util.log.Logger;
 
-public class ServerTest
+public class ActorTest
 {
+    private static Logger _logger = Logger.getLogger(ActorTest.class);
+
+    public static class HelloActor
+    {
+        public void hello() {
+            _logger.debug("Hello World!");
+        }
+    }
+
     @Test
-    public void server() throws Exception {
-        //GenomeWeaver.execute("server");
-        //GenomeWeaver.execute("client");
+    public void sample() throws Exception {
+        RemoteServer remote = Actor.remote("localhost", 8990);
+        RemoteActor remoteActor = remote.register(HelloActor.class);
+
+        remoteActor.call("hello");
     }
 }

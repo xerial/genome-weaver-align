@@ -16,21 +16,31 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// ServerTest.java
-// Since: 2011/07/14
+// BaseColorAlign.java
+// Since: 2011/10/18
 //
 // $URL$ 
 // $Author$
 //--------------------------------------
-package org.utgenome.weaver.parallel;
+package org.utgenome.weaver.align.strategy;
 
-import org.junit.Test;
+import org.utgenome.weaver.align.Aligner;
+import org.utgenome.weaver.align.record.Read;
+import org.utgenome.weaver.parallel.Reporter;
 
-public class ServerTest
+/**
+ * Alignment algorithm for a reference (letter-space) and reads (color-space)
+ * 
+ * @author leo
+ * 
+ */
+public class SOLiDAlign implements Aligner
 {
-    @Test
-    public void server() throws Exception {
-        //GenomeWeaver.execute("server");
-        //GenomeWeaver.execute("client");
+
+    @Override
+    public void align(Read read, Reporter out) throws Exception {
+        // TODO Auto-generated method stub
+
     }
+
 }
