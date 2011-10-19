@@ -26,14 +26,12 @@ package org.utgenome.weaver.parallel;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -44,11 +42,10 @@ import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
-import org.jboss.netty.channel.StaticChannelPipeline;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.jboss.netty.handler.codec.serialization.ObjectDecoder;
-import org.jboss.netty.handler.codec.serialization.ObjectEncoder;
+import org.jboss.netty.handler.codec.string.StringDecoder;
+import org.jboss.netty.handler.codec.string.StringEncoder;
 import org.xerial.util.log.Logger;
 
 /**
@@ -67,7 +64,7 @@ public class NettyConnection
         @Override
         public ChannelPipeline getPipeline() throws Exception {
 
-            return new StaticChannelPipeline(new ObjectEncoder(), new ObjectDecoder(), new ActiveRemoteClientHandler());
+            return Channels.pipeline(new ActiveRemoteClientHandler());
         }
 
     }
@@ -75,8 +72,18 @@ public class NettyConnection
     private static class ActiveRemoteClientHandler extends SimpleChannelUpstreamHandler
     {
         @Override
+        public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
+            _logger.info("client: connected");
+            e.getChannel().write("hello");
+        }
+
+        @Override
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
+            ChannelBuffer buf = (ChannelBuffer) e.getMessage();
             _logger.info("Client: recieved %s", e.getMessage());
+
+            e.getChannel().write("done.");
+
         }
     }
 
@@ -118,7 +125,7 @@ public class NettyConnection
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-            _logger.info("error: %s", e.getCause());
+            _logger.info("Server: error %s", e.getCause());
         }
     }
 
@@ -126,7 +133,7 @@ public class NettyConnection
     {
         @Override
         public ChannelPipeline getPipeline() throws Exception {
-            return Channels.pipeline(new ObjectEncoder(), new ObjectDecoder(), new RemoteServer());
+            return Channels.pipeline(new StringDecoder(), new StringEncoder(), new RemoteServer());
         }
 
     }

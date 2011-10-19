@@ -25,16 +25,10 @@
 package org.utgenome.weaver.parallel;
 
 import java.lang.management.ManagementFactory;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import org.jboss.netty.channel.ChannelFuture;
 import org.utgenome.weaver.GenomeWeaverCommand;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Option;
@@ -54,13 +48,16 @@ public class Server extends GenomeWeaverCommand
     }
 
     @Option(symbol = "s", description = "hostname [localhost]")
-    private String hostname = "localhost";
+    private String  hostname = "localhost";
 
     @Option(symbol = "p", description = "listen port. default = 8990")
-    private int    port     = 8990;
+    private int     port     = 8990;
 
     @Option(symbol = "t", description = "time interval (sec.) for launching the server [-1: unlimited]")
-    private int    time     = -1;
+    private int     time     = -1;
+
+    @Option(longName = "daemon", description = "Run as a daemon")
+    private boolean isDaemon = false;
 
     @Override
     public void execute(String[] args) throws Exception {
@@ -70,19 +67,7 @@ public class Server extends GenomeWeaverCommand
         mbs.registerMBean(mBean, mxbeanName);
 
         _logger.info("Start up a server %s:%s", hostname, port);
-
-        ExecutorService serverThread = Executors.newSingleThreadExecutor();
-        Future<Boolean> ret = serverThread.submit(new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                ChannelFuture server = NettyConnection.launchServer(hostname, port);
-                if (time <= 0)
-                    server.awaitUninterruptibly();
-                else
-                    server.awaitUninterruptibly(time, TimeUnit.SECONDS);
-                return true;
-            }
-        });
+        Actor.remote(hostname, port);
 
     }
 
