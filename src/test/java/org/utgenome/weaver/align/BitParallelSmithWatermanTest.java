@@ -290,8 +290,7 @@ public class BitParallelSmithWatermanTest
     public void noMismatch() throws Exception {
 		ACGTSequence r = new ACGTSequence("GCTTCAGTTTCCTGACACTTAAAAAAAAAAGAGTTGCTTATTATTTTAATGAGACTAATGCTTACACTCTGAGTTACTTGTAAGGTGATTGGTTACTTTAATGTTATTATAAGTAATTT");
 		ACGTSequence q = new ACGTSequence(           "CTGACACTTAAAAAAAAAAGAGTTGCTTATTATTTTAATGAGACTAATGCTTACACTCTGAGTTACTTGTAAGGTGATTGGTTACTTTAATGTTATT");
-		Alignment sa = SmithWatermanAligner.standardAlign(r, q);
-        _logger.debug(sa);
+
 
         Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(r, q, 11);
         _logger.debug(alignment);

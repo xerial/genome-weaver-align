@@ -81,7 +81,7 @@ public class FMIndexOnGenome
         _logger.debug("Constructing Occ Tables");
         FMIndex forwardIndex = new FMIndexOnOccTable(seqF, windowSize);
         FMIndex reverseIndex = new FMIndexOnOccTable(seqR, windowSize);
-        _logger.info("done. %.2 sec.", sw.getElapsedTime());
+        _logger.info("done. %.2f sec.", sw.getElapsedTime());
         return new FMIndexOnGenome(forwardIndex, reverseIndex, forwardSA, backwardSA, index, N, K);
     }
 
