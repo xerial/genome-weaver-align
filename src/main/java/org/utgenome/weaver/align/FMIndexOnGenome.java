@@ -43,7 +43,7 @@ public class FMIndexOnGenome
 {
     private static Logger           _logger    = Logger.getLogger(FMIndexOnGenome.class);
 
-    private static final int        windowSize = 64;                                     // Occ table window size 
+    private static final int        windowSize = 128;                                     // Occ table window size 
 
     public final FMIndex            forwardIndex;
     public final FMIndex            reverseIndex;

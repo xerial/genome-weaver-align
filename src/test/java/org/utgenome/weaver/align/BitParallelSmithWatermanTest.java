@@ -24,7 +24,8 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.utgenome.weaver.align.SmithWatermanAligner.Alignment;
@@ -284,5 +285,17 @@ public class BitParallelSmithWatermanTest
         _logger.debug(alignment);
 
     }
+    
+    @Test
+    public void noMismatch() throws Exception {
+		ACGTSequence r = new ACGTSequence("GCTTCAGTTTCCTGACACTTAAAAAAAAAAGAGTTGCTTATTATTTTAATGAGACTAATGCTTACACTCTGAGTTACTTGTAAGGTGATTGGTTACTTTAATGTTATTATAAGTAATTT");
+		ACGTSequence q = new ACGTSequence(           "CTGACACTTAAAAAAAAAAGAGTTGCTTATTATTTTAATGAGACTAATGCTTACACTCTGAGTTACTTGTAAGGTGATTGGTTACTTTAATGTTATT");
+		Alignment sa = SmithWatermanAligner.standardAlign(r, q);
+        _logger.debug(sa);
+
+        Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(r, q, 11);
+        _logger.debug(alignment);
+
+	}
 
 }
