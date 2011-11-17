@@ -25,7 +25,6 @@
 package org.utgenome.weaver.align.strategy;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.TreeSet;
@@ -47,8 +46,8 @@ import org.utgenome.weaver.align.record.AlignmentRecord;
 import org.utgenome.weaver.align.record.Read;
 import org.utgenome.weaver.align.record.ReadHit;
 import org.utgenome.weaver.align.record.SingleEndRead;
-import org.utgenome.weaver.align.strategy.BidirectionalSuffixFilter.SFKey;
 import org.utgenome.weaver.align.strategy.ReadAlignmentNFA.NextState;
+import org.utgenome.weaver.align.strategy.StaircaseFilter.StaircaseFilterHolder;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.StopWatch;
@@ -56,16 +55,16 @@ import org.xerial.util.log.Logger;
 
 public class SuffixFilter implements Aligner
 {
-    private static Logger                   _logger               = Logger.getLogger(SuffixFilter.class);
+    private static Logger         _logger               = Logger.getLogger(SuffixFilter.class);
 
-    private final FMIndexOnGenome           fmIndex;
-    private final AlignmentConfig           config;
-    private final ACGTSequence              reference;
+    private final FMIndexOnGenome fmIndex;
+    private final AlignmentConfig config;
+    private final ACGTSequence    reference;
 
     /**
      * query length -> staircase filter of this query length
      */
-    private HashMap<SFKey, StaircaseFilter> staircaseFilterHolder = new HashMap<SFKey, StaircaseFilter>();
+    private StaircaseFilterHolder staircaseFilterHolder = StaircaseFilter.newHolder();
 
     /**
      * Prepare a suffix filter
@@ -139,14 +138,7 @@ public class SuffixFilter implements Aligner
          * @return
          */
         private StaircaseFilter getStairCaseFilter(int queryLength) {
-            int kk = minMismatches;
-            SFKey key = new SFKey(kk, queryLength);
-            if (!staircaseFilterHolder.containsKey(key)) {
-                StaircaseFilter filter = new StaircaseFilter(queryLength, kk);
-                staircaseFilterHolder.put(key, filter);
-            }
-
-            return staircaseFilterHolder.get(key);
+            return staircaseFilterHolder.getStairCaseFilter(queryLength, minMismatches);
         }
 
         private void initQueue(PrefixScan ps) {

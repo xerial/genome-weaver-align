@@ -26,7 +26,6 @@ package org.utgenome.weaver.align.strategy;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.PriorityQueue;
 
@@ -49,6 +48,7 @@ import org.utgenome.weaver.align.record.Read;
 import org.utgenome.weaver.align.record.ReadHit;
 import org.utgenome.weaver.align.record.SingleEndRead;
 import org.utgenome.weaver.align.strategy.ReadAlignmentNFA.NextState;
+import org.utgenome.weaver.align.strategy.StaircaseFilter.StaircaseFilterHolder;
 import org.utgenome.weaver.parallel.Reporter;
 import org.xerial.lens.SilkLens;
 import org.xerial.util.StopWatch;
@@ -72,50 +72,17 @@ import org.xerial.util.log.Logger;
  */
 public class BidirectionalSuffixFilter implements Aligner
 {
-    private static Logger                   _logger               = Logger.getLogger(BidirectionalSuffixFilter.class);
+    private static Logger         _logger               = Logger.getLogger(BidirectionalSuffixFilter.class);
 
-    private final FMIndexOnGenome           fmIndex;
-    private final AlignmentConfig           config;
-    private final ACGTSequence              reference;
+    private final FMIndexOnGenome fmIndex;
+    private final AlignmentConfig config;
+    private final ACGTSequence    reference;
     //private final int                       k;                                                            // maximum number of mismatches allowed
 
     /**
      * query length -> staircase filter of this query length
      */
-    private HashMap<SFKey, StaircaseFilter> staircaseFilterHolder = new HashMap<SFKey, StaircaseFilter>();
-
-    public static class SFKey
-    {
-        public final int numMismatches;
-        public final int queryLen;
-        public int       hash = 0;
-
-        public SFKey(int numMismatches, int queryLen) {
-            this.numMismatches = numMismatches;
-            this.queryLen = queryLen;
-        }
-
-        @Override
-        public int hashCode() {
-            if (hash == 0) {
-                hash = 3;
-                hash += numMismatches * 17;
-                hash += queryLen * 17;
-                hash = hash / 1997;
-            }
-            return hash;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj instanceof SFKey) {
-                SFKey other = (SFKey) obj;
-                return this.numMismatches == other.numMismatches && this.queryLen == other.queryLen;
-            }
-            return false;
-        }
-
-    }
+    private StaircaseFilterHolder staircaseFilterHolder = StaircaseFilter.newHolder();
 
     /**
      * Prepare a suffix filter
@@ -237,14 +204,7 @@ public class BidirectionalSuffixFilter implements Aligner
          * @return
          */
         private StaircaseFilter getStairCaseFilter(int queryLength) {
-            int kk = minMismatches;
-            SFKey key = new SFKey(kk, queryLength);
-            if (!staircaseFilterHolder.containsKey(key)) {
-                StaircaseFilter filter = new StaircaseFilter(queryLength, kk);
-                staircaseFilterHolder.put(key, filter);
-            }
-
-            return staircaseFilterHolder.get(key);
+            return staircaseFilterHolder.getStairCaseFilter(queryLength, minMismatches);
         }
 
         public void align() throws Exception {
@@ -407,13 +367,13 @@ public class BidirectionalSuffixFilter implements Aligner
                 {
                     SearchState next = c;
                     while (next.hasHit() || next.cursor.getRemainingBases() == 0) {
-                        if (next.split == null) {
+                        if (next.nextSplit == null) {
                             reportAlignment(c);
                             continue queue_loop;
                         }
                         else {
                             // switch to the next split
-                            next = next.split;
+                            next = next.nextSplit;
                         }
                     }
                     c = next;
@@ -596,7 +556,7 @@ public class BidirectionalSuffixFilter implements Aligner
             ReadHit alignment = verify(c);
             {
                 ReadHit nextHit = alignment;
-                for (SearchState next = c.split; next != null; next = next.split) {
+                for (SearchState next = c.nextSplit; next != null; next = next.nextSplit) {
                     ReadHit result = verify(next);
                     nextHit.nextSplit = result;
                 }
@@ -683,7 +643,7 @@ public class BidirectionalSuffixFilter implements Aligner
      * @author leo
      * 
      */
-    public class SearchState
+    private class SearchState
     {
         public final Cursor         cursor;
         public final SuffixInterval currentSi;
@@ -691,7 +651,7 @@ public class BidirectionalSuffixFilter implements Aligner
         private ReadAlignmentNFA    automaton;
         // 32 bit = searchFlag(5) + currentBase(3) + minK (8) + priority(8) + hasHit(1) 
         private int                 state;
-        public SearchState          split;
+        public SearchState          nextSplit;
 
         public int getLowerBoundOfK() {
             return (state >>> 8) & 0xFF;
@@ -703,7 +663,7 @@ public class BidirectionalSuffixFilter implements Aligner
         }
 
         public int getNumSplit() {
-            return split == null ? 0 : 1 + split.getNumSplit();
+            return nextSplit == null ? 0 : 1 + nextSplit.getNumSplit();
         }
 
         /**
@@ -761,7 +721,7 @@ public class BidirectionalSuffixFilter implements Aligner
             this.automaton = automaton;
             this.state = ((ch.code & 0x7) << 5) | ((minK & 0xFF) << 8) | ((priority & 0xFF) << 16)
                     | ((hasMatch ? 1 : 0) << 24);
-            this.split = split;
+            this.nextSplit = split;
         }
 
         /**
@@ -789,7 +749,7 @@ public class BidirectionalSuffixFilter implements Aligner
         @Override
         public String toString() {
             return String.format("%s%s %s%s:%,d %s %s", cursorState(),
-                    split == null ? "" : String.format(" split(%s) ", split.cursorState()), currentACGT(),
+                    nextSplit == null ? "" : String.format(" split(%s) ", nextSplit.cursorState()), currentACGT(),
                     currentSi != null ? currentSi : "", currentSi != null ? currentSi.range() : fmIndex.textSize(),
                     getUpdateFlag(), siTable);
         }
@@ -803,10 +763,10 @@ public class BidirectionalSuffixFilter implements Aligner
             int nm = getLowerBoundOfK() - numSplits;
             int mm = cursor.getProcessedBases() - nm;
             int score = mm * config.matchScore - nm * config.mismatchPenalty - numSplits * config.splitOpenPenalty;
-            if (split == null)
+            if (nextSplit == null)
                 return score;
             else
-                return score + split.score();
+                return score + nextSplit.score();
         }
 
         public int upperBoundOfScore() {
@@ -814,10 +774,10 @@ public class BidirectionalSuffixFilter implements Aligner
             int nm = getLowerBoundOfK() - numSplits;
             int mm = cursor.getProcessedBases() + cursor.getRemainingBases() - nm;
             int score = mm * config.matchScore - nm * config.mismatchPenalty - numSplits * config.splitOpenPenalty;
-            if (split == null)
+            if (nextSplit == null)
                 return score;
             else
-                return score + split.upperBoundOfScore();
+                return score + nextSplit.upperBoundOfScore();
         }
 
         public SearchState nextStateAfterSplit(int k) {
@@ -829,7 +789,7 @@ public class BidirectionalSuffixFilter implements Aligner
 
                 SearchState newState = new SearchState(currentSi, currentACGT(), newCursor[0], siTable,
                         automaton.nextStateAfterSplit(k), hasHit(), minK, getPriority(), null);
-                newState.split = new SearchState(null, ACGT.N, newCursor[1], fmIndex.initSet(newCursor[1]
+                newState.nextSplit = new SearchState(null, ACGT.N, newCursor[1], fmIndex.initSet(newCursor[1]
                         .getSearchDirection()), new ReadAlignmentNFA(k).activateDiagonalStates(), false, minK,
                         getPriority(), null);
                 return newState;
@@ -849,7 +809,7 @@ public class BidirectionalSuffixFilter implements Aligner
             SuffixInterval si = nextCursor.isForwardSearch() ? this.siTable.getForward(ch) : this.siTable
                     .getBackward(ch);
             return new SearchState(si, ch, nextCursor, nextSi, next.nextState, next.hasMatch, nextMinK, getPriority(),
-                    split);
+                    nextSplit);
         }
 
         /**
@@ -865,12 +825,12 @@ public class BidirectionalSuffixFilter implements Aligner
             }
             else {
                 SearchState prev = this;
-                while (prev.split != oldState) {
-                    prev = prev.split;
+                while (prev.nextSplit != oldState) {
+                    prev = prev.nextSplit;
                     if (prev == null)
                         return null;
                 }
-                prev.split = newState;
+                prev.nextSplit = newState;
                 return this;
             }
         }

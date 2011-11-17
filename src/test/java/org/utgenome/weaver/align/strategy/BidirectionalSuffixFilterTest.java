@@ -80,7 +80,7 @@ public class BidirectionalSuffixFilterTest
         // |||X||||
         // GCCAAGTT
         AlignmentRecord a = align("GCCAAGTT");
-        assertEquals("3M1X4M", a.cigar.toString());
+        assertEquals("8M", a.cigar.toString());
         assertEquals(3, a.start);
         assertEquals(Strand.FORWARD, a.strand);
         assertEquals(1, a.numMismatches);
@@ -89,7 +89,7 @@ public class BidirectionalSuffixFilterTest
     @Test
     public void oneMismatchReverse() throws Exception {
         AlignmentRecord a = align(new ACGTSequence("GCGTAGTT").reverseComplement());
-        assertEquals("2M1X5M", a.cigar.toString());
+        assertEquals("8M", a.cigar.toString());
         assertEquals(3, a.start);
         assertEquals(Strand.REVERSE, a.strand);
         assertEquals(1, a.numMismatches);
@@ -98,7 +98,7 @@ public class BidirectionalSuffixFilterTest
     @Test
     public void bidirectionalSearch() throws Exception {
         AlignmentRecord a = align("AACCCTAGTTTCGTT");
-        assertEquals("2M1X9M1X2M", a.cigar.toString());
+        assertEquals("15M", a.cigar.toString());
         assertEquals(1, a.start);
         assertEquals(Strand.FORWARD, a.strand);
         assertEquals(2, a.numMismatches);
@@ -107,7 +107,7 @@ public class BidirectionalSuffixFilterTest
     @Test
     public void bidirectionalSearchReverse() throws Exception {
         AlignmentRecord a = align(new ACGTSequence("AACCCTAGTTTCGTT").reverseComplement());
-        assertEquals("2M1X9M1X2M", a.cigar.toString());
+        assertEquals("15M", a.cigar.toString());
         assertEquals(1, a.start);
         assertEquals(Strand.REVERSE, a.strand);
         assertEquals(2, a.numMismatches);
@@ -183,7 +183,7 @@ public class BidirectionalSuffixFilterTest
         assertEquals(1, a.start);
         assertEquals(Strand.FORWARD, a.strand);
         assertEquals(2, a.numMismatches);
-        assertEquals("8M1X4M1X2M", a.cigar.toString());
+        assertEquals("16M", a.cigar.toString());
     }
 
     @Test

@@ -24,6 +24,8 @@
 //--------------------------------------
 package org.utgenome.weaver.align.strategy;
 
+import java.util.HashMap;
+
 import org.utgenome.weaver.align.BitVector;
 import org.xerial.util.StringUtil;
 
@@ -103,4 +105,58 @@ public class StaircaseFilter
     public String toString() {
         return StringUtil.join(staircaseMask, ", ");
     }
+
+    public static StaircaseFilterHolder newHolder() {
+        return new StaircaseFilterHolder();
+    }
+
+    public static class StaircaseFilterHolder
+    {
+        private HashMap<SFKey, StaircaseFilter> staircaseFilterHolder = new HashMap<SFKey, StaircaseFilter>();
+
+        private static class SFKey
+        {
+            public final int numMismatches;
+            public final int queryLen;
+            public int       hash = 0;
+
+            public SFKey(int numMismatches, int queryLen) {
+                this.numMismatches = numMismatches;
+                this.queryLen = queryLen;
+            }
+
+            @Override
+            public int hashCode() {
+                if (hash == 0) {
+                    hash = 3;
+                    hash += numMismatches * 17;
+                    hash += queryLen * 17;
+                    hash = hash / 1997;
+                }
+                return hash;
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                if (obj instanceof SFKey) {
+                    SFKey other = (SFKey) obj;
+                    return this.numMismatches == other.numMismatches && this.queryLen == other.queryLen;
+                }
+                return false;
+            }
+
+        }
+
+        public StaircaseFilter getStairCaseFilter(int queryLength, int minMismatches) {
+            int kk = minMismatches;
+            SFKey key = new SFKey(kk, queryLength);
+            if (!staircaseFilterHolder.containsKey(key)) {
+                StaircaseFilter filter = new StaircaseFilter(queryLength, kk);
+                staircaseFilterHolder.put(key, filter);
+            }
+
+            return staircaseFilterHolder.get(key);
+        }
+    }
+
 }

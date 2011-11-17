@@ -89,7 +89,7 @@ public class ReadAlignmentNFA
     public String toNFAStateString() {
         int w = (this.automaton.length + 1) * 2 + 1;
         StringBuilder s = new StringBuilder();
-        s.append(String.format("kOffset:%d ", kOffset));
+        s.append(String.format("kOffset:%d\n", kOffset));
         for (int j = 0; j < automaton.length; ++j) {
             s.append(toBinary(automaton[j], w));
             if (j != automaton.length - 1) {
@@ -189,6 +189,7 @@ public class ReadAlignmentNFA
             }
         }
 
+        // 
         int minK = Math.min(minKwithMatch, minKwithProgress);
         if (minK < k)
             return new NextState(new ReadAlignmentNFA(removeLayersFromAutomaton(next, minK), kOffset + minK), false);
