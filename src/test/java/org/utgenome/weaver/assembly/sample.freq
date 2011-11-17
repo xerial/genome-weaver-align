@@ -8,3 +8,4 @@
 8	chr1	10291	10292	C	rs1	T	8	(C,6)	(T,1)
 9	chr1	10321	10322	C	rs1	T	8	(C,7)	(T,1)
 10	chr1	10329	10334	acccc	rs1	accc	8	(acccc,7)	(accc,1)
+11	chr1	10340	10340	C	rs1	T,G	8	(C,7)	(T,1)	(G,1)
