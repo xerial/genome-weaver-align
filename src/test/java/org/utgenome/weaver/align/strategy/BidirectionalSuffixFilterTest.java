@@ -188,7 +188,18 @@ public class BidirectionalSuffixFilterTest
 
     @Test
     public void clip() throws Exception {
+        // r:AAGCCTAGTTTCCTTG
+        //   ||||||||||           
+        // q:AAGCCTAGTTAAAAAA
         align("AAGCCTAGTTAAAAAA"); // 11S
+    }
+
+    @Test
+    public void clip2() throws Exception {
+        // r:AAGCCTAGTTTCCTTG
+        //         ||||||||||
+        // q:TTTTTTAGTTTCCTTG
+        align("TTTTTTAGTTTCCTTG"); // 11S
     }
 
     @Test

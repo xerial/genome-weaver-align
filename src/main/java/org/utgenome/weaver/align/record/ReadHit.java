@@ -118,7 +118,7 @@ public class ReadHit
     public String getAlignmentState(ReadHit head) {
         StringBuilder s = new StringBuilder();
         for (ReadHit c = head; c != null; c = c.nextSplit) {
-            String state = getAlignmentStateSingle();
+            String state = c.getAlignmentStateSingle();
             if (c != this) {
                 state = state.toLowerCase();
             }
@@ -151,9 +151,20 @@ public class ReadHit
         Collections.sort(r, new Comparator<ReadHit>() {
             @Override
             public int compare(ReadHit o1, ReadHit o2) {
-                int diff = o1.chr.compareTo(o2.chr);
-                if (diff == 0)
-                    diff = (int) (o1.pos - o2.pos);
+                int diff = 0;
+                if (o1.chr == null || o2.chr == null) {
+                    diff = o1.qStart - o2.qStart;
+                    if (!strand.isForward())
+                        diff = -diff;
+                }
+                if (diff != 0)
+                    return diff;
+
+                diff = o1.chr.compareTo(o2.chr);
+                if (diff != 0)
+                    return diff;
+
+                diff = (int) (o1.pos - o2.pos);
                 return diff;
             }
         });

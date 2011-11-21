@@ -366,7 +366,7 @@ public class BidirectionalSuffixFilter implements Aligner
                 // When a hit is found, report the alignment
                 {
                     SearchState next = c;
-                    while (next.hasHit() || next.cursor.getRemainingBases() == 0) {
+                    while (next.hasHit() || next.isClipped() || next.cursor.getRemainingBases() == 0) {
                         if (next.nextSplit == null) {
                             reportAlignment(c);
                             continue queue_loop;
@@ -466,6 +466,11 @@ public class BidirectionalSuffixFilter implements Aligner
                         }
                         else
                             ++numFiltered;
+
+                        // Soft-clipping
+                        SearchState clippedState = c.nextStateAfterClipping(k);
+                        if (clippedState != null)
+                            queue.add(baseState.update(c, clippedState));
                     }
                 }
             }
@@ -497,6 +502,11 @@ public class BidirectionalSuffixFilter implements Aligner
             SuffixInterval si = s.currentSi;
 
             Cursor cursor = s.cursor;
+
+            if (s.isClipped()) {
+                return new ReadHit(null, -1, s.cursor.getFragmentLength(), s.cursor.start, s.cursor.end, 0,
+                        cursor.getStrand(), new CIGAR(String.format("%dS", cursor.getFragmentLength())), 0, null);
+            }
 
             // Verification phase
             if (si == null)
@@ -649,7 +659,7 @@ public class BidirectionalSuffixFilter implements Aligner
         public final SuffixInterval currentSi;
         public final SiSet          siTable;
         private ReadAlignmentNFA    automaton;
-        // 32 bit = searchFlag(5) + currentBase(3) + minK (8) + priority(8) + hasHit(1) 
+        // 32 bit = searchFlag(5) + currentBase(3) + minK (8) + priority(8) + hasHit(1) + soft-clipped(1) 
         private int                 state;
         public SearchState          nextSplit;
 
@@ -682,7 +692,15 @@ public class BidirectionalSuffixFilter implements Aligner
         }
 
         public boolean hasHit() {
-            return ((state >>> 24) & 1L) != 0;
+            return ((state >>> 24) & 1) != 0;
+        }
+
+        public boolean isClipped() {
+            return ((state >>> 25) & 1) != 0;
+        }
+
+        public void updateClippedFlag() {
+            this.state |= 1 << 25;
         }
 
         public boolean isFinished() {
@@ -792,6 +810,25 @@ public class BidirectionalSuffixFilter implements Aligner
                 newState.nextSplit = new SearchState(null, ACGT.N, newCursor[1], fmIndex.initSet(newCursor[1]
                         .getSearchDirection()), new ReadAlignmentNFA(k).activateDiagonalStates(), false, minK,
                         getPriority(), null);
+                return newState;
+            }
+            else
+                return null;
+        }
+
+        public SearchState nextStateAfterClipping(int k) {
+            updateSplitFlag();
+            // use the same automaton state
+            int minK = getLowerBoundOfK();
+            if (minK < k) {
+                Cursor[] newCursor = cursor.split();
+
+                SearchState newState = new SearchState(currentSi, currentACGT(), newCursor[0], siTable,
+                        automaton.nextStateAfterSplit(k), hasHit(), minK, getPriority(), null);
+
+                newState.nextSplit = new SearchState(null, ACGT.N, newCursor[1], null, null, false, minK,
+                        getPriority(), null);
+                newState.nextSplit.updateClippedFlag();
                 return newState;
             }
             else
