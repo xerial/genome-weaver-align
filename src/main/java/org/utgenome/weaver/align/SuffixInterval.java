@@ -25,7 +25,7 @@
 package org.utgenome.weaver.align;
 
 /**
- * Range in suffix array [lowerBound, upperBound)
+ * A range in suffix array [lowerBound, upperBound)
  * 
  * @author leo
  * 
