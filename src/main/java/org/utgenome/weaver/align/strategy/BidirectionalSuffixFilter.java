@@ -504,8 +504,8 @@ public class BidirectionalSuffixFilter implements Aligner
             Cursor cursor = s.cursor;
 
             if (s.isClipped()) {
-                return new ReadHit(null, -1, s.cursor.getFragmentLength(), s.cursor.start, s.cursor.end, 0,
-                        cursor.getStrand(), new CIGAR(String.format("%dS", cursor.getFragmentLength())), 0, null);
+                return new ReadHit(null, -1, 0, s.cursor.start, s.cursor.end, 0, cursor.getStrand(), new CIGAR(
+                        String.format("%dS", cursor.getFragmentLength())), 0, null);
             }
 
             // Verification phase
@@ -607,9 +607,12 @@ public class BidirectionalSuffixFilter implements Aligner
             public void add(ReadHit hit) {
                 int newK = hit.getTotalDifferences();
                 int matchLen = hit.getTotalMatchLength();
-                if (matchLen > 0 && newK < minMismatches) {
-                    minMismatches = newK;
-                    bestScore = hit.getTotalScore(config);
+                int newScore = hit.getTotalScore(config);
+                if (newScore > bestScore) {
+                    if (matchLen > 0 && newK <= minMismatches)
+                        minMismatches = newK;
+
+                    bestScore = newScore;
                 }
                 if (maxMatchLength < matchLen) {
                     maxMatchLength = matchLen;
@@ -617,7 +620,7 @@ public class BidirectionalSuffixFilter implements Aligner
 
                 ArrayList<ReadHit> newList = new ArrayList<ReadHit>();
                 for (ReadHit each : hitList) {
-                    if (each.getTotalDifferences() <= minMismatches) {
+                    if (each.getTotalDifferences() <= minMismatches && each.getTotalMatchLength() >= maxMatchLength) {
                         newList.add(each);
                     }
                 }

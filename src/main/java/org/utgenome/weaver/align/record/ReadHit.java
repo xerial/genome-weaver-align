@@ -70,6 +70,10 @@ public class ReadHit
         this.nextSplit = nextSplit;
     }
 
+    public int getFragmentLength() {
+        return qEnd - qStart;
+    }
+
     /**
      * Match length including split alignment
      * 

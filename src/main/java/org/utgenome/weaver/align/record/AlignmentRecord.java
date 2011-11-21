@@ -250,10 +250,10 @@ public class AlignmentRecord
                 else {
                     // head is unique but split is repeat
                     CIGAR cigar = new CIGAR(hit.cigar);
-                    cigar.add(split.matchLength, Type.SoftClip);
+                    cigar.add(split.getFragmentLength(), Type.SoftClip);
                     AlignmentRecord rec = new AlignmentRecord(read.name(), hit.chr, hit.strand, (int) hit.pos,
-                            (int) hit.pos + m, hit.diff, cigar, query.toString(), qual, 1, numHits,
-                            hit.getAlignmentState(hit), null);
+                            (int) hit.pos + cigar.getUnclippedSize(), hit.diff, cigar, query.toString(), qual, 1,
+                            numHits, hit.getAlignmentState(hit), null);
                     return rec;
                 }
             }

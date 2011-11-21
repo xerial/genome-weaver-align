@@ -130,8 +130,24 @@ public class CIGAR
         this.cigar = cigar;
     }
 
+    public int getUnclippedSize() {
+        int l = 0;
+        for (Element e : cigar) {
+            switch (e.type) {
+            case Matches:
+            case Mismatches:
+            case Deletions:
+            case Padding:
+            case SkippedRegion:
+                l += e.length;
+                break;
+            }
+        }
+        return l;
+    }
+
     public CIGAR add(int length, Type type) {
-        cigar.add(new Element(type, length));
+        add(new Element(type, length));
         return this;
     }
 

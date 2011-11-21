@@ -191,15 +191,21 @@ public class BidirectionalSuffixFilterTest
         // r:AAGCCTAGTTTCCTTG
         //   ||||||||||           
         // q:AAGCCTAGTTAAAAAA
-        align("AAGCCTAGTTAAAAAA"); // 11S
+        AlignmentRecord a = align("AAGCCTAGTTAAAAAA");
+        assertEquals(1, a.start);
+        assertEquals(11, a.end);
+        assertEquals("10M6S", a.cigar.toString());
     }
 
     @Test
     public void clip2() throws Exception {
-        // r:AAGCCTAGTTTCCTTG
-        //         ||||||||||
-        // q:TTTTTTAGTTTCCTTG
-        align("TTTTTTAGTTTCCTTG"); // 11S
+        // r: AAGCCTAGTTTCCTTG
+        //          ||||||||||
+        // q:TTTTTTGAGTTTCCTTG
+        AlignmentRecord a = align("TTTTTTGAGTTTCCTTG");
+        assertEquals(7, a.start);
+        assertEquals(16, a.end);
+        assertEquals("7S10M", a.cigar.toString());
     }
 
     @Test
