@@ -294,6 +294,9 @@ public class BitParallelSmithWatermanTest
 
         Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(r, q, 11);
         _logger.debug(alignment);
+        assertEquals("97M", alignment.cigar.toString());
+        assertEquals(11, alignment.pos);
+        assertEquals(0, alignment.numMismatches);
 
 	}
 

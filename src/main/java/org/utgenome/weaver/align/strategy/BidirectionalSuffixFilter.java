@@ -347,7 +347,6 @@ public class BidirectionalSuffixFilter implements Aligner
 
                 queue.add(sF);
                 queue.add(sR);
-
             }
 
             final int fmIndexSearchUpperBound = m * 20;
