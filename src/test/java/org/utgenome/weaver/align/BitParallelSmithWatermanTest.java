@@ -24,8 +24,7 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
 import org.utgenome.weaver.align.SmithWatermanAligner.Alignment;
@@ -120,7 +119,7 @@ public class BitParallelSmithWatermanTest
                 "TATTACCGGTTCGCGGCATAGGAAATTGGAAAACCGCTAGCATGCATGCCCGATTCAGTGGTGTCACATTTGCCGATC");
 
         final int K = 5;
-        final int N = 100;
+        final int N = 1000;
         StopWatch s1 = new StopWatch();
         s1.stop();
         StopWatch s2 = new StopWatch();
@@ -285,12 +284,13 @@ public class BitParallelSmithWatermanTest
         _logger.debug(alignment);
 
     }
-    
+
     @Test
     public void noMismatch() throws Exception {
-		ACGTSequence r = new ACGTSequence("GCTTCAGTTTCCTGACACTTAAAAAAAAAAGAGTTGCTTATTATTTTAATGAGACTAATGCTTACACTCTGAGTTACTTGTAAGGTGATTGGTTACTTTAATGTTATTATAAGTAATTT");
-		ACGTSequence q = new ACGTSequence(           "CTGACACTTAAAAAAAAAAGAGTTGCTTATTATTTTAATGAGACTAATGCTTACACTCTGAGTTACTTGTAAGGTGATTGGTTACTTTAATGTTATT");
-
+        ACGTSequence r = new ACGTSequence(
+                "GCTTCAGTTTCCTGACACTTAAAAAAAAAAGAGTTGCTTATTATTTTAATGAGACTAATGCTTACACTCTGAGTTACTTGTAAGGTGATTGGTTACTTTAATGTTATTATAAGTAATTT");
+        ACGTSequence q = new ACGTSequence(
+                "CTGACACTTAAAAAAAAAAGAGTTGCTTATTATTTTAATGAGACTAATGCTTACACTCTGAGTTACTTGTAAGGTGATTGGTTACTTTAATGTTATT");
 
         Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(r, q, 11);
         _logger.debug(alignment);
@@ -298,6 +298,24 @@ public class BitParallelSmithWatermanTest
         assertEquals(11, alignment.pos);
         assertEquals(0, alignment.numMismatches);
 
-	}
+    }
+
+    @Test
+    public void exactMatch() throws Exception {
+
+        ACGTSequence r = new ACGTSequence(
+                "GCTTCAGTTTCCTGACACTTAAAAAAAAAAGAGTTGCTTATTATTTTAATGAGACTAATGCTTACACTCTGAGTTACTTGTAAGGTGATTGGTTACTTTAATGTTATTATAAGTAATTTATTGGTTACTTTAATGTTATTATAAGTAAT");
+
+        for (int k = 30; k < r.length(); ++k) {
+            for (int i = 0; i < r.length() - k; ++i) {
+                ACGTSequence q = r.subSequence(i, i + k);
+                Alignment alignment = BitParallelSmithWaterman.alignBlockDetailed(r, q, 2);
+                assertEquals(i, alignment.pos);
+                assertEquals(String.format("%dM", k), alignment.cigar.toString());
+                assertEquals(0, alignment.numMismatches);
+            }
+        }
+
+    }
 
 }
