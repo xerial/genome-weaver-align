@@ -31,15 +31,14 @@ import org.utgenome.weaver.parallel.Reporter
 import org.utgenome.weaver.align.record.AlignmentRecord
 
 object WeaverAlign {
-  
-  
+
 }
 
 class Interval(start: Int, end: Int) {
 
 }
 
-class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence,  config: AlignmentConfig) {
+class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: AlignmentConfig) {
 
   /**
    * Chain of reads
@@ -50,17 +49,14 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence,  config: Al
       val Init, Mapped, Unmapped = Value
     }
 
-    class Fragment(range: Interval)
+    class Alignment(range: Interval, state: AlignmentState)
 
   }
 
-  def align(input: Read) : List[AlignmentRecord] = {
+  def align(input: Read): List[AlignmentRecord] = {
     val read = for (i <- (0 until input.getNumReadFragment())) yield { input.getRead(i) }
 
-        
     return List()
   }
-
-
 
 }
