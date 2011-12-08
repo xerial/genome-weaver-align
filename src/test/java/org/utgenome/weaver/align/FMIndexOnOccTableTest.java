@@ -49,23 +49,23 @@ public class FMIndexOnOccTableTest
 
         SuffixInterval si = fmIndex.backwardSearch(ACGT.T, new SuffixInterval(0, fmIndex.textSize() - 1));
         _logger.info("suffix interval: " + si);
-        assertEquals(new SuffixInterval(9, 14), si);
+        assertEquals(new SuffixInterval(9, 15), si);
 
         si = fmIndex.backwardSearch(ACGT.A, si);
         _logger.info("suffix interval: " + si);
-        assertEquals(new SuffixInterval(3, 8), si);
+        assertEquals(new SuffixInterval(3, 9), si);
 
         si = fmIndex.backwardSearch(ACGT.T, si);
         _logger.info("suffix interval: " + si);
-        assertEquals(new SuffixInterval(12, 14), si);
+        assertEquals(new SuffixInterval(12, 15), si);
 
         si = fmIndex.backwardSearch(ACGT.A, si);
         _logger.info("suffix interval: " + si);
-        assertEquals(new SuffixInterval(6, 8), si);
+        assertEquals(new SuffixInterval(6, 9), si);
 
         si = fmIndex.backwardSearch(ACGT.A, si);
         _logger.info("suffix interval: " + si);
-        assertEquals(new SuffixInterval(1, 2), si);
+        assertEquals(new SuffixInterval(1, 3), si);
 
     }
 }

@@ -203,17 +203,8 @@
             </transformer>
           </transformers>
         </configuration>
-        <!-- 
-        <executions>
-          <execution>
-            <id>make-assembly</id>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-          </execution>
-        </executions>
-         -->
+        <!-- <executions> <execution> <id>make-assembly</id> <phase>package</phase> 
+          <goals> <goal>shade</goal> </goals> </execution> </executions> -->
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -235,13 +226,19 @@
       </plugin>
 
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-eclipse-plugin</artifactId>
-        <version>2.8</version>
+        <groupId>org.scala-tools</groupId>
+        <artifactId>maven-scala-plugin</artifactId>
+        <version>2.15.2</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+        </executions>
         <configuration>
-          <useProjectReferences>false</useProjectReferences>
-          <downloadSources>true</downloadSources>
-          <downloadJavadocs>true</downloadJavadocs>
+
         </configuration>
       </plugin>
 
@@ -294,6 +291,38 @@
         </dependencies>
       </plugin>
     </plugins>
+
+    <pluginManagement>
+      <plugins>
+        <!--This plugin's configuration is used to store Eclipse m2e settings 
+          only. It has no influence on the Maven build itself. -->
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>org.scala-tools</groupId>
+                    <artifactId>maven-scala-plugin</artifactId>
+                    <versionRange>[2.15.2,)</versionRange>
+                    <goals>
+                      <goal>testCompile</goal>
+                      <goal>compile</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore></ignore>
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
 
@@ -345,30 +374,37 @@
         <enabled>true</enabled>
       </snapshots>
     </repository>
-    
-    <!--  Message pack repository -->
+
+    <!-- Message pack repository -->
     <repository>
       <id>msgpack.org</id>
       <name>Message Artifact Repository</name>
       <url>http://msgpack.org/maven2</url>
     </repository>
-    
-    <!--  for Netty -->
-     <repository>
-       <id>repository.jboss.org</id>
-       <url>https://repository.jboss.org/nexus/content/repositories/releases/</url>
-       <snapshots>
-         <enabled>false</enabled>
-       </snapshots>
-     </repository>
 
-   <!-- xerial.org repository -->
+    <!-- for Netty -->
+    <repository>
+      <id>repository.jboss.org</id>
+      <url>https://repository.jboss.org/nexus/content/repositories/releases/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+
+    <!-- scala test specs2 -->
+    <repository>
+      <id>scala-tools.org</id>
+      <name>releases</name>
+      <url>http://scala-tools.org/repo-releases</url>
+    </repository>
+
+    <!-- xerial.org repository -->
     <repository>
       <id>xerial</id>
       <name>Xerial Artifact Repository</name>
       <url>http://maven.xerial.org/repository/artifact</url>
     </repository>
-   <!-- xerial.org snapshot repository -->
+    <!-- xerial.org snapshot repository -->
     <repository>
       <id>xerial-snapshot</id>
       <name>Xerial Snapshot Repository</name>
@@ -457,7 +493,7 @@
     <dependency>
       <groupId>org.utgenome</groupId>
       <artifactId>utgb-core</artifactId>
-      <version>1.5.7</version>
+      <version>1.5.8</version>
     </dependency>
     <dependency>
       <groupId>org.xerial</groupId>
@@ -476,23 +512,35 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-    	<groupId>org.codehaus.plexus</groupId>
-    	<artifactId>plexus-classworlds</artifactId>
-    	<version>2.4</version>
-    	<type>jar</type>
-    	<scope>runtime</scope>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-classworlds</artifactId>
+      <version>2.4</version>
+      <type>jar</type>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
-    	<groupId>org.xerial.snappy</groupId>
-    	<artifactId>snappy-java</artifactId>
-    	<version>1.0.4.1</version>
-    	<scope>compile</scope>
+      <groupId>org.xerial.snappy</groupId>
+      <artifactId>snappy-java</artifactId>
+      <version>1.0.4.1</version>
+      <scope>compile</scope>
     </dependency>
     <dependency>
-    	<groupId>org.jboss.netty</groupId>
-    	<artifactId>netty</artifactId>
-    	<version>3.2.5.Final</version>
-    	<scope>compile</scope>
+      <groupId>org.jboss.netty</groupId>
+      <artifactId>netty</artifactId>
+      <version>3.2.5.Final</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>2.9.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.specs2</groupId>
+      <artifactId>specs2_2.9.1</artifactId>
+      <version>1.6.1</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
