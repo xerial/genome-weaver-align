@@ -36,7 +36,7 @@ object WeaverAlign {
 }
 
 class Interval(val start: Int, val end: Int) {
-
+  override def toString = "[%d,%d)".format(start, end)
 }
 
 trait Pivot {
@@ -47,7 +47,58 @@ trait HasStrand {
   val strand: Strand
 }
 
-class ReadRange(val strand: Strand, start: Int, end: Int) extends Interval(start, end) with HasStrand;
+class ReadRange(val strand: Strand, start: Int, end: Int) extends Interval(start, end) with HasStrand {
+  override def toString = "%s%s".format(strand.symbol, super[Interval].toString())
+}
+
+/**
+ * Points the position of the current search within the read
+ * @author leo
+ *
+ */
+sealed abstract class ReadCursor(val readRange: ReadRange, val cursor: Int) {
+  def processedBases: Int
+  def currentIndex: Int
+  def next: Option[ReadCursor]
+  def strand = readRange.strand
+
+  override def toString = "%d%s".format(cursor, readRange)
+}
+
+class ForwardCursor(readRange: ReadRange, cursor: Int) extends ReadCursor(readRange, cursor) {
+  def processedBases = cursor - readRange.start
+  def currentIndex = cursor
+  def next = {
+    val newCursor = cursor + 1
+    if (newCursor >= readRange.end) None else Some(new ForwardCursor(readRange, newCursor))
+  }
+  override def toString = "F%s".format(super[ReadCursor].toString)
+}
+
+class BackwardCursor(readRange: ReadRange, cursor: Int) extends ReadCursor(readRange, cursor) {
+  def processedBases = readRange.end - cursor
+  def currentIndex = cursor - 1
+  def next = {
+    val newCursor = cursor - 1
+    if (newCursor <= readRange.start) None else Some(new BackwardCursor(readRange, newCursor))
+  }
+  override def toString = "B%s".format(super[ReadCursor].toString)
+}
+
+class BidirectionalForwardCursor(readRange: ReadRange with Pivot, cursor: Int) extends ReadCursor(readRange, cursor) {
+  def processedBases = cursor - readRange.pivot
+  def currentIndex = cursor
+  def next = {
+    val newCursor = cursor + 1
+    if (newCursor < readRange.end)
+      Some(new BidirectionalForwardCursor(readRange, newCursor))
+    else if (readRange.pivot > readRange.start)
+      Some(new BackwardCursor(readRange, readRange.pivot))
+    else
+      None
+  }
+  override def toString = "BF%s/%d".format(super[ReadCursor].toString, readRange.pivot)
+}
 
 sealed trait Alignment
 case class NoHit(read: Read) extends Alignment
@@ -131,11 +182,15 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
 
   }
 
+  class SearchStat(val numFMSearch: Int = 0, val numCutOff: Int = 0, val numFiltered: Int = 0)
+
   class SingleEndAligner(read: SingleEnd) extends Aligner {
     private val m = read.length
     private val k = config.k
 
     private val queue = new SearchQueue
+
+    val stat = new SearchStat
 
     def align(): Alignment = {
       // Check whether the read contains too many Ns
@@ -153,7 +208,7 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
 
         if (k == 0) return NoHit(read);
 
-        def selectInitState(quickScan: ReadBreakPoints): Option[Search] = {
+        def initialState(quickScan: ReadBreakPoints): Option[Search] = {
           if (scanF.numMismatches > k)
             return None;
           else if (scanF.longestMatch.start != 0 && scanF.longestMatch.start < m) {
@@ -165,14 +220,15 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
           }
         }
 
-        queue += selectInitState(scanF)
-        queue += selectInitState(scanR)
+        queue += initialState(scanF)
+        queue += initialState(scanR)
       }
 
       val queryMask = Array(new QueryMask(q(0)), new QueryMask(q(1)))
 
       while (!queue.isEmpty) {
-        val c = queue.dequeue
+        val c: Search = queue.dequeue
+
       }
 
       NoHit(read)
@@ -180,54 +236,7 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
   }
   class Search(val cursor: ReadCursor, val priority: Int) {
     def score: Int = 0
-  }
 
-  /**
-   * Points the position of the current search within the read
-   * @author leo
-   *
-   */
-  abstract class ReadCursor(val readRange: ReadRange, val cursor: Int) {
-    def processedBases: Int
-    def currentIndex: Int
-    def next: Option[ReadCursor]
-    def strand = readRange.strand
-    def searchDirection: SearchDirection
-  }
-
-  class ForwardCursor(readRange: ReadRange, cursor: Int) extends ReadCursor(readRange, cursor) {
-    def processedBases = cursor - readRange.start
-    def currentIndex = cursor
-    def next = {
-      val newCursor = cursor + 1
-      if (newCursor >= readRange.end) None else Some(new ForwardCursor(readRange, newCursor))
-    }
-    def searchDirection = SearchDirection.Forward
-  }
-
-  class BackwardCursor(readRange: ReadRange, cursor: Int) extends ReadCursor(readRange, cursor) {
-    def processedBases = readRange.end - cursor
-    def currentIndex = cursor - 1
-    def next = {
-      val newCursor = cursor - 1
-      if (newCursor <= readRange.start) None else Some(new BackwardCursor(readRange, newCursor))
-    }
-    def searchDirection = SearchDirection.Backward
-  }
-
-  class BidirectionalForwardCursor(readRange: ReadRange with Pivot, cursor: Int) extends ReadCursor(readRange, cursor) {
-    def processedBases = cursor - readRange.pivot
-    def currentIndex = cursor
-    def next = {
-      val newCursor = cursor + 1
-      if (newCursor < readRange.end)
-        Some(new BidirectionalForwardCursor(readRange, newCursor))
-      else if (readRange.pivot > readRange.start)
-        Some(new BackwardCursor(readRange, readRange.pivot))
-      else
-        None
-    }
-    def searchDirection = SearchDirection.BidirectionalForward
   }
 
   implicit val searchOrder = new Ordering[Search] {

@@ -32,7 +32,7 @@ import org.utgenome.weaver.align.record._
 import org.xerial.util.log.Logger
 
 object WeaverAlignTest {
-  val _logger: Logger = Logger.getLogger(classOf[BidirectionalSuffixFilterTest])
+
   val config: AlignmentConfig = new AlignmentConfig()
   val ref: ACGTSequence = new ACGTSequence("AAGCCTAGTTTCCTTG")
   val fmIndex: FMIndexOnGenome = FMIndexOnGenome.buildFromSequence("seq", ref)
@@ -46,7 +46,7 @@ object WeaverAlignTest {
 
 class WeaverAlignTest {
   //type Alignment = org.utgenome.weaver.align.strategy.Alignment
-
+  val _logger: Logger = Logger.getLogger(classOf[BidirectionalSuffixFilterTest])
   val p = WeaverAlignTest
 
   def align(query: String): Alignment = {
@@ -83,6 +83,19 @@ class WeaverAlignTest {
     //    assertEquals(3, a.start);
     //    assertEquals(Strand.REVERSE, a.strand);
     //    assertEquals(0, a.numMismatches);
+  }
+
+  @Test
+  def forwardCursor: Unit = {
+    val c = new ForwardCursor(new ReadRange(Strand.FORWARD, 0, 5), 0)
+    _logger.debug(c)
+
+    var cc: Option[ReadCursor] = Some(c)
+    for (i <- 0 until 5) {
+      cc = cc.get.next
+      _logger.debug(cc match { case Some(x) => x; case None => "None" });
+    }
+
   }
 
 }
