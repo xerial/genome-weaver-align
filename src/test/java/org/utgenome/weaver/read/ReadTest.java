@@ -24,13 +24,12 @@
 //--------------------------------------
 package org.utgenome.weaver.read;
 
-import static org.junit.Assert.*;
+import org.junit.Test;
 
-public class ReadTest implements Read
+public class ReadTest
 {
+    @Test
+    public void read() throws Exception {
 
+    }
 }
-
-
-
-
