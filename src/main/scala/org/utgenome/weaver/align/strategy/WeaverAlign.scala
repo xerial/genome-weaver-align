@@ -31,10 +31,6 @@ import org.utgenome.weaver.parallel.Reporter
 import org.utgenome.weaver.read._
 import scala.collection.mutable.PriorityQueue
 
-object WeaverAlign {
-
-}
-
 class Interval(val start: Int, val end: Int) {
   override def toString = "[%d,%d)".format(start, end)
 }
@@ -61,7 +57,7 @@ sealed abstract class ReadCursor(val readRange: ReadRange, val cursor: Int) {
   def currentIndex: Int
   def next: Option[ReadCursor]
   def strand = readRange.strand
-
+  def searchDirection: SearchDirection
   override def toString = "%d%s".format(cursor, readRange)
 }
 
@@ -72,6 +68,7 @@ class ForwardCursor(readRange: ReadRange, cursor: Int) extends ReadCursor(readRa
     val newCursor = cursor + 1
     if (newCursor >= readRange.end) None else Some(new ForwardCursor(readRange, newCursor))
   }
+  def searchDirection = SearchDirection.Forward
   override def toString = "F%s".format(super[ReadCursor].toString)
 }
 
@@ -82,6 +79,7 @@ class BackwardCursor(readRange: ReadRange, cursor: Int) extends ReadCursor(readR
     val newCursor = cursor - 1
     if (newCursor <= readRange.start) None else Some(new BackwardCursor(readRange, newCursor))
   }
+  def searchDirection = SearchDirection.Backward
   override def toString = "B%s".format(super[ReadCursor].toString)
 }
 
@@ -97,6 +95,8 @@ class BidirectionalForwardCursor(readRange: ReadRange with Pivot, cursor: Int) e
     else
       None
   }
+  def searchDirection = SearchDirection.BidirectionalForward
+  //  def atSwitchBoundary = cursor >= readRange.end - 1 
   override def toString = "BF%s/%d".format(super[ReadCursor].toString, readRange.pivot)
 }
 
@@ -105,6 +105,12 @@ case class NoHit(read: Read) extends Alignment
 case class TooManyNs(read: Read) extends Alignment
 case class FMIndexHit(read: Read, si: SuffixInterval, strand: Strand, numMismatches: Int) extends Alignment
 
+/**
+ *
+ * @param fmIndex
+ * @param reference
+ * @param config
+ */
 class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: AlignmentConfig) {
 
   trait Aligner {
@@ -130,7 +136,7 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
     val longestMatchSi: SuffixInterval);
 
   /**
-   * Scan the longest unique match region in the query sequence by using FM-index
+   * Scan the longest unique match region of the query sequence by using FM-index
    * @param query
    * @param strand
    * @return
@@ -166,6 +172,9 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
     return new ReadBreakPoints(strand, si, breakPoint, numMismatches, longestMatch, longestMatchSi)
   }
 
+  /**
+   * Converts DNASequence for using Java methods that use ACGTSequence
+   */
   implicit def dnaToACGT(x: DNASequence): ACGTSequence = {
     x match { case a: CompactDNASequence => a.seq }
   }
@@ -188,57 +197,104 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
     private val m = read.length
     private val k = config.k
 
-    private val queue = new SearchQueue
-
     val stat = new SearchStat
+
+    def initialState(quickScan: ReadBreakPoints): Option[Search] = {
+      if (quickScan.numMismatches > k)
+        return None;
+      else if (quickScan.longestMatch.start != 0 && quickScan.longestMatch.start < m) {
+        // bi-directional search
+        return Some(new Search(new BidirectionalForwardCursor(new ReadRange(quickScan.strand, 0, m) with Pivot { val pivot = quickScan.longestMatch.start }, quickScan.longestMatch.start),
+          quickScan.numMismatches))
+      } else {
+        // single-direction search
+        return Some(new Search(new ForwardCursor(new ReadRange(quickScan.strand, 0, m), 0), quickScan.numMismatches));
+      }
+    }
+
+    // Search state queue ordered by priority criteria defined in searchOrder
+    private val queue = new SearchQueue
 
     def align(): Alignment = {
       // Check whether the read contains too many Ns
       def containsTooManyNs(r: SingleEnd) = { r.seq.count(ACGT.N, 0, r.length) > k }
       if (containsTooManyNs(read)) return TooManyNs(read)
 
+      // Forward and reverse strand ACGT sequences
       val q: Array[DNASequence] = Array(read.seq.replaceN_withA, read.seq.complement.replaceN_withA)
 
       // quick scan for k=0 
-      {
-        val scanF = quickScan(q(0), Strand.FORWARD)
-        if (scanF.numMismatches == 0) return FMIndexHit(read, scanF.si, scanF.strand, 0)
-        val scanR = quickScan(q(1), Strand.REVERSE)
-        if (scanR.numMismatches == 0) return FMIndexHit(read, scanR.si, scanR.strand, 0)
+      val scanF = quickScan(q(0), Strand.FORWARD)
+      if (scanF.numMismatches == 0) return FMIndexHit(read, scanF.si, scanF.strand, 0)
+      val scanR = quickScan(q(1), Strand.REVERSE)
+      if (scanR.numMismatches == 0) return FMIndexHit(read, scanR.si, scanR.strand, 0)
 
-        if (k == 0) return NoHit(read);
+      // When some exact match is found
+      if (k == 0) return NoHit(read);
 
-        def initialState(quickScan: ReadBreakPoints): Option[Search] = {
-          if (scanF.numMismatches > k)
-            return None;
-          else if (scanF.longestMatch.start != 0 && scanF.longestMatch.start < m) {
-            // bi-directional search
-            return Some(new Search(new BidirectionalForwardCursor(new ReadRange(quickScan.strand, 0, m) with Pivot { val pivot = quickScan.longestMatch.start }, quickScan.longestMatch.start), quickScan.numMismatches))
-          } else {
-            // single-direction search
-            return Some(new Search(new ForwardCursor(new ReadRange(quickScan.strand, 0, m), 0), quickScan.numMismatches));
-          }
-        }
-
-        queue += initialState(scanF)
-        queue += initialState(scanR)
-      }
+      // Add initial states for both strand
+      queue += initialState(scanF)
+      queue += initialState(scanR)
 
       val queryMask = Array(new QueryMask(q(0)), new QueryMask(q(1)))
 
       while (!queue.isEmpty) {
-        val c: Search = queue.dequeue
+        val s: Search = queue.dequeue;
+
+        val nextBase: ACGT = q(s.strandIndex)(s.cursor.currentIndex)
+
+        // 
+        var continueEdgeSearch = true
+        for (ch <- ACGT.exceptN; if continueEdgeSearch && !s.isMarked(ch)) {
+          s.mark(ch)
+          if (!s.nextSiSet.isEmpty(ch)) {
+
+          }
+        }
 
       }
 
       NoHit(read)
     }
+
+    def nextSuffixIntervalSet(strand: Strand, cursor: ReadCursor, si: SiSet, currentBase: ACGT) = {
+      def nextSi(siF: SuffixInterval, siB: SuffixInterval) = {
+        fmIndex.bidirectionalSearch(strand, siF, siB)
+      }
+
+      cursor match {
+        case f: ForwardCursor => nextSi(si.getForward(currentBase), si.getBackward(currentBase))
+        case b: BackwardCursor => nextSi(si.getForward(currentBase), si.getBackward(currentBase))
+        case bf: BidirectionalForwardCursor => nextSi(si.getForward(currentBase), si.getBackward(currentBase))
+      }
+    }
+
   }
-  class Search(val cursor: ReadCursor, val priority: Int) {
+
+  class Search(val cursor: ReadCursor, val si: SuffixInterval, val nextSiSet: SiSet, val priority: Int) {
+
+    def this(cursor: ReadCursor, priority: Int) = {
+      this(cursor, null, fmIndex.initSet(cursor.searchDirection), priority)
+    }
+
+    private var flag: Int = 0
+
+    def isMarked(ch: ACGT): Boolean = {
+      return (flag & (1 << ch.code)) != 0
+    }
+
+    def mark(ch: ACGT): Unit = {
+      flag |= 1 << ch.code
+    }
+
     def score: Int = 0
-
+    def strand = cursor.strand
+    def strandIndex: Int = cursor.strand.index
   }
 
+  /**
+   * Defines the search order
+   */
   implicit val searchOrder = new Ordering[Search] {
     def compare(o1: Search, o2: Search): Int = {
       var diff = 0
