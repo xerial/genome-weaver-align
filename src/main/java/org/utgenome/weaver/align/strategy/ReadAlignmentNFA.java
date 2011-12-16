@@ -39,6 +39,11 @@ import org.utgenome.weaver.align.QueryMask;
  * 
  * </pre>
  * 
+ * The states in the automaton are represented as bit flags. kOffset is used to
+ * reduce the size of automaton. When no states become active at some layer k,
+ * the layer will not be used in future, so we can remove that layer from the
+ * automaton.
+ * 
  * <h3>transitions</h3>
  * <ul>
  * <li>right:match

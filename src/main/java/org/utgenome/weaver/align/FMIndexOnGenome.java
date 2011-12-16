@@ -43,7 +43,7 @@ public class FMIndexOnGenome
 {
     private static Logger           _logger    = Logger.getLogger(FMIndexOnGenome.class);
 
-    private static final int        windowSize = 128;                                     // Occ table window size 
+    private static final int        windowSize = 128;                                    // Occ table window size 
 
     public final FMIndex            forwardIndex;
     public final FMIndex            reverseIndex;
@@ -145,6 +145,27 @@ public class FMIndexOnGenome
         return fm.backwardSearch(nextBase, si);
     }
 
+    public SuffixInterval[] backwardSearch(SuffixInterval[] nextSiF, SuffixInterval siB, long[] occLowerBound,
+            long[] occUpperBound) {
+        SuffixInterval[] nextSiB = new SuffixInterval[K];
+        // backward search (shrink SA range)
+        for (int i = 0; i < K; ++i) {
+            if (nextSiF[i] == null)
+                continue;
+
+            // Count the occurrences of characters smaller than ACGT[i] in bwt[F.lowerbound, F.upperBound)
+            long x = 0;
+            for (int j = 0; j < i; ++j) {
+                x += occUpperBound[j] - occLowerBound[j];
+            }
+            // Count the occurrences of ACGT[i] in bwt[F.lowerbound, F.upperBound)
+            long y = occUpperBound[i] - occLowerBound[i];
+            // Narrow down the backward suffix interval 
+            nextSiB[i] = new SuffixInterval(siB.lowerBound + x, siB.lowerBound + x + y);
+        }
+        return nextSiB;
+    }
+
     public SiSet bidirectionalSearch(Strand strand, SuffixInterval siF, SuffixInterval siB) {
         SuffixInterval[] nextSiF = null, nextSiB = null;
         if (siF != null) {
@@ -157,26 +178,8 @@ public class FMIndexOnGenome
             if (siB == null)
                 return new SiSet.ForwardSiSet(nextSiF);
 
-            {
-                nextSiB = new SuffixInterval[K];
-                // backward search (shrink SA range)
-                for (int i = 0; i < K; ++i) {
-                    if (nextSiF[i] == null)
-                        continue;
-
-                    // Count the occurrences of characters smaller than ACGT[i] in bwt[F.lowerbound, F.upperBound)
-                    long x = 0;
-                    for (int j = 0; j < i; ++j) {
-                        x += occUpperBound[j] - occLowerBound[j];
-                    }
-                    // Count the occurrences of ACGT[i] in bwt[F.lowerbound, F.upperBound)
-                    long y = occUpperBound[i] - occLowerBound[i];
-                    // Narrow down the backward suffix interval 
-                    nextSiB[i] = new SuffixInterval(siB.lowerBound + x, siB.lowerBound + x + y);
-                }
-
-                return new SiSet.BidirectionalSiSet(nextSiF, nextSiB);
-            }
+            nextSiB = backwardSearch(nextSiF, siB, occLowerBound, occUpperBound);
+            return new SiSet.BidirectionalSiSet(nextSiF, nextSiB);
         }
         else if (siB != null) { // F==null
             // backward search 
@@ -205,7 +208,7 @@ public class FMIndexOnGenome
         return forwardSearch(fm, occLowerBound, occUpperBound);
     }
 
-    private SuffixInterval[] forwardSearch(FMIndex fm, long[] occLowerBound, long[] occUpperBound) {
+    public SuffixInterval[] forwardSearch(FMIndex fm, long[] occLowerBound, long[] occUpperBound) {
         // forward search
         CharacterCount C = fm.getCharacterCount();
 

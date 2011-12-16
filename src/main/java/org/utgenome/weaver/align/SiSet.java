@@ -60,6 +60,11 @@ public abstract class SiSet
         public String toString() {
             return "F" + toString(siF);
         }
+
+        @Override
+        public SuffixInterval getNext(ACGT ch) {
+            return getForward(ch);
+        }
     }
 
     protected static String toString(SuffixInterval[] si) {
@@ -107,6 +112,11 @@ public abstract class SiSet
         public String toString() {
             return "B" + toString(siB);
         }
+
+        @Override
+        public SuffixInterval getNext(ACGT ch) {
+            return getBackward(ch);
+        }
     }
 
     public static class BidirectionalSiSet extends SiSet
@@ -138,6 +148,11 @@ public abstract class SiSet
         public String toString() {
             return String.format("F%s:B%s", toString(siF), toString(siB));
         }
+
+        @Override
+        public SuffixInterval getNext(ACGT ch) {
+            return getForward(ch);
+        }
     }
 
     public static SiSet empty = new EmptySiSet();
@@ -165,7 +180,14 @@ public abstract class SiSet
             return "[]";
         }
 
+        @Override
+        public SuffixInterval getNext(ACGT ch) {
+            return null;
+        }
+
     }
+
+    public abstract SuffixInterval getNext(ACGT ch);
 
     public abstract SuffixInterval getForward(ACGT ch);
 

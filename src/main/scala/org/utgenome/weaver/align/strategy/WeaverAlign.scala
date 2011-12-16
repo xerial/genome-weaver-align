@@ -241,15 +241,14 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
       while (!queue.isEmpty) {
         val s: Search = queue.dequeue;
 
-        val nextBase: ACGT = q(s.strandIndex)(s.cursor.currentIndex)
+        //val nextBase: ACGT = q(s.strandIndex)(s.cursor.currentIndex)
 
         // 
         var continueEdgeSearch = true
         for (ch <- ACGT.exceptN; if continueEdgeSearch && !s.isMarked(ch)) {
           s.mark(ch)
-          if (!s.nextSiSet.isEmpty(ch)) {
+          //if (!s.nextSiSet.isEmpty(ch)) {
 
-          }
         }
 
       }
@@ -271,10 +270,53 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
 
   }
 
-  class Search(val cursor: ReadCursor, val si: SuffixInterval, val nextSiSet: SiSet, val priority: Int) {
+  class FMIndexCursor(val readCursor: ReadCursor, val currentSi: SuffixInterval, val siSet: SiSet) {
+
+    def next(base: ACGT): Option[FMIndexCursor] = {
+      val strand = readCursor.strand
+      val nextCursor = readCursor.next
+      if (!nextCursor.isDefined)
+        return None
+
+      val nextSi = siSet.getNext(base)
+      val nextSiSet: SiSet = nextCursor.get match {
+        case f: ForwardCursor => new SiSet.ForwardSiSet(forwardSearch(nextSi)._1)
+        case b: BackwardCursor => new SiSet.BackwardSiSet(backwardSearch(nextSi))
+        case fb: BidirectionalForwardCursor => bidirectionalSearch(nextSi, siSet.getBackward(base))
+      }
+      Some(new FMIndexCursor(nextCursor.get, nextSi, nextSiSet))
+    }
+
+    def forwardSearch(siF: SuffixInterval) = {
+      val fm: FMIndex = if (readCursor.strand.isForward()) fmIndex.reverseIndex else fmIndex.forwardIndex
+      val occLowerBound: Array[Long] = fm.rankACGTN(siF.lowerBound)
+      val occUpperBound: Array[Long] = fm.rankACGTN(siF.upperBound)
+      val nextSiF: Array[SuffixInterval] = fmIndex.forwardSearch(fm, occLowerBound, occUpperBound)
+      (nextSiF, occLowerBound, occUpperBound)
+    }
+    def backwardSearch(siB: SuffixInterval) = {
+      val fm: FMIndex = if (readCursor.strand.isForward) fmIndex.forwardIndex else fmIndex.reverseIndex;
+      val occLowerBound: Array[Long] = fm.rankACGTN(siB.lowerBound)
+      val occUpperBound: Array[Long] = fm.rankACGTN(siB.upperBound)
+      fmIndex.forwardSearch(fm, occLowerBound, occUpperBound)
+    }
+
+    def bidirectionalSearch(siF: SuffixInterval, siB: SuffixInterval) = {
+      // forward search
+      val f = forwardSearch(siF);
+      val nextSiB = fmIndex.backwardSearch(f._1, siB, f._2, f._3)
+      new SiSet.BidirectionalSiSet(f._1, nextSiB)
+    }
+
+  }
+
+  sealed class SearchState
+  class SearchEnd extends SearchState
+
+  class Search(val cursor: FMIndexCursor, val priority: Int) extends SearchState {
 
     def this(cursor: ReadCursor, priority: Int) = {
-      this(cursor, null, fmIndex.initSet(cursor.searchDirection), priority)
+      this(new FMIndexCursor(cursor, null, fmIndex.initSet(cursor.searchDirection)), priority)
     }
 
     private var flag: Int = 0
@@ -288,8 +330,22 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
     }
 
     def score: Int = 0
-    def strand = cursor.strand
-    def strandIndex: Int = cursor.strand.index
+    def strand = cursor.readCursor.strand
+    def strandIndex: Int = strand.index
+
+    def stepOneBase(base: ACGT): SearchState = {
+      cursor.next(base) match {
+        case None => new SearchEnd()
+        case Some(x) => new Search(x, priority)
+      }
+    }
+
+    //    def stepOneBase(base: ACGT): Search = {
+    //      val nextCursor = cursor.next
+    //
+    //      //new Search(nextCursor, )
+    //    }
+
   }
 
   /**
