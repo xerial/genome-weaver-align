@@ -4,7 +4,6 @@ import scala.collection.mutable.StringBuilder
 import org.utgenome.weaver.align.ACGT
 import org.utgenome.weaver.align.QueryMask
 import org.utgenome.weaver.align.strategy.StaircaseFilter
-import org.utgenome.weaver.align.strategy.weaver.ReadCursor
 
 object AlignmentNFA {
 

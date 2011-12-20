@@ -212,7 +212,7 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
   class SearchStat(var numFMSearch: Int = 0, var numCutOff: Int = 0, var numFiltered: Int = 0)
 
   val stat = new SearchStat
-  var queryMask: Array[QueryMask]
+  var queryMask: Array[QueryMask] = Array()
   private val staircaseFilterHolder = StaircaseFilter.newHolder
 
   class SingleEndAligner(read: SingleEnd) extends Aligner {
