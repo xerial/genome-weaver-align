@@ -264,12 +264,17 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
         // Select a next base or indel to search
         def selectNextSearch(): NextSearchStep = {
           val nextBase: ACGT = q(s.strandIndex)(s.cursor.currentIndex)
-          if (!s.isVisited(nextBase)) {
+          // Prefer the next base
+          if (!s.isMarked(nextBase)) {
             return Base(nextBase)
           }
-          ACGT.exceptN.find { ch => !s.isVisited(ch) } match {
+          ACGT.exceptN.find { ch => !s.isMarked(ch) } match {
             case Some(ch) => Base(ch)
-            case None => Done()
+            case None => {
+              // Lookup indels
+
+              Done()
+            }
           }
         }
 
@@ -298,14 +303,6 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
       NoHit(read)
     }
 
-    sealed class NextSearchStep
-    case class Base(base: ACGT) extends NextSearchStep
-    case class Deletion(length: Int) extends NextSearchStep
-    case class Insertion(length: Int) extends NextSearchStep
-    case class Split extends NextSearchStep
-    case class SoftClip extends NextSearchStep
-    case class Done extends NextSearchStep
-
     def nextSuffixIntervalSet(strand: Strand, cursor: ReadCursor, si: SiSet, currentBase: ACGT) = {
       def nextSi(siF: SuffixInterval, siB: SuffixInterval) = {
         fmIndex.bidirectionalSearch(strand, siF, siB)
@@ -320,6 +317,14 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
 
   }
 
+  sealed class NextSearchStep
+  case class Base(base: ACGT) extends NextSearchStep
+  case class Deletion(length: Int) extends NextSearchStep
+  case class Insertion(length: Int) extends NextSearchStep
+  case class Split extends NextSearchStep
+  case class SoftClip extends NextSearchStep
+  case class Done extends NextSearchStep
+
   sealed abstract class SearchState
   class SearchEnd extends SearchState
 
@@ -328,24 +333,47 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
     val nextNFA: Array[Option[AlignmentNFA]] = new Array[Option[AlignmentNFA]](ACGT.exceptN.length)
     (0 until nextNFA.length).foreach { nextNFA(_) = None }
 
+    var flag: Int = 0
+
     def this(cursor: ReadCursor, k: Int, priority: Int) = {
       this(cursor, new FMIndexCursor(null, fmIndex.initSet(cursor.searchDirection)), AlignmentNFA.initialNFA(k), priority)
     }
 
-    def isVisited(ch: ACGT): Boolean = {
-      nextNFA(ch.code).isDefined
+    private def markPos(mark: NextSearchStep) = {
+      mark match {
+        case Base(base) => base.code
+        case Deletion(len) => 6
+        case Insertion(len) => 7
+        case Split() => 8
+        case SoftClip() => 9
+        case Done() => 10
+      }
     }
 
-    def getNFA(ch: ACGT): AlignmentNFA = {
-      if (!nextNFA(ch.code).isDefined) {
-        val next = nfa.next(cursor, ch, queryMask(cursor.strand.index), staircaseFilterHolder.getStairCaseFilter(cursor.readLength, nfa.minK))
-        next match {
-          case None =>
-          case Some(x) => nextNFA(ch.code) = x.nfa
-        }
-      }
-      nextNFA(ch.code).get
+    def isMarked(ch: ACGT): Boolean = {
+      isMarked(Base(ch))
     }
+
+    def isMarked(mark: NextSearchStep): Boolean = {
+      val pos = markPos(mark)
+      (flag & (1 << pos)) != 0
+    }
+
+    def mark(mark: NextSearchStep): Unit = {
+      val pos = markPos(mark)
+      flag |= 1 << pos
+    }
+
+    //    def getNFA(ch: ACGT): AlignmentNFA = {
+    //      if (!nextNFA(ch.code).isDefined) {
+    //        val next = nfa.next(cursor, ch, queryMask(cursor.strand.index), staircaseFilterHolder.getStairCaseFilter(cursor.readLength, nfa.minK))
+    //        next match {
+    //          case None =>
+    //          case Some(x) => nextNFA(ch.code) = x.nfa
+    //        }
+    //      }
+    //      nextNFA(ch.code).get
+    //    }
 
     def score: Int = 0
     def strand = cursor.strand

@@ -88,6 +88,17 @@ public class ACGTSequenceTest
             ACGT r = rc.getACGT(i);
             assertEquals("index " + i, c, r);
         }
+
+    }
+
+    @Test
+    public void rc() throws Exception {
+        ACGTSequence s = new ACGTSequence("CTGCTGTACCCTACATCCGCCTTGGCCGTACAGCAG");
+        _logger.debug(s);
+        _logger.debug(s.reverseComplement());
+
+        ACGTSequence s2 = new ACGTSequence("CTGACACAAGTGGC");
+        _logger.debug(s2.reverseComplement());
     }
 
     @Test
