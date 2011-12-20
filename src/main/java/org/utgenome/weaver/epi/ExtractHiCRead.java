@@ -114,8 +114,9 @@ public class ExtractHiCRead extends GenomeWeaverCommand
                 ACGTSequence dna1 = r1.subSequence(0, adapterInF.pos);
                 ACGTSequence dna2 = r2.subSequence(0, adapterInR.pos);
 
-                if (dna1.length() < 20 && dna2.length() < 20) {
-                    _logger.warn("insufficient DNA length: F:%d, R:%d", dna1.length(), dna2.length());
+                if (dna1.length() < 20 || dna2.length() < 20) {
+                    _logger.warn("insufficient DNA length: %s, F:%d, R:%d : %s", f1.seqname, dna1.length(),
+                            dna2.length(), f1.seq);
                     continue;
                 }
 
