@@ -467,16 +467,16 @@ public class ACGTSequence implements LSeq, GenomeSequence, CharSequence
             // Count N
             int sPos = (int) (start >>> 6);
             int sOffset = (int) (start & 0x3FL);
-            int ePos = (int) (end >>> 6);
-            for (; sPos <= ePos; ++sPos) {
+            int ePos = (int) ((end + 64L - 1L) >>> 6);
+            for (; sPos < ePos; ++sPos) {
                 long mask = ~0L;
                 if (sOffset != 0) {
                     mask >>>= sOffset;
                     sOffset = 0;
                 }
-                if (sPos == ePos) {
+                if (sPos == ePos - 1) {
                     int eOffset = (int) (end & 0x3FL);
-                    long rMask = (eOffset == 0) ? 0L : ~((1L << (64 - eOffset)) - 1);
+                    long rMask = (eOffset == 0) ? ~0L : ~((1L << (64 - eOffset)) - 1);
                     mask &= rMask;
                 }
                 count += Long.bitCount(seq[sPos * 3] & mask);
@@ -486,9 +486,9 @@ public class ACGTSequence implements LSeq, GenomeSequence, CharSequence
             // Count A, C, G, T
             int sPos = (int) (start >>> 5);
             int sOffset = (int) (start & 0x1FL);
-            int ePos = (int) (end >>> 5);
+            int ePos = (int) ((end + 32L - 1L) >>> 5);
 
-            for (; sPos <= ePos; ++sPos) {
+            for (; sPos < ePos; ++sPos) {
 
                 long mask = ~0L;
                 if (sOffset != 0) {
@@ -499,9 +499,9 @@ public class ACGTSequence implements LSeq, GenomeSequence, CharSequence
                 int block = sPos % 2;
                 long v = seq[bIndex + 1 + block];
                 long nFlag = interleave32With0(seq[bIndex] >>> (32 * (1 - block)));
-                if (sPos == ePos) {
+                if (sPos == ePos - 1) {
                     int eOffset = (int) (end & 0x1FL);
-                    long rMask = (eOffset == 0) ? 0L : ~((1L << (32 - eOffset) * 2) - 1);
+                    long rMask = (eOffset == 0) ? ~0L : ~((1L << (32 - eOffset) * 2) - 1);
                     mask &= rMask;
                 }
                 long r = ~0L;
@@ -524,9 +524,9 @@ public class ACGTSequence implements LSeq, GenomeSequence, CharSequence
         // Count A, C, G, T
         int sPos = (int) (start >>> 5);
         int sOffset = (int) (start & 0x1FL);
-        int ePos = (int) (end >>> 5);
+        int ePos = (int) ((end + 32L - 1L) >>> 5);
 
-        for (; sPos <= ePos; ++sPos) {
+        for (; sPos < ePos; ++sPos) {
 
             long mask = ~0L;
             if (sOffset != 0) {
@@ -537,9 +537,9 @@ public class ACGTSequence implements LSeq, GenomeSequence, CharSequence
             int block = sPos % 2;
             long v = seq[bIndex + 1 + block];
             long nFlag = interleave32With0(seq[bIndex] >>> (32 * (1 - block)));
-            if (sPos == ePos) {
+            if (sPos == ePos - 1) {
                 int eOffset = (int) (end & 0x1FL);
-                long rMask = (eOffset == 0) ? 0L : ~((1L << (32 - eOffset) * 2) - 1);
+                long rMask = (eOffset == 0) ? ~0L : ~((1L << (32 - eOffset) * 2) - 1);
                 mask &= rMask;
             }
 

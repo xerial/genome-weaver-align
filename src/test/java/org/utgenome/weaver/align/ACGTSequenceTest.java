@@ -333,4 +333,17 @@ public class ACGTSequenceTest
         _logger.debug("bit count: %.5f", s1.getElapsedTime());
     }
 
+    @Test
+    public void fastCountPolyA() throws Exception {
+        ACGTSequence s = new ACGTSequence("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+        long a = s.fastCount(ACGT.N, 0, s.length());
+        assertEquals(0, a);
+
+        long b = s.fastCount(ACGT.A, 0, s.length());
+        assertEquals(64, b);
+
+        long[] c = s.fastCountACGTN(0, s.length());
+        assertEquals(64, c[0]);
+    }
+
 }
