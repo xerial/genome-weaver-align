@@ -66,4 +66,13 @@ public class QueryMaskTest
         check(query, "00000000", SearchDirection.Backward, ACGT.A, 0, 0, 3);
     }
 
+    @Test
+    public void input64() throws Exception {
+        ACGTSequence q = new ACGTSequence("AAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+        _logger.debug(q.length());
+        QueryMask qm = new QueryMask(q);
+        qm.getBidirectionalPatternMask64(SearchDirection.Forward, 0, q.length(), 0, ACGT.C, 0);
+
+    }
+
 }

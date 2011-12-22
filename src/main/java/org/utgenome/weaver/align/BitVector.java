@@ -105,7 +105,7 @@ public class BitVector
      */
     public long substring64(long start, long end) {
         int pos = (int) (start / B);
-        if (pos > block.length)
+        if (pos >= block.length)
             return 0L;
         long range = end - start;
         long mask = (range >= 64) ? ~0L : ~(~0L << range);
