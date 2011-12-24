@@ -66,9 +66,9 @@ class WeaverAlignTest {
   def forwardExact {
     val a: Alignment = align("GCCTAGT");
     a match {
-      case f: FMIndexHit => {
-        //assertEquals("7M", a.cigar.toString());
-        //assertEquals(3, a.start);
+      case f: UniquelyMapped => {
+        assertEquals("7M", f.cigar.toString());
+        assertEquals(3, f.start);
         assertEquals(Strand.FORWARD, f.strand);
         assertEquals(0, f.numMismatches)
       }
@@ -79,10 +79,28 @@ class WeaverAlignTest {
   @Test
   def reverseExact = {
     val a: Alignment = align(new ACGTSequence("GCCTAGT").reverseComplement());
-    //    assertEquals("7M", a.cigar.toString());
-    //    assertEquals(3, a.start);
-    //    assertEquals(Strand.REVERSE, a.strand);
-    //    assertEquals(0, a.numMismatches);
+    a match {
+      case f: UniquelyMapped => {
+        assertEquals("7M", f.cigar.toString());
+        assertEquals(3, f.start);
+        assertEquals(Strand.REVERSE, f.strand);
+        assertEquals(0, f.numMismatches)
+      }
+      case _ => throw new Exception("cannot reach here")
+    }
+  }
+  @Test
+  def oneDeletion = {
+    val a: Alignment = align("AAGCCTGTTT");
+    a match {
+      case m: UniquelyMapped => {
+        assertEquals(1, m.start);
+        assertEquals(Strand.FORWARD, m.strand);
+        assertEquals(1, m.numMismatches);
+        assertEquals("6M1D4M", m.cigar.toString());
+      }
+      case _ => throw new Exception("cannot reach here")
+    }
   }
 
   @Test

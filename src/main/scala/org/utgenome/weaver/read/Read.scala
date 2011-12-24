@@ -75,9 +75,9 @@ case class FASTQRead(name: String, seq: DNASequence, val qual: String) extends S
   def numReadFragments = 1
   def apply(i: Int) = this
 }
-case class PairedEndRead(first: Read, second: Read) extends Read {
+case class PairedEndRead(val first: SingleEnd, val second: SingleEnd) extends Read {
   def numReadFragments = 2
-  def apply(i: Int) = i match {
+  def apply(i: Int): SingleEnd = i match {
     case 0 => first
     case 1 => second
   }
@@ -92,7 +92,7 @@ class FASTQStream(in: Reader) extends ReadStream {
   def this(file: File) = {
     this(new FileReader(file))
   }
-  def next = {
+  def next: Option[SingleEnd] = {
     reader.next match {
       case null => None
       case e => Some(FASTQRead(e.seqname, e.seq, e.qual))

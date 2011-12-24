@@ -179,7 +179,7 @@ public class BidirectionalBWT implements Aligner
         if (_logger.isTraceEnabled())
             _logger.trace("query: " + qF);
 
-        if (qF.fastCount(ACGT.N, 0, qF.textSize()) > config.getMaximumEditDistances(qF.length())) {
+        if (qF.fastCount(ACGT.N, 0, qF.textSize()) > config.getMaximumEditDistance(qF.length())) {
             // too many Ns in the query sequence
             return;
         }
@@ -232,7 +232,7 @@ public class BidirectionalBWT implements Aligner
 
             int posInRead = c.cursor.getProcessedBases();
 
-            int remainingDist = config.getMaximumEditDistances(m)
+            int remainingDist = config.getMaximumEditDistance(m)
                     - (c.score.numMismatches + c.score.numGapOpens + c.score.numGapExtend);
             if (remainingDist < 0)
                 continue;

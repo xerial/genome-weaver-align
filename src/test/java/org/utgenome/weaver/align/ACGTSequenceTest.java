@@ -99,6 +99,10 @@ public class ACGTSequenceTest
 
         ACGTSequence s2 = new ACGTSequence("CTGACACAAGTGGC");
         _logger.debug(s2.reverseComplement());
+
+        ACGTSequence s3 = new ACGTSequence("TCACAGTAG");
+        _logger.debug(s3.reverseComplement());
+
     }
 
     @Test

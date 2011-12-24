@@ -127,7 +127,7 @@ public class SuffixFilter implements Aligner
             this.q[1] = q[0].complement();
             this.out = out;
 
-            this.k = config.getMaximumEditDistances(m);
+            this.k = config.getMaximumEditDistance(m);
             this.minMismatches = k + 1;
         }
 
