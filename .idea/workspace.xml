@@ -86,10 +86,30 @@
     <splitter split-orientation="horizontal" split-proportion="0.5">
       <split-first>
         <leaf>
-          <file leaf-file-name="Read.scala" pinned="false" current="true" current-in-tab="true">
+          <file leaf-file-name="Read.scala" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/read/Read.scala">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="121" column="5" selection-start="2487" selection-end="2487" vertical-scroll-proportion="0.4289941">
+                <state line="120" column="38" selection-start="2450" selection-end="2450" vertical-scroll-proportion="-12.518518">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="ReadTest.scala" pinned="false" current="true" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/read/ReadTest.scala">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="72" column="4" selection-start="1990" selection-end="1990" vertical-scroll-proportion="0.7982709">
+                  <folding>
+                    <element signature="n#!!doc" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="sample.fastq" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/src/test/resources/org/utgenome/weaver/read/sample.fastq">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="12" column="0" selection-start="213" selection-end="213" vertical-scroll-proportion="0.0">
                   <folding />
                 </state>
               </provider>
@@ -107,7 +127,7 @@
           <file leaf-file-name="FastqReader.java" pinned="false" current="false" current-in-tab="false">
             <entry file="jar://$MAVEN_REPOSITORY$/org/utgenome/utgb-core/1.5.8/utgb-core-1.5.8-sources.jar!/org/utgenome/format/fastq/FastqReader.java">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="116" column="21" selection-start="4066" selection-end="4066" vertical-scroll-proportion="0.0">
+                <state line="106" column="12" selection-start="3805" selection-end="3805" vertical-scroll-proportion="0.0">
                   <folding />
                 </state>
               </provider>
@@ -116,7 +136,7 @@
           <file leaf-file-name="Iterator.scala" pinned="false" current="false" current-in-tab="false">
             <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/Iterator.scala">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="920" column="14" selection-start="33980" selection-end="33980" vertical-scroll-proportion="0.0">
+                <state line="776" column="9" selection-start="28511" selection-end="28511" vertical-scroll-proportion="0.0">
                   <folding />
                 </state>
               </provider>
@@ -143,7 +163,7 @@
           <file leaf-file-name="TraversableOnce.scala" pinned="false" current="false" current-in-tab="false">
             <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/TraversableOnce.scala">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="69" column="0" selection-start="2915" selection-end="2915" vertical-scroll-proportion="0.0">
+                <state line="187" column="77" selection-start="6727" selection-end="6727" vertical-scroll-proportion="0.0">
                   <folding />
                 </state>
               </provider>
@@ -224,7 +244,6 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/src/main/Main.iml" />
         <option value="$PROJECT_DIR$/src/main/pom.xml" />
         <option value="$PROJECT_DIR$/src/test/java/org/utgenome/weaver/read/ReadTest.java" />
         <option value="$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/align/strategy/weaver/AlignmentNFA.scala" />
@@ -237,9 +256,10 @@
         <option value="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/read/CompactDNASequenceTest.scala" />
         <option value="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/align/strategy/weaver/WeaverTest.scala" />
         <option value="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/LoggerTest.scala" />
-        <option value="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/read/ReadTest.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/Logger.scala" />
+        <option value="$PROJECT_DIR$/src/test/resources/org/utgenome/weaver/read/sample.fastq" />
         <option value="$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/read/Read.scala" />
+        <option value="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/read/ReadTest.scala" />
       </list>
     </option>
   </component>
@@ -374,6 +394,168 @@
             <PATH_ELEMENT>
               <option name="myItemId" value="genome-weaver" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="test" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="test" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="scala" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="test" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="resources" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="org" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="utgenome" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="read" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="test" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="java" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="test" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="java" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="align" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
         </subPane>
@@ -610,61 +792,7 @@
       <recent name="org.utgenome.weaver.read" />
     </key>
   </component>
-  <component name="RunManager" selected="ScalaTest.LoggerTest">
-    <configuration default="false" name="WeaverTest" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
-      <module name="genome-weaver" />
-      <setting name="path" value="org.utgenome.weaver.align.strategy.weaver.WeaverTest" />
-      <setting name="package" value="" />
-      <setting name="vmparams" value="-Dloglevel=debug" />
-      <setting name="params" value="" />
-      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <setting name="searchForTest" value="Across module dependencies" />
-      <setting name="testName" value="" />
-      <setting name="testKind" value="Class" />
-      <RunnerSettings RunnerId="Debug">
-        <option name="DEBUG_PORT" value="" />
-        <option name="TRANSPORT" value="0" />
-        <option name="LOCAL" value="true" />
-      </RunnerSettings>
-      <ConfigurationWrapper RunnerId="Debug" />
-      <method />
-    </configuration>
-    <configuration default="false" name="WeaverTest.hello2" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
-      <module name="genome-weaver" />
-      <setting name="path" value="org.utgenome.weaver.align.strategy.weaver.WeaverTest" />
-      <setting name="package" value="" />
-      <setting name="vmparams" value="-Dloglevel=debug" />
-      <setting name="params" value="" />
-      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <setting name="searchForTest" value="Across module dependencies" />
-      <setting name="testName" value="hello2" />
-      <setting name="testKind" value="Test name" />
-      <RunnerSettings RunnerId="Debug">
-        <option name="DEBUG_PORT" value="" />
-        <option name="TRANSPORT" value="0" />
-        <option name="LOCAL" value="true" />
-      </RunnerSettings>
-      <ConfigurationWrapper RunnerId="Debug" />
-      <method />
-    </configuration>
-    <configuration default="false" name="WeaverTest.pattern match" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
-      <module name="genome-weaver" />
-      <setting name="path" value="org.utgenome.weaver.align.strategy.weaver.WeaverTest" />
-      <setting name="package" value="" />
-      <setting name="vmparams" value="-Dloglevel=debug" />
-      <setting name="params" value="" />
-      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <setting name="searchForTest" value="Across module dependencies" />
-      <setting name="testName" value="pattern match" />
-      <setting name="testKind" value="Test name" />
-      <RunnerSettings RunnerId="Debug">
-        <option name="DEBUG_PORT" value="" />
-        <option name="TRANSPORT" value="0" />
-        <option name="LOCAL" value="true" />
-      </RunnerSettings>
-      <ConfigurationWrapper RunnerId="Debug" />
-      <method />
-    </configuration>
+  <component name="RunManager" selected="ScalaTest.ReadTest.fastq reader should read data in block-wise manner">
     <configuration default="false" name="LoggerTest.extending logger" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
       <module name="genome-weaver" />
       <setting name="path" value="org.utgenome.weaver.LoggerTest" />
@@ -693,6 +821,60 @@
       <setting name="searchForTest" value="Across module dependencies" />
       <setting name="testName" value="" />
       <setting name="testKind" value="Class" />
+      <RunnerSettings RunnerId="Debug">
+        <option name="DEBUG_PORT" value="" />
+        <option name="TRANSPORT" value="0" />
+        <option name="LOCAL" value="true" />
+      </RunnerSettings>
+      <ConfigurationWrapper RunnerId="Debug" />
+      <method />
+    </configuration>
+    <configuration default="false" name="ReadTest.fastq file should be read" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
+      <module name="genome-weaver" />
+      <setting name="path" value="org.utgenome.weaver.read.ReadTest" />
+      <setting name="package" value="" />
+      <setting name="vmparams" value="-Dloglevel=debug" />
+      <setting name="params" value="" />
+      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <setting name="searchForTest" value="Across module dependencies" />
+      <setting name="testName" value="fastq file should be read" />
+      <setting name="testKind" value="Test name" />
+      <RunnerSettings RunnerId="Debug">
+        <option name="DEBUG_PORT" value="" />
+        <option name="TRANSPORT" value="0" />
+        <option name="LOCAL" value="true" />
+      </RunnerSettings>
+      <ConfigurationWrapper RunnerId="Debug" />
+      <method />
+    </configuration>
+    <configuration default="false" name="ReadTest.fastq reader should read FASTQ files" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
+      <module name="genome-weaver" />
+      <setting name="path" value="org.utgenome.weaver.read.ReadTest" />
+      <setting name="package" value="" />
+      <setting name="vmparams" value="-Dloglevel=debug" />
+      <setting name="params" value="" />
+      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <setting name="searchForTest" value="Across module dependencies" />
+      <setting name="testName" value="fastq reader should read FASTQ files" />
+      <setting name="testKind" value="Test name" />
+      <RunnerSettings RunnerId="Debug">
+        <option name="DEBUG_PORT" value="" />
+        <option name="TRANSPORT" value="0" />
+        <option name="LOCAL" value="true" />
+      </RunnerSettings>
+      <ConfigurationWrapper RunnerId="Debug" />
+      <method />
+    </configuration>
+    <configuration default="false" name="ReadTest.fastq reader should read data in block-wise manner" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
+      <module name="genome-weaver" />
+      <setting name="path" value="org.utgenome.weaver.read.ReadTest" />
+      <setting name="package" value="" />
+      <setting name="vmparams" value="-Dloglevel=debug" />
+      <setting name="params" value="" />
+      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <setting name="searchForTest" value="Across module dependencies" />
+      <setting name="testName" value="fastq reader should read data in block-wise manner" />
+      <setting name="testKind" value="Test name" />
       <RunnerSettings RunnerId="Debug">
         <option name="DEBUG_PORT" value="" />
         <option name="TRANSPORT" value="0" />
@@ -918,11 +1100,11 @@
       </method>
     </configuration>
     <list size="5">
-      <item index="0" class="java.lang.String" itemvalue="ScalaTest.WeaverTest" />
-      <item index="1" class="java.lang.String" itemvalue="ScalaTest.WeaverTest.hello2" />
-      <item index="2" class="java.lang.String" itemvalue="ScalaTest.WeaverTest.pattern match" />
-      <item index="3" class="java.lang.String" itemvalue="ScalaTest.LoggerTest.extending logger" />
-      <item index="4" class="java.lang.String" itemvalue="ScalaTest.LoggerTest" />
+      <item index="0" class="java.lang.String" itemvalue="ScalaTest.LoggerTest.extending logger" />
+      <item index="1" class="java.lang.String" itemvalue="ScalaTest.LoggerTest" />
+      <item index="2" class="java.lang.String" itemvalue="ScalaTest.ReadTest.fastq file should be read" />
+      <item index="3" class="java.lang.String" itemvalue="ScalaTest.ReadTest.fastq reader should read FASTQ files" />
+      <item index="4" class="java.lang.String" itemvalue="ScalaTest.ReadTest.fastq reader should read data in block-wise manner" />
     </list>
     <configuration name="&lt;template&gt;" type="WebApp" default="true" selected="false">
       <Host>localhost</Host>
@@ -982,14 +1164,14 @@
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32921347" sideWeight="0.49357602" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32907802" sideWeight="0.49202552" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32907802" sideWeight="0.49043062" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="SBT Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32907802" sideWeight="0.4716906" order="9" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.22269504" sideWeight="0.5761563" order="11" side_tool="true" content_ui="tabs" />
+      <window_info id="Debug" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.22269504" sideWeight="0.58213717" order="11" side_tool="true" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.22198582" sideWeight="0.20334928" order="1" side_tool="false" content_ui="combo" x="24" y="1202" width="516" height="313" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.6707865" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32921347" sideWeight="0.49571735" order="8" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.22269504" sideWeight="0.42105263" order="10" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.22269504" sideWeight="0.41507176" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.2719101" sideWeight="0.49357602" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.21910113" order="1" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32976446" sideWeight="0.6" order="5" side_tool="false" content_ui="tabs" />
@@ -1059,20 +1241,6 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/TraversableLike.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="67" column="6" selection-start="3111" selection-end="3111" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/package.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="33" column="56" selection-start="1802" selection-end="1802" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/BitSetLike.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="35" column="7" selection-start="1336" selection-end="1336" vertical-scroll-proportion="0.0">
@@ -1115,20 +1283,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/TraversableOnce.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="69" column="0" selection-start="2915" selection-end="2915" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$MAVEN_REPOSITORY$/org/utgenome/utgb-core/1.5.8/utgb-core-1.5.8-sources.jar!/org/utgenome/format/fastq/FastqReader.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="116" column="21" selection-start="4066" selection-end="4066" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="jar://C:/Program Files/Java/jdk1.6.0_24/src.zip!/java/util/ArrayList.java">
       <provider selected="true" editor-type-id="text-editor">
         <state line="81" column="42" selection-start="4020" selection-end="4020" vertical-scroll-proportion="0.0">
@@ -1159,15 +1313,45 @@
     </entry>
     <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/Iterator.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="920" column="14" selection-start="33980" selection-end="33980" vertical-scroll-proportion="0.0">
+        <state line="776" column="9" selection-start="28511" selection-end="28511" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/utgenome/utgb-core/1.5.8/utgb-core-1.5.8-sources.jar!/org/utgenome/format/fastq/FastqReader.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="106" column="12" selection-start="3805" selection-end="3805" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/test/resources/org/utgenome/weaver/read/sample.fastq">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="12" column="0" selection-start="213" selection-end="213" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/read/Read.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="121" column="5" selection-start="2487" selection-end="2487" vertical-scroll-proportion="0.4289941">
+        <state line="120" column="38" selection-start="2450" selection-end="2450" vertical-scroll-proportion="-12.518518">
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/TraversableOnce.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="187" column="77" selection-start="6727" selection-end="6727" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/read/ReadTest.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="72" column="4" selection-start="1990" selection-end="1990" vertical-scroll-proportion="0.7982709">
+          <folding>
+            <element signature="n#!!doc" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

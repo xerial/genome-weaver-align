@@ -18,9 +18,10 @@ package org.utgenome.weaver
 package read
 
 import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
 import Read._
 import align.ACGT
+import org.xerial.util.FileResource
+import org.scalatest.matchers.{MustMatchers, ShouldMatchers}
 
 //--------------------------------------
 //
@@ -33,7 +34,7 @@ import align.ACGT
  * Created at 2012/01/04 11:40
  * @author leo
  */
-class ReadTest extends FlatSpec with ShouldMatchers {
+class ReadTest extends FlatSpec with ShouldMatchers with MustMatchers with Logger {
 
   "read" should "handle acgt" in {
 
@@ -48,6 +49,31 @@ class ReadTest extends FlatSpec with ShouldMatchers {
     }
   }
 
+  "fastq reader" should "read FASTQ files" in {
+
+    val r = new FASTQFileReader(FileResource.open(classOf[ReadTest], "sample.fastq"))
+    val read = r.toArray
+
+    read.length must be (3)
+    for(i <- 0 until  read.length) {
+      read(i).numReadFragments must equal (1)
+    }
+  }
+
+  "fastq reader" should "read data in block-wise manner" in {
+
+    val r = new FASTQFileReader(FileResource.open(classOf[ReadTest], "sample.fastq"))
+    val block = r.blockIterator(2).toArray
+
+    block.size must be (2)
+    block(0).size must be (2)
+    block(1).size must be (1)
+    val numReads = block.flatMap(_.iterator).size
+    numReads must be (3)
+
+    debug(block(0).toString)
+    debug(block(1).toString)
+  }
 
 
 }

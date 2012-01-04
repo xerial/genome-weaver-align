@@ -91,7 +91,7 @@ case class FASTQRead(name: String, seq: DNASequence, val qual: String) extends S
   def apply(i: Int) = this
 }
 
-case class PairedEndRead(val first: SingleEnd, val second: SingleEnd) extends Read {
+case class PairedEndRead(first: SingleEnd, second: SingleEnd) extends Read {
   def numReadFragments = 2
 
   def apply(i: Int): SingleEnd = i match {
@@ -118,7 +118,7 @@ trait ReadIterator extends Iterator[Read] {
     ret
   }
 
-  def blockIterator(blockSize:Int): GroupedIterator[Read] = {
+  def blockIterator(blockSize:Int=1024): GroupedIterator[Read] = {
      sliding(blockSize, blockSize)
   }
 
@@ -139,7 +139,7 @@ class FASTQFileReader(in: Reader) extends ReadIterator {
   protected def consume: Option[Read] = {
     if (!current.isDefined && !finishedReading) {
       current = reader.next match {
-        case null => finishedReading = true; None
+        case null => finishedReading = true; reader.close; None
         case e => Some(FASTQRead(e.seqname, e.seq, e.qual))
       }
     }
