@@ -8,6 +8,8 @@
       <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/libraries/Maven__org_scalatest_scalatest_2_9_1_1_6_1.xml" />
       <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/libraries/scala_compiler_2_9_1.xml" />
       <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/scala_compiler.xml" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/Logger.scala" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/LoggerTest.scala" />
       <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/align/strategy/weaver/SpecTest.scala" />
       <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/align/strategy/weaver/SpecTest2.scala" />
       <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/read/CompactDNASequenceTest.scala" />
@@ -19,6 +21,7 @@
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/align/strategy/weaver/WeaverAlign.scala" afterPath="$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/align/strategy/weaver/WeaverAlign.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/read/Read.scala" afterPath="$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/read/Read.scala" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/align/strategy/weaver/WeaverAlignTest.scala" afterPath="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/align/strategy/weaver/WeaverAlignTest.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/align/strategy/weaver/WeaverTest.scala" afterPath="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/align/strategy/weaver/WeaverTest.scala" />
     </list>
     <ignored path="genome-weaver.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -83,28 +86,10 @@
     <splitter split-orientation="horizontal" split-proportion="0.5">
       <split-first>
         <leaf>
-          <file leaf-file-name="WeaverAlign.scala" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/align/strategy/weaver/WeaverAlign.scala">
-              <provider selected="true" editor-type-id="text-editor">
-                <state line="86" column="57" selection-start="2510" selection-end="2510" vertical-scroll-proportion="0.0">
-                  <folding />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file leaf-file-name="Read.scala" pinned="false" current="true" current-in-tab="true">
+          <file leaf-file-name="Read.scala" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/read/Read.scala">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="123" column="0" selection-start="2901" selection-end="2901" vertical-scroll-proportion="0.9712092">
-                  <folding />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file leaf-file-name="CompactDNASequenceTest.scala" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/read/CompactDNASequenceTest.scala">
-              <provider selected="true" editor-type-id="text-editor">
-                <state line="25" column="54" selection-start="469" selection-end="469" vertical-scroll-proportion="0.0">
+                <state line="92" column="26" selection-start="2215" selection-end="2215" vertical-scroll-proportion="0.0">
                   <folding />
                 </state>
               </provider>
@@ -113,7 +98,7 @@
           <file leaf-file-name="ReadTest.scala" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/read/ReadTest.scala">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="35" column="47" selection-start="981" selection-end="981" vertical-scroll-proportion="0.0">
+                <state line="52" column="0" selection-start="1276" selection-end="1276" vertical-scroll-proportion="0.0">
                   <folding>
                     <element signature="n#!!doc" expanded="true" />
                   </folding>
@@ -121,57 +106,73 @@
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="JavaConversions.scala" pinned="false" current="false" current-in-tab="false">
-            <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/JavaConversions.scala">
+          <file leaf-file-name="Logger.scala" pinned="false" current="true" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/Logger.scala">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="56" column="8" selection-start="2286" selection-end="2286" vertical-scroll-proportion="0.0">
+                <state line="73" column="42" selection-start="2308" selection-end="2308" vertical-scroll-proportion="0.8501441">
                   <folding />
                 </state>
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="WeaverTest.scala" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/align/strategy/weaver/WeaverTest.scala">
+          <file leaf-file-name="Object.java" pinned="false" current="false" current-in-tab="false">
+            <entry file="jar://C:/Program Files/Java/jdk1.6.0_24/src.zip!/java/lang/Object.java">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="7" column="6" selection-start="241" selection-end="241" vertical-scroll-proportion="0.0">
+                <state line="47" column="33" selection-start="1545" selection-end="1545" vertical-scroll-proportion="0.0">
                   <folding />
                 </state>
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="WeaverAlignTest.scala" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/align/strategy/weaver/WeaverAlignTest.scala">
+          <file leaf-file-name="TraversableOnce.scala" pinned="false" current="false" current-in-tab="false">
+            <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/TraversableOnce.scala">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="33" column="6" selection-start="1131" selection-end="1131" vertical-scroll-proportion="0.0">
+                <state line="233" column="6" selection-start="8152" selection-end="8152" vertical-scroll-proportion="0.0">
                   <folding />
                 </state>
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="ACGT.java" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/src/main/java/org/utgenome/weaver/align/ACGT.java">
+          <file leaf-file-name="LoggerTest.scala" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/LoggerTest.scala">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="43" column="79" selection-start="2028" selection-end="2028" vertical-scroll-proportion="0.0">
-                  <folding>
-                    <element signature="e#0#3181#0" expanded="true" />
-                  </folding>
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file leaf-file-name="AlignmentConfig.java" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/src/main/java/org/utgenome/weaver/align/AlignmentConfig.java">
-              <provider selected="true" editor-type-id="text-editor">
-                <state line="37" column="13" selection-start="1146" selection-end="1146" vertical-scroll-proportion="0.0">
+                <state line="39" column="14" selection-start="1038" selection-end="1038" vertical-scroll-proportion="0.0">
                   <folding />
                 </state>
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="AlignmentScoreConfig.java" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/src/main/java/org/utgenome/weaver/align/AlignmentScoreConfig.java">
+          <file leaf-file-name="GenericCompanion.scala" pinned="false" current="false" current-in-tab="false">
+            <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/generic/GenericCompanion.scala">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="34" column="13" selection-start="1090" selection-end="1090" vertical-scroll-proportion="0.0">
+                <state line="35" column="6" selection-start="1417" selection-end="1417" vertical-scroll-proportion="0.0">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="Predef.scala" pinned="false" current="false" current-in-tab="false">
+            <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/Predef.scala">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="190" column="6" selection-start="7378" selection-end="7378" vertical-scroll-proportion="0.0">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="Logger.java" pinned="false" current="false" current-in-tab="false">
+            <entry file="jar://$MAVEN_REPOSITORY$/org/xerial/xerial-core/2.1-SNAPSHOT/xerial-core-2.1-SNAPSHOT-sources.jar!/org/xerial/util/log/Logger.java">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="239" column="20" selection-start="7233" selection-end="7233" vertical-scroll-proportion="0.0">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="StringOps.scala" pinned="false" current="false" current-in-tab="false">
+            <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/immutable/StringOps.scala">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="30" column="0" selection-start="1188" selection-end="1188" vertical-scroll-proportion="0.0">
                   <folding />
                 </state>
               </provider>
@@ -184,7 +185,7 @@
           <file leaf-file-name="AlignmentNFA.scala" pinned="false" current="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/align/strategy/weaver/AlignmentNFA.scala">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="137" column="33" selection-start="4338" selection-end="4338" vertical-scroll-proportion="0.4498594">
+                <state line="137" column="0" selection-start="4338" selection-end="4338" vertical-scroll-proportion="0.33333334">
                   <folding />
                 </state>
               </provider>
@@ -263,9 +264,11 @@
         <option value="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/align/strategy/weaver/SpecTest.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/align/strategy/weaver/WeaverAlign.scala" />
         <option value="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/read/CompactDNASequenceTest.scala" />
-        <option value="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/align/strategy/weaver/WeaverTest.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/read/Read.scala" />
         <option value="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/read/ReadTest.scala" />
+        <option value="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/align/strategy/weaver/WeaverTest.scala" />
+        <option value="$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/Logger.scala" />
+        <option value="$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/LoggerTest.scala" />
       </list>
     </option>
   </component>
@@ -455,6 +458,32 @@
               <option name="myItemId" value="weaver" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="test" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="scala" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="read" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
@@ -531,6 +560,32 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="main" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="genome-weaver" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="main" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="scala" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="weaver" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -870,7 +925,7 @@
     <property name="project.structure.proportion" value="0.15" />
     <property name="options.splitter.main.proportions" value="0.3" />
     <property name="MemberChooser.sorted" value="false" />
-    <property name="options.lastSelected" value="copyright.filetypes.Scala" />
+    <property name="options.lastSelected" value="reference.settingsdialog.IDE.editor.colors.Debugger" />
     <property name="recentsLimit" value="5" />
     <property name="project.structure.side.proportion" value="0.1923077" />
     <property name="MemberChooser.copyJavadoc" value="false" />
@@ -888,46 +943,10 @@
       <recent name="org.utgenome.weaver.read" />
     </key>
   </component>
-  <component name="RunManager" selected="ScalaTest.ReadTest.read should handle acgt">
-    <configuration default="false" name="SpecTest.matcher matcher" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
+  <component name="RunManager" selected="ScalaTest.LoggerTest">
+    <configuration default="false" name="WeaverTest" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
       <module name="genome-weaver" />
-      <setting name="path" value="org.utgenome.weaver.align.strategy.weaver.SpecTest" />
-      <setting name="package" value="" />
-      <setting name="vmparams" value="-Dloglevel=debug" />
-      <setting name="params" value="" />
-      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <setting name="searchForTest" value="Across module dependencies" />
-      <setting name="testName" value="matcher matcher" />
-      <setting name="testKind" value="Test name" />
-      <RunnerSettings RunnerId="Debug">
-        <option name="DEBUG_PORT" value="" />
-        <option name="TRANSPORT" value="0" />
-        <option name="LOCAL" value="true" />
-      </RunnerSettings>
-      <ConfigurationWrapper RunnerId="Debug" />
-      <method />
-    </configuration>
-    <configuration default="false" name="CompactDNASequenceTest.compact DNA sequence should handle A, C, G, T and N" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
-      <module name="genome-weaver" />
-      <setting name="path" value="org.utgenome.weaver.read.CompactDNASequenceTest" />
-      <setting name="package" value="" />
-      <setting name="vmparams" value="-Dloglevel=debug" />
-      <setting name="params" value="" />
-      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <setting name="searchForTest" value="Across module dependencies" />
-      <setting name="testName" value="compact DNA sequence should handle A, C, G, T and N" />
-      <setting name="testKind" value="Test name" />
-      <RunnerSettings RunnerId="Debug">
-        <option name="DEBUG_PORT" value="" />
-        <option name="TRANSPORT" value="0" />
-        <option name="LOCAL" value="true" />
-      </RunnerSettings>
-      <ConfigurationWrapper RunnerId="Debug" />
-      <method />
-    </configuration>
-    <configuration default="false" name="CompactDNASequenceTest" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
-      <module name="genome-weaver" />
-      <setting name="path" value="org.utgenome.weaver.read.CompactDNASequenceTest" />
+      <setting name="path" value="org.utgenome.weaver.align.strategy.weaver.WeaverTest" />
       <setting name="package" value="" />
       <setting name="vmparams" value="-Dloglevel=debug" />
       <setting name="params" value="" />
@@ -943,9 +962,63 @@
       <ConfigurationWrapper RunnerId="Debug" />
       <method />
     </configuration>
-    <configuration default="false" name="ReadTest" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
+    <configuration default="false" name="WeaverTest.hello2" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
       <module name="genome-weaver" />
-      <setting name="path" value="org.utgenome.weaver.read.ReadTest" />
+      <setting name="path" value="org.utgenome.weaver.align.strategy.weaver.WeaverTest" />
+      <setting name="package" value="" />
+      <setting name="vmparams" value="-Dloglevel=debug" />
+      <setting name="params" value="" />
+      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <setting name="searchForTest" value="Across module dependencies" />
+      <setting name="testName" value="hello2" />
+      <setting name="testKind" value="Test name" />
+      <RunnerSettings RunnerId="Debug">
+        <option name="DEBUG_PORT" value="" />
+        <option name="TRANSPORT" value="0" />
+        <option name="LOCAL" value="true" />
+      </RunnerSettings>
+      <ConfigurationWrapper RunnerId="Debug" />
+      <method />
+    </configuration>
+    <configuration default="false" name="WeaverTest.pattern match" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
+      <module name="genome-weaver" />
+      <setting name="path" value="org.utgenome.weaver.align.strategy.weaver.WeaverTest" />
+      <setting name="package" value="" />
+      <setting name="vmparams" value="-Dloglevel=debug" />
+      <setting name="params" value="" />
+      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <setting name="searchForTest" value="Across module dependencies" />
+      <setting name="testName" value="pattern match" />
+      <setting name="testKind" value="Test name" />
+      <RunnerSettings RunnerId="Debug">
+        <option name="DEBUG_PORT" value="" />
+        <option name="TRANSPORT" value="0" />
+        <option name="LOCAL" value="true" />
+      </RunnerSettings>
+      <ConfigurationWrapper RunnerId="Debug" />
+      <method />
+    </configuration>
+    <configuration default="false" name="LoggerTest.extending logger" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
+      <module name="genome-weaver" />
+      <setting name="path" value="org.utgenome.weaver.LoggerTest" />
+      <setting name="package" value="" />
+      <setting name="vmparams" value="-Dloglevel=debug" />
+      <setting name="params" value="" />
+      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <setting name="searchForTest" value="Across module dependencies" />
+      <setting name="testName" value="extending logger" />
+      <setting name="testKind" value="Test name" />
+      <RunnerSettings RunnerId="Debug">
+        <option name="DEBUG_PORT" value="" />
+        <option name="TRANSPORT" value="0" />
+        <option name="LOCAL" value="true" />
+      </RunnerSettings>
+      <ConfigurationWrapper RunnerId="Debug" />
+      <method />
+    </configuration>
+    <configuration default="false" name="LoggerTest" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
+      <module name="genome-weaver" />
+      <setting name="path" value="org.utgenome.weaver.LoggerTest" />
       <setting name="package" value="" />
       <setting name="vmparams" value="-Dloglevel=debug" />
       <setting name="params" value="" />
@@ -953,26 +1026,6 @@
       <setting name="searchForTest" value="Across module dependencies" />
       <setting name="testName" value="" />
       <setting name="testKind" value="Class" />
-      <RunnerSettings RunnerId="Debug">
-        <option name="DEBUG_PORT" value="" />
-        <option name="TRANSPORT" value="0" />
-        <option name="LOCAL" value="true" />
-      </RunnerSettings>
-      <RunnerSettings RunnerId="Run" />
-      <ConfigurationWrapper RunnerId="Debug" />
-      <ConfigurationWrapper RunnerId="Run" />
-      <method />
-    </configuration>
-    <configuration default="false" name="ReadTest.read should handle acgt" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
-      <module name="genome-weaver" />
-      <setting name="path" value="org.utgenome.weaver.read.ReadTest" />
-      <setting name="package" value="" />
-      <setting name="vmparams" value="-Dloglevel=debug" />
-      <setting name="params" value="" />
-      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <setting name="searchForTest" value="Across module dependencies" />
-      <setting name="testName" value="read should handle acgt" />
-      <setting name="testKind" value="Test name" />
       <RunnerSettings RunnerId="Debug">
         <option name="DEBUG_PORT" value="" />
         <option name="TRANSPORT" value="0" />
@@ -1198,11 +1251,11 @@
       </method>
     </configuration>
     <list size="5">
-      <item index="0" class="java.lang.String" itemvalue="ScalaTest.SpecTest.matcher matcher" />
-      <item index="1" class="java.lang.String" itemvalue="ScalaTest.CompactDNASequenceTest.compact DNA sequence should handle A, C, G, T and N" />
-      <item index="2" class="java.lang.String" itemvalue="ScalaTest.CompactDNASequenceTest" />
-      <item index="3" class="java.lang.String" itemvalue="ScalaTest.ReadTest" />
-      <item index="4" class="java.lang.String" itemvalue="ScalaTest.ReadTest.read should handle acgt" />
+      <item index="0" class="java.lang.String" itemvalue="ScalaTest.WeaverTest" />
+      <item index="1" class="java.lang.String" itemvalue="ScalaTest.WeaverTest.hello2" />
+      <item index="2" class="java.lang.String" itemvalue="ScalaTest.WeaverTest.pattern match" />
+      <item index="3" class="java.lang.String" itemvalue="ScalaTest.LoggerTest.extending logger" />
+      <item index="4" class="java.lang.String" itemvalue="ScalaTest.LoggerTest" />
     </list>
     <configuration name="&lt;template&gt;" type="WebApp" default="true" selected="false">
       <Host>localhost</Host>
@@ -1265,16 +1318,16 @@
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32907802" sideWeight="0.49202552" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="SBT Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32907802" sideWeight="0.4716906" order="8" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.22198582" sideWeight="0.7898724" order="10" side_tool="true" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.22198582" sideWeight="0.20733653" order="11" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.22269504" sideWeight="0.5478469" order="10" side_tool="true" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.22198582" sideWeight="0.20414673" order="11" side_tool="false" content_ui="combo" x="24" y="1202" width="516" height="313" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.6707865" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32921347" sideWeight="0.49571735" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.22269504" sideWeight="0.5003987" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.22269504" sideWeight="0.44936204" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.2719101" sideWeight="0.49357602" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.21910113" order="1" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32976446" sideWeight="0.6" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.39989293" sideWeight="0.6707865" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.15430622" sideWeight="0.77730495" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.15430622" sideWeight="0.77730495" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24680851" sideWeight="0.476874" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Documentation" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="FLOATING" visible="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" x="92" y="92" width="1736" height="856" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -1339,48 +1392,6 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/src/main/java/org/utgenome/weaver/align/AlignmentConfig.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="37" column="13" selection-start="1146" selection-end="1146" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/org/utgenome/weaver/align/AlignmentScoreConfig.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="34" column="13" selection-start="1090" selection-end="1090" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/org/utgenome/weaver/align/strategy/ReadAlignmentNFA.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="56" column="13" selection-start="1737" selection-end="1737" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/org/utgenome/weaver/align/strategy/ReadChain.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="32" column="13" selection-start="1046" selection-end="1046" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/org/utgenome/weaver/align/QueryMask.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="34" column="13" selection-start="1172" selection-end="1172" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/org/utgenome/weaver/align/Range.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="26" column="13" selection-start="973" selection-end="973" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/read/ReadAlignment.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/align/strategy/weaver/AlignmentNFA.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="137" column="33" selection-start="4338" selection-end="4338" vertical-scroll-proportion="0.4498594">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/align/strategy/weaver/WeaverAlign.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state line="86" column="57" selection-start="2510" selection-end="2510" vertical-scroll-proportion="0.0" />
@@ -1402,9 +1413,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/align/strategy/weaver/WeaverTest.scala">
+    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/JavaConversions.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="7" column="6" selection-start="241" selection-end="241" vertical-scroll-proportion="0.0">
+        <state line="56" column="0" selection-start="2286" selection-end="2286" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
@@ -1416,25 +1427,83 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/read/ReadTest.scala">
+    <entry file="file://$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/align/strategy/weaver/WeaverTest.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="35" column="47" selection-start="981" selection-end="981" vertical-scroll-proportion="0.0">
+        <state line="94" column="19" selection-start="2152" selection-end="2152" vertical-scroll-proportion="0.0">
           <folding>
             <element signature="n#!!doc" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/JavaConversions.scala">
+    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/TraversableOnce.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="56" column="8" selection-start="2286" selection-end="2286" vertical-scroll-proportion="0.0">
+        <state line="233" column="6" selection-start="8152" selection-end="8152" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/immutable/StringOps.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="30" column="0" selection-start="1188" selection-end="1188" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/xerial/xerial-core/2.1-SNAPSHOT/xerial-core-2.1-SNAPSHOT-sources.jar!/org/xerial/util/log/Logger.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="239" column="20" selection-start="7233" selection-end="7233" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/read/Read.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="123" column="0" selection-start="2901" selection-end="2901" vertical-scroll-proportion="0.9712092">
+        <state line="92" column="26" selection-start="2215" selection-end="2215" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://C:/Program Files/Java/jdk1.6.0_24/src.zip!/java/lang/Object.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="47" column="33" selection-start="1545" selection-end="1545" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/read/ReadTest.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="52" column="0" selection-start="1276" selection-end="1276" vertical-scroll-proportion="0.0">
+          <folding>
+            <element signature="n#!!doc" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/Predef.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="190" column="6" selection-start="7378" selection-end="7378" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/generic/GenericCompanion.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="35" column="6" selection-start="1417" selection-end="1417" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/LoggerTest.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="39" column="14" selection-start="1038" selection-end="1038" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/Logger.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="73" column="42" selection-start="2308" selection-end="2308" vertical-scroll-proportion="0.8501441">
           <folding />
         </state>
       </provider>
