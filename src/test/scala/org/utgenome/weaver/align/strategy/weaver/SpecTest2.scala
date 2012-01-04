@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------
- *  Copyright 2011 utgenome.org
+ *  Copyright 2012 utgenome.org
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,22 +14,31 @@
  *  limitations under the License.
  *--------------------------------------------------------------------------*/
 //--------------------------------------
-// genome-weaver Project
 //
-// ReadTest.java
-// Since: 2011/12/08
+// SpecTest2.scala
+// Since: 2012/01/03 12:17
 //
-// $URL$ 
-// $Author$
 //--------------------------------------
-package org.utgenome.weaver.read;
+package org.utgenome.weaver
+package align.strategy.weaver
 
-import org.junit.Test;
+import scala.actors.Actor._
+import org.scalatest.FunSuite
 
-public class ReadTest
-{
-    @Test
-    public void read() throws Exception {
+/**
+ * Created at 2012/01/03 12:17
+ * @author leo
+ */
+class SpecTest2 extends FunSuite {
 
+  test("actor test") {
+    actor {
+      loopWhile(true) {
+
+      }
     }
+
+  }
+
+
 }

@@ -19,19 +19,21 @@
 // WeaverAlign.java
 // Since: Dec 3, 2011
 //
-// $URL$ 
+// $URL$
 // $Author$
 //--------------------------------------
 
-package org.utgenome.weaver.align.strategy.weaver
+package org.utgenome.weaver
+package align.strategy.weaver
 
 import org.utgenome.weaver.align._
 import org.utgenome.weaver.read._
 import org.utgenome.weaver.parallel.Reporter
 import org.utgenome.weaver.read._
 import org.utgenome.weaver.align.strategy._
-import scala.collection.mutable.PriorityQueue
 import org.utgenome.weaver.align.SequenceBoundary.PosOnGenome
+import scala.collection.mutable.PriorityQueue
+import scala.util.control.Breaks._
 
 class Interval(val start: Int, val end: Int) {
   override def toString = "[%d,%d)".format(start, end)
@@ -58,39 +60,55 @@ class ReadRange(val strand: Strand, start: Int, end: Int) extends Interval(start
  */
 sealed abstract class ReadCursor(val readRange: ReadRange, val cursor: Int) {
   def processedBases: Int
+
   def currentIndex: Int
+
   def next: Option[ReadCursor]
+
   def strand = readRange.strand
+
   def searchDirection: SearchDirection
+
   def readLength = readRange.length
+
   override def toString = "%d%s".format(cursor, readRange)
 }
 
 class ForwardCursor(readRange: ReadRange, cursor: Int) extends ReadCursor(readRange, cursor) {
   def processedBases = cursor - readRange.start
+
   def currentIndex = cursor
+
   def next = {
     val newCursor = cursor + 1
     if (newCursor >= readRange.end) None else Some(new ForwardCursor(readRange, newCursor))
   }
+
   def searchDirection = SearchDirection.Forward
+
   override def toString = "F%s".format(super[ReadCursor].toString)
 }
 
 class BackwardCursor(readRange: ReadRange, cursor: Int) extends ReadCursor(readRange, cursor) {
   def processedBases = readRange.end - cursor
+
   def currentIndex = cursor - 1
+
   def next = {
     val newCursor = cursor - 1
     if (newCursor <= readRange.start) None else Some(new BackwardCursor(readRange, newCursor))
   }
+
   def searchDirection = SearchDirection.Backward
+
   override def toString = "B%s".format(super[ReadCursor].toString)
 }
 
 class BidirectionalForwardCursor(readRange: ReadRange with Pivot, cursor: Int) extends ReadCursor(readRange, cursor) {
   def processedBases = cursor - readRange.pivot
+
   def currentIndex = cursor
+
   def next = {
     val newCursor = cursor + 1
     if (newCursor < readRange.end)
@@ -100,27 +118,39 @@ class BidirectionalForwardCursor(readRange: ReadRange with Pivot, cursor: Int) e
     else
       None
   }
+
   def searchDirection = SearchDirection.BidirectionalForward
-  //  def atSwitchBoundary = cursor >= readRange.end - 1 
+
+  //  def atSwitchBoundary = cursor >= readRange.end - 1
   override def toString = "BF%s/%d".format(super[ReadCursor].toString, readRange.pivot)
 }
 
 trait Unmapped
+
 trait Mapped {
   val numMismatches: Int
 }
+
 trait UniquelyMapped extends Mapped {
   val chr: String
   val start: Int
   val strand: Strand
   val cigar: CIGAR
 }
+
 sealed abstract class Alignment(val read: Read)
+
 case class NoHit(override val read: Read) extends Alignment(read) with Unmapped
+
 case class TooManyNs(override val read: Read) extends Alignment(read) with Unmapped
-case class ExactMatch(override val read: Read, val chr: String, val start: Int, val strand: Strand, val cigar: CIGAR) extends Alignment(read) with UniquelyMapped { val numMismatches = 0 }
-case class InexactMatch(override val read: Read, val chr: String, val start: Int, val strand: Strand, val cigar: CIGAR, val numMismatches: Int) extends Alignment(read) with UniquelyMapped
-case class FMIndexHit(override val read: Read, val si: SuffixInterval, val strand: Strand, val numMismatches: Int) extends Alignment(read) with Mapped
+
+case class ExactMatch(override val read: Read, chr: String, start: Int, strand: Strand, cigar: CIGAR) extends Alignment(read) with UniquelyMapped {
+  val numMismatches = 0
+}
+
+case class InexactMatch(override val read: Read, chr: String, start: Int, strand: Strand, cigar: CIGAR, numMismatches: Int) extends Alignment(read) with UniquelyMapped
+
+case class FMIndexHit(override val read: Read, si: SuffixInterval, strand: Strand, numMismatches: Int) extends Alignment(read) with Mapped
 
 /**
  *
@@ -136,21 +166,21 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
 
   def align(read: Read): Alignment = {
     val aligner: Aligner = read match {
-      case a @ FASTARead(name, seq) => new SingleEndAligner(a)
-      case b @ FASTQRead(name, seq, qual) => new SingleEndAligner(b)
-      case p @ PairedEndRead(first, second) => new PairedEndAligner(p)
+      case a@FASTARead(name, seq) => new SingleEndAligner(a)
+      case b@FASTQRead(name, seq, qual) => new SingleEndAligner(b)
+      case p@PairedEndRead(first, second) => new PairedEndAligner(p)
     }
 
     aligner.align()
   }
 
   class ReadBreakPoints(
-    val strand: Strand,
-    val si: SuffixInterval,
-    val breakPoints: BitVector,
-    val numMismatches: Int,
-    val longestMatch: Range,
-    val longestMatchSi: SuffixInterval);
+                         val strand: Strand,
+                         val si: SuffixInterval,
+                         val breakPoints: BitVector,
+                         val numMismatches: Int,
+                         val longestMatch: Range,
+                         val longestMatchSi: SuffixInterval);
 
   /**
    * Scan the longest unique match region of the query sequence by using FM-index
@@ -168,11 +198,11 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
     var longestMatch: Range = null
     var longestMatchSi: SuffixInterval = null;
 
-    var i = 0;
+    var i = 0
     for (i <- (0 until qLen)) {
       val ch = query(i);
       si = fmIndex.forwardSearch(strand, ch, si);
-      if (si.isEmpty()) {
+      if (si.isEmpty) {
         breakPoint.set(i, true);
         numMismatches += 1
         if (longestMatch == null || longestMatch.length() < (i - mark)) {
@@ -193,7 +223,9 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
    * Converts DNASequence for using Java methods that use ACGTSequence
    */
   implicit def dnaToACGT(x: DNASequence): ACGTSequence = {
-    x match { case a: CompactDNASequence => a.seq }
+    x match {
+      case a: CompactDNASequence => a.seq
+    }
   }
 
   /**
@@ -255,7 +287,9 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
         None;
       else if (quickScan.longestMatch.start != 0 && quickScan.longestMatch.start < m) {
         // bi-directional search
-        Some(new Search(new BidirectionalForwardCursor(new ReadRange(quickScan.strand, 0, m) with Pivot { val pivot = quickScan.longestMatch.start }, quickScan.longestMatch.start),
+        Some(new Search(new BidirectionalForwardCursor(new ReadRange(quickScan.strand, 0, m) with Pivot {
+          val pivot = quickScan.longestMatch.start
+        }, quickScan.longestMatch.start),
           k, quickScan.numMismatches))
       } else {
         // single-direction search
@@ -272,7 +306,9 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
 
     def align(): Alignment = {
       // Check whether the read contains too many Ns
-      def containsTooManyNs(r: SingleEnd) = { r.seq.count(ACGT.N, 0, r.length) > k }
+      def containsTooManyNs(r: SingleEnd) = {
+        r.seq.count(ACGT.N, 0, r.length) > k
+      }
       if (containsTooManyNs(read)) return new TooManyNs(read)
 
       // Forward and reverse strand ACGT sequences
@@ -291,7 +327,7 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
       val scanR = quickScan(q(1), Strand.REVERSE)
       if (scanR.numMismatches == 0) return reportExactMatch(scanR)
 
-      // If we are in the exact match mode, no need to proceed furthermore  
+      // If we are in the exact match mode, no need to proceed furthermore
       if (k == 0) return new NoHit(read);
 
       // Add initial states for forward and reverse strands
@@ -308,7 +344,9 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
         if (!s.isMarked(nextBase)) {
           return Base(nextBase)
         }
-        ACGT.exceptN.find { ch => !s.isMarked(ch) } match {
+        ACGT.exceptN.find {
+          ch => !s.isMarked(ch)
+        } match {
           case Some(ch) => Base(ch)
           case None => {
             // Lookup indels
@@ -333,21 +371,27 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
         }
       }
 
+
       while (!queue.isEmpty) {
         val s: Search = queue.dequeue
 
-        // Transit to next state
-
-        s.readCursor.next match {
-          case Some(nextCursor) => stepNext(s, nextCursor)
-          case None => { // report hit
-            reportAlignment(FMIndexHit(read, s.fmCursor.currentSi, s.strand, s.nfa.minK))
+        breakable {
+          // Transit to next state
+          s.readCursor.next match {
+            case Some(nextCursor) => stepNext(s, nextCursor)
+            case None => {
+              // report hit
+              reportAlignment(FMIndexHit(read, s.fmCursor.currentSi, s.strand, s.nfa.minK))
+              break
+            }
           }
         }
       }
 
+
       new NoHit(read)
     }
+
 
     def reportAlignment(aln: Alignment): Unit = {
 
@@ -368,25 +412,34 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
   }
 
   sealed abstract class NextSearchStep()
+
   case class Base(base: ACGT) extends NextSearchStep
+
   case class Deletion(length: Int) extends NextSearchStep
+
   case class Insertion(length: Int) extends NextSearchStep
+
   case class Split() extends NextSearchStep
+
   case class SoftClip() extends NextSearchStep
+
   case class Done() extends NextSearchStep
 
   sealed abstract class SearchState
+
   class SearchEnd extends SearchState
 
   class Search(val readCursor: ReadCursor, val fmCursor: FMIndexCursor, val nfa: AlignmentNFA, val priority: Int) extends SearchState {
 
     val nextNFA: Array[Option[AlignmentNFA]] = new Array[Option[AlignmentNFA]](ACGT.exceptN.length)
-    (0 until nextNFA.length).foreach { nextNFA(_) = None }
+    (0 until nextNFA.length).foreach {
+      nextNFA(_) = None
+    }
 
     var flag: Int = 0
 
     def this(readCursor: ReadCursor, k: Int, priority: Int) = {
-      this(readCursor, new FMIndexCursor(null, fmIndex.initSet(readCursor.searchDirection)), AlignmentNFA.initialNFA(k), priority)
+      this (readCursor, new FMIndexCursor(null, fmIndex.initSet(readCursor.searchDirection)), AlignmentNFA.initialNFA(k), priority)
     }
 
     private def markPos(mark: NextSearchStep) = {
@@ -426,7 +479,9 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
     //    }
 
     def score: Int = 0
+
     def strand = readCursor.strand
+
     def strandIndex: Int = readCursor.strand.index
 
     def stepOneBase(nextCursor: ReadCursor, base: ACGT): SearchState = {
@@ -460,6 +515,7 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
       val nextSiF: Array[SuffixInterval] = fmIndex.forwardSearch(fm, occLowerBound, occUpperBound)
       (nextSiF, occLowerBound, occUpperBound)
     }
+
     def backwardSearch(strand: Strand, siB: SuffixInterval) = {
       val fm: FMIndex = if (strand.isForward) fmIndex.forwardIndex else fmIndex.reverseIndex;
       val occLowerBound: Array[Long] = fm.rankACGTN(siB.lowerBound)

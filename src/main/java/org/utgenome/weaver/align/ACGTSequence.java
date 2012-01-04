@@ -24,20 +24,13 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.utgenome.format.fasta.GenomeSequence;
 import org.xerial.snappy.SnappyInputStream;
 import org.xerial.snappy.SnappyOutputStream;
 import org.xerial.util.log.Logger;
+
+import java.io.*;
+import java.util.Arrays;
 
 /**
  * ACGT genome sequence with N, using 3-bit encoding. This class uses 3 long
@@ -437,7 +430,7 @@ public class ACGTSequence implements LSeq, GenomeSequence, CharSequence
     /**
      * Count the number of the specified character in the range
      * 
-     * @param code
+     * @param base
      * @param start
      * @param end
      * @return
@@ -454,7 +447,7 @@ public class ACGTSequence implements LSeq, GenomeSequence, CharSequence
     /**
      * Count the number of occurrence of the code within the specified range
      * 
-     * @param code
+     * @param base
      * @param start
      * @param end
      *            (exclusive)

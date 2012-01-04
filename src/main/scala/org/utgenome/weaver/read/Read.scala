@@ -18,6 +18,7 @@ import java.io.FileReader
 trait DNASequence {
   def apply(i: Long): ACGT
   def size: Long
+  def length : Long = size
   def complement: DNASequence
   def count(ch: ACGT, start: Long, end: Long): Long
 
@@ -51,15 +52,15 @@ class CompactDNASequence(val seq: ACGTSequence) extends DNASequence {
  * @author leo
  *
  */
-trait Read extends ReadConverter {
+trait Read  {
   def numReadFragments: Int
   def apply(i: Int): Read
 
 }
 
-trait ReadConverter {
+object Read {
   implicit def stringToDNASequence(x: String): DNASequence = new CompactDNASequence(x)
-  //implicit def convert(x: ACGTSequence): DNASequence = new CompactDNASequence(x)
+  //implicit def convertToDNASequence(x: ACGTSequence): DNASequence = new CompactDNASequence(x)
 }
 
 trait SingleEnd extends Read {

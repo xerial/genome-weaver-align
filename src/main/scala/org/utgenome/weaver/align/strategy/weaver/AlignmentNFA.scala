@@ -60,8 +60,8 @@ class AlignmentNFA(
 
   def minK = kOffset
 
-  override def toString = toNFAStateString()
-  def toNFAStateString(): String = {
+  override def toString = toNFAStateString
+  def toNFAStateString: String = {
     val w = (this.automaton.length + 1) * 2 + 1;
     val s = new StringBuilder();
     s append "kOffset:%d\n".format(kOffset)
@@ -72,7 +72,7 @@ class AlignmentNFA(
         s.append(" \n");
       }
     }
-    return s.toString();
+    s.toString();
   }
 
   def next(cursor: ReadCursor, ch: ACGT, queryMask: QueryMask, staircaseFilter: StaircaseFilter): Option[NextState] = {

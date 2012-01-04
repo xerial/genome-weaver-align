@@ -28,26 +28,26 @@ import org.junit._
 import Assert._
 import org.utgenome.weaver.align._
 import org.utgenome.weaver.read._
-import org.utgenome.weaver.align.record._
 import org.xerial.util.log.Logger
 
-object WeaverAlignTest {
-
-  val config: AlignmentConfig = new AlignmentConfig()
-  val ref: ACGTSequence = new ACGTSequence("AAGCCTAGTTTCCTTG")
-  val fmIndex: FMIndexOnGenome = FMIndexOnGenome.buildFromSequence("seq", ref)
-
-  @BeforeClass
-  def setUp() {
-    //fmIndex = FMIndexOnGenome.buildFromSequence("seq", ref);
-    config.k = 2;
-  }
-}
 
 class WeaverAlignTest {
+  object Fixture {
+
+    val config: AlignmentConfig = new AlignmentConfig()
+    val ref: ACGTSequence = new ACGTSequence("AAGCCTAGTTTCCTTG")
+    val fmIndex: FMIndexOnGenome = FMIndexOnGenome.buildFromSequence("seq", ref)
+
+    @BeforeClass
+    def setUp() {
+      //fmIndex = FMIndexOnGenome.buildFromSequence("seq", ref);
+      config.k = 2;
+    }
+  }
+
   //type Alignment = org.utgenome.weaver.align.strategy.Alignment
   val _logger: Logger = Logger.getLogger(classOf[WeaverAlignTest])
-  val p = WeaverAlignTest
+  val p = Fixture
 
   def align(query: String): Alignment = {
     align(new ACGTSequence(query))
@@ -58,16 +58,16 @@ class WeaverAlignTest {
     aln.align(FASTQRead("read", new CompactDNASequence(q), null))
   }
 
-  @Test def hello = {
-    println("hello world")
+  @Test def hello() {
+    _logger debug("hello world")
   }
 
   @Test
-  def forwardExact {
+  def forwardExact() {
     val a: Alignment = align("GCCTAGT");
     a match {
       case f: UniquelyMapped => {
-        assertEquals("7M", f.cigar.toString());
+        assertEquals("7M", f.cigar.toString);
         assertEquals(3, f.start);
         assertEquals(Strand.FORWARD, f.strand);
         assertEquals(0, f.numMismatches)
@@ -77,11 +77,11 @@ class WeaverAlignTest {
   }
 
   @Test
-  def reverseExact = {
+  def reverseExact() {
     val a: Alignment = align(new ACGTSequence("GCCTAGT").reverseComplement());
     a match {
       case f: UniquelyMapped => {
-        assertEquals("7M", f.cigar.toString());
+        assertEquals("7M", f.cigar.toString);
         assertEquals(3, f.start);
         assertEquals(Strand.REVERSE, f.strand);
         assertEquals(0, f.numMismatches)
@@ -90,21 +90,21 @@ class WeaverAlignTest {
     }
   }
   @Test
-  def oneDeletion = {
+  def oneDeletion() {
     val a: Alignment = align("AAGCCTGTTT");
     a match {
       case m: UniquelyMapped => {
         assertEquals(1, m.start);
         assertEquals(Strand.FORWARD, m.strand);
         assertEquals(1, m.numMismatches);
-        assertEquals("6M1D4M", m.cigar.toString());
+        assertEquals("6M1D4M", m.cigar.toString);
       }
       case _ => throw new Exception("cannot reach here")
     }
   }
 
   @Test
-  def forwardCursor: Unit = {
+  def forwardCursor() {
     val c = new ForwardCursor(new ReadRange(Strand.FORWARD, 0, 5), 0)
     _logger.debug(c)
 
