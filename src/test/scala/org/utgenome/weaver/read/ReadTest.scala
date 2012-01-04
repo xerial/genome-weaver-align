@@ -35,7 +35,6 @@ import align.ACGT
  */
 class ReadTest extends FlatSpec with ShouldMatchers {
 
-
   "read" should "handle acgt" in {
 
     val s :DNASequence = "ACGTACGT"
@@ -47,9 +46,9 @@ class ReadTest extends FlatSpec with ShouldMatchers {
       val c : ACGT = s(i)
       l should equal (c)
     }
-    
-
   }
+
+
 
 }
 

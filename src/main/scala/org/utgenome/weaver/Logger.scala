@@ -46,7 +46,7 @@ object LoggerHolder {
  * @author leo
  */
 trait Logger {
-  private[this] val _logger = LoggerHolder.logger(this)
+  private[this] lazy val _logger = LoggerHolder.logger(this)
 
   private def wrap(format: => String, args: Any*)(tester: => Boolean, logMethod: String => Boolean) : Boolean = {
      if(tester) {
