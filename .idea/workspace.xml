@@ -89,7 +89,7 @@
           <file leaf-file-name="Read.scala" pinned="false" current="true" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/read/Read.scala">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="69" column="0" selection-start="1289" selection-end="1289" vertical-scroll-proportion="0.14778325">
+                <state line="121" column="5" selection-start="2487" selection-end="2487" vertical-scroll-proportion="0.4289941">
                   <folding />
                 </state>
               </provider>
@@ -116,7 +116,7 @@
           <file leaf-file-name="Iterator.scala" pinned="false" current="false" current-in-tab="false">
             <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/Iterator.scala">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="353" column="7" selection-start="13408" selection-end="13408" vertical-scroll-proportion="0.0">
+                <state line="920" column="14" selection-start="33980" selection-end="33980" vertical-scroll-proportion="0.0">
                   <folding />
                 </state>
               </provider>
@@ -156,7 +156,7 @@
           <file leaf-file-name="AlignmentNFA.scala" pinned="false" current="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/align/strategy/weaver/AlignmentNFA.scala">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="137" column="0" selection-start="4338" selection-end="4338" vertical-scroll-proportion="0.45540798">
+                <state line="137" column="0" selection-start="4338" selection-end="4338" vertical-scroll-proportion="0.45584047">
                   <folding />
                 </state>
               </provider>
@@ -985,16 +985,16 @@
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32907802" sideWeight="0.49202552" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="SBT Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32907802" sideWeight="0.4716906" order="9" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.22198582" sideWeight="0.79385966" order="11" side_tool="true" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.22198582" sideWeight="0.20334928" order="1" side_tool="false" content_ui="combo" x="24" y="1202" width="516" height="313" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.22269504" sideWeight="0.5761563" order="11" side_tool="true" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.22198582" sideWeight="0.20334928" order="1" side_tool="false" content_ui="combo" x="24" y="1202" width="516" height="313" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.6707865" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32921347" sideWeight="0.49571735" order="8" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.22269504" sideWeight="0.43660286" order="10" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.22269504" sideWeight="0.42105263" order="10" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.2719101" sideWeight="0.49357602" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.21910113" order="1" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32976446" sideWeight="0.6" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.39989293" sideWeight="0.6707865" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.15430622" sideWeight="0.7780142" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.15430622" sideWeight="0.77730495" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24680851" sideWeight="0.476874" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Documentation" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="FLOATING" visible="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" x="92" y="92" width="1736" height="856" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
@@ -1122,13 +1122,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/Iterator.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="353" column="7" selection-start="13408" selection-end="13408" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="jar://$MAVEN_REPOSITORY$/org/utgenome/utgb-core/1.5.8/utgb-core-1.5.8-sources.jar!/org/utgenome/format/fastq/FastqReader.java">
       <provider selected="true" editor-type-id="text-editor">
         <state line="116" column="21" selection-start="4066" selection-end="4066" vertical-scroll-proportion="0.0">
@@ -1164,9 +1157,16 @@
         </state>
       </provider>
     </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/scala-lang/scala-library/2.9.1/scala-library-2.9.1-sources.jar!/scala/collection/Iterator.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="920" column="14" selection-start="33980" selection-end="33980" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/org/utgenome/weaver/read/Read.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="69" column="0" selection-start="1289" selection-end="1289" vertical-scroll-proportion="0.14778325">
+        <state line="121" column="5" selection-start="2487" selection-end="2487" vertical-scroll-proportion="0.4289941">
           <folding />
         </state>
       </provider>

@@ -101,7 +101,7 @@ case class PairedEndRead(val first: SingleEnd, val second: SingleEnd) extends Re
 }
 
 
-trait ReadReader extends Iterator[Read] {
+trait ReadIterator extends Iterator[Read] {
   protected var current: Option[Read] = None
   protected var finishedReading = false
 
@@ -118,9 +118,13 @@ trait ReadReader extends Iterator[Read] {
     ret
   }
 
+  def blockIterator(blockSize:Int): GroupedIterator[Read] = {
+     sliding(blockSize, blockSize)
+  }
+
 }
 
-class FASTQStream(in: Reader) extends ReadReader {
+class FASTQFileReader(in: Reader) extends ReadIterator {
 
   import Read.stringToDNASequence
 
@@ -130,7 +134,7 @@ class FASTQStream(in: Reader) extends ReadReader {
     this (new FileReader(file))
   }
 
-  override def next : SingleEnd = super[ReadReader].next.asInstanceOf[SingleEnd]
+  override def next : SingleEnd = super[ReadIterator].next.asInstanceOf[SingleEnd]
 
   protected def consume: Option[Read] = {
     if (!current.isDefined && !finishedReading) {
@@ -144,9 +148,9 @@ class FASTQStream(in: Reader) extends ReadReader {
 
 }
 
-class FASTQPairedEndStream(in1: Reader, in2: Reader) extends ReadReader {
-  val reader1 = new FASTQStream(in1)
-  val reader2 = new FASTQStream(in2)
+class FASTQPairedEndReader(in1: Reader, in2: Reader) extends ReadIterator {
+  val reader1 = new FASTQFileReader(in1)
+  val reader2 = new FASTQFileReader(in2)
 
   def this(file1: File, file2: File) = {
     this (new FileReader(file1), new FileReader(file2))
@@ -169,7 +173,5 @@ class FASTQPairedEndStream(in1: Reader, in2: Reader) extends ReadReader {
 }
 
 
-class FASTQReadBlockReader(blockSize: Int) {
 
-}
 
