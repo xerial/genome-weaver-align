@@ -98,7 +98,7 @@
           <file leaf-file-name="ReadTest.scala" pinned="false" current="true" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/read/ReadTest.scala">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="72" column="4" selection-start="1990" selection-end="1990" vertical-scroll-proportion="0.7982709">
+                <state line="78" column="74" selection-start="2246" selection-end="2246" vertical-scroll-proportion="0.740634">
                   <folding>
                     <element signature="n#!!doc" expanded="true" />
                   </folding>
@@ -792,61 +792,7 @@
       <recent name="org.utgenome.weaver.read" />
     </key>
   </component>
-  <component name="RunManager" selected="ScalaTest.ReadTest.fastq reader should read data in block-wise manner">
-    <configuration default="false" name="LoggerTest.extending logger" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
-      <module name="genome-weaver" />
-      <setting name="path" value="org.utgenome.weaver.LoggerTest" />
-      <setting name="package" value="" />
-      <setting name="vmparams" value="-Dloglevel=debug" />
-      <setting name="params" value="" />
-      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <setting name="searchForTest" value="Across module dependencies" />
-      <setting name="testName" value="extending logger" />
-      <setting name="testKind" value="Test name" />
-      <RunnerSettings RunnerId="Debug">
-        <option name="DEBUG_PORT" value="" />
-        <option name="TRANSPORT" value="0" />
-        <option name="LOCAL" value="true" />
-      </RunnerSettings>
-      <ConfigurationWrapper RunnerId="Debug" />
-      <method />
-    </configuration>
-    <configuration default="false" name="LoggerTest" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
-      <module name="genome-weaver" />
-      <setting name="path" value="org.utgenome.weaver.LoggerTest" />
-      <setting name="package" value="" />
-      <setting name="vmparams" value="-Dloglevel=debug" />
-      <setting name="params" value="" />
-      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <setting name="searchForTest" value="Across module dependencies" />
-      <setting name="testName" value="" />
-      <setting name="testKind" value="Class" />
-      <RunnerSettings RunnerId="Debug">
-        <option name="DEBUG_PORT" value="" />
-        <option name="TRANSPORT" value="0" />
-        <option name="LOCAL" value="true" />
-      </RunnerSettings>
-      <ConfigurationWrapper RunnerId="Debug" />
-      <method />
-    </configuration>
-    <configuration default="false" name="ReadTest.fastq file should be read" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
-      <module name="genome-weaver" />
-      <setting name="path" value="org.utgenome.weaver.read.ReadTest" />
-      <setting name="package" value="" />
-      <setting name="vmparams" value="-Dloglevel=debug" />
-      <setting name="params" value="" />
-      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
-      <setting name="searchForTest" value="Across module dependencies" />
-      <setting name="testName" value="fastq file should be read" />
-      <setting name="testKind" value="Test name" />
-      <RunnerSettings RunnerId="Debug">
-        <option name="DEBUG_PORT" value="" />
-        <option name="TRANSPORT" value="0" />
-        <option name="LOCAL" value="true" />
-      </RunnerSettings>
-      <ConfigurationWrapper RunnerId="Debug" />
-      <method />
-    </configuration>
+  <component name="RunManager" selected="ScalaTest.ReadTest.fastq reader should handle paired read input">
     <configuration default="false" name="ReadTest.fastq reader should read FASTQ files" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
       <module name="genome-weaver" />
       <setting name="path" value="org.utgenome.weaver.read.ReadTest" />
@@ -874,6 +820,60 @@
       <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
       <setting name="searchForTest" value="Across module dependencies" />
       <setting name="testName" value="fastq reader should read data in block-wise manner" />
+      <setting name="testKind" value="Test name" />
+      <RunnerSettings RunnerId="Debug">
+        <option name="DEBUG_PORT" value="" />
+        <option name="TRANSPORT" value="0" />
+        <option name="LOCAL" value="true" />
+      </RunnerSettings>
+      <ConfigurationWrapper RunnerId="Debug" />
+      <method />
+    </configuration>
+    <configuration default="false" name="ReadTest" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
+      <module name="genome-weaver" />
+      <setting name="path" value="org.utgenome.weaver.read.ReadTest" />
+      <setting name="package" value="" />
+      <setting name="vmparams" value="-Dloglevel=debug" />
+      <setting name="params" value="" />
+      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <setting name="searchForTest" value="Across module dependencies" />
+      <setting name="testName" value="" />
+      <setting name="testKind" value="Class" />
+      <RunnerSettings RunnerId="Debug">
+        <option name="DEBUG_PORT" value="" />
+        <option name="TRANSPORT" value="0" />
+        <option name="LOCAL" value="true" />
+      </RunnerSettings>
+      <ConfigurationWrapper RunnerId="Debug" />
+      <method />
+    </configuration>
+    <configuration default="false" name="ReadTest.fastq reader should handler paired read input" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
+      <module name="genome-weaver" />
+      <setting name="path" value="org.utgenome.weaver.read.ReadTest" />
+      <setting name="package" value="" />
+      <setting name="vmparams" value="-Dloglevel=debug" />
+      <setting name="params" value="" />
+      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <setting name="searchForTest" value="Across module dependencies" />
+      <setting name="testName" value="fastq reader should handler paired read input" />
+      <setting name="testKind" value="Test name" />
+      <RunnerSettings RunnerId="Debug">
+        <option name="DEBUG_PORT" value="" />
+        <option name="TRANSPORT" value="0" />
+        <option name="LOCAL" value="true" />
+      </RunnerSettings>
+      <ConfigurationWrapper RunnerId="Debug" />
+      <method />
+    </configuration>
+    <configuration default="false" name="ReadTest.fastq reader should handle paired read input" type="ScalaTestRunConfiguration" factoryName="ScalaTest" temporary="true">
+      <module name="genome-weaver" />
+      <setting name="path" value="org.utgenome.weaver.read.ReadTest" />
+      <setting name="package" value="" />
+      <setting name="vmparams" value="-Dloglevel=debug" />
+      <setting name="params" value="" />
+      <setting name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <setting name="searchForTest" value="Across module dependencies" />
+      <setting name="testName" value="fastq reader should handle paired read input" />
       <setting name="testKind" value="Test name" />
       <RunnerSettings RunnerId="Debug">
         <option name="DEBUG_PORT" value="" />
@@ -1100,11 +1100,11 @@
       </method>
     </configuration>
     <list size="5">
-      <item index="0" class="java.lang.String" itemvalue="ScalaTest.LoggerTest.extending logger" />
-      <item index="1" class="java.lang.String" itemvalue="ScalaTest.LoggerTest" />
-      <item index="2" class="java.lang.String" itemvalue="ScalaTest.ReadTest.fastq file should be read" />
-      <item index="3" class="java.lang.String" itemvalue="ScalaTest.ReadTest.fastq reader should read FASTQ files" />
-      <item index="4" class="java.lang.String" itemvalue="ScalaTest.ReadTest.fastq reader should read data in block-wise manner" />
+      <item index="0" class="java.lang.String" itemvalue="ScalaTest.ReadTest.fastq reader should read FASTQ files" />
+      <item index="1" class="java.lang.String" itemvalue="ScalaTest.ReadTest.fastq reader should read data in block-wise manner" />
+      <item index="2" class="java.lang.String" itemvalue="ScalaTest.ReadTest" />
+      <item index="3" class="java.lang.String" itemvalue="ScalaTest.ReadTest.fastq reader should handler paired read input" />
+      <item index="4" class="java.lang.String" itemvalue="ScalaTest.ReadTest.fastq reader should handle paired read input" />
     </list>
     <configuration name="&lt;template&gt;" type="WebApp" default="true" selected="false">
       <Host>localhost</Host>
@@ -1167,7 +1167,7 @@
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32907802" sideWeight="0.49043062" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="SBT Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32907802" sideWeight="0.4716906" order="9" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.22269504" sideWeight="0.58213717" order="11" side_tool="true" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.22269504" sideWeight="0.58213717" order="11" side_tool="true" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.22198582" sideWeight="0.20334928" order="1" side_tool="false" content_ui="combo" x="24" y="1202" width="516" height="313" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.6707865" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32921347" sideWeight="0.49571735" order="8" side_tool="false" content_ui="tabs" />
@@ -1348,7 +1348,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/test/scala/org/utgenome/weaver/read/ReadTest.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="72" column="4" selection-start="1990" selection-end="1990" vertical-scroll-proportion="0.7982709">
+        <state line="78" column="74" selection-start="2246" selection-end="2246" vertical-scroll-proportion="0.740634">
           <folding>
             <element signature="n#!!doc" expanded="true" />
           </folding>

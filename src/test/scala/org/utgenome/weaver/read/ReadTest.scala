@@ -56,10 +56,20 @@ class ReadTest extends FlatSpec with ShouldMatchers with MustMatchers with Logge
 
     read.length must be (3)
     for(i <- 0 until  read.length) {
-      read(i).numReadFragments must equal (1)
+      read(i).numReadFragments must be (1)
     }
   }
 
+  "fastq reader" should "handle paired read input" in {
+    def openFile(x:String) = { FileResource.open(classOf[ReadTest], x) }
+    val r = new FASTQPairedEndReader(openFile("sample.fastq"), openFile("sample.fastq"))
+    val read = r.toArray
+
+    debug(read.mkString("\n"))
+    read.length must be (3)
+    read.foreach {x => x.numReadFragments must be (2)}
+  }
+  
   "fastq reader" should "read data in block-wise manner" in {
 
     val r = new FASTQFileReader(FileResource.open(classOf[ReadTest], "sample.fastq"))
