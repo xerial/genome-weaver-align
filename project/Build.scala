@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-package silk
 
 import java.io.File
 import sbt._
@@ -22,7 +21,7 @@ import Keys._
 import sbt.classpath.ClasspathUtilities
 
 
-object SilkBuild extends Build {
+object GenomeWeaverBuild extends Build {
 
 
   val SCALA_VERSION = "2.9.2"
@@ -123,35 +122,31 @@ object SilkBuild extends Build {
       classWorld
     )
 
-    val networkLib = Seq(
+    val coreLib = Seq(
+      "org.scala-lang" % "scalap" % SCALA_VERSION,
+      "org.xerial" % "xerial-core" % "2.0.2",
+      "org.utgenome" % "utgb-core" % "1.5.8",
+      "org.xerial.silk" % "silk-core" % "0.4",
+      "org.javassist" % "javassist" % "3.15.0-GA",
       "io.netty" % "netty" % "3.3.0.Final",
       "com.typesafe.akka" % "akka-actor" % "2.0-M4",
       "com.typesafe.akka" % "akka-remote" % "2.0-M4"
     )
-
-    val reflectionLib = Seq(
-      "org.javassist" % "javassist" % "3.15.0-GA"
-    )
-
-    val scalap = "org.scala-lang" % "scalap" % SCALA_VERSION
-    val xerialCore = "org.xerial" % "xerial-core" % "2.0.2"
-    val utgbCore = "org.utgenome" % "utgb-core" % "1.5.8"
-    val silkCore = "org.xerial.silk" % "silk-core" % "0.4"
   }
-
-  import Dependencies._
 
 
   private val dependentScope = "test->test;compile->compile"
 
+  import Dependencies._
   lazy val root = Project(
     id = "genome-weaver",
     base = file("."),
     settings = buildSettings ++ distSettings ++ Release.settings
       ++ Seq(packageDistTask)
-      ++ Seq(libraryDependencies ++= bootLib ++ testLib ++ Seq(xerialCore,
-    utgbCore, scalap, silkCore))
+      ++ Seq(libraryDependencies ++= bootLib ++ testLib ++ coreLib)
   )
+
+
 
   lazy val copyDependencies = TaskKey[Unit]("copy-dependencies")
 
