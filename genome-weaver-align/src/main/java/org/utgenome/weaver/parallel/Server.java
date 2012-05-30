@@ -24,14 +24,13 @@
 //--------------------------------------
 package org.utgenome.weaver.parallel;
 
-import java.lang.management.ManagementFactory;
-
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-
 import org.utgenome.weaver.GenomeWeaverCommand;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Option;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import java.lang.management.ManagementFactory;
 
 public class Server extends GenomeWeaverCommand
 {
@@ -50,8 +49,8 @@ public class Server extends GenomeWeaverCommand
     @Option(symbol = "s", description = "hostname [localhost]")
     private String  hostname = "localhost";
 
-    @Option(symbol = "p", description = "listen port. default = 8990")
-    private int     port     = 8990;
+    @Option(symbol = "p", description = "listen port. default = 8991")
+    private int     port     = 8991;
 
     @Option(symbol = "t", description = "time interval (sec.) for launching the server [-1: unlimited]")
     private int     time     = -1;
@@ -66,7 +65,7 @@ public class Server extends GenomeWeaverCommand
         ServerTask mBean = new ServerTask();
         mbs.registerMBean(mBean, mxbeanName);
 
-        _logger.info("Start up a server %s:%s", hostname, port);
+        //_logger.info("Start up a server %s:%s", hostname, port);
         Actor.remote(hostname, port);
 
     }

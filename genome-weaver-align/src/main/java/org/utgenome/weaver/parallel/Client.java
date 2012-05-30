@@ -48,8 +48,8 @@ public class Client extends GenomeWeaverCommand
         String hello(String message);
     }
 
-    @Option(symbol = "p", description = "port number. default=8990")
-    private int    port     = 8990;
+    @Option(symbol = "p", description = "port number. default=8991")
+    private int    port     = 8991;
 
     @Option(symbol = "s", description = "server address. default=localhost")
     private String hostname = "localhost";
@@ -67,7 +67,7 @@ public class Client extends GenomeWeaverCommand
         //
         //        _logger.info(String.format("Recieved a message: %s", message));
 
-        _logger.info("Connect to the server %s:%d", hostname, port);
+        //_logger.info("Connect to the server %s:%d", hostname, port);
         NettyConnection.connect(hostname, port);
 
     }

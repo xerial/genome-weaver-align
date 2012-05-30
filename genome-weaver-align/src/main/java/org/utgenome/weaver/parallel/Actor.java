@@ -24,27 +24,16 @@
 //--------------------------------------
 package org.utgenome.weaver.parallel;
 
+import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.xerial.util.log.Logger;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
-import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.xerial.util.log.Logger;
+import java.util.concurrent.*;
 
 public class Actor
 {
@@ -77,7 +66,7 @@ public class Actor
         }
 
         private ChannelFuture launchServer() {
-            _logger.info("Start up a server %s:%s", hostname, port);
+            _logger.info(String.format("Start up a server %s:%s",  hostname, port));
 
             ServerBootstrap bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(
                     Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
@@ -104,7 +93,7 @@ public class Actor
 
         public RemoteActor register(String name, Class< ? > actor, Object... constructorArgs) {
             actorTable.put(name, actor);
-            _logger.info("register an actor name:%s, class:%s", name, actor.getName());
+            _logger.info(String.format("register an actor name:%s, class:%s", name, actor.getName()));
             return new RemoteActor(name, actor, constructorArgs);
         }
     }
@@ -124,8 +113,7 @@ public class Actor
             init(constructorArgs);
         }
 
-        protected void init(Object... constructorArgs) {
-            try {
+        protected void init(Object... constructorArgs) {            try {
                 try {
                     Constructor< ? > constructor = actorClass.getConstructor(getParameterTypes(constructorArgs));
                     instance = constructor.newInstance(constructorArgs);

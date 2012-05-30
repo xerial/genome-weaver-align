@@ -24,29 +24,20 @@
 //--------------------------------------
 package org.utgenome.weaver.parallel;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.ChannelStateEvent;
-import org.jboss.netty.channel.Channels;
-import org.jboss.netty.channel.ExceptionEvent;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
+import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.codec.string.StringDecoder;
 import org.jboss.netty.handler.codec.string.StringEncoder;
 import org.xerial.util.log.Logger;
+
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * An interface to transfer messages through Netty
@@ -80,7 +71,7 @@ public class NettyConnection
         @Override
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
             ChannelBuffer buf = (ChannelBuffer) e.getMessage();
-            _logger.info("Client: recieved %s", e.getMessage());
+            _logger.info("Client: recieved " + e.getMessage());
 
             e.getChannel().write("done.");
 
@@ -103,7 +94,7 @@ public class NettyConnection
         Channel openChannel = connection.awaitUninterruptibly().getChannel();
 
         if (!connection.isSuccess()) {
-            _logger.error("connection failed (remote address:%s): %s", remoteAddress, connection.getCause());
+            _logger.error(String.format("connection failed (remote address:%s): %s", remoteAddress, connection.getCause()));
             return false;
         }
 
@@ -119,13 +110,13 @@ public class NettyConnection
 
         @Override
         public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-            _logger.info("Server: recieved %s", e.getMessage());
+            _logger.info(String.format("Server: recieved %s", e.getMessage()));
 
         }
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-            _logger.info("Server: error %s", e.getCause());
+            _logger.info(String.format("Server: error %s", e.getCause()));
         }
     }
 

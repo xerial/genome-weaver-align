@@ -24,18 +24,6 @@
 //--------------------------------------
 package org.utgenome.weaver.epi;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.zip.GZIPInputStream;
-
 import org.utgenome.format.fastq.FastqRead;
 import org.utgenome.format.fastq.FastqReader;
 import org.utgenome.weaver.GenomeWeaverCommand;
@@ -45,6 +33,11 @@ import org.utgenome.weaver.align.SmithWatermanAligner.Alignment;
 import org.xerial.util.log.Logger;
 import org.xerial.util.opt.Argument;
 import org.xerial.util.opt.Option;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 public class ExtractHiCRead extends GenomeWeaverCommand
 {
@@ -107,7 +100,7 @@ public class ExtractHiCRead extends GenomeWeaverCommand
                 Alignment adapterInR = findAdapter(r2);
 
                 if (adapterInF == null && adapterInR == null) {
-                    _logger.warn("No common adapter found in %s and %s", f1.seqname, f2.seqname);
+                    _logger.warn("No common adapter found in %s and %s".format(f1.seqname, f2.seqname));
                     continue;
                 }
 
@@ -115,8 +108,8 @@ public class ExtractHiCRead extends GenomeWeaverCommand
                 ACGTSequence dna2 = r2.subSequence(0, adapterInR.pos);
 
                 if (dna1.length() < 20 || dna2.length() < 20) {
-                    _logger.warn("insufficient DNA length: %s, F:%d, R:%d : %s", f1.seqname, dna1.length(),
-                            dna2.length(), f1.seq);
+                    _logger.warn("insufficient DNA length: %s, F:%d, R:%d : %s".format(f1.seqname, dna1.length(),
+                            dna2.length(), f1.seq));
                     continue;
                 }
 

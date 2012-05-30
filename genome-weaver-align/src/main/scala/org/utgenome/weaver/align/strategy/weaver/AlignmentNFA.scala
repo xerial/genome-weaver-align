@@ -137,7 +137,7 @@ class AlignmentNFA(
     }
 
     // 
-    val minK = Math.min(minKwithMatch, minKwithProgress);
+    val minK = math.min(minKwithMatch, minKwithProgress);
     if (minK < k)
       return Some(NextState(new AlignmentNFA(removeLayersFromAutomaton(next, minK), kOffset + minK), false))
 
