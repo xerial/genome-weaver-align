@@ -124,13 +124,13 @@ object GenomeWeaverBuild extends Build {
 
     val coreLib = Seq(
       "org.scala-lang" % "scalap" % SCALA_VERSION,
-      "org.xerial" % "xerial-core" % "2.0.2",
+      "org.xerial" % "xerial-core" % "2.0.6",
       "org.utgenome" % "utgb-core" % "1.5.8",
-      "org.xerial.silk" % "silk-core" % "0.4",
+      //"org.xerial.silk" % "silk-core" % "0.4",
       "org.javassist" % "javassist" % "3.15.0-GA",
       "io.netty" % "netty" % "3.3.0.Final",
-      "com.typesafe.akka" % "akka-actor" % "2.0-M4",
-      "com.typesafe.akka" % "akka-remote" % "2.0-M4"
+      "com.typesafe.akka" % "akka-actor" % "2.0",
+      "com.typesafe.akka" % "akka-remote" % "2.0"
     )
   }
 
