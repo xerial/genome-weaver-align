@@ -1,0 +1,3 @@
+[submodule "silk"]
+	path = silk
+	url = git@github.com:xerial/silk.git

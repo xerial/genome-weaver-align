@@ -144,7 +144,23 @@ object GenomeWeaverBuild extends Build {
     settings = buildSettings ++ distSettings ++ Release.settings
       ++ Seq(packageDistTask)
       ++ Seq(libraryDependencies ++= bootLib ++ testLib ++ coreLib)
-  )
+  ) aggregate(silk, gwLens, gwAlign) dependsOn(silk)
+
+  lazy val silk = RootProject(file("silk"))
+
+  lazy val gwLens = Project(
+    id = "genome-weaver-lens",
+    base = file("genome-weaver-lens"),
+    settings = buildSettings
+  ) dependsOn(silk % dependentScope)
+
+
+  lazy val gwAlign = Project(
+    id = "genome-weaver-align",
+     base = file("genome-weaver-align"),
+    settings = buildSettings
+      ++ Seq(libraryDependencies ++= bootLib ++ testLib ++ coreLib)
+  ) dependsOn(gwLens % dependentScope)
 
 
 
