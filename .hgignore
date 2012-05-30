@@ -1,8 +1,0 @@
-target
-.settings
-out
-.cache
-.externalToolBuilders
-
-syntax:glob
-*~
