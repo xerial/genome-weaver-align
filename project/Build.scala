@@ -24,17 +24,15 @@ import sbt.classpath.ClasspathUtilities
 
 object SilkBuild extends Build {
 
-  lazy val commandSettings = Seq(printState)
 
-  val SCALA_VERSION = "2.9.1-1"
+  val SCALA_VERSION = "2.9.2"
 
   lazy val buildSettings = Defaults.defaultSettings ++ Seq[Setting[_]](
-    commands ++= commandSettings,
-    organization := "org.xerial.silk",
+    organization := "org.xerial",
     organizationName := "Xerial Project",
     organizationHomepage := Some(new URL("http://xerial.org/")),
     version := "0.1-SNAPSHOT",
-    description := "Silk: A Scalable Data Processing Platform",
+    description := "Genome Weaver: Toolkit for Genome Sciences",
     scalaVersion := SCALA_VERSION,
     publishMavenStyle := true,
     publishArtifact in Test := false,
@@ -48,19 +46,12 @@ object SilkBuild extends Build {
     publishLocalConfiguration <<= (packagedArtifacts, deliverLocal, checksums, ivyLoggingLevel) map {
       (arts, _, cs, level) => new PublishConfiguration(None, "localM2", arts, cs, level)
     },
-
-//    publishTo in publishLocal := Some(Resolver.file("m2", file(Path.userHome.absolutePath + "/.m2/repository"))),
-//    publishLocalConfiguration <<= (packagedArtifacts, publishTo in publishLocal, publishMavenStyle, deliverLocal, ivyLoggingLevel) map { (arts, pTo, mavenStyle, ivyFile, level) =>
-//      Classpaths.publishConfig(arts, if (mavenStyle) None else Some(ivyFile), resolverName = if (pTo.isDefined) pTo.get.name else "local", logging = level)
-//    },
     pomIncludeRepository := {
       _ => false
     },
     parallelExecution := true,
     crossPaths := false,
-    //crossScalaVersions := Seq("2.10.0-M1", "2.9.1-1", "2.9.1"),
     resolvers ++= Seq("Typesafe repository" at "http://repo.typesafe.com/typesafe/releases",
-      //"sbt-idea-repo" at "http://mpeltonen.github.com/maven/",
       "UTGB Maven repository" at "http://maven.utgenome.org/repository/artifact/",
       "Xerial Maven repository" at "http://www.xerial.org/maven/repository/artifact",
       "Local Maven repository" at "file://" + Path.userHome.absolutePath + "/.m2/repository"
@@ -74,18 +65,18 @@ object SilkBuild extends Build {
         </license>
       </licenses>
         <scm>
-          <connection>scm:git:git@github.com:xerial/silk.git</connection>
-          <developerConnection>scm:git:git@github.com:xerial/silk.git</developerConnection>
+          <connection>scm:git:github.com/xerial/genome-weaver.git</connection>
+          <developerConnection>scm:git:git@github.com:xerial/genome-weaver.git</developerConnection>
         </scm>
         <properties>
-          <scala.version>2.9.1-1</scala.version>
+          <scala.version>2.9.2</scala.version>
           <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         </properties>
         <developers>
           <developer>
             <id>leo</id>
             <name>Taro L. Saito</name>
-            <url>http://www.xerial.org/leo</url>
+            <url>http://xerial.org/leo</url>
           </developer>
         </developers>
     }
@@ -144,6 +135,8 @@ object SilkBuild extends Build {
 
     val scalap = "org.scala-lang" % "scalap" % SCALA_VERSION
     val xerialCore = "org.xerial" % "xerial-core" % "2.0.2"
+    val utgbCore = "org.utgenome" % "utgb-core" % "1.5.8"
+    val silkCore = "org.xerial.silk" % "silk-core" % "0.4"
   }
 
   import Dependencies._
@@ -152,52 +145,13 @@ object SilkBuild extends Build {
   private val dependentScope = "test->test;compile->compile"
 
   lazy val root = Project(
-    id = "silk",
+    id = "genome-weaver",
     base = file("."),
-    aggregate = Seq[ProjectReference](core, text, weaver, workflow, genomeLens),
     settings = buildSettings ++ distSettings ++ Release.settings
       ++ Seq(packageDistTask)
-      ++ Seq(libraryDependencies ++= bootLib)
+      ++ Seq(libraryDependencies ++= bootLib ++ testLib ++ Seq(xerialCore,
+    utgbCore, scalap, silkCore))
   )
-
-  lazy val core = Project(
-    id = "silk-core",
-    base = file("silk-core"),
-    settings = buildSettings ++ Seq(
-      libraryDependencies ++= testLib ++ Seq(xerialCore, scalap)
-    )
-  )
-
-  lazy val text = Project(id = "silk-text", base = file("silk-text"),
-    settings = buildSettings ++ Seq(
-      libraryDependencies ++= testLib
-    )
-  ) dependsOn (core % dependentScope)
-
-  lazy val weaver = Project(id = "silk-weaver", base = file("silk-weaver"),
-    settings = buildSettings ++ Seq(
-      libraryDependencies ++= testLib ++ networkLib
-    )
-  ) dependsOn (core % dependentScope)
-
-  lazy val workflow = Project(id = "silk-workflow", base = file("silk-workflow"),
-    settings = buildSettings ++ Seq(
-      libraryDependencies ++= testLib
-    )
-  ) dependsOn (core % dependentScope)
-
-  lazy val genomeLens = Project(id = "genome-lens", base = file("genome-lens"),
-    settings = buildSettings ++ Seq(
-      libraryDependencies ++= testLib
-    )
-  ) dependsOn (core % dependentScope, weaver % dependentScope)
-
-  def hello = Command.command("hello") {
-    state =>
-      println("Hello silk!")
-      state
-  }
-
 
   lazy val copyDependencies = TaskKey[Unit]("copy-dependencies")
 
@@ -239,32 +193,7 @@ object SilkBuild extends Build {
     }
   }
 
-  def printState = Command.command("print-state") {
-    state =>
-      import state._
-      def show[T](s: Seq[T]) =
-        s.map("'" + _ + "'").mkString("[", ", ", "]")
-      println(definedCommands.size + " registered commands")
-      println("commands to run: " + show(remainingCommands))
-      println()
 
-      println("original arguments: " + show(configuration.arguments))
-      println("base directory: " + configuration.baseDirectory)
-      println()
-
-      println("sbt version: " + configuration.provider.id.version)
-      println("Scala version (for sbt): " + configuration.provider.scalaProvider.version)
-      println()
-
-      val extracted = Project.extract(state)
-      import extracted._
-      println("Current build: " + currentRef.build)
-      println("Current project: " + currentRef.project)
-      println("Original setting count: " + session.original.size)
-      println("Session setting count: " + session.append.size)
-      println(allDependencies get extracted.structure.data)
-      state
-  }
 }
 
 
