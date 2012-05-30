@@ -14,39 +14,77 @@
 #   limitations under the License.
 #--------------------------------------------------------------------------*/
 #--------------------------------------
-# Silk Weaver Project
+# Genome Weaver Project
 #
 # Makefile
 # Since: 2011/02/04
 #
 #--------------------------------------
 
-INSTALL:=install
-MVN:=mvn ${MVN_OPTS}
 PREFIX:=${HOME}/local
-INSTALL_DIR:=$(PREFIX)/genome-weaver
+JVM_OPT:=
+SBT:=bin/sbt 
+INSTALL:=install
 
-PROG:=genome-weaver
-TARGET:=target
-VERSION:=1.0-SNAPSHOT
-PACKAGE:=$(TARGET)/genome-weaver-$(VERSION)
+.PHONY: compile test package dist idea debug
 
-SRC:=$(shell find src)
+all: dist
 
-$(TARGET)/genome-weaver-$(VERSION)-bin.tar.gz:  $(SRC)
-	$(MVN) package -Dmaven.test.skip=true
+doc:
+	$(SBT) doc
 
-install: $(TARGET)/genome-weaver-$(VERSION)-bin.tar.gz
-	mkdir -p "$(INSTALL_DIR)"
-	mkdir -p "$(PREFIX)/bin"
-	if [ -d "$(INSTALL_DIR)/current/lib" ]; then rm -rf "$(INSTALL_DIR)/current/lib"; fi
-	tar xvfz $< -C "$(INSTALL_DIR)"
-	ln -sfn "genome-weaver-$(VERSION)" "$(INSTALL_DIR)/current"
-	ln -sf "../genome-weaver/current/bin/$(PROG)" "$(PREFIX)/bin/$(PROG)"
-	ln -sf "../genome-weaver/current/bin/$(PROG)" "$(PREFIX)/bin/$(PROG)"
-
-uninstall:
-	rm -rf "$(INSTALL_DIR)/genome-weaver-$(VERSION)"
+compile:
+	$(SBT) compile
 
 test:
-	$(MVN) test
+	$(SBT) test -Dloglevel=debug
+
+package:
+	$(SBT) package
+
+# This file will be generated after 'make dist'
+VERSION_FILE:=target/dist/VERSION
+
+dist: $(VERSION_FILE)
+
+SRC:=$(shell find . \( -name "*.scala" -or -name "*.java" \))
+$(VERSION_FILE): $(SRC)
+	$(SBT) package-dist
+
+PROG:=genome-weaver
+# Use '=' to load the current version number when VERSION is referenced
+VERSION=$(shell cat $(VERSION_FILE))
+GW_BASE_DIR=$(PREFIX)/$(PROG)
+GW_DIR=$(GW_BASE_DIR)/$(PROG)-$(VERSION)
+install: $(VERSION_FILE)
+	if [ -d "$(GW_DIR)" ]; then rm -rf "$(GW_DIR)"; fi
+	$(INSTALL) -d "$(GW_DIR)"
+	chmod 755 target/dist/bin/$(PROG)
+	cp -r target/dist/* $(GW_DIR)
+	ln -sfn "genome-weaver-$(VERSION)" "$(GW_BASE_DIR)/current"
+	$(INSTALL) -d "$(PREFIX)/bin"
+	ln -sf "../$(PROG)/current/bin/$(PROG)" "$(PREFIX)/bin/$(PROG)"
+
+
+local:
+	$(SBT) publish-local
+
+# Create IntelliJ project files
+idea:
+	$(SBT) gen-idea
+
+clean:
+	$(SBT) clean
+
+ifndef test
+TESTCASE:=
+else 
+TESTCASE:="~test-only *$(test)"
+endif
+
+debug:
+	$(SBT) -Dloglevel=debug $(TESTCASE)
+
+trace:
+	$(SBT) -Dloglevel=trace $(TESTCASE)
+
