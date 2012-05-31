@@ -30,7 +30,6 @@ object GenomeWeaverBuild extends Build {
     organization := "org.xerial",
     organizationName := "Xerial Project",
     organizationHomepage := Some(new URL("http://xerial.org/")),
-    version := "0.1-SNAPSHOT",
     description := "Genome Weaver: Toolkit for Genome Sciences",
     scalaVersion := SCALA_VERSION,
     publishMavenStyle := true,
