@@ -59,13 +59,20 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long) extends DNA
   private val MAX_SIZE: Long = (2 * 1024 * 1024 * 1024 * 8 * 8) / 2
   private var hash: Int = 0
 
+
+  private def longToIntCheck {
+    if(numBases >= Integer.MAX_VALUE)
+      sys.error("this method cannot be used when the sequence is larger than 2GB")
+  }
+
   /**
    * length of this sequence
    * @return
    */
-  def length = numBases.toInt
-
-
+  def length = {
+    longToIntCheck
+    numBases.toInt
+  }
 
 
   override def toString = {
@@ -230,11 +237,118 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long) extends DNA
     count.toArray
   }
 
-  def charAt(index: Int) = apply(index).toChar
+  def charAt(index: Int) = {
+    apply(index).toChar
+  }
 
   def subSequence(start: Int, end: Int) = {
 
   }
+
+  def slice(start:Long, end:Long) : ACGTSequence = {
+    if(start > end)
+      sys.error("illegal argument start:%,d > end:%,d".format(start, end))
+
+    val sliceLen = end - start
+
+    val newSeq = Array.newBuilder[Long]
+    newSeq.sizeHint(ACGTSequenceBuffer.minArraySize(sliceLen))
+
+    var i = 0L
+    while(i < sliceLen) {
+      val sPos = blockIndex(start + i)
+      val sOffset = blockOffset(start + i)
+
+      val dPos = blockIndex(i)
+      val dOffset = blockOffset(i)
+
+      var copyLen = 0
+
+      var v = seq(sPos)
+      if(sOffset == dOffset) {
+        // noshift
+        copyLen = 64
+      }
+      else if(sOffset < dOffset) {
+        // right shift
+        copyLen = 64 - dOffset
+        val shiftLen = dOffset - sOffset
+        //if(shiftLen < )
+        
+      }
+      else {
+        // left shift
+
+      }
+
+      i += copyLen
+    }
+
+
+    new ACGTSequence(newSeq.result, sliceLen)
+  }
+  //    if (start > end)
+  //      throw new IllegalArgumentException(String.format("invalid range [%d, %d)", start, end));
+  //    final long len = end - start;
+  //    int minArraySize = minArraySize(len);
+  //    ACGTSequence ss = new ACGTSequence(len);
+  //    long[] dest = ss.seq;
+  //    Arrays.fill(dest, 0L);
+  //
+  //    for (long i = 0; i < len;) {
+  //      int sPos = (int) ((start + i) >> 6);
+  //      int sOffset = (int) ((start + i) & 0x3FL);
+  //      int dPos = (int) (i >> 6);
+  //      int dOffset = (int) (i & 0x3FL);
+  //
+  //      int copyLen = 0;
+  //      long n = seq[sPos * 3];
+  //      long h = seq[sPos * 3 + 1];
+  //      long l = seq[sPos * 3 + 2];
+  //      if (sOffset == dOffset) {
+  //        copyLen = 64;
+  //      }
+  //      else if (sOffset < dOffset) {
+  //        // right shift
+  //        int shiftLen = dOffset - sOffset;
+  //        copyLen = 64 - dOffset;
+  //        // Copy Ns
+  //        n >>>= shiftLen;
+  //        // Copy ACGT blocks
+  //        if (shiftLen < 32) {
+  //          l = (h << (64 - shiftLen * 2)) | (l >>> shiftLen * 2);
+  //          h >>>= shiftLen * 2;
+  //        }
+  //        else {
+  //          l = h >>> (shiftLen - 32) * 2;
+  //          h = 0L;
+  //        }
+  //      }
+  //      else {
+  //        // left shift
+  //        int shiftLen = sOffset - dOffset;
+  //        copyLen = 64 - sOffset;
+  //        // Copy Ns
+  //        n <<= shiftLen;
+  //        // Copy ACGT blocks
+  //        if (shiftLen < 32) {
+  //          h = (h << shiftLen * 2) | (l >>> (64 - shiftLen * 2));
+  //          l <<= shiftLen * 2;
+  //        }
+  //        else {
+  //          h = l << (shiftLen - 32) * 2;
+  //          l = 0L;
+  //        }
+  //      }
+  //      dest[dPos * 3] |= n;
+  //      dest[dPos * 3 + 1] |= h;
+  //      dest[dPos * 3 + 2] |= l;
+  //
+  //      i += copyLen;
+  //    }
+  //
+  //    return ss;
+
 }
 
 
@@ -243,7 +357,7 @@ object ACGTSequenceBuffer {
   // 2G (max of Java array size) * 8 (long byte size) * 8 / 2 (bit) =  64G  (64G characters)
   private val MAX_SIZE: Long = 2L * 1024L * 1024L * 1024L * 8L * 8L / 2L
 
-  private def minArraySize(numBases: Long): Int = {
+  def minArraySize(numBases: Long): Int = {
     val bitSize: Long = numBases * 2L
     val blockBitSize: Long = LONG_BYTE_SIZE * 8L
     val arraySize: Long = ((bitSize + blockBitSize - 1L) / blockBitSize) * 2L
@@ -301,22 +415,6 @@ class ACGTSequenceBuffer(private var seq: ArrayBuffer[Long], var numBases: Long)
 
   def toACGTSequence: ACGTSequence = new ACGTSequence(seq.toArray, numBases)
 
-  ////   * Create ACGTSequence from the input ACGT(N) sequence
-  ////   *
-  ////   * @param s
-  ////   */
-  ////  public ACGTSequence(CharSequence s) {
-  ////    this(countNonWhiteSpaces(s));
-  ////
-  ////    int index = 0;
-  ////    for (int i = 0; i < s.length(); ++i) {
-  ////      char ch = s.charAt(i);
-  ////      if (ch == ' ')
-  ////        continue; // skip white space
-  ////      byte code = ACGT.to3bitCode(ch);
-  ////      set(index++, code);
-  ////    }
-  ////  }
   //
   //  def replaceN_withA : ACGTSequence =  {
   //    ACGTSequence newSeq = new ACGTSequence(this);
