@@ -113,7 +113,7 @@ object GenomeWeaverBuild extends Build {
 
     val testLib = Seq(
       "junit" % "junit" % "4.10" % "test",
-      "org.scalatest" %% "scalatest" % "1.7.1" % "test",
+      "org.scalatest" %% "scalatest" % "1.8" % "test",
       "org.hamcrest" % "hamcrest-core" % "1.3.RC2" % "test"
     )
 
@@ -148,15 +148,15 @@ object GenomeWeaverBuild extends Build {
   lazy val silk = RootProject(file("silk"))
 
   lazy val gwLens = Project(
-    id = "genome-weaver-lens",
-    base = file("genome-weaver-lens"),
+    id = "gw-lens",
+    base = file("gw-lens"),
     settings = buildSettings
   ) dependsOn(silk % dependentScope)
 
 
   lazy val gwAlign = Project(
-    id = "genome-weaver-align",
-     base = file("genome-weaver-align"),
+    id = "gw-align",
+     base = file("gw-align"),
     settings = buildSettings
       ++ Seq(libraryDependencies ++= bootLib ++ testLib ++ coreLib)
   ) dependsOn(gwLens % dependentScope)

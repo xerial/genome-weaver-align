@@ -51,6 +51,8 @@ object DNA {
   val exceptN = Array(A, C, G, T)
   val values = Array(A, C, G, T, N)
 
+  def apply(code:Int) : DNA = values(code)
+
   def complement(code:Int) : DNA = codeTable((~code & 0x03) | (code & 0x04))
   def decode(code:Byte) : DNA = codeTable(code & 0x07)
   def encode(ch:Char) : DNA = decode(to3bitCode(ch))
