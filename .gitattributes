@@ -1,2 +1,11 @@
-*	eol=lf
-Makefile	eol=lf
+*.sh	text
+*.java	text
+*.scala	text
+Makefile*	text
+README		text
+
+*.jpg		binary 
+*.png		binary
+*.pdf		binary
+
+* text=auto
