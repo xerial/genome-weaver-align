@@ -2,6 +2,8 @@ package xerial.silk.glens
 
 import collection.mutable.ArrayBuffer
 import xerial.silk.glens.DNA.N
+import xerial.silk.util.Logger
+import java.util.Arrays
 
 /*
  * Copyright 2012 Taro L. Saito
@@ -34,14 +36,13 @@ trait DNASequence {
 }
 
 object DNA2bitEncoding {
-  val LONG_BYTE_SIZE: Int = 8
   // 2G (max of Java array size) * 8 (long byte size) * 8 / 2 (bit) =  64G  (64G characters)
   val MAX_SIZE: Long = 2L * 1024L * 1024L * 1024L * 8L * 8L / 2L
 
   def minArraySize(numBases: Long): Int = {
     val bitSize: Long = numBases * 2L
-    val blockBitSize: Long = LONG_BYTE_SIZE * 8L
-    val arraySize: Long = ((bitSize + blockBitSize - 1L) / blockBitSize) * 2L
+    val blockBitSize: Long = 64L
+    val arraySize: Long = (bitSize + blockBitSize - 1L) / blockBitSize
     if (arraySize > Integer.MAX_VALUE) {
       throw new IllegalArgumentException("Cannot create ACGTSequece more than %,d characters: %,d".format(MAX_SIZE, numBases))
     }
@@ -50,7 +51,7 @@ object DNA2bitEncoding {
 
   def blockIndex(basePos: Long): Int = (basePos >>> 5).toInt
 
-  def blockOffset(basePos: Long): Int = (basePos & 0x1FL).toInt
+  def blockOffset(basePos: Long): Long = (basePos & 0x1FL)
 
 }
 
@@ -58,13 +59,52 @@ object ACGTSequence {
 
   def newBuilder = new ACGTSequenceBuilder()
 
-  def apply(s: String) : ACGTSequence = {
+  def apply(s: String): ACGTSequence = {
     val b = newBuilder
-    for(ch <- s) {
+    for (ch <- s) {
       b += DNA(ch)
     }
     b.toACGTSequence
   }
+
+  //  public static ACGTSequence loadFrom(File f) throws IOException {
+  //    DataInputStream d = new DataInputStream(new BufferedInputStream(new FileInputStream(f), 4 * 1024 * 1024));
+  //    try {
+  //      return ACGTSequence.loadFrom(d);
+  //    }
+  //    finally {
+  //      d.close();
+  //    }
+  //  }
+  //
+  //  public static ACGTSequence loadFrom(DataInputStream in) throws IOException {
+  //    // The num bases must be always 2
+  //
+  //    long numBases = in.readLong();
+  //    int longArraySize = minArraySize(numBases);
+  //    long[] seq = new long[longArraySize];
+  //    SnappyInputStream sin = new SnappyInputStream(in);
+  //    int readBytes = sin.read(seq);
+  //    return new ACGTSequence(seq, numBases);
+  //  }
+  //
+  //  public void saveTo(DataOutputStream out) throws IOException {
+  //    out.writeLong(this.numBases);
+  //    SnappyOutputStream sout = new SnappyOutputStream(out);
+  //    int longArraySize = minArraySize(this.numBases);
+  //    sout.write(seq, 0, longArraySize);
+  //    sout.flush();
+  //  }
+  //
+  //  public void saveTo(File file) throws IOException {
+  //    DataOutputStream d = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
+  //    try {
+  //      saveTo(d);
+  //    }
+  //    finally {
+  //      d.close();
+  //    }
+  //  }
 
 }
 
@@ -77,13 +117,14 @@ object ACGTSequence {
  */
 class ACGTSequence(private val seq: Array[Long], val numBases: Long)
   extends DNASequence
-  with CharSequence
-{
+  with CharSequence {
+
   import DNA2bitEncoding._
+
   private var hash: Int = 0
 
   private def longToIntCheck {
-    if(numBases >= Integer.MAX_VALUE)
+    if (numBases >= Integer.MAX_VALUE)
       sys.error("this method cannot be used when the sequence is larger than 2GB")
   }
 
@@ -96,25 +137,27 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long)
     numBases.toInt
   }
 
-
-  override def toString = {
+  def toACGTString: String = {
     val s = new StringBuilder
     var i = 0L
-    while(i < numBases) {
+    while (i < numBases) {
       s += apply(i).toChar
       i += 1
     }
     s.result
   }
 
+  override def toString = toACGTString
+
   def apply(index: Long): DNA = {
     // |---   64bit (32 characters) ---|
     // |ACGT|ACGT|ACGT| ...       |ACGT|
 
-    val pos = (index >> 5).toInt // index / 32 (2^5)
-    val offset = (index & 0x01FL).toInt // index % 32
+    val pos = blockIndex(index)
+    val offset = blockOffset(index)
+    val shift = offset << 1L
 
-    val code = (seq(pos) >>> (offset << 1)) & 0x03
+    val code = (seq(pos) >>> shift) & 0x03
     DNA(code.toInt)
   }
 
@@ -132,7 +175,7 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long)
       }
       val offset = (numBases % 32L).toInt
       if (offset > 0) {
-        h += lastBlock * 31L;
+        h += lastBlock * 31L
       }
       hash = h.toInt
     }
@@ -169,8 +212,8 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long)
   def reverse: ACGTSequence = {
     val buffer = new ACGTSequenceBuilder(numBases)
     var i = 0L
-    while(i < numBases) {
-      buffer += this(numBases - i - 1)
+    while (i < numBases) {
+      buffer += apply(numBases - i - 1)
       i += 1
     }
     buffer.toACGTSequence
@@ -210,11 +253,11 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long)
       for (pos <- sPos until ePos) {
         var mask: Long = ~0L
         if (pos == sPos) {
-          mask <<= sOffset * 2
+          mask <<= sOffset * 2L
           numAsinMaskedRegion += sOffset
         }
         if (pos == ePos - 1) {
-          mask &= ~(~0L << (eOffset * 2))
+          mask &= ~(~0L << (eOffset * 2L))
           numAsinMaskedRegion += 32 - eOffset
         }
         // Applying bit mask changes all bases in the masked region to As (code=00)
@@ -247,11 +290,11 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long)
     for (pos <- sPos until ePos) {
       var mask: Long = ~0L
       if (pos == sPos) {
-        mask <<= sOffset * 2
+        mask <<= sOffset << 1
         numAsinMaskedRegion += sOffset
       }
       if (pos == ePos - 1) {
-        mask &= ~(~0L << (eOffset * 2))
+        mask &= ~(~0L << (eOffset << 1))
         numAsinMaskedRegion += 32 - eOffset
       }
       // Applying bit mask changes all bases in the masked region to As (code=00)
@@ -270,8 +313,8 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long)
 
   def subSequence(start: Int, end: Int) = slice(start, end)
 
-  def slice(start:Long, end:Long) : ACGTSequence = {
-    if(start > end)
+  def slice(start: Long, end: Long): ACGTSequence = {
+    if (start > end)
       sys.error("illegal argument start:%,d > end:%,d".format(start, end))
 
     val sliceLen = end - start
@@ -280,22 +323,22 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long)
     newSeq.sizeHint(minArraySize(sliceLen))
 
     var i = 0L
-    while(i < sliceLen) {
+    while (i < sliceLen) {
       val sPos = blockIndex(start + i)
       val sOffset = blockOffset(start + i)
 
       val dPos = blockIndex(i)
       val dOffset = blockOffset(i)
 
-      var copyLen = 0
+      var copyLen = 0L
       var v = seq(sPos)
-      if(sOffset == dOffset) {
+      if (sOffset == dOffset) {
         // noshift
-        copyLen = 64
+        copyLen = 64L
       }
-      else if(sOffset < dOffset) {
+      else if (sOffset < dOffset) {
         // right shift
-        copyLen = 64 - dOffset
+        copyLen = 64L - dOffset
         val shiftLen = dOffset - sOffset
         //if(shiftLen < )
 
@@ -311,6 +354,7 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long)
 
     new ACGTSequence(newSeq.result, sliceLen)
   }
+
   //    if (start > end)
   //      throw new IllegalArgumentException(String.format("invalid range [%d, %d)", start, end));
   //    final long len = end - start;
@@ -375,41 +419,35 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long)
 
 }
 
+object ACGTSequenceBuilder {
+
+}
 
 
 /**
  * ACGT sequence builder
- * @param seq
- * @param numBases
+ * @param capacity the hint of number of bases to store
  */
-class ACGTSequenceBuilder(private var seq: ArrayBuffer[Long], var numBases: Long)
-  extends DNASequence
-{
+class ACGTSequenceBuilder(private var capacity: Long)
+  extends DNASequence {
+
   import DNA2bitEncoding._
 
-  private def capacity: Long = seq.length / 2L * 64L
+  private var seq = new Array[Long](DNA2bitEncoding.minArraySize(capacity))
+  private var numBases = 0L
 
   /**
    * Create an empty sequence
    */
-  def this() = this(new ArrayBuffer[Long](DNA2bitEncoding.minArraySize(10)), 0L)
+  def this() = this(32L)
 
-  /**
-   * Create an empty sequence with an initial array size that is sufficient hold the given number of bases
-   * @param numBases
-   * @return
-   */
-  def this(numBases: Long) = this(new ArrayBuffer[Long](DNA2bitEncoding.minArraySize(numBases)), numBases)
+  private def sizeHint(numBasesToStore: Long) {
 
-
-
-  private def ensureArrayCapacity(newCapacity: Long) {
-    if (newCapacity >= capacity) {
-      val arraySize = minArraySize(newCapacity)
-      val newSeq = new ArrayBuffer[Long](arraySize)
-      seq.copyToBuffer(newSeq)
-      seq = newSeq
-    }
+    val arraySize = minArraySize(numBasesToStore)
+    val newSeq = Arrays.copyOf(seq, arraySize)
+    seq = newSeq
+    capacity = arraySize * 32L
+    //debug("numBases:%,d, new capacity:%,d, sizeHint:%,d", numBases, capacity, numBasesToStore)
   }
 
   /**
@@ -419,15 +457,15 @@ class ACGTSequenceBuilder(private var seq: ArrayBuffer[Long], var numBases: Long
   def +=(base: DNA): Unit = {
     val index = numBases
     numBases += 1
-    if (index > capacity) {
+    if (index >= capacity) {
       val newCapacity = (index * 3L / 2L) + 64L
-      ensureArrayCapacity(newCapacity)
+      sizeHint(newCapacity)
     }
     update(index, base)
   }
 
-  def +=(seq: String) : Unit = {
-    for(ch <- seq) {
+  def +=(seq: String): Unit = {
+    for (ch <- seq) {
       this.+=(DNA(ch))
     }
   }
@@ -440,481 +478,28 @@ class ACGTSequenceBuilder(private var seq: ArrayBuffer[Long], var numBases: Long
   def update(index: Long, base: DNA): Unit = {
     val pos = blockIndex(index)
     val offset = blockOffset(index)
-    val shift = offset * 2
+    // Important: the shift should be Long to enable 64bit-shift operations
+    val shift: Long = offset * 2L
 
     // reset the target base. 3bit code N(code:100) will be timmed to A (00)
     seq(pos) &= ~(0x3L << shift)
     seq(pos) |= (base.code & 0x03) << shift
+
+    //debug("update(%d, %s) pos:%d, offset:%d seq:%s", index, base, pos, offset, this.toACGTSequence)
   }
 
-
   def result = toACGTSequence
-  def toACGTSequence: ACGTSequence = new ACGTSequence(seq.toArray, numBases)
 
+  def toACGTSequence: ACGTSequence = {
+    val size = minArraySize(numBases)
+    val arr = if (seq.length == size) seq
+    else {
+      val newArr = Arrays.copyOf(seq, size)
+      newArr
+    }
+    new ACGTSequence(arr, numBases)
+  }
 
-
-  //
-  //  def replaceN_withA : ACGTSequence =  {
-  //    ACGTSequence newSeq = new ACGTSequence(this);
-  //    for (int i = 0; i < this.length(); ++i) {
-  //      if (this.getACGT(i) == ACGT.N) {
-  //        newSeq.set(i, ACGT.A);
-  //      }
-  //    }
-  //    return newSeq;
-  //  }
-  //
-  //  private static long countNonWhiteSpaces(CharSequence s) {
-  //    int count = 0;
-  //    for (int i = 0; i < s.length(); ++i) {
-  //      if (s.charAt(i) != ' ')
-  //        count++;
-  //    }
-  //    return count;
-  //  }
-  //
-  //  /**
-  //   * Create a sequence that can hold the given number of bases
-  //   *
-  //   * @param numBases
-  //   */
-  //  public ACGTSequence(long numBases) {
-  //    this.numBases = numBases;
-  //
-  //    ensureArrayCapacity(numBases);
-  //  }
-  //
-  //
-  //
-  //  private ACGTSequence(long[] rawSeq, long numBases) {
-  //    this.seq = rawSeq;
-  //    this.numBases = numBases;
-  //  }
-  //
-  //  public ACGT getACGT(long index) {
-  //    return ACGT.decode((byte) lookup(index));
-  //  }
-  //
-  //  @Override
-  //  public long lookup(long index) {
-  //    int pos = (int) (index >> 6);
-  //    int offset = (int) (index & 0x03FL);
-  //    int shift = 62 - ((int) (index & 0x1FL) << 1);
-  //
-  //    long nFlag = seq[pos * 3] & (1L << (63 - offset));
-  //    int code = (int) (seq[pos * 3 + (offset >> 5) + 1] >>> shift) & 0x03;
-  //    return nFlag == 0 ? code : 4;
-  //  }
-  //
-  //  public void set(long index, ACGT ch) {
-  //    set(index, ch.code);
-  //  }
-  //
-  //
-  //
-  //  @Override
-  //  public int hashCode() {
-  //    if (hash != 0)
-  //      return hash;
-  //    int numFilledBlocks = (int) (numBases / 64L * 3L);
-  //    long h = numBases * 31L;
-  //    int pos = 0;
-  //    for (; pos < numFilledBlocks; ++pos) {
-  //      h += seq[pos] * 31L;
-  //    }
-  //    int offset = (int) (numBases % 64L);
-  //    if (offset > 0) {
-  //      h += (seq[pos] & (~0L << 64 - offset)) * 31L;
-  //      h += (seq[pos + 1] & (offset < 32 ? ~0L << (32 - offset) * 2 : ~0L)) * 31L;
-  //      h += (seq[pos + 2] & (offset < 32 ? 0L : ~0L << (64 - offset) * 2)) * 31L;
-  //    }
-  //    hash = (int) h;
-  //    return hash;
-  //  }
-  //
-  //  @Override
-  //  public boolean equals(Object obj) {
-  //    if (!(obj instanceof ACGTSequence))
-  //      return false;
-  //
-  //    ACGTSequence other = ACGTSequence.class.cast(obj);
-  //    if (this.numBases != other.numBases)
-  //      return false;
-  //
-  //    int numFilledBlocks = (int) (numBases / 64L * 3L);
-  //    int pos = 0;
-  //    for (; pos < numFilledBlocks; ++pos) {
-  //      if (this.seq[pos] != other.seq[pos])
-  //        return false;
-  //    }
-  //    int offset = (int) (numBases % 64L);
-  //    if (offset > 0) {
-  //      long mask[] = new long[3];
-  //      mask[0] = ~0L << 64 - offset;
-  //      mask[1] = offset < 32 ? ~0L << (32 - offset) * 2 : ~0L;
-  //      mask[2] = offset <= 32 ? 0L : ~0L << (64 - offset) * 2;
-  //      for (int i = 0; i < mask.length; ++i) {
-  //        if ((seq[pos + i] & mask[i]) != (other.seq[pos + i] & mask[i]))
-  //          return false;
-  //      }
-  //    }
-  //
-  //    return true;
-  //  }
-  //
-  //  /**
-  //   * Extract and create a clone of the subsequence of the range [start, end)
-  //   *
-  //   * @param start
-  //   * @param end
-  //   * @return
-  //   */
-  //  public ACGTSequence subString(long start, long end) {
-  //    if (start > end)
-  //      throw new IllegalArgumentException(String.format("invalid range [%d, %d)", start, end));
-  //    final long len = end - start;
-  //    int minArraySize = minArraySize(len);
-  //    ACGTSequence ss = new ACGTSequence(len);
-  //    long[] dest = ss.seq;
-  //    Arrays.fill(dest, 0L);
-  //
-  //    for (long i = 0; i < len;) {
-  //      int sPos = (int) ((start + i) >> 6);
-  //      int sOffset = (int) ((start + i) & 0x3FL);
-  //      int dPos = (int) (i >> 6);
-  //      int dOffset = (int) (i & 0x3FL);
-  //
-  //      int copyLen = 0;
-  //      long n = seq[sPos * 3];
-  //      long h = seq[sPos * 3 + 1];
-  //      long l = seq[sPos * 3 + 2];
-  //      if (sOffset == dOffset) {
-  //        copyLen = 64;
-  //      }
-  //      else if (sOffset < dOffset) {
-  //        // right shift
-  //        int shiftLen = dOffset - sOffset;
-  //        copyLen = 64 - dOffset;
-  //        // Copy Ns
-  //        n >>>= shiftLen;
-  //        // Copy ACGT blocks
-  //        if (shiftLen < 32) {
-  //          l = (h << (64 - shiftLen * 2)) | (l >>> shiftLen * 2);
-  //          h >>>= shiftLen * 2;
-  //        }
-  //        else {
-  //          l = h >>> (shiftLen - 32) * 2;
-  //          h = 0L;
-  //        }
-  //      }
-  //      else {
-  //        // left shift
-  //        int shiftLen = sOffset - dOffset;
-  //        copyLen = 64 - sOffset;
-  //        // Copy Ns
-  //        n <<= shiftLen;
-  //        // Copy ACGT blocks
-  //        if (shiftLen < 32) {
-  //          h = (h << shiftLen * 2) | (l >>> (64 - shiftLen * 2));
-  //          l <<= shiftLen * 2;
-  //        }
-  //        else {
-  //          h = l << (shiftLen - 32) * 2;
-  //          l = 0L;
-  //        }
-  //      }
-  //      dest[dPos * 3] |= n;
-  //      dest[dPos * 3 + 1] |= h;
-  //      dest[dPos * 3 + 2] |= l;
-  //
-  //      i += copyLen;
-  //    }
-  //
-  //    return ss;
-  //  }
-  //
-  //  @Override
-  //  public long textSize() {
-  //    return numBases;
-  //  }
-  //
-  //  /**
-  //   * Create a reverse string of the this sequence. The sentinel is appended as
-  //   * the last character of the resulting sequence.
-  //   *
-  //   * @return Reverse sequence. The returned sequence is NOT a complement of
-  //   *         the original sequence.
-  //   */
-  //  public ACGTSequence reverse() {
-  //    ACGTSequence rev = new ACGTSequence(this.numBases);
-  //    for (long i = 0; i < numBases; ++i) {
-  //      rev.set(i, this.lookup(numBases - i - 1));
-  //    }
-  //    return rev;
-  //  }
-  //
-  //  /**
-  //   * Create a complementary sequence (not reversed)
-  //   *
-  //   * @return complementary sequence
-  //   */
-  //  public ACGTSequence complement() {
-  //    ACGTSequence c = new ACGTSequence(this.numBases);
-  //
-  //    int numBlocks = seq.length / 3;
-  //    for (int i = 0; i < numBlocks; ++i) {
-  //      c.seq[i * 3] = this.seq[i * 3];
-  //      c.seq[i * 3 + 1] = ~(this.seq[i * 3 + 1]);
-  //      c.seq[i * 3 + 2] = ~(this.seq[i * 3 + 2]);
-  //    }
-  //    return c;
-  //  }
-  //
-  //  public ACGTSequence reverseComplement() {
-  //    ACGTSequence rc = reverse();
-  //    int numBlocks = seq.length / 3;
-  //    for (int i = 0; i < numBlocks; ++i) {
-  //      rc.seq[i * 3 + 1] = ~(rc.seq[i * 3 + 1]);
-  //      rc.seq[i * 3 + 2] = ~(rc.seq[i * 3 + 2]);
-  //    }
-  //    return rc;
-  //  }
-  //
-  //  public static ACGTSequence loadFrom(File f) throws IOException {
-  //    DataInputStream d = new DataInputStream(new BufferedInputStream(new FileInputStream(f), 4 * 1024 * 1024));
-  //    try {
-  //      return ACGTSequence.loadFrom(d);
-  //    }
-  //    finally {
-  //      d.close();
-  //    }
-  //  }
-  //
-  //  public static ACGTSequence loadFrom(DataInputStream in) throws IOException {
-  //    // The num bases must be always 2
-  //
-  //    long numBases = in.readLong();
-  //    int longArraySize = minArraySize(numBases);
-  //    long[] seq = new long[longArraySize];
-  //    SnappyInputStream sin = new SnappyInputStream(in);
-  //    int readBytes = sin.read(seq);
-  //    return new ACGTSequence(seq, numBases);
-  //  }
-  //
-  //  public void saveTo(DataOutputStream out) throws IOException {
-  //    out.writeLong(this.numBases);
-  //    SnappyOutputStream sout = new SnappyOutputStream(out);
-  //    int longArraySize = minArraySize(this.numBases);
-  //    sout.write(seq, 0, longArraySize);
-  //    sout.flush();
-  //  }
-  //
-  //  public void saveTo(File file) throws IOException {
-  //    DataOutputStream d = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
-  //    try {
-  //      saveTo(d);
-  //    }
-  //    finally {
-  //      d.close();
-  //    }
-  //  }
-  //
-  //  @Override
-  //  public String toString() {
-  //    StringBuilder b = new StringBuilder();
-  //    for (int i = 0; i < numBases; ++i) {
-  //      ACGT base = ACGT.decode((byte) lookup(i));
-  //      b.append(base);
-  //    }
-  //    return b.toString();
-  //  }
-  //
-  //  /**
-  //   * Count the number of the specified character in the range
-  //   *
-  //   * @param base
-  //   * @param start
-  //   * @param end
-  //   * @return
-  //   */
-  //  public long count(ACGT base, long start, long end) {
-  //    long count = 0;
-  //    for (long i = start; i < end; ++i) {
-  //      if ((char) lookup(i) == base.code)
-  //        count++;
-  //    }
-  //    return count;
-  //  }
-  //
-  //  /**
-  //   * Count the number of occurrence of the code within the specified range
-  //   *
-  //   * @param base
-  //   * @param start
-  //   * @param end
-  //     *            (exclusive)
-  //   * @return
-  //   */
-  //  public long fastCount(ACGT base, long start, long end) {
-  //    long count = 0;
-  //
-  //    if (base == ACGT.N) {
-  //      // Count N
-  //      int sPos = (int) (start >>> 6);
-  //      int sOffset = (int) (start & 0x3FL);
-  //      int ePos = (int) ((end + 64L - 1L) >>> 6);
-  //      for (; sPos < ePos; ++sPos) {
-  //        long mask = ~0L;
-  //        if (sOffset != 0) {
-  //          mask >>>= sOffset;
-  //          sOffset = 0;
-  //        }
-  //        if (sPos == ePos - 1) {
-  //          int eOffset = (int) (end & 0x3FL);
-  //          long rMask = (eOffset == 0) ? ~0L : ~((1L << (64 - eOffset)) - 1);
-  //          mask &= rMask;
-  //        }
-  //        count += Long.bitCount(seq[sPos * 3] & mask);
-  //      }
-  //    }
-  //    else {
-  //      // Count A, C, G, T
-  //      int sPos = (int) (start >>> 5);
-  //      int sOffset = (int) (start & 0x1FL);
-  //      int ePos = (int) ((end + 32L - 1L) >>> 5);
-  //
-  //      for (; sPos < ePos; ++sPos) {
-  //
-  //        long mask = ~0L;
-  //        if (sOffset != 0) {
-  //          mask >>>= sOffset * 2;
-  //          sOffset = 0;
-  //        }
-  //        int bIndex = sPos / 2 * 3;
-  //        int block = sPos % 2;
-  //        long v = seq[bIndex + 1 + block];
-  //        long nFlag = interleave32With0(seq[bIndex] >>> (32 * (1 - block)));
-  //        if (sPos == ePos - 1) {
-  //          int eOffset = (int) (end & 0x1FL);
-  //          long rMask = (eOffset == 0) ? ~0L : ~((1L << (32 - eOffset) * 2) - 1);
-  //          mask &= rMask;
-  //        }
-  //        long r = ~0L;
-  //        r &= ((base.code & 0x02) == 0 ? ~v : v) >>> 1;
-  //        r &= ((base.code & 0x01) == 0 ? ~v : v);
-  //        r &= 0x5555555555555555L;
-  //        r &= ~nFlag;
-  //        r &= mask;
-  //        count += Long.bitCount(r);
-  //      }
-  //    }
-  //
-  //    return count;
-  //  }
-  //
-  //  public long[] fastCountACGTN(long start, long end) {
-  //
-  //    long count[] = new long[5];
-  //
-  //    // Count A, C, G, T
-  //    int sPos = (int) (start >>> 5);
-  //    int sOffset = (int) (start & 0x1FL);
-  //    int ePos = (int) ((end + 32L - 1L) >>> 5);
-  //
-  //    for (; sPos < ePos; ++sPos) {
-  //
-  //      long mask = ~0L;
-  //      if (sOffset != 0) {
-  //        mask >>>= sOffset * 2;
-  //        sOffset = 0;
-  //      }
-  //      int bIndex = sPos / 2 * 3;
-  //      int block = sPos % 2;
-  //      long v = seq[bIndex + 1 + block];
-  //      long nFlag = interleave32With0(seq[bIndex] >>> (32 * (1 - block)));
-  //      if (sPos == ePos - 1) {
-  //        int eOffset = (int) (end & 0x1FL);
-  //        long rMask = (eOffset == 0) ? ~0L : ~((1L << (32 - eOffset) * 2) - 1);
-  //        mask &= rMask;
-  //      }
-  //
-  //      for (ACGT base : ACGT.exceptN) {
-  //        long r = ~0L;
-  //        r &= ((base.code & 0x02) == 0 ? ~v : v) >>> 1;
-  //        r &= ((base.code & 0x01) == 0 ? ~v : v);
-  //        r &= 0x5555555555555555L;
-  //        r &= ~nFlag;
-  //        r &= mask;
-  //        count[base.code] += Long.bitCount(r);
-  //      }
-  //
-  //      count[ACGT.N.code] += Long.bitCount(nFlag & mask);
-  //    }
-  //
-  //    return count;
-  //  }
-  //
-  //  static int interleaveWith0(int v) {
-  //    v = ((v & 0xFF00) << 8) | (v & 0x00FF);
-  //    v = ((v << 4) | v) & 0x0F0F0F0F;
-  //    v = ((v << 2) | v) & 0x33333333;
-  //    v = ((v << 1) | v) & 0x55555555;
-  //    return v;
-  //  }
-  //
-  //  /**
-  //   * Interleave low 32bits (in a long value) with 0s. For example, 11110011 (8
-  //   * bit value) becomes 0101010100000101 (16 bit value)
-  //   *
-  //   * @param v
-  //   * @return
-  //   */
-  //  static long interleave32With0(long v) {
-  //    v = ((v & 0xFFFF0000L) << 16) | (v & 0x0000FFFFL);// 0000000000000000
-  //    v = ((v << 8) | v) & 0x00FF00FF00FF00FFL; // 0000000011111111
-  //    v = ((v << 4) | v) & 0x0F0F0F0F0F0F0F0FL; // 00001111
-  //    v = ((v << 2) | v) & 0x3333333333333333L; // 0011
-  //    v = ((v << 1) | v) & 0x5555555555555555L; // 0101
-  //    return v;
-  //  }
-  //
-  //  /**
-  //   * Count the number of 1s in the input. See also the Hacker's Delight:
-  //   * http://hackers-delight.org.ua/038.htm
-  //   *
-  //   * @param x
-  //   * @return the number of 1-bit in the input x
-  //   */
-  //  public static long countOneBit(long x) {
-  //    x = (x & 0x5555555555555555L) + ((x >>> 1) & 0x5555555555555555L);
-  //    x = (x & 0x3333333333333333L) + ((x >>> 2) & 0x3333333333333333L);
-  //    x = (x + (x >>> 4)) & 0x0F0F0F0F0F0F0F0FL;
-  //    x = x + (x >>> 8);
-  //    x = x + (x >>> 16);
-  //    x = x + (x >>> 32);
-  //    return x & 0x7FL;
-  //  }
-  //
-  //  @Override
-  //  public long increment(long i, long val) {
-  //    throw new UnsupportedOperationException("update");
-  //  }
-  //
-  //  @Override
-  //  public int length() {
-  //    return (int) textSize();
-  //  }
-  //
-  //  @Override
-  //  public char charAt(int index) {
-  //    return getACGT(index).toChar();
-  //  }
-  //
-  //  @Override
-  //  public ACGTSequence subSequence(int start, int end) {
-  //    return subString(start, end);
-  //  }
-  //
-  //}
+  override def toString = result.toString
 
 }

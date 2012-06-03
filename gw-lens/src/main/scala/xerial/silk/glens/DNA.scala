@@ -46,12 +46,13 @@ object DNA {
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 )
   
   private[glens] val codeTable = Array(A, C, G, T, N, N, N, N)
-  private[glens] val charTable = Array('A', 'C', 'G', 'T', 'N' )
+  private[glens] val charTable = Array[Char]('A', 'C', 'G', 'T', 'N' )
 
   val exceptN = Array(A, C, G, T)
   val values = Array(A, C, G, T, N)
 
   def apply(code:Int) : DNA = values(code)
+  def apply(ch:Char) : DNA = encode(ch)
 
   def complement(code:Int) : DNA = codeTable((~code & 0x03) | (code & 0x04))
   def decode(code:Byte) : DNA = codeTable(code & 0x07)
@@ -67,8 +68,10 @@ object DNA {
 sealed abstract class DNA(val letter:String, val code:Int, val bitFlag:Int) extends GenomeLetter {
   assert(code >= 0 && code <= 4)
 
+  override def toString = toChar.toString
+
   def complement : DNA = DNA.complement(code)
-  def toChar = DNA.charTable(code)
+  def toChar : Char = DNA.charTable(code)
   def isMatchWith(other:DNA) : Boolean = (this.bitFlag & other.bitFlag) != 0
 
   /**
