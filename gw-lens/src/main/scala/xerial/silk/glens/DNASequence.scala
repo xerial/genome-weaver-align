@@ -117,6 +117,7 @@ object ACGTSequence {
  */
 class ACGTSequence(private val seq: Array[Long], val numBases: Long)
   extends DNASequence
+  with Logger
   with CharSequence {
 
   import DNA2bitEncoding._
@@ -245,27 +246,33 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long)
       val sPos = blockIndex(start)
       val sOffset = blockOffset(start)
 
-      val ePos = blockIndex(end)
-      val eOffset = blockOffset(end)
+      val ePos = blockIndex(end-1L)
+      val eOffset = blockOffset(end-1L)
 
       var count = 0L
-      var numAsinMaskedRegion = 0L
-      for (pos <- sPos until ePos) {
+      var numAsInMaskedRegion = 0L
+      var pos = sPos
+      while(pos <= ePos) {
         var mask: Long = ~0L
         if (pos == sPos) {
-          mask <<= sOffset * 2L
-          numAsinMaskedRegion += sOffset
+          mask <<= (sOffset << 1L)
+          numAsInMaskedRegion += sOffset
         }
-        if (pos == ePos - 1) {
-          mask &= ~(~0L << (eOffset * 2L))
-          numAsinMaskedRegion += 32 - eOffset
+        if (pos == ePos) {
+          val rMask = ~0L >>> (62L - (eOffset << 1))
+          mask &= rMask
+          numAsInMaskedRegion += 31L - eOffset
         }
         // Applying bit mask changes all bases in the masked region to As (code=00)
         val v: Long = seq(pos) & mask
-        count += fastCount(v, base)
+        val popCount = fastCount(v, base)
+        //debug("pos:%d, popCount:%d, count:%d, numATotal:%d", pos, popCount, count, numAsInMaskedRegion)
+        count += popCount
+        pos += 1
+
       }
       if (base == DNA.A)
-        count - numAsinMaskedRegion
+        count - numAsInMaskedRegion
       else
         count
     }
@@ -278,32 +285,35 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long)
   }
 
   def fastCountACGT(start: Long, end: Long): Array[Long] = {
-    val count = new ArrayBuffer[Long](4)
+    val count = ArrayBuffer.fill[Long](4)(0L)
 
     val sPos = blockIndex(start)
     val sOffset = blockOffset(start)
 
-    val ePos = blockIndex(end)
-    val eOffset = blockOffset(end)
+    val ePos = blockIndex(end-1)
+    val eOffset = blockOffset(end-1)
 
-    var numAsinMaskedRegion = 0L
-    for (pos <- sPos until ePos) {
+    var numAsInMaskedRegion = 0L
+    var pos = sPos
+    while(pos <= ePos) {
       var mask: Long = ~0L
       if (pos == sPos) {
-        mask <<= sOffset << 1
-        numAsinMaskedRegion += sOffset
+        mask <<= sOffset << 1L
+        numAsInMaskedRegion += sOffset
       }
-      if (pos == ePos - 1) {
-        mask &= ~(~0L << (eOffset << 1))
-        numAsinMaskedRegion += 32 - eOffset
+      if (pos == ePos) {
+        val rMask = ~0L >>> (62L - (eOffset << 1))
+        mask &= rMask
+        numAsInMaskedRegion += 31L - eOffset
       }
       // Applying bit mask changes all bases in the masked region to As (code=00)
       val v: Long = seq(pos) & mask
       for (base <- DNA.exceptN) {
         count(base.code) += fastCount(v, base)
       }
+      pos += 1
     }
-    count(DNA.A.code) -= numAsinMaskedRegion
+    count(DNA.A.code) -= numAsInMaskedRegion
     count.toArray
   }
 

@@ -70,6 +70,41 @@ class ACGTSequenceTest extends SilkSpec {
       test(3423)
       test(24)
     }
+
+    "count base occurrences" in {
+
+      def check(len:Int) {
+        val s = randomSeq(len)
+        val w = ACGTSequence(s)
+        for(base <- DNA.exceptN) {
+          for(x <- 0 until s.length; y <- x until s.length) {
+            //debug("code:%s [%d, %d)", base, x, y)
+            w.fastCount(base, x, y) should be (s.substring(x, y).count(c => c == base.toChar))
+          }
+        }
+      }
+
+      check(24)
+      check(150)
+    }
+
+    "count base occurrences of ACGT at the same time" in {
+
+      def check(len:Int) {
+        val s = randomSeq(len)
+        val w = ACGTSequence(s)
+          for(x <- 0 until s.length; y <- x until s.length) {
+            //debug("code:%s [%d, %d)", base, x, y)
+            val count = w.fastCountACGT(x, y)
+            for(base <- DNA.exceptN) {
+              count(base.code) should be (s.substring(x, y).count(c => c == base.toChar))
+            }
+          }
+      }
+      check(24)
+      check(150)
+    }
+
   }
 
   "ACGTSequenceBuilder" should {
@@ -83,7 +118,6 @@ class ACGTSequenceTest extends SilkSpec {
       debug("done")
       val s = b.result
       compare(seq, s)
-      //s.toACGTString should be (seq)
     }
   }
 
