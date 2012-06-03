@@ -7,9 +7,25 @@
 
 package xerial.silk.glens
 
+import xerial.silk.util.SilkSpec
+
 /**
  * @author leo
  */
 class ACGTSequenceTest extends SilkSpec {
+
+  "ACGTSequence" should {
+
+    "construct instances from String" in {
+      val s = ACGTSequence("AAACCGGTT")
+      s should have length (9)
+
+
+
+    }
+
+
+  }
+
 
 }

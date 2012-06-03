@@ -33,17 +33,38 @@ trait DNASequence {
 
 }
 
+object DNA2bitEncoding {
+  val LONG_BYTE_SIZE: Int = 8
+  // 2G (max of Java array size) * 8 (long byte size) * 8 / 2 (bit) =  64G  (64G characters)
+  val MAX_SIZE: Long = 2L * 1024L * 1024L * 1024L * 8L * 8L / 2L
 
-object ACGTSequence {
+  def minArraySize(numBases: Long): Int = {
+    val bitSize: Long = numBases * 2L
+    val blockBitSize: Long = LONG_BYTE_SIZE * 8L
+    val arraySize: Long = ((bitSize + blockBitSize - 1L) / blockBitSize) * 2L
+    if (arraySize > Integer.MAX_VALUE) {
+      throw new IllegalArgumentException("Cannot create ACGTSequece more than %,d characters: %,d".format(MAX_SIZE, numBases))
+    }
+    arraySize.toInt
+  }
 
+  def blockIndex(basePos: Long): Int = (basePos >>> 5).toInt
+
+  def blockOffset(basePos: Long): Int = (basePos & 0x1FL).toInt
 
 }
 
-trait DNA2BitEncoding {
+object ACGTSequence {
 
-  protected def blockIndex(basePos: Long): Int = (basePos >>> 5).toInt
+  def newBuilder = new ACGTSequenceBuilder()
 
-  protected def blockOffset(basePos: Long): Int = (basePos & 0x1FL).toInt
+  def apply(s: String) : ACGTSequence = {
+    val b = newBuilder
+    for(ch <- s) {
+      b += DNA(ch)
+    }
+    b.toACGTSequence
+  }
 
 }
 
@@ -54,11 +75,12 @@ trait DNA2BitEncoding {
  * @param seq
  * @param numBases
  */
-class ACGTSequence(private val seq: Array[Long], val numBases: Long) extends DNASequence with DNA2BitEncoding with CharSequence {
-  private val LONG_BYTE_SIZE: Int = 8
-  private val MAX_SIZE: Long = (2 * 1024 * 1024 * 1024 * 8 * 8) / 2
+class ACGTSequence(private val seq: Array[Long], val numBases: Long)
+  extends DNASequence
+  with CharSequence
+{
+  import DNA2bitEncoding._
   private var hash: Int = 0
-
 
   private def longToIntCheck {
     if(numBases >= Integer.MAX_VALUE)
@@ -77,8 +99,11 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long) extends DNA
 
   override def toString = {
     val s = new StringBuilder
-    for (i <- 0 until numBases)
+    var i = 0L
+    while(i < numBases) {
       s += apply(i).toChar
+      i += 1
+    }
     s.result
   }
 
@@ -142,9 +167,11 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long) extends DNA
    *         the original sequence.
    */
   def reverse: ACGTSequence = {
-    val buffer = new ACGTSequenceBuffer(numBases)
-    for (i <- 0 until numBases) {
+    val buffer = new ACGTSequenceBuilder(numBases)
+    var i = 0L
+    while(i < numBases) {
       buffer += this(numBases - i - 1)
+      i += 1
     }
     buffer.toACGTSequence
   }
@@ -241,9 +268,7 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long) extends DNA
     apply(index).toChar
   }
 
-  def subSequence(start: Int, end: Int) = {
-
-  }
+  def subSequence(start: Int, end: Int) = slice(start, end)
 
   def slice(start:Long, end:Long) : ACGTSequence = {
     if(start > end)
@@ -252,7 +277,7 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long) extends DNA
     val sliceLen = end - start
 
     val newSeq = Array.newBuilder[Long]
-    newSeq.sizeHint(ACGTSequenceBuffer.minArraySize(sliceLen))
+    newSeq.sizeHint(minArraySize(sliceLen))
 
     var i = 0L
     while(i < sliceLen) {
@@ -263,7 +288,6 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long) extends DNA
       val dOffset = blockOffset(i)
 
       var copyLen = 0
-
       var v = seq(sPos)
       if(sOffset == dOffset) {
         // noshift
@@ -274,7 +298,7 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long) extends DNA
         copyLen = 64 - dOffset
         val shiftLen = dOffset - sOffset
         //if(shiftLen < )
-        
+
       }
       else {
         // left shift
@@ -352,29 +376,32 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long) extends DNA
 }
 
 
-object ACGTSequenceBuffer {
-  private val LONG_BYTE_SIZE: Int = 8
-  // 2G (max of Java array size) * 8 (long byte size) * 8 / 2 (bit) =  64G  (64G characters)
-  private val MAX_SIZE: Long = 2L * 1024L * 1024L * 1024L * 8L * 8L / 2L
 
-  def minArraySize(numBases: Long): Int = {
-    val bitSize: Long = numBases * 2L
-    val blockBitSize: Long = LONG_BYTE_SIZE * 8L
-    val arraySize: Long = ((bitSize + blockBitSize - 1L) / blockBitSize) * 2L
-    if (arraySize > Integer.MAX_VALUE) {
-      throw new IllegalArgumentException("Cannot create ACGTSequece more than %,d characters: %,d".format(MAX_SIZE, numBases))
-    }
-    arraySize.toInt
-  }
-}
-
-class ACGTSequenceBuffer(private var seq: ArrayBuffer[Long], var numBases: Long) extends DNASequence with DNA2BitEncoding {
-
-  import ACGTSequenceBuffer._
+/**
+ * ACGT sequence builder
+ * @param seq
+ * @param numBases
+ */
+class ACGTSequenceBuilder(private var seq: ArrayBuffer[Long], var numBases: Long)
+  extends DNASequence
+{
+  import DNA2bitEncoding._
 
   private def capacity: Long = seq.length / 2L * 64L
 
-  private var hash = 0 // default to 0
+  /**
+   * Create an empty sequence
+   */
+  def this() = this(new ArrayBuffer[Long](DNA2bitEncoding.minArraySize(10)), 0L)
+
+  /**
+   * Create an empty sequence with an initial array size that is sufficient hold the given number of bases
+   * @param numBases
+   * @return
+   */
+  def this(numBases: Long) = this(new ArrayBuffer[Long](DNA2bitEncoding.minArraySize(numBases)), numBases)
+
+
 
   private def ensureArrayCapacity(newCapacity: Long) {
     if (newCapacity >= capacity) {
@@ -385,6 +412,10 @@ class ACGTSequenceBuffer(private var seq: ArrayBuffer[Long], var numBases: Long)
     }
   }
 
+  /**
+   * Append a DNA base. Sequence other than A, C, G and T is replaced to A
+   * @param base
+   */
   def +=(base: DNA): Unit = {
     val index = numBases
     numBases += 1
@@ -395,25 +426,32 @@ class ACGTSequenceBuffer(private var seq: ArrayBuffer[Long], var numBases: Long)
     update(index, base)
   }
 
+  def +=(seq: String) : Unit = {
+    for(ch <- seq) {
+      this.+=(DNA(ch))
+    }
+  }
+
+  /**
+   * Set a DNA base at the specific index position
+   * @param index
+   * @param base
+   */
   def update(index: Long, base: DNA): Unit = {
     val pos = blockIndex(index)
     val offset = blockOffset(index)
     val shift = offset * 2
 
-    // reset the target base
+    // reset the target base. 3bit code N(code:100) will be timmed to A (00)
     seq(pos) &= ~(0x3L << shift)
     seq(pos) |= (base.code & 0x03) << shift
   }
 
-  /**
-   * Create an emptry sequence
-   */
-  def this() = this(new ArrayBuffer[Long](minArraySize(10)), 0L)
 
-  def this(numBases: Long) = this(new ArrayBuffer[Long](numBases), numBases)
-
-
+  def result = toACGTSequence
   def toACGTSequence: ACGTSequence = new ACGTSequence(seq.toArray, numBases)
+
+
 
   //
   //  def replaceN_withA : ACGTSequence =  {
