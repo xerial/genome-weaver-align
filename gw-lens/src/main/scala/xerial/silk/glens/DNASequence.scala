@@ -323,6 +323,12 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long)
 
   def subSequence(start: Int, end: Int) = slice(start, end)
 
+  /**
+   * Extract a slice of the sequence [start, end)
+   * @param start
+   * @param end
+   * @return
+   */
   def slice(start: Long, end: Long): ACGTSequence = {
     if (start > end)
       sys.error("illegal argument start:%,d > end:%,d".format(start, end))
@@ -339,7 +345,7 @@ class ACGTSequence(private val seq: Array[Long], val numBases: Long)
 
       val dPos = blockIndex(i)
       val dOffset = blockOffset(i)
-
+      
       var copyLen = 0L
       var v = seq(sPos)
       if (sOffset == dOffset) {
