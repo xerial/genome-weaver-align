@@ -32,7 +32,7 @@ trait DNASequence {
 }
 
 /**
- * 2-bit encoding based DNASequence
+ * 2-bit encoding based DNASeq
  *
  * @author leo
  *
@@ -71,7 +71,7 @@ trait Read {
 object Read {
   implicit def stringToDNASequence(x: String): DNASequence = new CompactDNASequence(x)
 
-  //implicit def convertToDNASequence(x: ACGTSeq): DNASequence = new CompactDNASequence(x)
+  //implicit def convertToDNASequence(x: ACGTSeq): DNASeq = new CompactDNASequence(x)
 }
 
 trait SingleEnd extends Read {

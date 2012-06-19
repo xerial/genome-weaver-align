@@ -39,6 +39,14 @@ trait DNA2bitEncoding {
  */
 object ACGTSeq {
 
+  implicit def canBuildSeq : CanBuildSeq[ACGTSeq, ACGTSeq] = {
+    new CanBuildSeq[ACGTSeq, ACGTSeq] {
+      def apply(from:ACGTSeq) = new ACGTSeqBuilder()
+      def apply() = new ACGTSeqBuilder()
+    }
+  }
+
+
   def newBuilder = new ACGTSeqBuilder()
 
   def newBuilder(sizeHint: Long) = new ACGTSeqBuilder()
@@ -107,41 +115,12 @@ object ACGTSeq {
  * @param numBases
  */
 class ACGTSeq(private val seq: Array[Long], val numBases: Long)
-  extends DNASequence
+  extends DNASeq[ACGTSeq]
+  with DNASeqOps[ACGTSeq]
   with DNA2bitEncoding
   with CharSequence {
 
   private var hash: Int = 0
-
-  private def longToIntCheck {
-    if (numBases >= Integer.MAX_VALUE)
-      sys.error("this method cannot be used when the sequence is larger than 2GB")
-  }
-
-  /**
-   * length of this sequence
-   * @return
-   */
-  def length = {
-    longToIntCheck
-    numBases.toInt
-  }
-
-  /**
-   * Return string representation of this sequence
-   * @return
-   */
-  def toACGTString: String = {
-    val s = new StringBuilder
-    var i = 0L
-    while (i < numBases) {
-      s += apply(i).toChar
-      i += 1
-    }
-    s.result
-  }
-
-  override def toString = toACGTString
 
   /**
    * Return the DNA base at the specified index
@@ -201,35 +180,10 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
    * Take the complement (not reversed) of this sequence
    * @return
    */
-  def complement: ACGTSeq = {
+  def complement : ACGTSeq = {
     val c = for (b <- seq) yield ~b
     new ACGTSeq(c, numBases)
   }
-
-  /**
-   * Create a reverse string of the this sequence. For example ACGT becomes TGCA
-   *
-   * @return Reverse sequence. The returned sequence is NOT a complement of
-   *         the original sequence.
-   */
-  def reverse: ACGTSeq = {
-    val buffer = new ACGTSeqBuilder(numBases)
-    var i = 0L
-    while (i < numBases) {
-      buffer += apply(numBases - i - 1)
-      i += 1
-    }
-    buffer.toACGTSeq
-  }
-
-  /**
-   * Reverse complement of this sequence.
-   * @return
-   */
-  def reverseComplement: ACGTSeq = {
-    reverse.complement
-  }
-
 
   private def fastCount(v: Long, base: DNA): Long = {
     var r = ~0L
@@ -247,7 +201,7 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
    * @param end
    * @return the number of occurrences of the specified DNA base
    */
-  def fastCount(base: DNA, start: Long, end: Long): Long = {
+  def count(base: DNA, start: Long, end: Long): Long = {
 
     def countACGT: Long = {
       val sPos = blockIndex(start)
@@ -297,7 +251,7 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
    * @param end
    * @return
    */
-  def fastCountACGT(start: Long, end: Long): Array[Long] = {
+  def count(start: Long, end: Long): Array[Long] = {
     val count = Array.fill[Long](4)(0L)
 
     val sPos = blockIndex(start)
@@ -329,12 +283,6 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
     count(DNA.A.code) -= numAsInMaskedRegion
     count
   }
-
-  def charAt(index: Int) = {
-    apply(index).toChar
-  }
-
-  def subSequence(start: Int, end: Int) = slice(start, end)
 
   /**
    * Extract a slice of the sequence [start, end)
@@ -393,8 +341,8 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
  * @param capacity the hint of number of bases to store
  */
 class ACGTSeqBuilder(private var capacity: Long)
-  extends DNASequence
-  with DNA2bitEncoding
+  extends DNA2bitEncoding
+  with DNASeqBuilder[ACGTSeq]
 {
 
   private var seq = new Array[Long](minArraySize(capacity))
@@ -428,11 +376,6 @@ class ACGTSeqBuilder(private var capacity: Long)
     update(index, base)
   }
 
-  def +=(seq: String): Unit = {
-    for (ch <- seq) {
-      this.+=(DNA(ch))
-    }
-  }
 
   /**
    * Set a DNA base at the specific index position. N will be replaced with A
@@ -450,7 +393,7 @@ class ACGTSeqBuilder(private var capacity: Long)
     seq(pos) |= (base.code & 0x03) << shift
   }
 
-  def result = toACGTSeq
+  def result : ACGTSeq = toACGTSeq
 
   def toACGTSeq: ACGTSeq = {
     val size = minArraySize(_numBases)

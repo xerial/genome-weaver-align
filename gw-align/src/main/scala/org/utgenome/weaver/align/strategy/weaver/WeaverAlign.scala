@@ -220,7 +220,7 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
   }
 
   /**
-   * Converts DNASequence for using Java methods that use ACGTSeq
+   * Converts DNASeq for using Java methods that use ACGTSeq
    */
   implicit def dnaToACGT(x: DNASequence): ACGTSequence = {
     x match {

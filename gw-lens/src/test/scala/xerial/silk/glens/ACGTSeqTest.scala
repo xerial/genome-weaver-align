@@ -92,7 +92,7 @@ class ACGTSeqTest extends SilkSpec {
         for (base <- DNA.exceptN) {
           for (x <- 0 until s.length; y <- x until s.length) {
             //debug("code:%s [%d, %d)", base, x, y)
-            w.fastCount(base, x, y) should be(s.substring(x, y).count(c => c == base.toChar))
+            w.count(base, x, y) should be(s.substring(x, y).count(c => c == base.toChar))
           }
         }
       }
@@ -108,7 +108,7 @@ class ACGTSeqTest extends SilkSpec {
         val w = ACGTSeq(s)
         for (x <- 0 until s.length; y <- x until s.length) {
           //debug("code:%s [%d, %d)", base, x, y)
-          val count = w.fastCountACGT(x, y)
+          val count = w.count(x, y)
           for (base <- DNA.exceptN) {
             count(base.code) should be(s.substring(x, y).count(c => c == base.toChar))
           }
