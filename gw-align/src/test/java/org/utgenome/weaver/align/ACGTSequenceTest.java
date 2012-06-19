@@ -24,7 +24,9 @@
 //--------------------------------------
 package org.utgenome.weaver.align;
 
-import static org.junit.Assert.*;
+import org.junit.Test;
+import org.xerial.util.StopWatch;
+import org.xerial.util.log.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -32,9 +34,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.util.Random;
 
-import org.junit.Test;
-import org.xerial.util.StopWatch;
-import org.xerial.util.log.Logger;
+import static org.junit.Assert.assertEquals;
 
 public class ACGTSequenceTest
 {
@@ -282,7 +282,6 @@ public class ACGTSequenceTest
     @Test
     public void subSequence() throws Exception {
         ACGTSequence seq = new ACGTSequence(orig);
-        //assertEquals(new ACGTSequence(orig.subSequence(33, 100)).toString(), seq.subSequence(33, 100).toString());
 
         for (int s = 0; s < seq.textSize(); ++s) {
             for (int e = s; e < seq.textSize(); ++e) {

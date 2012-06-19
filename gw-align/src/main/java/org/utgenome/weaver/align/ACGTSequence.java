@@ -19,8 +19,6 @@
 // ACGTSequence.java
 // Since: 2011/06/30
 //
-// $URL$ 
-// $Author$
 //--------------------------------------
 package org.utgenome.weaver.align;
 
@@ -79,7 +77,11 @@ public class ACGTSequence implements LSeq, GenomeSequence, CharSequence
     }
 
     /**
+<<<<<<< HEAD
      * Create ACGTSequence from the input ACGT(N) sequence
+=======
+     * Create ACGTSeq from the input ACGT(N) sequence
+>>>>>>> 8e2586c1b1c1c6ecf92fb835d06f7070e376bd6c
      * 
      * @param s
      */

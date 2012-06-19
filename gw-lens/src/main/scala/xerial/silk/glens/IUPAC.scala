@@ -47,7 +47,7 @@ object IUPAC {
     R, D, M, H, V, N)
 
 
-  def genoTypetoIUPAC(genoType:String) : IUPAC = {
+  def genotypeToIUPAC(genoType:String) : IUPAC = {
     val flag = genoType.foldLeft(0){(flag, ch) =>
       val code = DNA.to2bitCode(ch)
       flag | (1 << code)
@@ -59,7 +59,7 @@ object IUPAC {
 
 }
 
-sealed abstract class IUPAC(val symbol:String,val variation:String, val bitFlag:Int) extends GenomeLetter {
+sealed abstract class IUPAC(val symbol:String, val variation:String, val bitFlag:Int) extends GenomeLetter {
 
   def complement : IUPAC = IUPAC.complementTable(bitFlag)
 

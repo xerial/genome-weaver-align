@@ -41,12 +41,21 @@ public class BitParallelSmithWatermanTest
     public void align64() throws Exception {
 
         String ref = "ACGTGGTCTT";
+<<<<<<< HEAD
         //BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("ACGTGGTCTT"));
 
         //BitParallelSmithWaterman.align64(new ACGTSequence("AAATTT"), new ACGTSequence("AATACTTT"));
         BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("ACGTGGT"), 2);
         BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("CTT"), 2);
         //BitParallelSmithWaterman.align64(new ACGTSequence("TATAATAATA"), new ACGTSequence("TAATA"));
+=======
+        //BitParallelSmithWaterman.align64(new ACGTSeq(ref), new ACGTSeq("ACGTGGTCTT"));
+
+        //BitParallelSmithWaterman.align64(new ACGTSeq("AAATTT"), new ACGTSeq("AATACTTT"));
+        BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("ACGTGGT"), 2);
+        BitParallelSmithWaterman.align64(new ACGTSequence(ref), new ACGTSequence("CTT"), 2);
+        //BitParallelSmithWaterman.align64(new ACGTSeq("TATAATAATA"), new ACGTSeq("TAATA"));
+>>>>>>> 8e2586c1b1c1c6ecf92fb835d06f7070e376bd6c
 
     }
 
@@ -74,7 +83,11 @@ public class BitParallelSmithWatermanTest
     @Test
     public void noMatch() throws Exception {
         ACGTSequence ref = new ACGTSequence("ACGTCATAACG");
+<<<<<<< HEAD
         //BitParallelSmithWaterman.align64(ref, new ACGTSequence("GGTTCC"), 0);
+=======
+        //BitParallelSmithWaterman.align64(ref, new ACGTSeq("GGTTCC"), 0);
+>>>>>>> 8e2586c1b1c1c6ecf92fb835d06f7070e376bd6c
         SWResult r = BitParallelSmithWaterman.alignBlock(ref, new ACGTSequence("GGTTCC"), 0);
         assertTrue(r.diff > 0);
         _logger.debug(SilkLens.toSilk("result", r));
