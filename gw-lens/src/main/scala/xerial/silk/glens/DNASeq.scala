@@ -19,8 +19,7 @@ package xerial.silk.glens
 
 //--------------------------------------
 //
-// DNASequence.scala
-// Since: 2012/03/16 11:19
+// DNASeq.scalaince: 2012/03/16 11:19
 //
 //--------------------------------------
 
@@ -29,6 +28,6 @@ package xerial.silk.glens
  *
  * @author leo
  */
-trait DNASequence {
+trait DNASeq {
 
 }
