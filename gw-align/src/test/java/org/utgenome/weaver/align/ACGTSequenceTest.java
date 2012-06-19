@@ -282,7 +282,7 @@ public class ACGTSequenceTest
     @Test
     public void subSequence() throws Exception {
         ACGTSequence seq = new ACGTSequence(orig);
-        //assertEquals(new ACGTSequence(orig.subSequence(33, 100)).toString(), seq.subSequence(33, 100).toString());
+        //assertEquals(new ACGTSeq(orig.subSequence(33, 100)).toString(), seq.subSequence(33, 100).toString());
 
         for (int s = 0; s < seq.textSize(); ++s) {
             for (int e = s; e < seq.textSize(); ++e) {

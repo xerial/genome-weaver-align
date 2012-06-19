@@ -68,7 +68,7 @@ object DNA {
 sealed abstract class DNA(val letter:String, val code:Int, val bitFlag:Int) extends GenomeLetter {
   assert(code >= 0 && code <= 4)
 
-  override def toString = toChar.toString
+  override def toString = letter
 
   def complement : DNA = DNA.complement(code)
   def toChar : Char = DNA.charTable(code)

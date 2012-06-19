@@ -16,7 +16,7 @@
 //--------------------------------------
 // genome-weaver Project
 //
-// ACGTSequence.java
+// ACGTSeq.java
 // Since: 2011/06/30
 //
 // $URL$ 
@@ -79,7 +79,7 @@ public class ACGTSequence implements LSeq, GenomeSequence, CharSequence
     }
 
     /**
-     * Create ACGTSequence from the input ACGT(N) sequence
+     * Create ACGTSeq from the input ACGT(N) sequence
      * 
      * @param s
      */

@@ -71,7 +71,7 @@ trait Read {
 object Read {
   implicit def stringToDNASequence(x: String): DNASequence = new CompactDNASequence(x)
 
-  //implicit def convertToDNASequence(x: ACGTSequence): DNASequence = new CompactDNASequence(x)
+  //implicit def convertToDNASequence(x: ACGTSeq): DNASequence = new CompactDNASequence(x)
 }
 
 trait SingleEnd extends Read {
