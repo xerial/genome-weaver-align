@@ -13,9 +13,9 @@ import util.Random
 /**
  * @author leo
  */
-class ACGTSequenceTest extends SilkSpec {
+class ACGTSeqTest extends SilkSpec {
 
-  def compare(orig:String, seq:ACGTSequence) {
+  def compare(orig:String, seq:ACGTSeq) {
     orig.length should be (seq.length)
     seq.toACGTString should be (orig)
   }
@@ -28,23 +28,23 @@ class ACGTSequenceTest extends SilkSpec {
     b.result
   }
 
-  "ACGTSequence" should {
+  "ACGTSeq" should {
 
     "construct instances from String" in {
       val seq = "AAACCGGTT"
-      val s = ACGTSequence(seq)
+      val s = ACGTSeq(seq)
       compare(seq, s)
     }
 
     "construct instances more than 32bp" in {
       val seq = randomSeq(1243)
-      val w = ACGTSequence(seq)
+      val w = ACGTSeq(seq)
       compare(seq, w)
     }
 
     "compute the reverse" in {
       val s = randomSeq(452)
-      val c = ACGTSequence(s)
+      val c = ACGTSeq(s)
       c.numBases should be (s.length)
       val r = c.reverse
 
@@ -62,7 +62,7 @@ class ACGTSequenceTest extends SilkSpec {
           sb.result
         }
 
-        val c = ACGTSequence(s)
+        val c = ACGTSeq(s)
         val rc = c.reverseComplement
         compare(s_rc, rc)
       }
@@ -73,7 +73,7 @@ class ACGTSequenceTest extends SilkSpec {
 
     "slice sub strings" in {
       val s = randomSeq(100)
-      val w = ACGTSequence(s)
+      val w = ACGTSeq(s)
       for(x <- 0 until s.length; y <- x until s.length) {
         w.slice(x, y).toACGTString should be (s.substring(x, y))
       }
@@ -83,7 +83,7 @@ class ACGTSequenceTest extends SilkSpec {
 
       def check(len:Int) {
         val s = randomSeq(len)
-        val w = ACGTSequence(s)
+        val w = ACGTSeq(s)
         for(base <- DNA.exceptN) {
           for(x <- 0 until s.length; y <- x until s.length) {
             //debug("code:%s [%d, %d)", base, x, y)
@@ -100,7 +100,7 @@ class ACGTSequenceTest extends SilkSpec {
 
       def check(len:Int) {
         val s = randomSeq(len)
-        val w = ACGTSequence(s)
+        val w = ACGTSeq(s)
           for(x <- 0 until s.length; y <- x until s.length) {
             //debug("code:%s [%d, %d)", base, x, y)
             val count = w.fastCountACGT(x, y)
@@ -115,10 +115,10 @@ class ACGTSequenceTest extends SilkSpec {
 
   }
 
-  "ACGTSequenceBuilder" should {
+  "ACGTSeqBuilder" should {
     "be capable to generate long DNA sequences" in {
       val seq = randomSeq(1000000)
-       val b = ACGTSequence.newBuilder
+       val b = ACGTSeq.newBuilder
       for(slice <- seq.sliding(100, 100)) {
         b += slice
       }
