@@ -29,6 +29,8 @@ import java.util.Arrays
 //--------------------------------------
 
 /**
+ * A base trait for classes representing DNA sequences
+ *
  * @author leo
  */
 trait DNASequence {
@@ -122,8 +124,11 @@ object ACGTSeq {
 
 /**
  * 2-bit encoded DNA Sequence of A, C, G and T. The maximum size this class can hold is
- * 2G (max of Java array size) * 8 (long byte size) * 8 / 2 (bit) =  64G  (64G characters)
- * @param seq
+ * 2G (max of Java array size) * 8 (long byte size) * 8 (bit) / 2 (bit encoding) =  64G  (64G characters)
+ *
+ * To generate an instance of ACGTSeq, use {@link ACGTSeq$#newBuilder} or {@link ACGTSeq$#apply}.
+ *
+ * @param seq 2-bit repre
  * @param numBases
  */
 class ACGTSeq(private val seq: Array[Long], val numBases: Long)
@@ -149,6 +154,10 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
     numBases.toInt
   }
 
+  /**
+   * Return string representation of this sequence
+   * @return
+   */
   def toACGTString: String = {
     val s = new StringBuilder
     var i = 0L
@@ -161,6 +170,11 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
 
   override def toString = toACGTString
 
+  /**
+   * Return the DNA base at the specified index
+   * @param index
+   * @return
+   */
   def apply(index: Long): DNA = {
     // |---   64bit (32 characters) ---|
     // |ACGT|ACGT|ACGT| ...       |ACGT|
@@ -210,6 +224,10 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
     }
   }
 
+  /**
+   * Take the complement (not reversed) of this sequence
+   * @return
+   */
   def complement: ACGTSeq = {
     val c = for (b <- seq) yield ~b
     new ACGTSeq(c, numBases)
@@ -232,7 +250,7 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
   }
 
   /**
-   *
+   * Reverse complement of this sequence.
    * @return
    */
   def reverseComplement: ACGTSeq = {
@@ -245,6 +263,7 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
     r &= (if ((base.code & 0x02) == 0) ~v else v) >>> 1
     r &= (if ((base.code & 0x01) == 0) ~v else v)
     r &= 0x5555555555555555L
+    // JVM optimizer is smart enough to replace this code to a pop count operation available in the CPU
     java.lang.Long.bitCount(r)
   }
 
