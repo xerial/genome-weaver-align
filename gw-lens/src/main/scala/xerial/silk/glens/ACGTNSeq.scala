@@ -31,7 +31,7 @@ trait DNA3bitEncoding {
 
   protected def blockIndex(basePos: Long): Int = (basePos >>> 6).toInt
 
-  protected def blockOffset(basePos: Long): Long = (basePos & 0x03FL)
+  protected def blockOffset(basePos: Long): Int = (basePos & 0x03FL).toInt
 
   protected def numFilledBlocks(numBases: Long) = (numBases / 64L * 3L).toInt
 
@@ -129,11 +129,11 @@ class ACGTNSeq(private val seq: Array[Long], val numBases: Long)
 
   def apply(index: Long) = {
     val pos: Int = blockIndex(index)
-    val offset: Long = blockOffset(index)
-    val shift = 62L - ((index & 0x1FL) << 1L)
+    val offset: Int = blockOffset(index)
+    val shift = 62 - ((index & 0x1FL) << 1).toInt
 
-    val nFlag: Long = seq(pos * 3) & (1L << (63L - offset))
-    val code: Int = (seq(pos * 3 + (offset.toInt >> 5) + 1) >>> shift).toInt & 0x03
+    val nFlag: Long = seq(pos * 3) & (1L << (63 - offset))
+    val code: Int = (seq(pos * 3 + (offset >> 5) + 1) >>> shift).toInt & 0x03
     if (nFlag == 0) DNA(code) else DNA.N
   }
 
@@ -317,11 +317,11 @@ class ACGTNSeq(private val seq: Array[Long], val numBases: Long)
    */
   private def interleave32With0(input: Long): Long = {
     var v = input
-    v = ((v & 0xFFFF0000L) << 16L) | (v & 0x0000FFFFL)
-    v = ((v << 8L) | v) & 0x00FF00FF00FF00FFL
-    v = ((v << 4L) | v) & 0x0F0F0F0F0F0F0F0FL
-    v = ((v << 2L) | v) & 0x3333333333333333L
-    v = ((v << 1L) | v) & 0x5555555555555555L
+    v = ((v & 0xFFFF0000L) << 16) | (v & 0x0000FFFFL)
+    v = ((v << 8) | v) & 0x00FF00FF00FF00FFL
+    v = ((v << 4) | v) & 0x0F0F0F0F0F0F0F0FL
+    v = ((v << 2) | v) & 0x3333333333333333L
+    v = ((v << 1) | v) & 0x5555555555555555L
     v
   }
 
@@ -335,7 +335,7 @@ class ACGTNSeq(private val seq: Array[Long], val numBases: Long)
     c
   }
 
-  
+
   private def rawReverse = {
     val b = new ACGTNSeqBuilder(numBases)
     for (i <- (numBases - 1L) to 0L by -1L) {
@@ -398,19 +398,19 @@ class ACGTNSeqBuilder(private var capacity:Long)
     sizeHint(index)
 
     val pos = (index >> 6).toInt
-    val offset = index & 0x3FL
-    val shift = (offset & 0x1FL) << 1L
+    val offset = (index & 0x3FL).toInt
+    val shift = (offset & 0x1F) << 1
 
     val code = base.code
 
     //if(pos * 3 >= seq.length)
 //      debug("index:%d, numBases:%d, capacity:%d, seq.length:%d", index, numBases, capacity, seq.length)
 
-    seq(pos * 3) &= ~(1L << (63L - offset))
-    seq(pos * 3) |= ((code >>> 2) & 0x01L) << (63L - offset)
-    val bPos: Int = pos * 3 + (offset.toInt >> 5) + 1
+    seq(pos * 3) &= ~(1L << (63 - offset))
+    seq(pos * 3) |= ((code >>> 2) & 0x01L) << (63 - offset)
+    val bPos: Int = pos * 3 + (offset >> 5) + 1
     seq(bPos) &= ~(0xC000000000000000L >>> shift)
-    seq(bPos) |= (code & 0x03) << (62 - shift)
+    seq(bPos) |= (code & 0x03L) << (62 - shift)
   }
 
   def rawArray = seq.toArray
