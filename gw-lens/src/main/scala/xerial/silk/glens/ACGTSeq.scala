@@ -39,9 +39,8 @@ trait DNA2bitEncoding {
  */
 object ACGTSeq {
 
-  implicit def canBuildSeq : CanBuildSeq[ACGTSeq, ACGTSeq] = {
-    new CanBuildSeq[ACGTSeq, ACGTSeq] {
-      def apply(from:ACGTSeq) = new ACGTSeqBuilder()
+  implicit def canBuildSeq : CanBuildSeq[ACGTSeq] = {
+    new CanBuildSeq[ACGTSeq] {
       def apply() = new ACGTSeqBuilder()
     }
   }
@@ -177,13 +176,39 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
   }
 
   /**
+   * Create a reverse string of the this sequence. For example ACGT becomes TGCA
+   *
+   * @return Reverse sequence. The returned sequence is NOT a complement of
+   *         the original sequence.
+   */
+  def reverse : ACGTSeq = {
+    val b = new ACGTSeqBuilder(numBases)
+    for(i <- 0L until numBases)
+      b += apply(numBases - i - 1)
+    b.result
+  }
+
+
+  /**
    * Take the complement (not reversed) of this sequence
    * @return
    */
-  def complement : ACGTSeq = {
+  def complement: ACGTSeq = {
     val c = for (b <- seq) yield ~b
     new ACGTSeq(c, numBases)
   }
+
+  def reverseComplement : ACGTSeq = {
+    val b = new ACGTSeqBuilder(numBases)
+    for(i <- 0L until numBases)
+      b += apply(numBases - i - 1)
+    val r = b.rawArray
+    for(i <- 0 until seq.length) {
+      r(i) = ~r(i)
+    }
+    new ACGTSeq(r, numBases)
+  }
+
 
   private def fastCount(v: Long, base: DNA): Long = {
     var r = ~0L
@@ -392,6 +417,8 @@ class ACGTSeqBuilder(private var capacity: Long)
     seq(pos) &= ~(0x3L << shift)
     seq(pos) |= (base.code & 0x03) << shift
   }
+
+  def rawArray = seq
 
   def result : ACGTSeq = toACGTSeq
 

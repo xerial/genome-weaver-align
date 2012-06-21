@@ -28,8 +28,7 @@ package xerial.silk.glens
  *
  * @author leo
  */
-trait DNASeq[+Repr <: DNASeq[Repr]]
-  extends CharSequence
+trait DNASeq[+Repr <: DNASeq[Repr]] extends CharSequence
 {
   def apply(index:Long) : DNA
   def slice(start:Long, end:Long) : Repr
@@ -78,7 +77,7 @@ trait DNASeq[+Repr <: DNASeq[Repr]]
     numBases.toInt
   }
 
-  def subSequence(start:Int, end:Int) = slice(start, end)
+  def subSequence(start:Int, end:Int) : Repr = slice(start, end)
 
   private def longToIntCheck {
     if (numBases >= Integer.MAX_VALUE)
@@ -90,7 +89,7 @@ trait DNASeq[+Repr <: DNASeq[Repr]]
 trait DNASeqLike
 
 
-trait DNASeqOps[+Repr]  { this : DNASeq[Repr] =>
+trait DNASeqOps[+Repr <: DNASeq[Repr]]  { this : DNASeq[Repr] =>
 
   def foreach[U](f:DNA => U) : Unit = {
     for(i <- 0L until numBases)
@@ -100,15 +99,10 @@ trait DNASeqOps[+Repr]  { this : DNASeq[Repr] =>
 
   /**
    * Take the complement (not reversed) of this sequence
-   * @param bf
-   * @tparam B
    * @return
    */
-  def complement[B](implicit bf:CanBuildSeq[Repr, B]) : B = {
-    val b = bf()
-    foreach(base => b += base)
-    b.result
-  }
+  def complement : Repr
+
 
   /**
    * Create a reverse string of the this sequence. For example ACGT becomes TGCA
@@ -116,29 +110,13 @@ trait DNASeqOps[+Repr]  { this : DNASeq[Repr] =>
    * @return Reverse sequence. The returned sequence is NOT a complement of
    *         the original sequence.
    */
-  def reverse[B](implicit bf:CanBuildSeq[Repr, B]) : B = {
-    val b = bf()
-    var i = 0L
-    while (i < numBases) {
-      b += apply(numBases - i - 1)
-      i += 1
-    }
-    b.result
-  }
+  def reverse : Repr
 
   /**
    * Reverse complement of this sequence.
    * @return
    */
-  def reverseComplement[B](implicit bf:CanBuildSeq[Repr, B]) : B = {
-    val b = bf()
-    var i = 0L
-    while (i < numBases) {
-      b += apply(numBases - i - 1).complement
-      i += 1
-    }
-    b.result
-  }
+  def reverseComplement : Repr
 
 }
 
@@ -154,22 +132,13 @@ trait DNASeqBuilder[Repr] {
 
 }
 
-trait CanBuildSeq[+From, +To] {
-  /**
-   *  Creates a new builder on request of a collection.
-   *  @param from  the collection requesting the builder to be created.
-   *  @return a builder for collections of type `To` with element type `Elem`.
-   *          The collections framework usually arranges things so
-   *          that the created builder will build the same kind of collection
-   *          as `from`.
-   */
-  def apply(from: From): DNASeqBuilder[To]
+trait CanBuildSeq[Repr] {
 
   /** Creates a new builder from scratch.
    *
    *  @return a builder for collections of type `To` with element type `Elem`.
    *  @see scala.collection.breakOut
    */
-  def apply(): DNASeqBuilder[To]
+  def apply(): DNASeqBuilder[Repr]
 
 }
