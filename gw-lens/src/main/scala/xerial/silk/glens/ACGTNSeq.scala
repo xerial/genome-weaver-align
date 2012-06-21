@@ -35,6 +35,29 @@ trait DNA3bitEncoding {
 
   protected def numFilledBlocks(numBases: Long) = (numBases / 64L * 3L).toInt
 
+  protected def lookupBase(seq:Array[Long], index:Long) : DNA = {
+    val pos: Int = blockIndex(index)
+    val offset: Int = blockOffset(index)
+    val shift = 62 - ((index & 0x1FL) << 1).toInt
+
+    val nFlag: Long = seq(pos * 3) & (1L << (63 - offset))
+    val code: Int = (seq(pos * 3 + (offset >> 5) + 1) >>> shift).toInt & 0x03
+    if (nFlag == 0) DNA(code) else DNA.N
+  }
+
+  protected def updateBase(seq:Array[Long], index:Long, base:DNA)  {
+    val pos = blockIndex(index)
+    val offset = blockOffset(index)
+    val shift = (offset & 0x1F) << 1
+
+    val code = base.code
+    seq(pos * 3) &= ~(1L << (63 - offset))
+    seq(pos * 3) |= ((code >>> 2) & 0x01L) << (63 - offset)
+    val bPos: Int = pos * 3 + (offset >> 5) + 1
+    seq(bPos) &= ~(0xC000000000000000L >>> shift)
+    seq(bPos) |= (code & 0x03L) << (62 - shift)
+  }
+
 }
 
 
@@ -127,15 +150,7 @@ class ACGTNSeq(private val seq: Array[Long], val numBases: Long)
   }
 
 
-  def apply(index: Long) = {
-    val pos: Int = blockIndex(index)
-    val offset: Int = blockOffset(index)
-    val shift = 62 - ((index & 0x1FL) << 1).toInt
-
-    val nFlag: Long = seq(pos * 3) & (1L << (63 - offset))
-    val code: Int = (seq(pos * 3 + (offset >> 5) + 1) >>> shift).toInt & 0x03
-    if (nFlag == 0) DNA(code) else DNA.N
-  }
+  def apply(index: Long) = lookupBase(seq, index)
 
   def slice(start: Long, end: Long) = {
     if (start > end)
@@ -396,29 +411,13 @@ class ACGTNSeqBuilder(private var capacity:Long)
 
     // |N0 ... N63|B0 B1 ....  B31|B32 B33 ... B63|
     sizeHint(index)
-
-    val pos = (index >> 6).toInt
-    val offset = (index & 0x3FL).toInt
-    val shift = (offset & 0x1F) << 1
-
-    val code = base.code
-
-    //if(pos * 3 >= seq.length)
-//      debug("index:%d, numBases:%d, capacity:%d, seq.length:%d", index, numBases, capacity, seq.length)
-
-    seq(pos * 3) &= ~(1L << (63 - offset))
-    seq(pos * 3) |= ((code >>> 2) & 0x01L) << (63 - offset)
-    val bPos: Int = pos * 3 + (offset >> 5) + 1
-    seq(bPos) &= ~(0xC000000000000000L >>> shift)
-    seq(bPos) |= (code & 0x03L) << (62 - shift)
+    updateBase(seq, index, base)
   }
 
-  def rawArray = seq.toArray
+  def rawArray = seq
 
-  def result = {
-    new ACGTNSeq(seq.toArray, _numBases)
+  def result = new ACGTNSeq(seq, _numBases)
 
-  }
 }
 
 
@@ -431,17 +430,7 @@ class ACGTNSeqBuffer(private val seq: Array[Long], override val numBases: Long)
   extends ACGTNSeq(seq, numBases) {
 
   def update(index: Long, base: DNA) {
-    hash = 0 // reset the hash
-    val pos = (index >> 6).toInt
-    val offset = (index & 0x3FL).toInt
-    val shift = (offset & 0x1F) << 1
-
-    val code = base.code
-    seq(pos * 3) &= ~(1L << (63 - offset))
-    seq(pos * 3) |= ((code >>> 2) & 0x01L) << (63 - offset)
-    val bPos: Int = pos * 3 + (offset >> 5) + 1
-    seq(bPos) &= ~(0xC000000000000000L >>> shift)
-    seq(bPos) |= (code & 0x03) << (62 - shift)
+    updateBase(seq, index, base)
   }
 
 }
