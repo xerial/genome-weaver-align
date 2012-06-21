@@ -28,7 +28,7 @@ class ACGTSeqTest extends SilkSpec {
     b.result
   }
 
-  "ACGTSeq" should {
+  "ACGTSeq (2-bit)" should {
 
     "construct instances from String" in {
       val seq = "AAACCGGTT"
@@ -120,7 +120,7 @@ class ACGTSeqTest extends SilkSpec {
 
   }
 
-  "ACGTSeqBuilder" should {
+  "ACGTSeqBuilder (2-bit)" should {
     "be capable to generate long DNA sequences" in {
       val seq = randomSeq(1000000)
       val b = ACGTSeq.newBuilder

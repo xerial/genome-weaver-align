@@ -30,7 +30,7 @@ trait DNA2bitEncoding {
   def blockIndex(basePos: Long): Int = (basePos >>> 5).toInt
 
 
-  def blockOffset(basePos: Long): Long = (basePos & 0x1FL) // This value must be Long to enable 64-bit shift using this value
+  def blockOffset(basePos: Long): Int = (basePos & 0x1FL).toInt
 
 }
 
@@ -132,7 +132,7 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
 
     val pos = blockIndex(index)
     val offset = blockOffset(index)
-    val shift = offset << 1L
+    val shift = offset << 1
 
     val code = (seq(pos) >>> shift) & 0x03
     DNA(code.toInt)
@@ -410,12 +410,11 @@ class ACGTSeqBuilder(private var capacity: Long)
   def update(index: Long, base: DNA): Unit = {
     val pos = blockIndex(index)
     val offset = blockOffset(index)
-    // Important: the shift length must be a Long value to enable 64bit-shift operations
-    val shift: Long = offset * 2L
+    val shift = offset * 2
 
     // reset the target base. 3bit code N(code:100) will be trimmed to A (00)
     seq(pos) &= ~(0x3L << shift)
-    seq(pos) |= (base.code & 0x03) << shift
+    seq(pos) |= (base.code & 0x03L) << shift
   }
 
   def rawArray = seq
