@@ -340,7 +340,7 @@ class ACGTNSeq(private val seq: Array[Long], val numBases: Long)
     v
   }
 
-  private def complement(c: Array[Long]) = {
+  private def complement(c: Array[Long]) : Array[Long] = {
     val numBlocks = seq.length / 3
     for (i <- 0 until numBlocks) {
       c(i * 3) = c(i * 3)
