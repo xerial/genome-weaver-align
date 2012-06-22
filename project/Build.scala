@@ -150,7 +150,7 @@ object GenomeWeaverBuild extends Build {
   lazy val silk = RootProject(file("silk"))
 
   lazy val gwLens = Project(
-    id = "gw-lens",
+    id = "lens",
     base = file("gw-lens"),
     settings = buildSettings
       ++ Seq(libraryDependencies +=
@@ -160,7 +160,7 @@ object GenomeWeaverBuild extends Build {
 
 
   lazy val gwAlign = Project(
-    id = "gw-align",
+    id = "align",
     base = file("gw-align"),
     settings = buildSettings
       ++ Seq(libraryDependencies ++= bootLib ++ testLib ++ coreLib)
