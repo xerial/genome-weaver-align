@@ -17,11 +17,49 @@ import java.util.zip.GZIPInputStream
 
 
 /**
- * FASTA file reader
+ * FASTA file reader.
+ *
+ * <h3>Usage</h3>
+ * <pre>
+ * <code>
+ * FASTA.read(randomFASTAReader) { stream =>
+ *   // reader for each chromosome
+ *   for(r : FASTAEntryReader <- stream) {
+ *      val name = r.name
+ *      val description = r.description
+ *      // read each sequence line
+ *      for(line <- r.lines)
+ *          ...
+ *   }
+ * </code>
+ * </pre>
+ *
+ * If you need to retrieve the entire sequence as a single String, use [[xerial.silk.glens.FASTAEntryReader#sequence]].
  *
  * @author leo
  */
 object FASTA extends Logger {
+
+
+
+  def create2bitIndex(fastaFile:String) = {
+    val index = Array.newBuilder[FASTAEntryIndex]
+    var offset = 0L
+    val b = ACGTSeq.newBuilder
+    read(fastaFile){ stream =>
+      for(r : FASTAEntryReader <- stream) {
+        val desc = r.description
+        val name = r.name
+        debug("loading %s", name)
+        for(line <- r.lines)
+          b += line
+        index += new FASTAEntryIndex(name, desc, offset, (b.numBases - offset).toInt)
+        offset = b.numBases
+      }
+    }
+    new FASTAIndex2bit(b.result, index.result)
+  }
+
 
   def extractSequenceNameFrom(descriptionLine: String) = {
     val trimmed = descriptionLine.substring(1).dropWhile(c => Character.isWhitespace(c))
@@ -103,9 +141,10 @@ object FASTA extends Logger {
     def close = in.close
   }
 
+  // 4MB
   val DEFAULT_BUFFER_SIZE = 4 * 1024 * 1024
 
-  // 4MB
+
 
   private[glens] class TarFileLineReader(in: InputStream, bufferSize: Int = DEFAULT_BUFFER_SIZE) extends LineReader {
     private val tarIn = new TarArchiveInputStream(in)
@@ -250,7 +289,7 @@ object FASTA extends Logger {
 
 
 /**
- * Reader of each FASTA entry
+ * Reader of each FASTA entry. Note that [[xerial.silk.glens.FASTAEntryReader#lines]] is evaluated lazily.
  * @param description
  * @param ss
  */
@@ -270,7 +309,7 @@ class FASTAEntryReader(val description: String, private val ss: FASTA.SequenceSt
   val lines: Stream[String] = ss.toStream
 
   /**
-   * Extract the entire sequence. This result can be large. If you want to process genome sequences line by line, use [[lines]] method.
+   * Extract the entire sequence. This result can be large. If you want to process genome sequences line by line, use [[xerial.silk.glens.FASTAEntryReader#lines]] method.
    */
   lazy val sequence: String = {
     if (!ss.isValidStream)
@@ -283,3 +322,5 @@ class FASTAEntryReader(val description: String, private val ss: FASTA.SequenceSt
     b.result
   }
 }
+
+

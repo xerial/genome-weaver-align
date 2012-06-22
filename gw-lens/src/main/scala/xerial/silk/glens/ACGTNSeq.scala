@@ -98,6 +98,8 @@ class ACGTNSeq(private val seq: Array[Long], val numBases: Long)
   with DNASeqOps[ACGTNSeq]
   with DNA3bitEncoding {
 
+  def domain = DNA.values
+
   protected var hash: Int = 0
 
   override def hashCode = {

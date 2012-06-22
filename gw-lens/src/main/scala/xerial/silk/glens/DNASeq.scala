@@ -30,6 +30,8 @@ package xerial.silk.glens
  */
 trait DNASeq[+Repr <: DNASeq[Repr]] extends CharSequence
 {
+  def domain : Array[DNA]
+
   def apply(index:Long) : DNA
   def slice(start:Long, end:Long) : Repr
 

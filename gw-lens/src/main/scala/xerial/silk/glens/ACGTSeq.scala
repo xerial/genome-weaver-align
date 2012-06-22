@@ -59,9 +59,6 @@ object ACGTSeq {
     b.toACGTSeq
   }
 
-
-
-
   //  public static ACGTSeq loadFrom(File f) throws IOException {
   //    DataInputStream d = new DataInputStream(new BufferedInputStream(new FileInputStream(f), 4 * 1024 * 1024));
   //    try {
@@ -120,6 +117,8 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
   with CharSequence {
 
   private var hash: Int = 0
+
+  def domain = DNA.exceptN
 
   /**
    * Return the DNA base at the specified index
