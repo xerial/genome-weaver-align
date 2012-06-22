@@ -41,24 +41,27 @@ import java.util.zip.GZIPInputStream
 object FASTA extends Logger {
 
 
-
-  def create2bitIndex(fastaFile:String) = {
+  private def create2bitIndexFrom(stream:Stream[FASTAEntryReader]) : FASTAIndex2bit = {
     val index = Array.newBuilder[FASTAEntryIndex]
     var offset = 0L
     val b = ACGTSeq.newBuilder
-    read(fastaFile){ stream =>
-      for(r : FASTAEntryReader <- stream) {
-        val desc = r.description
-        val name = r.name
-        debug("loading %s", name)
-        for(line <- r.lines)
-          b += line
-        index += new FASTAEntryIndex(name, desc, offset, (b.numBases - offset).toInt)
-        offset = b.numBases
+    for(r : FASTAEntryReader <- stream) {
+      val desc = r.description
+      val name = r.name
+      debug("loading %s", name)
+      for(line <- r.lines) {
+        b += line
       }
+      // TODO preserve bit vector of Ns
+      index += new FASTAEntryIndex(name, desc, offset, (b.numBases - offset).toInt)
+      offset = b.numBases
     }
     new FASTAIndex2bit(b.result, index.result)
   }
+
+  def create2bitIndexFrom(fastaFile:String) : FASTAIndex2bit = read(fastaFile)(create2bitIndexFrom)
+  def create2bitIndexFromTarGZ(in:InputStream) = readTarGZ(in)(create2bitIndexFrom)
+  def create2bitIndexFromTarGZ(in:Reader) = read(in)(create2bitIndexFrom)
 
 
   def extractSequenceNameFrom(descriptionLine: String) = {

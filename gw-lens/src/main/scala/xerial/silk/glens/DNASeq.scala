@@ -23,20 +23,18 @@ package xerial.silk.glens
 //
 //--------------------------------------
 
+trait DNA2bit
+trait DNA3bit
+
 /**
  * A base trait for classes representing DNA sequences
  *
  * @author leo
  */
-trait DNASeq[+Repr <: DNASeq[Repr]] extends CharSequence
-{
+trait DNASeq[+A] {
   def domain : Array[DNA]
-
   def apply(index:Long) : DNA
-  def slice(start:Long, end:Long) : Repr
-
   def numBases : Long
-
 
   /**
    * Return string representation of this sequence
@@ -54,7 +52,6 @@ trait DNASeq[+Repr <: DNASeq[Repr]] extends CharSequence
 
   override def toString = toACGTString
 
-
   def count(base:DNA, start:Long, end:Long) : Long
   /**
    * Count the number of occurrences of A, C, G and T letters within [start, end) at the same time.
@@ -65,39 +62,22 @@ trait DNASeq[+Repr <: DNASeq[Repr]] extends CharSequence
    */
   def count(start:Long, end:Long) : Array[Long]
 
-  def charAt(index:Int) : Char = {
-    longToIntCheck
-    apply(index).toChar
-  }
-
-  /**
-   * length of this sequence
-   * @return
-   */
-  def length : Int = {
-    longToIntCheck
-    numBases.toInt
-  }
-
-  def subSequence(start:Int, end:Int) : Repr = slice(start, end)
-
-  private def longToIntCheck {
-    if (numBases >= Integer.MAX_VALUE)
-      sys.error("this method cannot be used when the sequence is larger than 2GB")
-  }
-
-}
-
-trait DNASeqLike
-
-
-trait DNASeqOps[+Repr <: DNASeq[Repr]]  { this : DNASeq[Repr] =>
 
   def foreach[U](f:DNA => U) : Unit = {
     for(i <- 0L until numBases)
       f(apply(i))
   }
+}
 
+/**
+ * A base trait for classes representing DNA sequences
+ *
+ * @author leo
+ */
+trait DNASeqOps[+A, +Repr <: DNASeq[A] with DNASeqOps[A, Repr]] extends CharSequence
+{ this : DNASeq[A] =>
+
+  def slice(start:Long, end:Long) : Repr
 
   /**
    * Take the complement (not reversed) of this sequence
@@ -119,6 +99,29 @@ trait DNASeqOps[+Repr <: DNASeq[Repr]]  { this : DNASeq[Repr] =>
    * @return
    */
   def reverseComplement : Repr
+
+
+  def subSequence(start:Int, end:Int) : Repr = slice(start, end)
+
+  private def longToIntCheck {
+    if (numBases >= Integer.MAX_VALUE)
+      sys.error("this method cannot be used when the sequence is larger than 2GB")
+  }
+
+
+  def charAt(index:Int) : Char = {
+    longToIntCheck
+    apply(index).toChar
+  }
+
+  /**
+   * length of this sequence
+   * @return
+   */
+  def length : Int = {
+    longToIntCheck
+    numBases.toInt
+  }
 
 }
 

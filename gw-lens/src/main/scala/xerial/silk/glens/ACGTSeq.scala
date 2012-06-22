@@ -111,8 +111,8 @@ object ACGTSeq {
  * @param numBases
  */
 class ACGTSeq(private val seq: Array[Long], val numBases: Long)
-  extends DNASeq[ACGTSeq]
-  with DNASeqOps[ACGTSeq]
+  extends DNASeq[DNA2bit]
+  with DNASeqOps[DNA2bit, ACGTSeq]
   with DNA2bitEncoding
   with CharSequence {
 

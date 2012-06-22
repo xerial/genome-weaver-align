@@ -72,6 +72,15 @@ class FASTATest extends SilkSpec {
     }
 
 
+    "create index" in {
+      val index =  FASTA.create2bitIndexFromTarGZ(tgzFasta)
+      val chrSet = index.sequenceNames.toSet
+      List("chr1", "chr2", "chr3").forall(chrSet.contains(_)) should be (true)
+
+      index("chr1")
+    }
+
+
   }
 
   def randomFASTA() =

@@ -94,8 +94,8 @@ object ACGTNSeq {
  * @author leo
  */
 class ACGTNSeq(private val seq: Array[Long], val numBases: Long)
-  extends DNASeq[ACGTNSeq]
-  with DNASeqOps[ACGTNSeq]
+  extends DNASeq[DNA3bit]
+  with DNASeqOps[DNA3bit, ACGTNSeq]
   with DNA3bitEncoding {
 
   def domain = DNA.values
