@@ -1,4 +1,9 @@
 
+# Genome Weaver - A Toolkit for Genome Sciences
+
+* align - FM-index based Aligner
+* lens	- Data format reader (FASTA,FASTQ,BED,WIG,GFF,SAM/BAM,etc.)
+
 ## Install
 ```
 $ make install
