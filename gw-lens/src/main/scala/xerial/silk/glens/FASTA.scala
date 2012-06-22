@@ -111,6 +111,20 @@ object FASTA extends Logger {
     private var _lineCount = 0
 
     private def getReader: Option[BufferedScanner] = {
+      def nextReader: Option[BufferedScanner] = {
+        val entry = tarIn.getNextTarEntry
+        if (entry == null)
+          None
+        else if (entry.isDirectory)
+          nextReader
+        else if (isFASTAFile(entry.getName)) {
+          fileReader = Some(new BufferedScanner(tarIn, bufferSize))
+          fileReader
+        }
+        else
+          nextReader
+      }
+
       fileReader.flatMap {
         reader =>
           if (reader.LA(1) == BufferedScanner.EOF) {
@@ -118,22 +132,7 @@ object FASTA extends Logger {
             fileReader = None
           }
           fileReader
-      }.orElse {
-        def nextReader: Option[BufferedScanner] = {
-          val entry = tarIn.getNextTarEntry
-          if (entry == null)
-            None
-          else if (entry.isDirectory)
-            nextReader
-          else if (isFASTAFile(entry.getName)) {
-            fileReader = Some(new BufferedScanner(tarIn, bufferSize))
-            fileReader
-          }
-          else
-            nextReader
-        }
-        nextReader
-      }
+      }.orElse(nextReader)
     }
 
     def nextLine: CharSequence = {
