@@ -9,8 +9,10 @@ package xerial.silk.glens
 
 import xerial.silk.util.SilkSpec
 import xerial.silk.util.io.TextDataProducer
-import java.io.PrintWriter
+import java.io.{StringReader, ByteArrayInputStream, PrintWriter}
 import util.Random
+
+
 
 /**
  * @author leo
@@ -31,27 +33,39 @@ class FASTATest extends SilkSpec {
     }
 
     "create random seq" in {
-      val f = randomFASTA
+      val f = randomFASTA.readAsString
       debug(f)
     }
 
+    "parse fasta files" in {
+      val f = randomFASTA.readAsString
+
+      FASTA.read(new StringReader(f)){
+        stream =>
+          for(r <- stream) {
+            debug(r.name)
+            debug(r.sequence)
+          }
+      }
+
+    }
+
+
   }
 
-  def randomFASTA() = {
-    val p = new TextDataProducer {
+  def randomFASTA() =
+    new TextDataProducer {
       def produce(out: PrintWriter) {
         val r = new Random(0)
         for (i <- 0 until 3) {
           out.println(">chr%d".format(r.nextInt(21) + 1))
-          for(w <- (0 until r.nextInt(1000)).sliding(80, 80)) {
+          for (w <- (0 until r.nextInt(1000)).sliding(80, 80)) {
             w.foreach(wi => out.print("ACGTN".charAt(r.nextInt(5))))
             out.println
           }
         }
       }
     }
-    p.lines.mkString("\n")
-  }
 
 
 }

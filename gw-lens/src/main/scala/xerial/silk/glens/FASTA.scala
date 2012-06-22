@@ -47,7 +47,7 @@ object FASTA extends Logger {
       }
     }
 
-    def isValidStream = !initialized && !finishedReading
+    def isValidStream = !finishedReading
 
     private[FASTA] def invalidate {
       while (!noMoreData)
@@ -197,6 +197,10 @@ object FASTA extends Logger {
     read(createLineReader(fileName))(f)
   }
 
+  def read[A](fastaData: Reader)(f: Stream[FASTASequenceReader] => A): A = {
+    val r = new StandardLineReader(new BufferedScanner(fastaData, 4 * 1024 * 1024))
+    read(r)(f)
+  }
 
   def read[A](fastaData: InputStream)(f: Stream[FASTASequenceReader] => A): A = {
     val r = new StandardLineReader(new BufferedScanner(fastaData, 4 * 1024 * 1024))
@@ -227,7 +231,6 @@ object FASTA extends Logger {
   }
 
 
-
 }
 
 
@@ -237,10 +240,11 @@ object FASTA extends Logger {
  * @param ss
  */
 class FASTASequenceReader(val description: String, private val ss: FASTA.SequenceStream) {
+  import FASTA._
   /**
    * name of the sequence
    */
-  lazy val name = FASTA.extractSequenceNameFrom(description)
+  lazy val name = extractSequenceNameFrom(description)
 
   /**
    * Stream for reading genome sequences line by line. This stream can be used only once.
