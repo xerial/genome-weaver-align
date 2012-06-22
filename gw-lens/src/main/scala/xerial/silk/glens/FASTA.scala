@@ -103,9 +103,11 @@ object FASTA extends Logger {
     def close = in.close
   }
 
-  val DEFAULT_BUFFER_SIZE = 4 * 1024 * 1024 // 4MB
+  val DEFAULT_BUFFER_SIZE = 4 * 1024 * 1024
 
-  private class TarFileLineReader(in: InputStream, bufferSize:Int = DEFAULT_BUFFER_SIZE) extends LineReader {
+  // 4MB
+
+  private[glens] class TarFileLineReader(in: InputStream, bufferSize: Int = DEFAULT_BUFFER_SIZE) extends LineReader {
     private val tarIn = new TarArchiveInputStream(in)
     private var fileReader: Option[BufferedScanner] = None
     private var _lineCount = 0
@@ -154,18 +156,18 @@ object FASTA extends Logger {
   }
 
 
-  private def createStream(reader: LineReader): Stream[FASTASequenceReader] = {
+  private def createStream(reader: LineReader): Stream[FASTAEntryReader] = {
 
-    def loop(prevStream: Option[SequenceStream]): Stream[FASTASequenceReader] = {
+    def loop(prevStream: Option[SequenceStream]): Stream[FASTAEntryReader] = {
       prevStream.foreach(_.invalidate)
-      def createStream: Stream[FASTASequenceReader] = {
+      def createStream: Stream[FASTAEntryReader] = {
         val next = reader.LA1
         next match {
-          case BufferedScanner.EOF => Stream.empty[FASTASequenceReader]
+          case BufferedScanner.EOF => Stream.empty[FASTAEntryReader]
           case '>' => {
             // Start of the description line
             val ss = new SequenceStream(reader)
-            val fr = new FASTASequenceReader(reader.nextLine.toString, ss)
+            val fr = new FASTAEntryReader(reader.nextLine.toString, ss)
             fr #:: loop(Some(ss))
           }
           case '#' => {
@@ -187,27 +189,40 @@ object FASTA extends Logger {
 
 
   /**
-   * Open and read the fasta sequences from file.
+   * Open and read the fasta sequences from file. This method supports plain fasta (.fasta, .fa, .fs) and compressed (.tar.gz, .gz) files.
+   *
    * The stream passed to the function f is not thread-safe because the stream is dynamically created by reading the file from head to tail.
    *
    * @param fileName
    * @return
    */
-  def read[A](fileName: String)(f: Stream[FASTASequenceReader] => A): A = {
-    read(createLineReader(fileName))(f)
+  def read[A](fileName: String)(f: Stream[FASTAEntryReader] => A): A = read(fileName, DEFAULT_BUFFER_SIZE)(f)
+  def read[A](fileName: String, bufferSize: Int)(f: Stream[FASTAEntryReader] => A): A = {
+    read(createLineReader(fileName, bufferSize))(f)
   }
 
-  def read[A](fastaData: Reader)(f: Stream[FASTASequenceReader] => A): A = {
+  def read[A](fastaData: Reader)(f: Stream[FASTAEntryReader] => A): A = read(fastaData, DEFAULT_BUFFER_SIZE)(f)
+  def read[A](fastaData: Reader, bufferSize: Int)(f: Stream[FASTAEntryReader] => A): A = {
+    val r = new StandardLineReader(new BufferedScanner(fastaData, bufferSize))
+    read(r)(f)
+  }
+
+
+  def read[A](fastaData: InputStream)(f: Stream[FASTAEntryReader] => A): A = read(fastaData, DEFAULT_BUFFER_SIZE)(f)
+  def read[A](fastaData: InputStream, bufferSize: Int)(f: Stream[FASTAEntryReader] => A): A = {
     val r = new StandardLineReader(new BufferedScanner(fastaData, 4 * 1024 * 1024))
     read(r)(f)
   }
 
-  def read[A](fastaData: InputStream)(f: Stream[FASTASequenceReader] => A): A = {
-    val r = new StandardLineReader(new BufferedScanner(fastaData, 4 * 1024 * 1024))
+
+
+  def readTarGZ[A](fastaTGZData: InputStream)(f: Stream[FASTAEntryReader] => A): A = readTarGZ(fastaTGZData, DEFAULT_BUFFER_SIZE)(f)
+  def readTarGZ[A](fastaTGZData: InputStream, bufferSize: Int)(f: Stream[FASTAEntryReader] => A): A = {
+    val r = new TarFileLineReader(new BufferedInputStream(new GZIPInputStream(fastaTGZData), bufferSize), bufferSize)
     read(r)(f)
   }
 
-  private def read[A](lineReader: LineReader)(f: Stream[FASTASequenceReader] => A): A = {
+  private[glens] def read[A](lineReader: LineReader)(f: Stream[FASTAEntryReader] => A): A = {
     val stream = createStream(lineReader)
     try {
       f(stream)
@@ -221,7 +236,7 @@ object FASTA extends Logger {
 
   private def hasExt(fileName: String, extList: String*) = extList.exists(fileName.endsWith(_))
 
-  private def createLineReader(fileName: String, bufferSize:Int = DEFAULT_BUFFER_SIZE): LineReader = {
+  private def createLineReader(fileName: String, bufferSize: Int = DEFAULT_BUFFER_SIZE): LineReader = {
     if (hasExt(fileName, ".tgz", ".tar.gz"))
       new TarFileLineReader(new BufferedInputStream(new GZIPInputStream(new FileInputStream(fileName)), bufferSize), bufferSize)
     else if (hasExt(fileName, ".tar"))
@@ -239,27 +254,30 @@ object FASTA extends Logger {
  * @param description
  * @param ss
  */
-class FASTASequenceReader(val description: String, private val ss: FASTA.SequenceStream) {
+class FASTAEntryReader(val description: String, private val ss: FASTA.SequenceStream) {
+
   import FASTA._
+
   /**
    * name of the sequence
    */
-  lazy val name = extractSequenceNameFrom(description)
+  val name = extractSequenceNameFrom(description)
 
   /**
-   * Stream for reading genome sequences line by line. This stream can be used only once.
+   * Get a stream for reading the genome sequence line by line.
+   * This stream can be used only once.
    */
-  val stream: Stream[String] = ss.toStream
+  val lines: Stream[String] = ss.toStream
 
   /**
-   * Create the String representation of the sequence
+   * Extract the entire sequence. This result can be large. If you want to process genome sequences line by line, use [[lines]] method.
    */
   lazy val sequence: String = {
     if (!ss.isValidStream)
       sys.error("This sequence was already read somewhere else")
 
     val b = new StringBuilder
-    for (line <- stream) {
+    for (line <- lines) {
       b.append(line.trim)
     }
     b.result

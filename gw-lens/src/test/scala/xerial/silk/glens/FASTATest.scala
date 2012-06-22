@@ -9,9 +9,9 @@ package xerial.silk.glens
 
 import xerial.silk.util.SilkSpec
 import xerial.silk.util.io.TextDataProducer
-import java.io.{StringReader, ByteArrayInputStream, PrintWriter}
+import java.io.{StringReader, PrintWriter}
 import util.Random
-
+import org.xerial.util.FileResource
 
 
 /**
@@ -32,22 +32,43 @@ class FASTATest extends SilkSpec {
 
     }
 
-    "create random seq" in {
-      val f = randomFASTA.readAsString
-      debug(f)
-    }
+    def randomFASTAReader = new StringReader(randomFASTA.readAsString)
+
 
     "parse fasta files" in {
-      val f = randomFASTA.readAsString
-
-      FASTA.read(new StringReader(f)){
+      FASTA.read(randomFASTAReader) {
         stream =>
-          for(r <- stream) {
+          for(r : FASTAEntryReader <- stream) {
             debug(r.name)
-            debug(r.sequence)
+            for(line <- r.lines) {
+              debug(line)
+            }
           }
       }
+    }
 
+    def tgzFasta = FileResource.openByteStream(this.getClass, "sample-archive.fa.tar.gz")
+
+
+    "parse tar.gz files" in {
+      tgzFasta should not be (null)
+      FASTA.readTarGZ(tgzFasta) { stream =>
+        for(r : FASTAEntryReader <- stream) {
+          debug(r.name)
+          for(line <- r.lines)
+            debug(line)
+        }
+      }
+    }
+
+
+    "parse only the last chr" in {
+      FASTA.readTarGZ(tgzFasta) { stream =>
+        for(r : FASTAEntryReader <- stream; if r.name == "chr3") {
+          debug(r.name)
+          debug(r.sequence)
+        }
+      }
     }
 
 
