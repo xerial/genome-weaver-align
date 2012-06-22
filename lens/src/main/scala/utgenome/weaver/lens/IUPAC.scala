@@ -31,7 +31,7 @@ object IUPAC {
 
   val values = Array(Empty, A, C, G, T, M, R, W, S, Y, K, V, H, D, B, N)
 
-  private[glens] val bitFlagToIUPACTable = {
+  private[lens] val bitFlagToIUPACTable = {
     val table = new Array[IUPAC](values.length)
     for(each <- values) {
       table(each.bitFlag & 0x0F) = each
@@ -39,11 +39,11 @@ object IUPAC {
     table
   }
 
-  private[glens] lazy val symbolTable = {
+  private[lens] lazy val symbolTable = {
     values.map(each => each.symbol -> each).toMap
   }
 
-  private[glens] val complementTable = Array[IUPAC](Empty, T, G, K, C, Y, S, B, A, W,
+  private[lens] val complementTable = Array[IUPAC](Empty, T, G, K, C, Y, S, B, A, W,
     R, D, M, H, V, N)
 
 

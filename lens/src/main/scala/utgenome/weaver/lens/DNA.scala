@@ -36,7 +36,7 @@ object DNA {
   object T extends DNA("T", 0x03, 1<<3)
   object N extends DNA("N", 0x04, 0x0F)
 
-  private[glens] val charToACGTCodeTable : Array[Byte] = Array[Byte](4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+  private[lens] val charToACGTCodeTable : Array[Byte] = Array[Byte](4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
     4, 4, 4, 4, 4, 4, 4, 4, 0, 4, 1, 4, 4, 4, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 4, 4, 4, 4, 4, 4, 4,
     4, 4, 4, 4, 0, 4, 1, 4, 4, 4, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
@@ -45,8 +45,8 @@ object DNA {
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 )
   
-  private[glens] val codeTable = Array(A, C, G, T, N, N, N, N)
-  private[glens] val charTable = Array[Char]('A', 'C', 'G', 'T', 'N' )
+  private[lens] val codeTable = Array(A, C, G, T, N, N, N, N)
+  private[lens] val charTable = Array[Char]('A', 'C', 'G', 'T', 'N' )
 
   val exceptN = Array(A, C, G, T)
   val values = Array(A, C, G, T, N)

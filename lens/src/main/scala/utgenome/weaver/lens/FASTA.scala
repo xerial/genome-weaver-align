@@ -73,7 +73,7 @@ object FASTA extends Logger {
    * Reading
    * @param in
    */
-  private[glens] class SequenceStream(in: LineReader) {
+  private[lens] class SequenceStream(in: LineReader) {
     private var finishedReading = false
     private var initialized = false
 
@@ -149,7 +149,7 @@ object FASTA extends Logger {
 
 
 
-  private[glens] class TarFileLineReader(in: InputStream, bufferSize: Int = DEFAULT_BUFFER_SIZE) extends LineReader {
+  private[lens] class TarFileLineReader(in: InputStream, bufferSize: Int = DEFAULT_BUFFER_SIZE) extends LineReader {
     private val tarIn = new TarArchiveInputStream(in)
     private var fileReader: Option[BufferedScanner] = None
     private var _lineCount = 0
@@ -264,7 +264,7 @@ object FASTA extends Logger {
     read(r)(f)
   }
 
-  private[glens] def read[A](lineReader: LineReader)(f: Stream[FASTAEntryReader] => A): A = {
+  private[lens] def read[A](lineReader: LineReader)(f: Stream[FASTAEntryReader] => A): A = {
     val stream = createStream(lineReader)
     try {
       f(stream)
