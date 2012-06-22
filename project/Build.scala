@@ -151,7 +151,7 @@ object GenomeWeaverBuild extends Build {
 
   lazy val gwLens = Project(
     id = "lens",
-    base = file("gw-lens"),
+    base = file("lens"),
     settings = buildSettings
       ++ Seq(libraryDependencies +=
       "org.apache.commons" % "commons-compress" % "1.4.1"
@@ -161,7 +161,7 @@ object GenomeWeaverBuild extends Build {
 
   lazy val gwAlign = Project(
     id = "align",
-    base = file("gw-align"),
+    base = file("align"),
     settings = buildSettings
       ++ Seq(libraryDependencies ++= bootLib ++ testLib ++ coreLib)
   ) dependsOn (gwLens % dependentScope)
