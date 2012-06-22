@@ -29,7 +29,7 @@ package xerial.silk.glens
  *
  * @author leo
  */
-trait DNASeq[+A] {
+trait DNASeq {
   def domain : Array[DNA]
   def apply(index:Long) : DNA
   def numBases : Long
@@ -72,8 +72,8 @@ trait DNASeq[+A] {
  *
  * @author leo
  */
-trait DNASeqOps[+A, +Repr <: DNASeq[A] with DNASeqOps[A, Repr]] extends CharSequence
-{ this : DNASeq[A] =>
+trait DNASeqOps[Repr <: DNASeq with DNASeqOps[Repr]] extends CharSequence
+{ this : DNASeq =>
 
   def slice(start:Long, end:Long) : Repr
 

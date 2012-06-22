@@ -20,7 +20,7 @@ trait DNA2bit {
   // 2G (max of Java array size) * 8 (long byte size) * 8 (bit) / 2 (bit code) =  64G  (64G characters)
   val MAX_SIZE: Long = 2L * 1024L * 1024L * 1024L * 8L * 8L / 2L
 
-  def minArraySize(numBases: Long): Int = {
+  protected def minArraySize(numBases: Long): Int = {
     val bitSize: Long = numBases * 2L
     val blockBitSize: Long = 64L
     val arraySize: Long = (bitSize + blockBitSize - 1L) / blockBitSize
@@ -30,10 +30,9 @@ trait DNA2bit {
     arraySize.toInt
   }
 
-  def blockIndex(basePos: Long): Int = (basePos >>> 5).toInt
+  protected def blockIndex(basePos: Long): Int = (basePos >>> 5).toInt
 
-
-  def blockOffset(basePos: Long): Int = (basePos & 0x1FL).toInt
+  protected def blockOffset(basePos: Long): Int = (basePos & 0x1FL).toInt
 
 }
 
@@ -114,8 +113,8 @@ object ACGTSeq {
  * @param numBases
  */
 class ACGTSeq(private val seq: Array[Long], val numBases: Long)
-  extends DNASeq[DNA2bit]
-  with DNASeqOps[DNA2bit, ACGTSeq]
+  extends DNASeq
+  with DNASeqOps[ACGTSeq]
   with DNA2bit
   with CharSequence {
 
@@ -210,7 +209,7 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
   }
 
 
-  private def fastCount(v: Long, base: DNA): Long = {
+  protected def fastCount(v: Long, base: DNA): Long = {
     var r = ~0L
     r &= (if ((base.code & 0x02) == 0) ~v else v) >>> 1
     r &= (if ((base.code & 0x01) == 0) ~v else v)
@@ -380,7 +379,7 @@ class ACGTSeqBuilder(private var capacity: Long)
 
   def numBases = _numBases
 
-  protected[glens] def sizeHint(numBasesToStore: Long) {
+  def sizeHint(numBasesToStore: Long) {
     val arraySize = minArraySize(numBasesToStore)
     val newSeq = Arrays.copyOf(seq, arraySize)
     seq = newSeq
@@ -417,19 +416,14 @@ class ACGTSeqBuilder(private var capacity: Long)
     seq(pos) |= (base.code & 0x03L) << shift
   }
 
-  def rawArray = seq
+  lazy val rawArray = {
+    val size = minArraySize(_numBases)
+    if (seq.length == size) seq else Arrays.copyOf(seq, size)
+  }
 
   def result : ACGTSeq = toACGTSeq
 
-  def toACGTSeq: ACGTSeq = {
-    val size = minArraySize(_numBases)
-    val arr = if (seq.length == size) seq
-    else {
-      val newArr = Arrays.copyOf(seq, size)
-      newArr
-    }
-    new ACGTSeq(arr, _numBases)
-  }
+  def toACGTSeq: ACGTSeq = new ACGTSeq(rawArray, _numBases)
 
   override def toString = result.toString
 

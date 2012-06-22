@@ -12,9 +12,9 @@ package xerial.silk.glens
  *
  * @author leo
  */
-trait FASTAIndex[Repr] {
+trait FASTAIndex {
 
-  def apply(seqName:String) : Repr
+  def apply(seqName:String) : DNASeq
 
   /**
    * Extract the sub sequence of the specified range [start, end).
@@ -23,7 +23,7 @@ trait FASTAIndex[Repr] {
    * @param end 0-based index (exclusive)
    * @return
    */
-  def subSequence(seqName:String, start:Int, end:Int) : Repr
+  def subSequence(seqName:String, start:Int, end:Int) : DNASeq
 
   def sequenceLength(seqName:String) : Int
 
@@ -37,16 +37,22 @@ trait FASTAIndexLike {
   protected def index : Map[String, FASTAEntryIndex]
   def sequenceLength(seqName: String) = index.apply(seqName).length
   def sequenceNames = index.keys
+  def apply(seqName: String) : DNASeq
+  def subSequence(seqName: String, start: Int, end: Int) : DNASeq
 }
 
-
 class FASTAIndex2bit(seq:ACGTSeq, entry:Seq[FASTAEntryIndex])
-  extends FASTAIndex[DNASeq[DNA2bit]]
+  extends FASTAIndex
   with FASTAIndexLike {
 
   protected lazy val index = (entry.map(e => e.name -> e)).toMap[String, FASTAEntryIndex]
 
-  def apply(seqName: String) : DNASeq[DNA2bit] = new WrappedFASTASeq[DNA2bit, ACGTSeq](seq, index(seqName).offset, sequenceLength(seqName))
+  /**
+   * Retrieve a DNASeq of the given name
+   * @param seqName
+   * @return
+   */
+  def apply(seqName: String) = new WrappedFASTASeq[ACGTSeq](seq, index(seqName).offset, sequenceLength(seqName))
   /**
    * Extract the sub sequence of the specified range [start, end).
    * @param seqName sequence name. e.g., chromosome name
@@ -54,9 +60,9 @@ class FASTAIndex2bit(seq:ACGTSeq, entry:Seq[FASTAEntryIndex])
    * @param end 0-based index (exclusive)
    * @return
    */
-  def subSequence(seqName: String, start: Int, end: Int) : DNASeq[DNA2bit] = {
+  def subSequence(seqName: String, start: Int, end: Int) = {
     val globalIndex = index(seqName).offset + start
-    new WrappedFASTASeq[DNA2bit, ACGTSeq](seq, globalIndex, end - start)
+    new WrappedFASTASeq[ACGTSeq](seq, globalIndex, end - start)
   }
 }
 
@@ -66,9 +72,9 @@ class FASTAIndex2bit(seq:ACGTSeq, entry:Seq[FASTAEntryIndex])
  * @param offset
  * @param length
  */
-class WrappedFASTASeq[A, Repr <: DNASeq[A] with DNASeqOps[A, Repr]](seq:Repr, offset:Long, length:Long)
-  extends DNASeq[A]
-  with DNASeqOps[A, Repr] {
+class WrappedFASTASeq[Repr <: DNASeq with DNASeqOps[Repr]](seq:Repr, offset:Long, length:Long)
+  extends DNASeq
+  with DNASeqOps[Repr] {
 
   def domain = seq.domain
 

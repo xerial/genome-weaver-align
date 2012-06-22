@@ -8,6 +8,7 @@
 package xerial.silk.glens
 
 import java.util
+import util.Arrays
 import xerial.silk.util.Logger
 
 
@@ -97,8 +98,8 @@ object ACGTNSeq {
  * @author leo
  */
 class ACGTNSeq(private val seq: Array[Long], val numBases: Long)
-  extends DNASeq[DNA3bit]
-  with DNASeqOps[DNA3bit, ACGTNSeq]
+  extends DNASeq
+  with DNASeqOps[ACGTNSeq]
   with DNA3bit {
 
 
@@ -115,8 +116,8 @@ class ACGTNSeq(private val seq: Array[Long], val numBases: Long)
       }
       val offset = (numBases % 64L).toInt
       if (offset > 0) {
-        h += (seq(pos) & (~0L << 64 - offset)) * 31L
-        h += (seq(pos + 1) & (if (offset < 32) ~0L << (32 - offset) * 2 else ~0L)) * 31L
+        h += (seq(pos) & (~0L << (64 - offset))) * 31L
+        h += (seq(pos + 1) & (if (offset < 32) ~0L << ((32 - offset) * 2) else ~0L)) * 31L
         h += (seq(pos + 2) & (if (offset < 32) 0L else ~0L << (64 - offset) * 2)) * 31L
       }
       hash = h.toInt
@@ -384,7 +385,6 @@ class ACGTNSeq(private val seq: Array[Long], val numBases: Long)
 class ACGTNSeqBuilder(private var capacity:Long)
   extends DNASeqBuilder[ACGTNSeq]
   with DNA3bit
-  with Logger
 {
 
   def this() = this(10L)
@@ -418,9 +418,12 @@ class ACGTNSeqBuilder(private var capacity:Long)
     updateBase(seq, index, base)
   }
 
-  def rawArray = seq
+  lazy val rawArray = {
+    val size = minArraySize(_numBases)
+    if (seq.length == size) seq else Arrays.copyOf(seq, size)
+  }
 
-  def result = new ACGTNSeq(seq, _numBases)
+  def result = new ACGTNSeq(rawArray, _numBases)
 
 }
 
