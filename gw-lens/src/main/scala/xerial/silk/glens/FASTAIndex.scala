@@ -14,7 +14,7 @@ package xerial.silk.glens
  */
 trait FASTAIndex {
 
-  def apply(seqName:String) : DNASeq
+  def apply(seqName: String): DNASeq
 
   /**
    * Extract the sub sequence of the specified range [start, end).
@@ -23,36 +23,34 @@ trait FASTAIndex {
    * @param end 0-based index (exclusive)
    * @return
    */
-  def subSequence(seqName:String, start:Int, end:Int) : DNASeq
+  def subSequence(seqName: String, start: Int, end: Int): DNASeq
 
-  def sequenceLength(seqName:String) : Int
+  def sequenceLength(seqName: String): Int
 
-  def sequenceNames : Iterable[String]
+  def sequenceNames: Iterable[String]
 }
 
 
-class FASTAEntryIndex(val name:String, val description:String, val offset:Long, val length:Int)
+class FASTAEntryIndex(val name: String, val description: String, val offset: Long, val length: Int)
 
-trait FASTAIndexLike {
-  protected def index : Map[String, FASTAEntryIndex]
+trait FASTAIndexLike[Repr <: DNASeq with DNASeqOps[Repr]] {
+
+  protected val seq : Repr
+  protected val entry : Seq[FASTAEntryIndex]
+
+  protected lazy val index: Map[String, FASTAEntryIndex] = (entry.map(e => e.name -> e)).toMap[String, FASTAEntryIndex]
+
   def sequenceLength(seqName: String) = index.apply(seqName).length
+
   def sequenceNames = index.keys
-  def apply(seqName: String) : DNASeq
-  def subSequence(seqName: String, start: Int, end: Int) : DNASeq
-}
-
-class FASTAIndex2bit(seq:ACGTSeq, entry:Seq[FASTAEntryIndex])
-  extends FASTAIndex
-  with FASTAIndexLike {
-
-  protected lazy val index = (entry.map(e => e.name -> e)).toMap[String, FASTAEntryIndex]
 
   /**
    * Retrieve a DNASeq of the given name
    * @param seqName
    * @return
    */
-  def apply(seqName: String) = new WrappedFASTASeq[ACGTSeq](seq, index(seqName).offset, sequenceLength(seqName))
+  def apply(seqName: String): DNASeq = new WrappedFASTASeq[Repr](seq, index(seqName).offset, sequenceLength(seqName))
+
   /**
    * Extract the sub sequence of the specified range [start, end).
    * @param seqName sequence name. e.g., chromosome name
@@ -60,19 +58,33 @@ class FASTAIndex2bit(seq:ACGTSeq, entry:Seq[FASTAEntryIndex])
    * @param end 0-based index (exclusive)
    * @return
    */
-  def subSequence(seqName: String, start: Int, end: Int) = {
+  def subSequence(seqName: String, start: Int, end: Int): DNASeq = {
     val globalIndex = index(seqName).offset + start
-    new WrappedFASTASeq[ACGTSeq](seq, globalIndex, end - start)
+    new WrappedFASTASeq[Repr](seq, globalIndex, end - start)
   }
+}
+
+class FASTAIndex2bit(protected val seq: ACGTSeq, protected val entry: Seq[FASTAEntryIndex])
+  extends FASTAIndex
+  with FASTAIndexLike[ACGTSeq] {
+
+}
+
+class FASTAIndex3bit(protected val seq: ACGTNSeq, protected val entry: Seq[FASTAEntryIndex])
+  extends FASTAIndex
+  with FASTAIndexLike[ACGTNSeq] {
+
 }
 
 
 /**
+ * Wrapped DNASeq
+ *
  * @param seq
  * @param offset
  * @param length
  */
-class WrappedFASTASeq[Repr <: DNASeq with DNASeqOps[Repr]](seq:Repr, offset:Long, length:Long)
+class WrappedFASTASeq[Repr <: DNASeq with DNASeqOps[Repr]](seq: Repr, offset: Long, length: Long)
   extends DNASeq
   with DNASeqOps[Repr] {
 
@@ -80,11 +92,11 @@ class WrappedFASTASeq[Repr <: DNASeq with DNASeqOps[Repr]](seq:Repr, offset:Long
 
   def apply(index: Long) = seq(offset + index)
 
-  def slice(start: Long, end: Long) = seq.slice(offset+start, offset+end)
+  def slice(start: Long, end: Long) = seq.slice(offset + start, offset + end)
 
   def numBases = length
 
-  def count(base: DNA, start: Long, end: Long) = seq.count(base, offset+start, offset+end)
+  def count(base: DNA, start: Long, end: Long) = seq.count(base, offset + start, offset + end)
 
   /**
    * Count the number of occurrences of A, C, G and T letters within [start, end) at the same time.
@@ -93,13 +105,19 @@ class WrappedFASTASeq[Repr <: DNASeq with DNASeqOps[Repr]](seq:Repr, offset:Long
    * @param end
    * @return
    */
-  def count(start: Long, end: Long) = seq.count(offset+start, offset+end)
+  def count(start: Long, end: Long) = seq.count(offset + start, offset + end)
+
+  /**
+   * Create an materialized instance of this wrapped sequence
+   * @return
+   */
+  protected def materialize = seq.slice(offset, offset+length)
 
   /**
    * Take the complement (not reversed) of this sequence
    * @return
    */
-  def complement = seq.slice(offset, offset+length).complement
+  def complement = materialize.complement
 
   /**
    * Create a reverse string of the this sequence. For example ACGT becomes TGCA
@@ -107,11 +125,11 @@ class WrappedFASTASeq[Repr <: DNASeq with DNASeqOps[Repr]](seq:Repr, offset:Long
    * @return Reverse sequence. The returned sequence is NOT a complement of
    *         the original sequence.
    */
-  def reverse = seq.slice(offset, offset+length).reverse
+  def reverse = materialize.reverse
 
   /**
    * Reverse complement of this sequence.
    * @return
    */
-  def reverseComplement = seq.slice(offset, offset+length).reverseComplement
+  def reverseComplement = materialize.reverseComplement
 }

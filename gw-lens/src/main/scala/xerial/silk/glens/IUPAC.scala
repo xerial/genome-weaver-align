@@ -63,7 +63,10 @@ sealed abstract class IUPAC(val symbol:String, val variation:String, val bitFlag
 
   def complement : IUPAC = IUPAC.complementTable(bitFlag)
 
-  lazy val genoType : String = {
+  /**
+   * String representation of genotype (e.g., ACG for V)
+   */
+  lazy val genotype : String = {
     val genoType = new StringBuilder(4)
     def loop(index:Int) {
       val flag = 1 << index

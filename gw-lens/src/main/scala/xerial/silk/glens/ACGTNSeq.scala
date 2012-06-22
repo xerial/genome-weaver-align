@@ -78,8 +78,8 @@ object ACGTNSeq {
     b.result
   }
 
-  implicit def canBuildSeq : CanBuildSeq[ACGTNSeq] = {
-    new CanBuildSeq[ACGTNSeq] {
+  implicit def canBuildSeq : DNASeqBuilderFactory[ACGTNSeq] = {
+    new DNASeqBuilderFactory[ACGTNSeq] {
       def apply() = new ACGTNSeqBuilder()
     }
   }

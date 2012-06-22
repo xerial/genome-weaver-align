@@ -41,8 +41,8 @@ trait DNA2bit {
  */
 object ACGTSeq {
 
-  implicit def canBuildSeq : CanBuildSeq[ACGTSeq] = {
-    new CanBuildSeq[ACGTSeq] {
+  implicit def canBuildSeq : DNASeqBuilderFactory[ACGTSeq] = {
+    new DNASeqBuilderFactory[ACGTSeq] {
       def apply() = new ACGTSeqBuilder()
     }
   }

@@ -32,8 +32,6 @@ import xerial.silk.core.{InvalidFormat, ParseError}
 /**
  * @author leo
  */
-
-
 object FASTQRead {
 
   def parse(in:BufferedReader) : Option[FASTQRead] = {
@@ -45,10 +43,11 @@ object FASTQRead {
     if(name == null || seq == null || qual == null)
       None
 
-    if(name.length < 2)
+    if(name.length < 2) {
       throw new InvalidFormat("insufficient read name length: " + name)
-
-    Some(FASTQRead(name.substring(1), seq, qual))
+    }
+    else
+      Some(FASTQRead(name.substring(1), seq, qual))
   }
 }
 
@@ -83,6 +82,7 @@ object ReadIterator {
   }
 
 }
+
 //
 //class FASTQReader(in: Reader) extends ReadIterator {
 //
