@@ -138,13 +138,14 @@ object GenomeWeaverBuild extends Build {
   private val dependentScope = "test->test;compile->compile"
 
   import Dependencies._
+
   lazy val root = Project(
     id = "genome-weaver",
     base = file("."),
     settings = buildSettings ++ distSettings ++ Release.settings
       ++ Seq(packageDistTask)
       ++ Seq(libraryDependencies ++= bootLib ++ testLib ++ coreLib)
-  ) aggregate(silk, gwLens, gwAlign) dependsOn(silk)
+  ) aggregate(silk, gwLens, gwAlign) dependsOn (silk)
 
   lazy val silk = RootProject(file("silk"))
 
@@ -152,16 +153,18 @@ object GenomeWeaverBuild extends Build {
     id = "gw-lens",
     base = file("gw-lens"),
     settings = buildSettings
-  ) dependsOn(silk % dependentScope)
+      ++ Seq(libraryDependencies +=
+      "org.apache.commons" % "commons-compress" % "1.4.1"
+    )
+  ) dependsOn (silk % dependentScope)
 
 
   lazy val gwAlign = Project(
     id = "gw-align",
-     base = file("gw-align"),
+    base = file("gw-align"),
     settings = buildSettings
       ++ Seq(libraryDependencies ++= bootLib ++ testLib ++ coreLib)
-  ) dependsOn(gwLens % dependentScope)
-
+  ) dependsOn (gwLens % dependentScope)
 
 
   lazy val copyDependencies = TaskKey[Unit]("copy-dependencies")

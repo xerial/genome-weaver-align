@@ -10,6 +10,10 @@ package xerial.silk.glens
 import xerial.silk.util.io.{BufferedScanner, FileSource}
 import java.io._
 import scala.Some
+import annotation.tailrec
+import xerial.silk.util.Logger
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import java.util.zip.GZIPInputStream
 
 
 /**
@@ -17,7 +21,7 @@ import scala.Some
  *
  * @author leo
  */
-object FASTA {
+object FASTA extends Logger {
 
   def extractSequenceNameFrom(descriptionLine: String) = {
     val trimmed = descriptionLine.substring(1).dropWhile(c => Character.isWhitespace(c))
@@ -28,22 +32,26 @@ object FASTA {
    * Reading
    * @param in
    */
-  private[glens] class SequenceStream(in: BufferedScanner) {
+  private[glens] class SequenceStream(in: LineReader) {
     private var finishedReading = false
     private var initialized = false
 
     private def noMoreData: Boolean = {
-      val ch = in.LA(1)
-      if (!finishedReading && (ch == '>' || ch == BufferedScanner.EOF))
-        finishedReading = true
-      finishedReading
+      if (finishedReading)
+        true
+      else {
+        val ch = in.LA1
+        if (ch == '>' || ch == BufferedScanner.EOF)
+          finishedReading = true
+        finishedReading
+      }
     }
 
     def isValidStream = !initialized && !finishedReading
 
     private[FASTA] def invalidate {
       while (!noMoreData)
-        in.nextLine()
+        in.nextLine
     }
 
     def toStream: Stream[String] = {
@@ -59,28 +67,116 @@ object FASTA {
         if (noMoreData)
           Stream.empty[String]
         else
-          in.nextLine().toString #:: loop
+          in.nextLine.toString #:: loop
       loop
     }
   }
 
 
-  private def createStream(in: BufferedScanner): Stream[FASTASequenceReader] = {
+  trait LineReader extends Closeable {
+    def LA1: Int
+
+    def nextLine: CharSequence
+
+    def lineCount: Int
+
+    def close: Unit
+  }
+
+
+  /**
+   * Add a line counter to the BufferedScanner
+   * @param in
+   */
+  private class StandardLineReader(in: BufferedScanner) extends LineReader {
+    private var _lineCount = 0
+
+    def LA1 = in.LA(1)
+
+    def nextLine: CharSequence = {
+      _lineCount += 1
+      in.nextLine
+    }
+
+    def lineCount = _lineCount
+
+    def close = in.close
+  }
+
+  val DEFAULT_BUFFER_SIZE = 4 * 1024 * 1024 // 4MB
+
+  private class TarFileLineReader(in: InputStream, bufferSize:Int = DEFAULT_BUFFER_SIZE) extends LineReader {
+    private val tarIn = new TarArchiveInputStream(in)
+    private var fileReader: Option[BufferedScanner] = None
+    private var _lineCount = 0
+
+    private def getReader: Option[BufferedScanner] = {
+      fileReader.flatMap {
+        reader =>
+          if (reader.LA(1) == BufferedScanner.EOF) {
+            // End of the file
+            fileReader = None
+          }
+          fileReader
+      }.orElse {
+        def nextReader: Option[BufferedScanner] = {
+          val entry = tarIn.getNextTarEntry
+          if (entry == null)
+            None
+          else if (entry.isDirectory)
+            nextReader
+          else if (isFASTAFile(entry.getName)) {
+            fileReader = Some(new BufferedScanner(tarIn, bufferSize))
+            fileReader
+          }
+          else
+            nextReader
+        }
+        nextReader
+      }
+    }
+
+    def nextLine: CharSequence = {
+      getReader.map {
+        reader =>
+          _lineCount += 1
+          reader.nextLine()
+      }.getOrElse(null)
+    }
+
+    def LA1 = getReader.map(_.LA(1)).getOrElse(BufferedScanner.EOF)
+
+    def lineCount = _lineCount
+
+    def close {
+      tarIn.close
+      in.close
+    }
+  }
+
+
+  private def createStream(reader: LineReader): Stream[FASTASequenceReader] = {
+
     def loop(prevStream: Option[SequenceStream]): Stream[FASTASequenceReader] = {
       prevStream.foreach(_.invalidate)
       def createStream: Stream[FASTASequenceReader] = {
-        val next = in.LA(1)
+        val next = reader.LA1
         next match {
           case BufferedScanner.EOF => Stream.empty[FASTASequenceReader]
           case '>' => {
             // Start of the description line
-            val ss = new SequenceStream(in)
-            val s = new FASTASequenceReader(in.nextLine.toString, ss)
-            s #:: loop(Some(ss))
+            val ss = new SequenceStream(reader)
+            val fr = new FASTASequenceReader(reader.nextLine.toString, ss)
+            fr #:: loop(Some(ss))
           }
           case '#' => {
             // Skip the comment line
-            in.nextLine
+            reader.nextLine
+            createStream
+          }
+          case _ => {
+            val line = reader.nextLine
+            warn("invalid data at line %,d:\n", reader.lineCount, line)
             createStream
           }
         }
@@ -98,20 +194,39 @@ object FASTA {
    * @param fileName
    * @return
    */
-  def read[A](fileName: String)(f: Stream[FASTASequenceReader] => A): A =
-    read(new FileInputStream(fileName))(f)
+  def read[A](fileName: String)(f: Stream[FASTASequenceReader] => A): A = {
+    read(createLineReader(fileName))(f)
+  }
 
 
   def read[A](fastaData: InputStream)(f: Stream[FASTASequenceReader] => A): A = {
-    val scanner = new BufferedScanner(fastaData, 4 * 1024 * 1024)
-    val stream = createStream(scanner)
+    val r = new StandardLineReader(new BufferedScanner(fastaData, 4 * 1024 * 1024))
+    read(r)(f)
+  }
+
+  private def read[A](lineReader: LineReader)(f: Stream[FASTASequenceReader] => A): A = {
+    val stream = createStream(lineReader)
     try {
       f(stream)
     }
     finally {
-      scanner.close()
+      lineReader.close()
     }
   }
+
+  def isFASTAFile(fileName: String) = hasExt(fileName, ".fa", ".fasta", ".fs")
+
+  private def hasExt(fileName: String, extList: String*) = extList.exists(fileName.endsWith(_))
+
+  private def createLineReader(fileName: String, bufferSize:Int = DEFAULT_BUFFER_SIZE): LineReader = {
+    if (hasExt(fileName, ".tgz", ".tar.gz"))
+      new TarFileLineReader(new BufferedInputStream(new GZIPInputStream(new FileInputStream(fileName)), bufferSize), bufferSize)
+    else if (hasExt(fileName, ".tar"))
+      new TarFileLineReader(new BufferedInputStream(new FileInputStream(fileName), bufferSize), bufferSize)
+    else
+      new StandardLineReader(new BufferedScanner(new FileInputStream(fileName), bufferSize))
+  }
+
 
 
 }
