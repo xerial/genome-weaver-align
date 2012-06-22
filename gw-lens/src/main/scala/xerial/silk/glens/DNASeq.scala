@@ -23,8 +23,6 @@ package xerial.silk.glens
 //
 //--------------------------------------
 
-trait DNA2bit
-trait DNA3bit
 
 /**
  * A base trait for classes representing DNA sequences

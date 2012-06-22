@@ -13,7 +13,10 @@ import java.util.Arrays
  * Helper methods for managing 2bit encoding of DNA in an array of Long type
  * @author leo
  */
-trait DNA2bitEncoding {
+trait DNA2bit {
+
+  def domain = DNA.exceptN
+
   // 2G (max of Java array size) * 8 (long byte size) * 8 (bit) / 2 (bit code) =  64G  (64G characters)
   val MAX_SIZE: Long = 2L * 1024L * 1024L * 1024L * 8L * 8L / 2L
 
@@ -113,12 +116,10 @@ object ACGTSeq {
 class ACGTSeq(private val seq: Array[Long], val numBases: Long)
   extends DNASeq[DNA2bit]
   with DNASeqOps[DNA2bit, ACGTSeq]
-  with DNA2bitEncoding
+  with DNA2bit
   with CharSequence {
 
   private var hash: Int = 0
-
-  def domain = DNA.exceptN
 
   /**
    * Return the DNA base at the specified index
@@ -365,7 +366,7 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
  * @param capacity the hint of number of bases to store
  */
 class ACGTSeqBuilder(private var capacity: Long)
-  extends DNA2bitEncoding
+  extends DNA2bit
   with DNASeqBuilder[ACGTSeq]
 {
 

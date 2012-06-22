@@ -15,7 +15,10 @@ import xerial.silk.util.Logger
  * Helper methods for managing 2bit encoding of DNA in an array of Long type
  * @author leo
  */
-trait DNA3bitEncoding {
+trait DNA3bit {
+
+  def domain = DNA.values
+
   // 2G (max of Java array size) * 8 (long byte size) * 8 (bit) / 3 (bit code) =  42G  (64G characters)
   val MAX_SIZE: Long = 2L * 1024L * 1024L * 1024L * 8L * 8L / 3L
 
@@ -96,9 +99,8 @@ object ACGTNSeq {
 class ACGTNSeq(private val seq: Array[Long], val numBases: Long)
   extends DNASeq[DNA3bit]
   with DNASeqOps[DNA3bit, ACGTNSeq]
-  with DNA3bitEncoding {
+  with DNA3bit {
 
-  def domain = DNA.values
 
   protected var hash: Int = 0
 
@@ -381,7 +383,7 @@ class ACGTNSeq(private val seq: Array[Long], val numBases: Long)
 
 class ACGTNSeqBuilder(private var capacity:Long)
   extends DNASeqBuilder[ACGTNSeq]
-  with DNA3bitEncoding
+  with DNA3bit
   with Logger
 {
 
