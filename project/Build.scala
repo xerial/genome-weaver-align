@@ -26,6 +26,24 @@ object GenomeWeaverBuild extends Build {
 
   val SCALA_VERSION = "2.9.2"
 
+  def releaseResolver(v:String) : Resolver = {
+    val profile = System.getProperty("resolver.profile", "default")
+    profile match {
+      case "default" =>  {
+        val repoPath = "/home/web/maven.xerial.org/repository/" + (if (v.trim.endsWith("SNAPSHOT")) "snapshot" else "artifact")
+        Resolver.ssh("Xerial Repo", "www.xerial.org", repoPath) as(System.getProperty("user.name"), new File(Path.userHome.absolutePath, ".ssh/id_rsa")) withPermissions("0664")
+      }
+      case "sourceforge" => {
+        val repoPath = "/home/groups/x/xe/xerial/htdocs/maven/" + (if (v.trim.endsWith("SNAPSHOT")) "snapshot" else "release")
+        Resolver.ssh("Sourceforge Repo", "shell.sourceforge.jp", repoPath) as("xerial", new File(Path.userHome.absolutePath, ".ssh/id_dsa")) withPermissions("0664")
+      }
+      case p => {
+        error("unknown resolver.profile:%s".format(p))
+      }
+    }
+  }
+
+
   lazy val buildSettings = Defaults.defaultSettings ++ Seq[Setting[_]](
     organization := "org.utgenome.weaver",
     organizationName := "utgenome.org",
@@ -35,12 +53,7 @@ object GenomeWeaverBuild extends Build {
     scalaVersion := SCALA_VERSION,
     publishMavenStyle := true,
     publishArtifact in Test := false,
-    publishTo <<= version {
-      v: String =>
-        val repoPath = "/home/web/maven.xerial.org/repository/" + (if (v.trim.endsWith("SNAPSHOT")) "snapshot" else "artifact")
-        Some(Resolver.ssh("Xerial Repo", "www.xerial.org", repoPath)
-          as(System.getProperty("user.name"), new File(Path.userHome.absolutePath + "/.ssh/id_rsa")))
-    },
+    publishTo <<= version { (v) => Some(releaseResolver(v)) } ,
     otherResolvers := Seq(Resolver.file("localM2", file(Path.userHome.absolutePath + "/.m2/repository"))),
     publishLocalConfiguration <<= (packagedArtifacts, deliverLocal, checksums, ivyLoggingLevel) map {
       (arts, _, cs, level) => new PublishConfiguration(None, "localM2", arts, cs, level)
@@ -50,11 +63,13 @@ object GenomeWeaverBuild extends Build {
     },
     parallelExecution := true,
     crossPaths := false,
-    resolvers ++= Seq("Typesafe repository" at "http://repo.typesafe.com/typesafe/releases",
+    resolvers <++= version { (v) => Seq(
+      "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases",
       "UTGB Maven repository" at "http://maven.utgenome.org/repository/artifact/",
       "Xerial Maven repository" at "http://www.xerial.org/maven/repository/artifact",
-      "Local Maven repository" at "file://" + Path.userHome.absolutePath + "/.m2/repository"
-    ),
+      "Local Maven repository" at "file://" + Path.userHome.absolutePath + "/.m2/repository",
+      releaseResolver(v)
+    )},
     scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
     pomExtra := {
       <licenses>
