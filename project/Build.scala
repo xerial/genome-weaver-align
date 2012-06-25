@@ -27,8 +27,8 @@ object GenomeWeaverBuild extends Build {
   val SCALA_VERSION = "2.9.2"
 
   lazy val buildSettings = Defaults.defaultSettings ++ Seq[Setting[_]](
-    organization := "org.xerial",
-    organizationName := "Xerial Project",
+    organization := "org.utgenome.weaver",
+    organizationName := "utgenome.org",
     organizationHomepage := Some(new URL("http://xerial.org/")),
     version := "0.1-SNAPSHOT",
     description := "Genome Weaver: Toolkit for Genome Sciences",
