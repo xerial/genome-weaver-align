@@ -107,7 +107,7 @@ object ACGTSeq {
  * 2-bit encoded DNA Sequence of A, C, G and T. The maximum size this class can hold is
  * 2G (max of Java array size) * 8 (long byte size) * 8 (bit) / 2 (bit encoding) =  64G  (64G characters)
  *
- * To generate an instance of ACGTSeq, use {@link ACGTSeq$#newBuilder} or {@link ACGTSeq$#apply}.
+ * To generate an instance of ACGTSeq, use ACGTSeq.newBuilder or ACGTSeq.apply
  *
  * @param seq 2-bit repre
  * @param numBases
