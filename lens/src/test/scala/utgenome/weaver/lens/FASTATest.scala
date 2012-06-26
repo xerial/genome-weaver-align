@@ -12,7 +12,11 @@ import xerial.silk.util.io.TextDataProducer
 import java.io.{StringReader, PrintWriter}
 import util.Random
 import org.xerial.util.FileResource
+import org.scalatest.Tag
 
+
+object ParserTest extends Tag("parser")
+object ParserTest2 extends Tag("parser2")
 
 /**
  * @author leo
@@ -34,8 +38,7 @@ class FASTATest extends SilkSpec {
 
     def randomFASTAReader = new StringReader(randomFASTA.readAsString)
 
-
-    "parse fasta files" in {
+    "parse fasta files" taggedAs(ParserTest) in {
       FASTA.read(randomFASTAReader) {
         stream =>
           for(r : FASTAEntryReader <- stream) {
@@ -50,7 +53,7 @@ class FASTATest extends SilkSpec {
     def tgzFasta = FileResource.openByteStream(this.getClass, "sample-archive.fa.tar.gz")
 
 
-    "parse tar.gz files" in {
+    "parse tar.gz files"  taggedAs(ParserTest) in {
       tgzFasta should not be (null)
       FASTA.readTarGZ(tgzFasta) { stream =>
         for(r : FASTAEntryReader <- stream) {
@@ -62,7 +65,7 @@ class FASTATest extends SilkSpec {
     }
 
 
-    "parse only the last chr" in {
+    "parse only the last chr"  taggedAs(ParserTest) in {
       FASTA.readTarGZ(tgzFasta) { stream =>
         for(r : FASTAEntryReader <- stream; if r.name == "chr3") {
           debug(r.name)
@@ -72,7 +75,7 @@ class FASTATest extends SilkSpec {
     }
 
 
-    "create index" in {
+    "create index" taggedAs(ParserTest2) in {
       val index =  FASTA.create2bitIndexFromTarGZ(tgzFasta)
       val chrSet = index.sequenceNames.toSet
       List("chr1", "chr2", "chr3").forall(chrSet.contains(_)) should be (true)
