@@ -94,6 +94,15 @@ class BEDGene
     }
   }
 
+  lazy val introns : Array[GInterval] = {
+    val intronSeq = for(i <- 0 until exons.length-1) yield {
+      val prev = exons(0)
+      val next = exons(1)
+      new GInterval(prev.chr, prev.end, next.start, prev.strand)
+    }
+    intronSeq.toArray
+  }
+
   def firstExon: Option[GInterval] = {
     strand match {
       case Forward => exons.headOption
