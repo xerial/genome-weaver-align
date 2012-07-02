@@ -94,14 +94,17 @@ class BEDGene
     }
   }
 
-  lazy val introns : Array[GInterval] = {
-    val intronSeq = for(i <- 0 until exons.length-1) yield {
-      val prev = exons(i)
-      val next = exons(i+1)
+  private def extractIntrons(fragments:Array[GInterval]) : Array[GInterval] = {
+    val intronSeq = for(i <- 0 until fragments.length-1) yield {
+      val prev = fragments(i)
+      val next = fragments(i+1)
       new GInterval(prev.chr, prev.end, next.start, prev.strand)
     }
     intronSeq.toArray
   }
+
+  lazy val introns : Array[GInterval] = extractIntrons(exons)
+  lazy val cdsIntrons : Array[GInterval] = extractIntrons(cds)
 
   def firstExon: Option[GInterval] = {
     strand match {
