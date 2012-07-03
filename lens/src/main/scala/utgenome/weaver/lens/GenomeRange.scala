@@ -128,6 +128,16 @@ class Interval(val start: Int, val end: Int) extends IntervalOps[Interval] {
   def newRange(newStart: Int, newEnd: Int) = new Interval(newStart, newEnd)
 }
 
+object IntervalOrdering extends Ordering[Interval] {
+  def compare(x: Interval, y: Interval) = {
+    val diff = x.start - y.start
+    if(diff == 0)
+      x.end - y.end
+    else
+      diff
+  }
+}
+
 /**
  * An interval with chromosome name. This type of interval is frequently used in genome sciences
  * @param chr
@@ -138,6 +148,8 @@ class IntervalWithChr(val chr: String, val start: Int, val end: Int)
   extends IntervalOps[IntervalWithChr] with InChromosome {
   def newRange(newStart: Int, newEnd: Int) = new IntervalWithChr(chr, newStart, newEnd)
 }
+
+
 
 
 
