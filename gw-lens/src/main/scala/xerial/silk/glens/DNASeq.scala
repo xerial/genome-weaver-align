@@ -28,7 +28,7 @@ package xerial.silk.glens
  *
  * @author leo
  */
-trait DNASeq[+Repr <: DNASeq[Repr]]
+trait DNASeq[Repr <: DNASeq[Repr]]
   extends CharSequence
 {
   def apply(index:Long) : DNA
@@ -90,7 +90,7 @@ trait DNASeq[+Repr <: DNASeq[Repr]]
 trait DNASeqLike
 
 
-trait DNASeqOps[+Repr]  { this : DNASeq[Repr] =>
+trait DNASeqOps[Repr <: DNASeq[Repr]]  { this : DNASeq[Repr] =>
 
   def foreach[U](f:DNA => U) : Unit = {
     for(i <- 0L until numBases)
@@ -154,7 +154,7 @@ trait DNASeqBuilder[Repr] {
 
 }
 
-trait CanBuildSeq[+From, +To] {
+trait CanBuildSeq[From, To] {
   /**
    *  Creates a new builder on request of a collection.
    *  @param from  the collection requesting the builder to be created.

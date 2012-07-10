@@ -3,6 +3,7 @@ package xerial.silk.glens
 import annotation.tailrec
 import collection.mutable.Stack
 import collection.immutable.{TreeSet, SortedSet}
+import xerial.silk.util.Logger
 
 //--------------------------------------
 //
@@ -11,12 +12,25 @@ import collection.immutable.{TreeSet, SortedSet}
 //
 //--------------------------------------
 
-class Entry[A](val elem: A, val x: Int, val y: Int)
+case class Entry[A](val elem: A, val x: Int, val y: Int)
 
 abstract class Node[+A] {
   def isEmpty : Boolean
-  def foreach[U](f:(Node[A]) => U) : U
+  def foreach[U](f:(Node[A]) => U)
 }
+
+case object Empty extends Node[Nothing] {
+  def isEmpty = true
+  def foreach[U](f: (Node[Nothing]) => U) = {}
+}
+
+case class Tree[A](entry: Entry[A], ySplit: Int, left: Node[A], right: Node[A]) extends Node[A] {
+  def isEmpty = false
+  def foreach[U](f: (Node[A]) => U) {
+    f(this)
+  }
+}
+
 
 /**
  * Persistent priority search tree implementation.
@@ -24,26 +38,20 @@ abstract class Node[+A] {
  *
  * @author leo
  */
-class PST[+A](protected val root: Node[A], val size: Int) {
+class PST[A](protected val root: Node[A], val size: Int, val yMax:Int) extends Logger {
 
-  case object Empty extends Node[Nothing] {
-    def isEmpty = true
-    def foreach[U](f: (Node[Nothing]) => U) {}
-  }
 
-  case class Tree(entry: Entry[A], ySplit: Int, left: Node[A], right: Node[A]) extends Node[A] {
-    def isEmpty = false
-    def foreach[U](f: (Node[A]) => U) {
-      f(this)
-    }
-  }
+  override def toString = root.toString
+
+  def this(yMax:Int) = this(Empty, 0, yMax)
 
   def insert(v: A, start: Int, end: Int): PST[A] = {
 
     def insert(target: Node[A], n: Entry[A], y_lower: Int, y_upper: Int): Node[A] = {
+      debug("insert to %s, entry:%s", target, n)
       target match {
         case Empty => Tree(n, (y_lower + y_upper) / 2, Empty, Empty)
-        case Tree(c: Entry[A], ySplit, left, right) => {
+        case Tree(c, ySplit, left, right) => {
           // c: current node
           def insertNode(p: Entry[A], e: Entry[A]): Node[A] = {
             if (e.y < ySplit)
@@ -61,8 +69,8 @@ class PST[+A](protected val root: Node[A], val size: Int) {
       }
     }
 
-    val newRoot = insert(root, new Entry(v, start, end), 0, Int.MaxValue)
-    new PST(newRoot, size + 1)
+    val newRoot = insert(root, new Entry(v, start, end), 0, yMax)
+    new PST(newRoot, size + 1, yMax)
   }
 
   def remove(v: A, x: Int, y: Int): PST[A] = {
@@ -72,7 +80,7 @@ class PST[+A](protected val root: Node[A], val size: Int) {
     def find(n: Node[A], y1: Int, y2: Int): Node[A] = {
       n match {
         case Empty => Empty
-        case t @ Tree(c: Entry[A], ySplit, left, right) =>
+        case t @ Tree(c, ySplit, left, right) =>
           if (v == c.elem) {
             removed = true
             remove(t)
@@ -86,7 +94,7 @@ class PST[+A](protected val root: Node[A], val size: Int) {
       }
     }
 
-    def remove(t: Tree): Node[A] = {
+    def remove(t: Tree[A]): Node[A] = {
        (t.left, t.right) match {
         case (left @ Tree(l, _, _, _), right @ Tree(r, _, _, _)) =>
           if(l.x < r.x)
@@ -99,9 +107,9 @@ class PST[+A](protected val root: Node[A], val size: Int) {
       }
     }
 
-    val newRoot = find(root, 0, Int.MaxValue)
+    val newRoot = find(root, 0, yMax)
     if(removed)
-      new PST(newRoot, size-1)
+      new PST(newRoot, size-1, yMax)
     else
       this
   }
@@ -109,9 +117,10 @@ class PST[+A](protected val root: Node[A], val size: Int) {
 
   def overlapQuery(start: Int, end: Int): Seq[A] = rangeQuery(end - 1, start + 1, Int.MaxValue)
 
+  private class Context(val n: Node[A], val y1: Int, val y2: Int)
+
   def rangeQuery(upperX: Int, ymin: Int, ymax: Int): Seq[A] = {
     val b = Seq.newBuilder[A]
-    private class Context(val n: Node[A], val y1: Int, val y2: Int)
 
     val stack = new Stack[Context]
     if(!root.isEmpty)
@@ -119,16 +128,18 @@ class PST[+A](protected val root: Node[A], val size: Int) {
 
     while (!stack.isEmpty) {
       val c: Context = stack.pop
-      for(t @ Tree(e, ySplit, left, right) <- c.n) {
-        if (e.x <= upperX) {
-          if (c.y1 <= e.y && e.y <= c.y2)
-            b += e.elem
+      c.n match {
+        case t @ Tree(e, ySplit, left, right) =>
+          if (e.x <= upperX) {
+            if (c.y1 <= e.y && e.y <= c.y2)
+              b += e.elem
 
-          if(!left.isEmpty)
-            stack.push(new Context(left, c.y1, ySplit))
-          if(!right.isEmpty)
-            stack.push(new Context(right, ySplit, c.y2))
-        }
+            if(!left.isEmpty)
+              stack.push(new Context(left, c.y1, ySplit))
+            if(!right.isEmpty)
+              stack.push(new Context(right, ySplit, c.y2))
+          }
+        case _ =>
       }
     }
 

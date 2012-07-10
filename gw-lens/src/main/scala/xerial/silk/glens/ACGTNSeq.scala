@@ -69,50 +69,50 @@ class ACGTNSeq(private val seq: Array[Long], val numBases: Long)
 
   override def hashCode = hash
 
-  override def equals(obj: Any) = {
-
-    def cast = {
-      if (!(obj.isInstanceOf[ACGTNSeq]))
-        None
-      else
-        Some(obj.asInstanceOf[ACGTNSeq])
-    }
-
-    cast.filter(other => this.numBases == other.numBases)
-
-
-
-
-    val isEqual = eligible.flatMap {
-      other =>
-
-        val filledBlockSize: Int = numFilledBlocks(numBases)
-        var pos: Int = 0
-        while (pos < filledBlockSize) {
-          if (this.seq(pos) != other.seq(pos))
-            return false
-          pos += 1
-        }
-
-        val offset: Int = (numBases % 64L).toInt
-
-        if (offset > 0) {
-          val mask: Array[Long] = new Array[Long](3)
-          mask(0) = ~0L << 64 - offset
-          mask(1) = if (offset < 32) ~0L << (32 - offset) * 2 else ~0L
-          mask(2) = if (offset <= 32) 0L else ~0L << (64 - offset) * 2
-          var i: Int = 0
-          while (i < mask.length) {
-            if ((seq(pos + i) & mask(i)) != (other.seq(pos + i) & mask(i)))
-              return false
-            i += 1
-          }
-        }
-        true
-    }
-
-    isEqual.
-  }
+//  override def equals(obj: Any) = {
+//
+//    def cast = {
+//      if (!(obj.isInstanceOf[ACGTNSeq]))
+//        None
+//      else
+//        Some(obj.asInstanceOf[ACGTNSeq])
+//    }
+//
+//    cast.filter(other => this.numBases == other.numBases)
+//
+//
+//
+//
+//    val isEqual = eligible.flatMap {
+//      other =>
+//
+//        val filledBlockSize: Int = numFilledBlocks(numBases)
+//        var pos: Int = 0
+//        while (pos < filledBlockSize) {
+//          if (this.seq(pos) != other.seq(pos))
+//            return false
+//          pos += 1
+//        }
+//
+//        val offset: Int = (numBases % 64L).toInt
+//
+//        if (offset > 0) {
+//          val mask: Array[Long] = new Array[Long](3)
+//          mask(0) = ~0L << 64 - offset
+//          mask(1) = if (offset < 32) ~0L << (32 - offset) * 2 else ~0L
+//          mask(2) = if (offset <= 32) 0L else ~0L << (64 - offset) * 2
+//          var i: Int = 0
+//          while (i < mask.length) {
+//            if ((seq(pos + i) & mask(i)) != (other.seq(pos + i) & mask(i)))
+//              return false
+//            i += 1
+//          }
+//        }
+//        true
+//    }
+//
+//    isEqual.
+//  }
 
 
   def apply(index: Long) = {
