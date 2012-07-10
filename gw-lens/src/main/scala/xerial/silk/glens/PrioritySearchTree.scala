@@ -180,14 +180,6 @@ class PrioritySearchTree[E](lowerBoundOfX: Int = 0,
     return toContinue
   }
 
-  /**
-   * Insert a new node
-   *
-   * @param elem
-   */
-  def insert(elem: E, x: Int, y: Int): Unit = {
-    root = insert_internal(root, new Node(elem, x, y), lowerBoundOfX, upperBoundOfX)
-  }
 
 
   def remove[A <: GenericInterval](e: A): Unit = {
@@ -217,6 +209,14 @@ class PrioritySearchTree[E](lowerBoundOfX: Int = 0,
     root = remove_internal(root, new Node(elem, x, y), lowerBoundOfX, upperBoundOfX)
     return prevNumNodes != size
   }
+  /**
+   * Insert a new node
+   *
+   * @param elem
+   */
+  def insert(elem: E, x: Int, y: Int): Unit = {
+    root = insert_internal(root, new Node(elem, x, y), lowerBoundOfX, upperBoundOfX)
+  }
   private def insert_internal(currentNode: Node, insertNode: Node, lowerRangeOfX: Int, upperRangeOfX: Int): Node = {
     val newNode = if (currentNode == null) {
       insertNode.splitX = (lowerRangeOfX + upperRangeOfX) / 2
@@ -227,8 +227,12 @@ class PrioritySearchTree[E](lowerBoundOfX: Int = 0,
       if (insertNode.y < currentNode.y) {
         currentNode.swap(insertNode)
       }
-      if (insertNode.x < currentNode.splitX) currentNode.left = insert_internal(currentNode.left, insertNode, lowerRangeOfX, currentNode.splitX)
-      else currentNode.right = insert_internal(currentNode.right, insertNode, currentNode.splitX, upperRangeOfX)
+      if (insertNode.x < currentNode.splitX)
+        currentNode.left =
+          insert_internal(currentNode.left, insertNode, lowerRangeOfX, currentNode.splitX)
+      else
+        currentNode.right =
+          insert_internal(currentNode.right, insertNode, currentNode.splitX, upperRangeOfX)
       currentNode
     }
     return newNode
@@ -243,22 +247,26 @@ class PrioritySearchTree[E](lowerBoundOfX: Int = 0,
         if (currentNode.right != null) {
           if (currentNode.left.y < currentNode.right.y) {
             currentNode.replaceWith(currentNode.left)
-            currentNode.left = remove_internal(currentNode.left, currentNode.left, x_lower, x_upper)
+            currentNode.left =
+              remove_internal(currentNode.left, currentNode.left, x_lower, x_upper)
           }
           else {
             currentNode.replaceWith(currentNode.right)
-            currentNode.right = remove_internal(currentNode.right, currentNode.right, x_lower, x_upper)
+            currentNode.right =
+              remove_internal(currentNode.right, currentNode.right, x_lower, x_upper)
           }
         }
         else {
           currentNode.replaceWith(currentNode.left)
-          currentNode.left = remove_internal(currentNode.left, currentNode.left, x_lower, x_upper)
+          currentNode.left =
+            remove_internal(currentNode.left, currentNode.left, x_lower, x_upper)
         }
       }
       else {
         if (currentNode.right != null) {
           currentNode.replaceWith(currentNode.right)
-          currentNode.right = remove_internal(currentNode.right, currentNode.right, x_lower, x_upper)
+          currentNode.right =
+            remove_internal(currentNode.right, currentNode.right, x_lower, x_upper)
         }
         else {
           ({
@@ -270,8 +278,10 @@ class PrioritySearchTree[E](lowerBoundOfX: Int = 0,
       }
     }
     else {
-      if (removeTarget.x < currentNode.splitX) currentNode.left = remove_internal(currentNode.left, removeTarget, x_lower, currentNode.splitX)
-      else currentNode.right = remove_internal(currentNode.right, removeTarget, currentNode.splitX, x_upper)
+      if (removeTarget.x < currentNode.splitX)
+        currentNode.left = remove_internal(currentNode.left, removeTarget, x_lower, currentNode.splitX)
+      else
+        currentNode.right = remove_internal(currentNode.right, removeTarget, currentNode.splitX, x_upper)
     }
     return currentNode
   }

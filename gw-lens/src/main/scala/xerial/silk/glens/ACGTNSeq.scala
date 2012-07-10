@@ -71,17 +71,17 @@ class ACGTNSeq(private val seq: Array[Long], val numBases: Long)
 
   override def equals(obj: Any) = {
 
-    def eligible : Option[ACGTNSeq] = {
+    def cast = {
       if (!(obj.isInstanceOf[ACGTNSeq]))
         None
-      else {
-        val other: ACGTNSeq = obj.asInstanceOf[ACGTNSeq]
-        if (this.numBases != other.numBases)
-          None
-        else
-          Some(other)
-      }
+      else
+        Some(obj.asInstanceOf[ACGTNSeq])
     }
+
+    cast.filter(other => this.numBases == other.numBases)
+
+
+
 
     val isEqual = eligible.flatMap {
       other =>
