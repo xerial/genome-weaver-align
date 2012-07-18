@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package xerial.silk.glens
+package utgenome.weaver.lens
 
 import collection.mutable.{Stack, ArrayBuilder}
 import collection.generic.Growable

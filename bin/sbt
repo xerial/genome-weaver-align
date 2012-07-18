@@ -41,7 +41,7 @@ unset sbt_rc_version
 declare -r sbt_snapshot_version=0.11.3-SNAPSHOT
 declare -r sbt_snapshot_baseurl="http://typesafe.artifactoryonline.com/typesafe/ivy-snapshots/org.scala-tools.sbt/sbt-launch/"
 
-declare -r default_jvm_opts="-Dfile.encoding=UTF8 -Djline.terminal=jline.UnixTerminal"
+declare -r default_jvm_opts="-Dfile.encoding=UTF8"
 declare -r default_sbt_opts="-XX:+CMSClassUnloadingEnabled "
 declare -r default_sbt_mem=1536
 declare -r noshare_opts="-Dsbt.global.base=project/.sbtboot -Dsbt.boot.directory=project/.boot -Dsbt.ivy.home=project/.ivy"
@@ -403,7 +403,7 @@ EOM
 
 cygwin=false;
 case "`uname`" in
-  CYGWIN*) cygwin=true 
+  CYGWIN*) cygwin=true; default_jvm_opts="$default_jvm_opts -Djline.terminal=jline.UnixTerminal"
 esac
 
 [[ -n "$sbt_dir" ]] || {

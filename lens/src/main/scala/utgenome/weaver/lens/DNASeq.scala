@@ -1,4 +1,4 @@
-package xerial.silk.glens
+package utgenome.weaver.lens
 
 
 /*
@@ -23,19 +23,22 @@ package xerial.silk.glens
 //
 //--------------------------------------
 
+
 /**
  * A base trait for classes representing DNA sequences
  *
  * @author leo
  */
+<<<<<<< HEAD:gw-lens/src/main/scala/xerial/silk/glens/DNASeq.scala
 trait DNASeq[Repr <: DNASeq[Repr]]
   extends CharSequence
 {
+=======
+trait DNASeq {
+  def domain : Array[DNA]
+>>>>>>> fba37256f6d372993989cc8e77bfab02a6700ae7:lens/src/main/scala/utgenome/weaver/lens/DNASeq.scala
   def apply(index:Long) : DNA
-  def slice(start:Long, end:Long) : Repr
-
   def numBases : Long
-
 
   /**
    * Return string representation of this sequence
@@ -53,7 +56,6 @@ trait DNASeq[Repr <: DNASeq[Repr]]
 
   override def toString = toACGTString
 
-
   def count(base:DNA, start:Long, end:Long) : Long
   /**
    * Count the number of occurrences of A, C, G and T letters within [start, end) at the same time.
@@ -64,6 +66,7 @@ trait DNASeq[Repr <: DNASeq[Repr]]
    */
   def count(start:Long, end:Long) : Array[Long]
 
+<<<<<<< HEAD:gw-lens/src/main/scala/xerial/silk/glens/DNASeq.scala
   def charAt(index:Int) : Char = {
     longToIntCheck
     apply(index).toChar
@@ -91,24 +94,31 @@ trait DNASeqLike
 
 
 trait DNASeqOps[Repr <: DNASeq[Repr]]  { this : DNASeq[Repr] =>
+=======
+>>>>>>> fba37256f6d372993989cc8e77bfab02a6700ae7:lens/src/main/scala/utgenome/weaver/lens/DNASeq.scala
 
   def foreach[U](f:DNA => U) : Unit = {
     for(i <- 0L until numBases)
       f(apply(i))
   }
+}
 
+/**
+ * A base trait for classes representing DNA sequences
+ *
+ * @author leo
+ */
+trait DNASeqOps[Repr <: DNASeq with DNASeqOps[Repr]] extends CharSequence
+{ this : DNASeq =>
+
+  def slice(start:Long, end:Long) : Repr
 
   /**
    * Take the complement (not reversed) of this sequence
-   * @param bf
-   * @tparam B
    * @return
    */
-  def complement[B](implicit bf:CanBuildSeq[Repr, B]) : B = {
-    val b = bf()
-    foreach(base => b += base)
-    b.result
-  }
+  def complement : Repr
+
 
   /**
    * Create a reverse string of the this sequence. For example ACGT becomes TGCA
@@ -116,28 +126,35 @@ trait DNASeqOps[Repr <: DNASeq[Repr]]  { this : DNASeq[Repr] =>
    * @return Reverse sequence. The returned sequence is NOT a complement of
    *         the original sequence.
    */
-  def reverse[B](implicit bf:CanBuildSeq[Repr, B]) : B = {
-    val b = bf()
-    var i = 0L
-    while (i < numBases) {
-      b += apply(numBases - i - 1)
-      i += 1
-    }
-    b.result
-  }
+  def reverse : Repr
 
   /**
    * Reverse complement of this sequence.
    * @return
    */
-  def reverseComplement[B](implicit bf:CanBuildSeq[Repr, B]) : B = {
-    val b = bf()
-    var i = 0L
-    while (i < numBases) {
-      b += apply(numBases - i - 1).complement
-      i += 1
-    }
-    b.result
+  def reverseComplement : Repr
+
+
+  def subSequence(start:Int, end:Int) : Repr = slice(start, end)
+
+  private def longToIntCheck {
+    if (numBases >= Integer.MAX_VALUE)
+      sys.error("this method cannot be used when the sequence is larger than 2GB")
+  }
+
+
+  def charAt(index:Int) : Char = {
+    longToIntCheck
+    apply(index).toChar
+  }
+
+  /**
+   * length of this sequence
+   * @return
+   */
+  def length : Int = {
+    longToIntCheck
+    numBases.toInt
   }
 
 }
@@ -154,6 +171,7 @@ trait DNASeqBuilder[Repr] {
 
 }
 
+<<<<<<< HEAD:gw-lens/src/main/scala/xerial/silk/glens/DNASeq.scala
 trait CanBuildSeq[From, To] {
   /**
    *  Creates a new builder on request of a collection.
@@ -164,12 +182,15 @@ trait CanBuildSeq[From, To] {
    *          as `from`.
    */
   def apply(from: From): DNASeqBuilder[To]
+=======
+trait DNASeqBuilderFactory[Repr] {
+>>>>>>> fba37256f6d372993989cc8e77bfab02a6700ae7:lens/src/main/scala/utgenome/weaver/lens/DNASeq.scala
 
   /** Creates a new builder from scratch.
    *
    *  @return a builder for collections of type `To` with element type `Elem`.
    *  @see scala.collection.breakOut
    */
-  def apply(): DNASeqBuilder[To]
+  def apply(): DNASeqBuilder[Repr]
 
 }

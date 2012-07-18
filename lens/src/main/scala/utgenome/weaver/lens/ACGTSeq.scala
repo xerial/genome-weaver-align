@@ -5,7 +5,7 @@
 //
 //--------------------------------------
 
-package xerial.silk.glens
+package utgenome.weaver.lens
 
 import java.util.Arrays
 
@@ -13,11 +13,14 @@ import java.util.Arrays
  * Helper methods for managing 2bit encoding of DNA in an array of Long type
  * @author leo
  */
-trait DNA2bitEncoding {
+trait DNA2bit {
+
+  def domain = DNA.exceptN
+
   // 2G (max of Java array size) * 8 (long byte size) * 8 (bit) / 2 (bit code) =  64G  (64G characters)
   val MAX_SIZE: Long = 2L * 1024L * 1024L * 1024L * 8L * 8L / 2L
 
-  def minArraySize(numBases: Long): Int = {
+  protected def minArraySize(numBases: Long): Int = {
     val bitSize: Long = numBases * 2L
     val blockBitSize: Long = 64L
     val arraySize: Long = (bitSize + blockBitSize - 1L) / blockBitSize
@@ -27,10 +30,9 @@ trait DNA2bitEncoding {
     arraySize.toInt
   }
 
-  def blockIndex(basePos: Long): Int = (basePos >>> 5).toInt
+  protected def blockIndex(basePos: Long): Int = (basePos >>> 5).toInt
 
-
-  def blockOffset(basePos: Long): Long = (basePos & 0x1FL) // This value must be Long to enable 64-bit shift using this value
+  protected def blockOffset(basePos: Long): Int = (basePos & 0x1FL).toInt
 
 }
 
@@ -39,9 +41,8 @@ trait DNA2bitEncoding {
  */
 object ACGTSeq {
 
-  implicit def canBuildSeq : CanBuildSeq[ACGTSeq, ACGTSeq] = {
-    new CanBuildSeq[ACGTSeq, ACGTSeq] {
-      def apply(from:ACGTSeq) = new ACGTSeqBuilder()
+  implicit def canBuildSeq : DNASeqBuilderFactory[ACGTSeq] = {
+    new DNASeqBuilderFactory[ACGTSeq] {
       def apply() = new ACGTSeqBuilder()
     }
   }
@@ -59,9 +60,6 @@ object ACGTSeq {
     }
     b.toACGTSeq
   }
-
-
-
 
   //  public static ACGTSeq loadFrom(File f) throws IOException {
   //    DataInputStream d = new DataInputStream(new BufferedInputStream(new FileInputStream(f), 4 * 1024 * 1024));
@@ -109,15 +107,15 @@ object ACGTSeq {
  * 2-bit encoded DNA Sequence of A, C, G and T. The maximum size this class can hold is
  * 2G (max of Java array size) * 8 (long byte size) * 8 (bit) / 2 (bit encoding) =  64G  (64G characters)
  *
- * To generate an instance of ACGTSeq, use {@link ACGTSeq$#newBuilder} or {@link ACGTSeq$#apply}.
+ * To generate an instance of ACGTSeq, use ACGTSeq.newBuilder or ACGTSeq.apply
  *
  * @param seq 2-bit repre
  * @param numBases
  */
 class ACGTSeq(private val seq: Array[Long], val numBases: Long)
-  extends DNASeq[ACGTSeq]
+  extends DNASeq
   with DNASeqOps[ACGTSeq]
-  with DNA2bitEncoding
+  with DNA2bit
   with CharSequence {
 
   private var hash: Int = 0
@@ -133,7 +131,7 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
 
     val pos = blockIndex(index)
     val offset = blockOffset(index)
-    val shift = offset << 1L
+    val shift = offset << 1
 
     val code = (seq(pos) >>> shift) & 0x03
     DNA(code.toInt)
@@ -177,15 +175,41 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
   }
 
   /**
+   * Create a reverse string of the this sequence. For example ACGT becomes TGCA
+   *
+   * @return Reverse sequence. The returned sequence is NOT a complement of
+   *         the original sequence.
+   */
+  def reverse : ACGTSeq = {
+    val b = new ACGTSeqBuilder(numBases)
+    for(i <- 0L until numBases)
+      b += apply(numBases - i - 1)
+    b.result
+  }
+
+
+  /**
    * Take the complement (not reversed) of this sequence
    * @return
    */
-  def complement : ACGTSeq = {
+  def complement: ACGTSeq = {
     val c = for (b <- seq) yield ~b
     new ACGTSeq(c, numBases)
   }
 
-  private def fastCount(v: Long, base: DNA): Long = {
+  def reverseComplement : ACGTSeq = {
+    val b = new ACGTSeqBuilder(numBases)
+    for(i <- 0L until numBases)
+      b += apply(numBases - i - 1)
+    val r = b.rawArray
+    for(i <- 0 until seq.length) {
+      r(i) = ~r(i)
+    }
+    new ACGTSeq(r, numBases)
+  }
+
+
+  protected def fastCount(v: Long, base: DNA): Long = {
     var r = ~0L
     r &= (if ((base.code & 0x02) == 0) ~v else v) >>> 1
     r &= (if ((base.code & 0x01) == 0) ~v else v)
@@ -341,7 +365,7 @@ class ACGTSeq(private val seq: Array[Long], val numBases: Long)
  * @param capacity the hint of number of bases to store
  */
 class ACGTSeqBuilder(private var capacity: Long)
-  extends DNA2bitEncoding
+  extends DNA2bit
   with DNASeqBuilder[ACGTSeq]
 {
 
@@ -355,7 +379,7 @@ class ACGTSeqBuilder(private var capacity: Long)
 
   def numBases = _numBases
 
-  protected[glens] def sizeHint(numBasesToStore: Long) {
+  def sizeHint(numBasesToStore: Long) {
     val arraySize = minArraySize(numBasesToStore)
     val newSeq = Arrays.copyOf(seq, arraySize)
     seq = newSeq
@@ -385,25 +409,21 @@ class ACGTSeqBuilder(private var capacity: Long)
   def update(index: Long, base: DNA): Unit = {
     val pos = blockIndex(index)
     val offset = blockOffset(index)
-    // Important: the shift length must be a Long value to enable 64bit-shift operations
-    val shift: Long = offset * 2L
+    val shift = offset * 2
 
     // reset the target base. 3bit code N(code:100) will be trimmed to A (00)
     seq(pos) &= ~(0x3L << shift)
-    seq(pos) |= (base.code & 0x03) << shift
+    seq(pos) |= (base.code & 0x03L) << shift
+  }
+
+  lazy val rawArray = {
+    val size = minArraySize(_numBases)
+    if (seq.length == size) seq else Arrays.copyOf(seq, size)
   }
 
   def result : ACGTSeq = toACGTSeq
 
-  def toACGTSeq: ACGTSeq = {
-    val size = minArraySize(_numBases)
-    val arr = if (seq.length == size) seq
-    else {
-      val newArr = Arrays.copyOf(seq, size)
-      newArr
-    }
-    new ACGTSeq(arr, _numBases)
-  }
+  def toACGTSeq: ACGTSeq = new ACGTSeq(rawArray, _numBases)
 
   override def toString = result.toString
 

@@ -2,6 +2,7 @@ package xerial.silk.glens
 
 import util.parsing.combinator.RegexParsers
 import xerial.silk.util.Logger
+import java.io.{FileReader, BufferedReader}
 
 //--------------------------------------
 //
@@ -79,6 +80,41 @@ object WIGParser extends RegexParsers with Logger {
     }
   }
 
+  class LineIterator(in:BufferedReader) extends Iterator[String] {
+    private var nextLine : String = null
+    def hasNext = {
+      if(nextLine == null)
+        nextLine = in.readLine
+      nextLine != null
+    }
+    def next : String = {
+      if(hasNext) {
+        val line = nextLine
+        nextLine = null
+        line
+      }
+      else
+        Iterator.empty.next
+    }
+  }
+
+  def open[U](fileName:String)(body:Iterator[String] => U) {
+    val in = new BufferedReader(new FileReader(fileName))
+    try
+      body(new LineIterator(in))
+    finally
+      in.close
+  }
+
+
+  def parse(file:String) {
+    open(file) { f =>
+      for(line <- f) {
+        val wig = parseLine(line)
+        trace(wig)
+      }
+    }
+  }
 
   def parseLine(line: String): WIG = {
 

@@ -1,4 +1,4 @@
-package xerial.silk.glens
+package utgenome.weaver.lens
 
 //--------------------------------------
 //
@@ -31,7 +31,7 @@ object IUPAC {
 
   val values = Array(Empty, A, C, G, T, M, R, W, S, Y, K, V, H, D, B, N)
 
-  private[glens] val bitFlagToIUPACTable = {
+  private[lens] val bitFlagToIUPACTable = {
     val table = new Array[IUPAC](values.length)
     for(each <- values) {
       table(each.bitFlag & 0x0F) = each
@@ -39,11 +39,11 @@ object IUPAC {
     table
   }
 
-  private[glens] lazy val symbolTable = {
+  private[lens] lazy val symbolTable = {
     values.map(each => each.symbol -> each).toMap
   }
 
-  private[glens] val complementTable = Array[IUPAC](Empty, T, G, K, C, Y, S, B, A, W,
+  private[lens] val complementTable = Array[IUPAC](Empty, T, G, K, C, Y, S, B, A, W,
     R, D, M, H, V, N)
 
 
@@ -63,7 +63,10 @@ sealed abstract class IUPAC(val symbol:String, val variation:String, val bitFlag
 
   def complement : IUPAC = IUPAC.complementTable(bitFlag)
 
-  lazy val genoType : String = {
+  /**
+   * String representation of genotype (e.g., ACG for V)
+   */
+  lazy val genotype : String = {
     val genoType = new StringBuilder(4)
     def loop(index:Int) {
       val flag = 1 << index
