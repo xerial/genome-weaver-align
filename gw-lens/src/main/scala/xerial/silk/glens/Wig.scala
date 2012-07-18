@@ -19,19 +19,13 @@ object WIG {
   sealed abstract class Header extends WIG
 
   case class Browser(line: String) extends Header
-
   case class Track(property: Map[String, String]) extends Header
-
   case class Comment(line: String) extends WIG
-
   case class VariableStep(chrom: String, span: Int = 1) extends Header
-
   case class FixedStep(chrom: String, start: Int, step: Int = 1, span: Int = 1) extends Header
 
   sealed abstract class Data extends WIG
-
   case class VariableStepValue(position: Int, value: Float) extends Data
-
   case class FixedStepValue(value: Float) extends Data
 
   case class Error(message:String) extends WIG

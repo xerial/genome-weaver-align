@@ -55,14 +55,19 @@ class WIGTest extends SilkSpec {
       debug(r)
     }
 
-    "parse line" in {
+    "parse lines" in {
       parse("track type=wiggle_0 name=\"fixedStep\" description=\"fixedStep format\" visibility=full autoScale=off viewLimits=0:1000 color=0,200,100 maxHeightPixels=100:50:20 graphType=points priority=20")
       parse("browser position chr19:49304200-49310700")
       parse("browser hide all")
 
       parse("variableStep chrom=chr19 span=150")
       parse("fixedStep chrom=chr19 start=49307401 step=300 span=200")
+      parse("49304701 10.0")
+      parse("1000")
+    }
 
+    "parse lines with errors" in {
+      parse("track type=wiggle_0 name=fa09r3 43")
     }
 
   }
