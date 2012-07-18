@@ -73,10 +73,10 @@ object WIGParser extends RegexParsers with Logger {
     case p ~ params => (p, Map() ++ params)
   }
 
-  def parseHeader(line: String) : Either[(String, Map[String, String]), NoSuccess] = {
+  def parseHeader(line: String) : Either[NoSuccess, (String, Map[String, String])] = {
     parseAll(header, line) match {
-      case Success(result, next) => Left(result)
-      case failure : NoSuccess => Right(failure)
+      case Success(result, next) => Right(result)
+      case failure : NoSuccess => Left(failure)
     }
   }
 
@@ -119,39 +119,37 @@ object WIGParser extends RegexParsers with Logger {
 
   def parseLine(line: String): WIG = {
 
-    def toInt(s:String) : Option[Int] = {
-      try
-        Some(s.toInt)
-      catch {
-        case _ => None
-      }
-    }
+    def convert[A](s:String, f:String => A) : Either[Throwable, A] = 
+      scala.util.control.Exception.allCatch.either(f(s))
+    
+    def toInt(s:String) = convert(s, {_.toInt})
+    def toFloat(s:String) = convert(s, {_.toFloat})
 
-    def parse : Either[WIG, NoSuccess] = {
+    def parse : Either[NoSuccess, WIG] = {
       if (line.startsWith("#"))
-        Left(WIG.Comment(line)) // comment
+        Right(WIG.Comment(line))
       else if (line.startsWith("browser"))
-        Left(WIG.Browser(line))
+        Right(WIG.Browser(line))
       else if (line.startsWith("track"))
-        parseHeader(line).left.map(header => WIG.Track(header._2))
+        parseHeader(line).right.map(header => WIG.Track(header._2))
       else if (line.startsWith("variableStep")) {
-        parseHeader(line).left.map{
+        parseHeader(line).right.map{
           case (name, props) =>
             (props.get("chrom"), toInt(props.getOrElse("span", "1"))) match {
-              case (Some(chr), Some(sp)) => WIG.VariableStep(chrom=chr, span=sp)
+              case (Some(chr), Right(sp)) => WIG.VariableStep(chrom=chr, span=sp)
               case _ => WIG.Error("invalid line: " + line)
             }
         }
       }
       else if (line.startsWith("fixedStep")) {
-        parseHeader(line).left.map{
+        parseHeader(line).right.map{
           case (name, props) =>
             val chrom = props.get("chrom")
             val start = props.get("start")
             val step = toInt(props.get("step").getOrElse("1"))
             val span = toInt(props.get("span").getOrElse("1"))
             (chrom, start, step, span) match {
-              case (Some(chr), Some(s), Some(st), Some(sp)) =>
+              case (Some(chr), Some(s), Right(st), Right(sp)) =>
                 WIG.FixedStep(chrom=chr, start=s.toInt, step=st, span=sp)
               case _ => WIG.Error("invalid line: " + line)
             }
@@ -159,18 +157,26 @@ object WIGParser extends RegexParsers with Logger {
       }
       else {
         // data line
+        def invalidLine = WIG.Error("invalid line: " + line)
         val c = line.trim.split("""\s+""")
-        c match {
-          case Array(step, value) => Left(WIG.VariableStepValue(step.toInt, value.toFloat))
-          case Array(value) => Left(WIG.FixedStepValue(value.toFloat))
-          case _ => Left(WIG.Error("invalid line: " + line))
+        val r = c match {
+          case Array(step, value) => (toInt(step), toFloat(value)) match {
+            case (Right(st), Right(v)) => WIG.VariableStepValue(st, v)
+            case _ => invalidLine
+          }
+          case Array(value) => toFloat(value) match {
+            case Right(v) => WIG.FixedStepValue(value.toFloat)
+            case _ => invalidLine
+          }
+          case _ => invalidLine
         }
+        Right(r)
       }
     }
 
     parse match {
-      case Left(m) => m
-      case Right(error) => WIG.Error(error.toString)
+      case Right(m) => m
+      case Left(error) => WIG.Error(error.toString)
     }
   }
 
