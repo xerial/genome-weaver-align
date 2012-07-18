@@ -29,14 +29,8 @@ package utgenome.weaver.lens
  *
  * @author leo
  */
-<<<<<<< HEAD:gw-lens/src/main/scala/xerial/silk/glens/DNASeq.scala
-trait DNASeq[Repr <: DNASeq[Repr]]
-  extends CharSequence
-{
-=======
 trait DNASeq {
   def domain : Array[DNA]
->>>>>>> fba37256f6d372993989cc8e77bfab02a6700ae7:lens/src/main/scala/utgenome/weaver/lens/DNASeq.scala
   def apply(index:Long) : DNA
   def numBases : Long
 
@@ -66,36 +60,6 @@ trait DNASeq {
    */
   def count(start:Long, end:Long) : Array[Long]
 
-<<<<<<< HEAD:gw-lens/src/main/scala/xerial/silk/glens/DNASeq.scala
-  def charAt(index:Int) : Char = {
-    longToIntCheck
-    apply(index).toChar
-  }
-
-  /**
-   * length of this sequence
-   * @return
-   */
-  def length : Int = {
-    longToIntCheck
-    numBases.toInt
-  }
-
-  def subSequence(start:Int, end:Int) = slice(start, end)
-
-  private def longToIntCheck {
-    if (numBases >= Integer.MAX_VALUE)
-      sys.error("this method cannot be used when the sequence is larger than 2GB")
-  }
-
-}
-
-trait DNASeqLike
-
-
-trait DNASeqOps[Repr <: DNASeq[Repr]]  { this : DNASeq[Repr] =>
-=======
->>>>>>> fba37256f6d372993989cc8e77bfab02a6700ae7:lens/src/main/scala/utgenome/weaver/lens/DNASeq.scala
 
   def foreach[U](f:DNA => U) : Unit = {
     for(i <- 0L until numBases)
@@ -171,20 +135,8 @@ trait DNASeqBuilder[Repr] {
 
 }
 
-<<<<<<< HEAD:gw-lens/src/main/scala/xerial/silk/glens/DNASeq.scala
-trait CanBuildSeq[From, To] {
-  /**
-   *  Creates a new builder on request of a collection.
-   *  @param from  the collection requesting the builder to be created.
-   *  @return a builder for collections of type `To` with element type `Elem`.
-   *          The collections framework usually arranges things so
-   *          that the created builder will build the same kind of collection
-   *          as `from`.
-   */
-  def apply(from: From): DNASeqBuilder[To]
-=======
+
 trait DNASeqBuilderFactory[Repr] {
->>>>>>> fba37256f6d372993989cc8e77bfab02a6700ae7:lens/src/main/scala/utgenome/weaver/lens/DNASeq.scala
 
   /** Creates a new builder from scratch.
    *

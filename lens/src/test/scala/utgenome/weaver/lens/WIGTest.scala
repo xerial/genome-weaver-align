@@ -1,4 +1,4 @@
-package xerial.silk.glens
+package utgenome.weaver.lens
 
 import xerial.silk.util.SilkSpec
 
@@ -68,6 +68,23 @@ class WIGTest extends SilkSpec {
 
     "parse lines with errors" in {
       parse("track type=wiggle_0 name=fa09r3 43")
+    }
+
+    "parse entire file" in {
+      debug("read sample.wig")
+      withResource("sample.wig") { b =>
+        def loop {
+          val line = b.readLine()
+          if(line != null) {
+            val w = WIGParser.parseLine(line)
+            debug(w)
+            loop
+          }
+        }
+        loop
+      }
+
+
     }
 
   }

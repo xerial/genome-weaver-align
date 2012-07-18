@@ -1,6 +1,7 @@
-package xerial.silk.glens
+package utgenome.lens
 
 import xerial.silk.util.SilkSpec
+import utgenome.weaver.lens.Interval
 
 //--------------------------------------
 //

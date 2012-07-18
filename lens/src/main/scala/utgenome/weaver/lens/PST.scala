@@ -1,4 +1,4 @@
-package xerial.silk.glens
+package utgenome.lens
 
 import annotation.tailrec
 import collection.mutable.Stack

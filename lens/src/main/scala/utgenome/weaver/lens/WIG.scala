@@ -1,4 +1,4 @@
-package xerial.silk.glens
+package utgenome.weaver.lens
 
 import util.parsing.combinator.RegexParsers
 import xerial.silk.util.Logger
@@ -98,6 +98,7 @@ object WIGParser extends RegexParsers with Logger {
     }
   }
 
+
   def open[U](fileName:String)(body:Iterator[String] => U) {
     val in = new BufferedReader(new FileReader(fileName))
     try
@@ -138,7 +139,7 @@ object WIGParser extends RegexParsers with Logger {
           case (name, props) =>
             (props.get("chrom"), toInt(props.getOrElse("span", "1"))) match {
               case (Some(chr), Some(sp)) => WIG.VariableStep(chrom=chr, span=sp)
-              case _ => WIG.Error("missing column in: " + line)
+              case _ => WIG.Error("invalid line: " + line)
             }
         }
       }
@@ -152,13 +153,13 @@ object WIGParser extends RegexParsers with Logger {
             (chrom, start, step, span) match {
               case (Some(chr), Some(s), Some(st), Some(sp)) =>
                 WIG.FixedStep(chrom=chr, start=s.toInt, step=st, span=sp)
-              case _ => WIG.Error("missing value in: " + line)
+              case _ => WIG.Error("invalid line: " + line)
             }
         }
       }
       else {
         // data line
-        val c = line.split("""\s+""")
+        val c = line.trim.split("""\s+""")
         c match {
           case Array(step, value) => Left(WIG.VariableStepValue(step.toInt, value.toFloat))
           case Array(value) => Left(WIG.FixedStepValue(value.toFloat))
