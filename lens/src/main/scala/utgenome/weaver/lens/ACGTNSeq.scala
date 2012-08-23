@@ -9,7 +9,6 @@ package utgenome.weaver.lens
 
 import java.util
 import util.Arrays
-import xerial.silk.util.Logger
 
 
 /**

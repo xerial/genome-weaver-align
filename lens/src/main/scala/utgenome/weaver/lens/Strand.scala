@@ -15,7 +15,6 @@
  */
 
 package utgenome.weaver.lens
-import xerial.silk.model.Enum
 
 //--------------------------------------
 //
@@ -24,7 +23,7 @@ import xerial.silk.model.Enum
 //
 //--------------------------------------
 
-object Strand extends Enum[Strand] {
+object Strand {
   def values = Array(Forward, Reverse)
   def symbols = Array(Forward.symbol, Reverse.symbol)
 

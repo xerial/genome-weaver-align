@@ -18,6 +18,7 @@ package utgenome.weaver.lens
 
 import xerial.core.lens.Eq
 
+
 //--------------------------------------
 //
 // GenomeRange.scala

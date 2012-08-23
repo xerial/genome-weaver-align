@@ -17,7 +17,7 @@
 package utgenome.weaver.lens
 
 import java.io.{BufferedReader, Reader}
-import xerial.silk.core.{InvalidFormat, ParseError}
+import xerial.core.io.text.parser.{ParseError, SyntaxError}
 
 
 //--------------------------------------
@@ -34,7 +34,7 @@ import xerial.silk.core.{InvalidFormat, ParseError}
  */
 object FASTQRead {
 
-  def parse(in:BufferedReader) : Option[FASTQRead] = {
+  def parse(in:BufferedReader) : Either[ParseError, FASTQRead] = {
     val name = in.readLine
     val seq = in.readLine
     in.readLine
@@ -44,10 +44,10 @@ object FASTQRead {
       None
 
     if(name.length < 2) {
-      throw new InvalidFormat("insufficient read name length: " + name)
+      Left(SyntaxError("insufficient read name length: " + name))
     }
     else
-      Some(FASTQRead(name.substring(1), seq, qual))
+      Right(FASTQRead(name.substring(1), seq, qual))
   }
 }
 

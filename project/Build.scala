@@ -139,8 +139,8 @@ object GenomeWeaverBuild extends Build {
 
     val coreLib = Seq(
       "org.scala-lang" % "scalap" % SCALA_VERSION,
-      "org.xerial" % "xerial-core" % "2.1",
-      "org.utgenome" % "utgb-core" % "1.5.8",
+      //"org.xerial" % "xerial-core" % "2.1",
+      //"org.utgenome" % "utgb-core" % "1.5.8",
       //"org.xerial.silk" % "silk-core" % "0.4",
       "org.javassist" % "javassist" % "3.15.0-GA"
       //"io.netty" % "netty" % "3.3.0.Final"
@@ -174,7 +174,7 @@ object GenomeWeaverBuild extends Build {
       ++ Seq(libraryDependencies +=
       "org.apache.commons" % "commons-compress" % "1.4.1"
     )
-  ) dependsOn (xerialCore % dependentScope)
+  ) dependsOn (xerialCore % dependentScope, xerialLens)
 
 
   lazy val gwAlign = Project(

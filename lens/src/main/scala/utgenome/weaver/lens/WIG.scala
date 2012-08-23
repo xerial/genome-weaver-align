@@ -1,8 +1,8 @@
 package utgenome.weaver.lens
 
 import util.parsing.combinator.RegexParsers
-import xerial.silk.util.Logger
 import java.io.{FileReader, BufferedReader}
+import xerial.core.log.Logging
 
 //--------------------------------------
 //
@@ -40,7 +40,7 @@ sealed abstract class WIG
  * Wiggle format (WIG)
  * http://genome.ucsc.edu/goldenPath/help/wiggle.html
  */
-object WIGParser extends RegexParsers with Logger {
+object WIGParser extends RegexParsers with Logging {
 
   /**
    * remove quotation symbols

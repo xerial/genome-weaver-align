@@ -2,12 +2,8 @@ package org.utgenome.weaver.read
 
 import org.utgenome.weaver.align.ACGT
 import org.utgenome.weaver.align.ACGTSequence
-import java.io.InputStream
 import java.io.File
-import java.io.FileInputStream
-import java.io.BufferedInputStream
 import java.io.Reader
-import org.utgenome.format.fastq.FastqReader
 import java.io.FileReader
 import collection._
 
@@ -124,54 +120,54 @@ trait ReadIterator extends Iterator[Read] {
 
 }
 
-class FASTQFileReader(in: Reader) extends ReadIterator {
-
-  import Read.stringToDNASequence
-
-  val reader = new FastqReader(in)
-
-  def this(file: File) = {
-    this (new FileReader(file))
-  }
-
-  override def next : SingleEnd = super[ReadIterator].next.asInstanceOf[SingleEnd]
-
-  protected def consume: Option[Read] = {
-    if (!current.isDefined && !finishedReading) {
-      current = reader.next match {
-        case null => finishedReading = true; reader.close; None
-        case e => Some(FASTQRead(e.seqname, e.seq, e.qual))
-      }
-    }
-    current
-  }
-
-}
-
-class FASTQPairedEndReader(in1: Reader, in2: Reader) extends ReadIterator {
-  val reader1 = new FASTQFileReader(in1)
-  val reader2 = new FASTQFileReader(in2)
-
-  def this(file1: File, file2: File) = {
-    this (new FileReader(file1), new FileReader(file2))
-  }
-
-  protected def consume: Option[Read] = {
-    if (!current.isDefined && !finishedReading) {
-      val r1 = reader1.next
-      val r2 = reader2.next
-      current = (r1, r2) match {
-        case (a: SingleEnd, b: SingleEnd) => Some(PairedEndRead(a, b))
-        case (a: SingleEnd, null) => Some(r1)
-        case (null, b: SingleEnd) => Some(r2)
-        case _ => finishedReading; None
-      }
-    }
-    current
-  }
-
-}
-
-
-
-
+//class FASTQFileReader(in: Reader) extends ReadIterator {
+//
+//  import Read.stringToDNASequence
+//
+//  val reader = new FastqReader(in)
+//
+//  def this(file: File) = {
+//    this (new FileReader(file))
+//  }
+//
+//  override def next : SingleEnd = super[ReadIterator].next.asInstanceOf[SingleEnd]
+//
+//  protected def consume: Option[Read] = {
+//    if (!current.isDefined && !finishedReading) {
+//      current = reader.next match {
+//        case null => finishedReading = true; reader.close; None
+//        case e => Some(FASTQRead(e.seqname, e.seq, e.qual))
+//      }
+//    }
+//    current
+//  }
+//
+//}
+//
+//class FASTQPairedEndReader(in1: Reader, in2: Reader) extends ReadIterator {
+//  val reader1 = new FASTQFileReader(in1)
+//  val reader2 = new FASTQFileReader(in2)
+//
+//  def this(file1: File, file2: File) = {
+//    this (new FileReader(file1), new FileReader(file2))
+//  }
+//
+//  protected def consume: Option[Read] = {
+//    if (!current.isDefined && !finishedReading) {
+//      val r1 = reader1.next
+//      val r2 = reader2.next
+//      current = (r1, r2) match {
+//        case (a: SingleEnd, b: SingleEnd) => Some(PairedEndRead(a, b))
+//        case (a: SingleEnd, null) => Some(r1)
+//        case (null, b: SingleEnd) => Some(r2)
+//        case _ => finishedReading; None
+//      }
+//    }
+//    current
+//  }
+//
+//}
+//
+//
+//
+//
