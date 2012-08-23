@@ -120,6 +120,10 @@ trait HasStrand {
 }
 
 
+object Interval {
+  def apply(start:Int, end:Int) = new Interval(start, end)
+}
+
 /**
  * An interval
  * @param start

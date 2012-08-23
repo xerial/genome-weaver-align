@@ -135,6 +135,7 @@ trait DNASeqBuilder[Repr] {
 
 }
 
+
 trait DNASeqBuilderFactory[Repr] {
 
   /** Creates a new builder from scratch.
