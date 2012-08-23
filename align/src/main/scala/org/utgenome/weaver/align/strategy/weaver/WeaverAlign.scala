@@ -220,11 +220,7 @@ class WeaverAlign(fmIndex: FMIndexOnGenome, reference: ACGTSequence, config: Ali
   }
 
   /**
-<<<<<<< HEAD:gw-align/src/main/scala/org/utgenome/weaver/align/strategy/weaver/WeaverAlign.scala
    * Converts DNASequence for using Java methods that use ACGTSequence
-=======
-   * Converts DNASeq for using Java methods that use ACGTSeq
->>>>>>> develop:align/src/main/scala/org/utgenome/weaver/align/strategy/weaver/WeaverAlign.scala
    */
   implicit def dnaToACGT(x: DNASequence): ACGTSequence = {
     x match {
