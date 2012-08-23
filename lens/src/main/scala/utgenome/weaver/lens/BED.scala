@@ -18,7 +18,7 @@ package utgenome.weaver.lens
 
 import java.io.File
 import io.Source
-import xerial.silk.util.Logger
+import xerial.core.log.Logging
 
 //--------------------------------------
 //
@@ -130,7 +130,7 @@ object BED {
   }
 }
 
-object BEDGene extends Logger {
+object BEDGene extends Logging {
   def apply(line: String): BEDGene = {
     def parseBlock(blocks: String) = {
       val c = blocks.trim.stripSuffix(",").split(",")

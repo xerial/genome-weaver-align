@@ -160,9 +160,12 @@ object GenomeWeaverBuild extends Build {
     settings = buildSettings ++ distSettings ++ Release.settings
       ++ Seq(packageDistTask)
       ++ Seq(libraryDependencies ++= bootLib ++ testLib ++ coreLib)
-  ) aggregate(silk, gwLens, gwAlign) dependsOn (silk)
+  ) aggregate(silk, xerialCore, xerialLens, gwLens, gwAlign) dependsOn (xerialCore, xerialLens)
 
   lazy val silk = RootProject(file("silk"))
+  lazy val xerial = RootProject(file("silk/xerial"))
+  lazy val xerialCore = ProjectRef(file("silk/xerial"), "xerial-core")
+  lazy val xerialLens = ProjectRef(file("silk/xerial"), "xerial-lens")
 
   lazy val gwLens = Project(
     id = "lens",
@@ -171,7 +174,7 @@ object GenomeWeaverBuild extends Build {
       ++ Seq(libraryDependencies +=
       "org.apache.commons" % "commons-compress" % "1.4.1"
     )
-  ) dependsOn (silk % dependentScope)
+  ) dependsOn (xerialCore % dependentScope)
 
 
   lazy val gwAlign = Project(

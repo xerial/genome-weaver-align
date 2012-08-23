@@ -30,7 +30,7 @@ class OverlapSweeperTest extends SilkSpec {
         for(c <- s.combinations(2)) {
           val a = c(0)
           val b = c(1)
-          info("{%s, %s}", a, b)
+          debug("{%s, %s}", a, b)
           a.intersectWith(b) should be (true)
         }
       }

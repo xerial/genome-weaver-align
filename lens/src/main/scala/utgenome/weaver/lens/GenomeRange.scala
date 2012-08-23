@@ -16,7 +16,7 @@
 
 package utgenome.weaver.lens
 
-import xerial.silk.util.HashKey
+import xerial.core.lens.Eq
 
 //--------------------------------------
 //
@@ -48,7 +48,7 @@ trait Converter[-From, -Diff, +To] {
 /**
  * A common trait for interval classes having [start, end) parameters
  */
-trait GenericInterval extends HashKey {
+trait GenericInterval extends Eq {
   val start: Int
   val end: Int
 
@@ -98,6 +98,7 @@ trait IntervalOps[Repr <: IntervalOps[_]] extends GenericInterval {
     else
       None
   }
+
 
   /**
    * Create a new interval based on this interval instance
@@ -156,7 +157,7 @@ class IntervalWithChr(val chr: String, val start: Int, val end: Int)
 /**
  * Locus in a genome sequence with chr and strand information
  */
-trait GenomicLocus[Repr, RangeRepr] extends InChromosome with HasStrand with HashKey {
+trait GenomicLocus[Repr, RangeRepr] extends InChromosome with HasStrand with Eq {
   val start: Int
 
   /**
