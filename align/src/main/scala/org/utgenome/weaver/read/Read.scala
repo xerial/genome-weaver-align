@@ -2,17 +2,8 @@ package org.utgenome.weaver.read
 
 import org.utgenome.weaver.align.ACGT
 import org.utgenome.weaver.align.ACGTSequence
-<<<<<<< HEAD:gw-align/src/main/scala/org/utgenome/weaver/read/Read.scala
-import java.io.InputStream
-import java.io.File
-import java.io.FileInputStream
-import java.io.BufferedInputStream
-import java.io.Reader
-import org.utgenome.format.fastq.FastqReader
-=======
 import java.io.File
 import java.io.Reader
->>>>>>> develop:align/src/main/scala/org/utgenome/weaver/read/Read.scala
 import java.io.FileReader
 import collection._
 
@@ -37,11 +28,7 @@ trait DNASequence {
 }
 
 /**
-<<<<<<< HEAD:gw-align/src/main/scala/org/utgenome/weaver/read/Read.scala
  * 2-bit encoding based DNASequence
-=======
- * 2-bit encoding based DNASeq
->>>>>>> develop:align/src/main/scala/org/utgenome/weaver/read/Read.scala
  *
  * @author leo
  *
@@ -80,11 +67,6 @@ trait Read {
 object Read {
   implicit def stringToDNASequence(x: String): DNASequence = new CompactDNASequence(x)
 
-<<<<<<< HEAD:gw-align/src/main/scala/org/utgenome/weaver/read/Read.scala
-  //implicit def convertToDNASequence(x: ACGTSequence): DNASequence = new CompactDNASequence(x)
-=======
-  //implicit def convertToDNASequence(x: ACGTSeq): DNASeq = new CompactDNASequence(x)
->>>>>>> develop:align/src/main/scala/org/utgenome/weaver/read/Read.scala
 }
 
 trait SingleEnd extends Read {
@@ -137,59 +119,6 @@ trait ReadIterator extends Iterator[Read] {
 
 }
 
-<<<<<<< HEAD:gw-align/src/main/scala/org/utgenome/weaver/read/Read.scala
-class FASTQFileReader(in: Reader) extends ReadIterator {
-
-  import Read.stringToDNASequence
-
-  val reader = new FastqReader(in)
-
-  def this(file: File) = {
-    this (new FileReader(file))
-  }
-
-  override def next : SingleEnd = super[ReadIterator].next.asInstanceOf[SingleEnd]
-
-  protected def consume: Option[Read] = {
-    if (!current.isDefined && !finishedReading) {
-      current = reader.next match {
-        case null => finishedReading = true; reader.close; None
-        case e => Some(FASTQRead(e.seqname, e.seq, e.qual))
-      }
-    }
-    current
-  }
-
-}
-
-class FASTQPairedEndReader(in1: Reader, in2: Reader) extends ReadIterator {
-  val reader1 = new FASTQFileReader(in1)
-  val reader2 = new FASTQFileReader(in2)
-
-  def this(file1: File, file2: File) = {
-    this (new FileReader(file1), new FileReader(file2))
-  }
-
-  protected def consume: Option[Read] = {
-    if (!current.isDefined && !finishedReading) {
-      val r1 = reader1.next
-      val r2 = reader2.next
-      current = (r1, r2) match {
-        case (a: SingleEnd, b: SingleEnd) => Some(PairedEndRead(a, b))
-        case (a: SingleEnd, null) => Some(r1)
-        case (null, b: SingleEnd) => Some(r2)
-        case _ => finishedReading; None
-      }
-    }
-    current
-  }
-
-}
-
-
-
-
-=======
 //class FASTQFileReader(in: Reader) extends ReadIterator {
 //
 //  import Read.stringToDNASequence
@@ -241,4 +170,4 @@ class FASTQPairedEndReader(in1: Reader, in2: Reader) extends ReadIterator {
 //
 //
 //
->>>>>>> develop:align/src/main/scala/org/utgenome/weaver/read/Read.scala
+
